@@ -1,0 +1,6 @@
+ipython_log.py
+*__pycache__*
+*.pyc
+*.pyo
+*.swp
+*.pickle

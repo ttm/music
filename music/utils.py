@@ -1,6 +1,7 @@
 import numpy as n
 from scipy.io import wavfile as w
-
+def H(*args):
+    return n.hstack(args)
 def db2Amp(db_difference):
     """Receives difference in decibels, returns amplitude proportion"""
     return 10.**(db_difference/20.)
@@ -21,15 +22,16 @@ def p2f(f0=220.,semitones=[0,7,7,4,7,0]):
 
 def normalize(vector):
     return -1+2*(vector-vector.min())/(vector.max()-vector.min())
+normalize_=normalize
 def normalizeRows(vector):
     """Normalize each row of a bidimensional vector to [0,1]"""
     vector=((n.subtract(self.vector.T,self.vector.min(1)) / (self.vector.max(1)-self.vector.min(1))).T)
     return vector
 def write(sonic_vector,filename="sound_music_name.wav", normalize="yes",samplerate=44100):
     if normalize:
-        vector=normalize(vector)
+        sonic_vector=normalize_(sonic_vector)
     sonic_vector_ = n.int16(sonic_vector * float(2**15-1))
-    w.write(filename,samplerate, sonic_vector) # escrita do som
+    w.write(filename,samplerate, sonic_vector_) # escrita do som
 def mix(self,list1,list2):
     l1=len(list1); l2=len(list2)
     if l1<l2:

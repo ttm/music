@@ -1,4 +1,6 @@
-from . permutations import InterestingPermutations
+from . permutations import InterestingPermutations, transposePermutation
+from .plainChanges import PlainChanges
+from sympy.combinatorics import Permutation as p_
 
 class Peals(InterestingPermutations):
     """Use permutations to make peals and represent peals as permutations.
@@ -21,15 +23,36 @@ class Peals(InterestingPermutations):
         if hunts==None:
             hunts={}
             if len(self.nelements)<5:
-                hunts=dict(level=1,index=0,status="started",starting_direction="up")
+                hunts["hunt1"]=dict(level=1,index=0,status="started",direction="up",next_=None)
             else:
-                hunts=dict(level=1,index=0,starting_direction="up",level=2,index=1,starting_direction="up")
-        neighbor_swaps=[sympy.combinatorics.Permutation(i,i+1) for i in range(self.nelements-1)]
+                hunts["hunt1"]=dict(level=1,index=0,direction="up",next_="hunt2")
+                hunts["hunt2"]=dict(level=2,index=1,direction="up",next_=None)
         peal=[self.applyStep(domain,hunts)]
-        while peal[-1]!=domain:
-            sequence,hunts=self.applyStep(peal[-1],hunts)
+        total_perm=getStepAsPermutation(hunts)
+        while total_perm!=sympy.combinatorics.Permutation(0):
+            sequence,hunts=self.getStepAsPermutation(peal[-1],hunts)
             peal+=[sequence]
-    def moveDomain(self,domain,sequence):
+        self.peal=peal
+    def getStepAsPermutation(self,hunts,hunt=None):
+        if hunt==None:
+            hunt="hunt1"
+        hunt=hunts[hunt]
+        direction=hunt["direction"]
+        assert direction in {"up","down"}
+        position=hunt["position"]
+        swap_with=(position-1,position+1)[direction=="up"]
+        if swap_with in domain:
+            swap=self.neighbor_swaps[(position-1,position)[new_direction=="up"]]
+            return swap,hunts
+            # move
+            pass
+        else:
+            new_direction=("up","down")[direction=="up"]
+            hunts[hunt]["direction"]=new_direction
+            if hunt["next"]==None:
+                return self.neighbor_swaps[(0,-1)[new_direction=="up"]], hunts
+            else:
+                return transposePermutation(getStepAsPermutation(domain,hunt),(0,1)[new_direction=="up"]), hunts
     def act(self,peal="rotation",domain=None):
         if domain==None:
             domain=list(range(self.nelements))

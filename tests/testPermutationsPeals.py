@@ -12,6 +12,7 @@ ip4=M.structures.symmetry.InterestingPermutations(4)
 #ip8=M.structures.symmetry.InterestingPermutations(8)
 pe3=M.structures.symmetry.PlainChanges(3)
 pe4=M.structures.symmetry.PlainChanges(4)
-pe4=M.structures.symmetry.PlainChanges(5)
+pe5=M.structures.symmetry.PlainChanges(5)
+M.structures.symmetry.printPeal(pe4.act(),[0])
 
 

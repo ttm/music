@@ -14,5 +14,6 @@ pe3=M.structures.symmetry.PlainChanges(3)
 pe4=M.structures.symmetry.PlainChanges(4)
 pe5=M.structures.symmetry.PlainChanges(5)
 M.structures.symmetry.printPeal(pe4.act(),[0])
+pe6=M.structures.symmetry.PlainChanges(6)
 
 

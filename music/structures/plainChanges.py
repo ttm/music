@@ -1,5 +1,4 @@
 from .permutations import InterestingPermutations, transposePermutation
-from .peals import printPeal
 from percolation.rdf import c
 from sympy.combinatorics import Permutation as p_
 
@@ -49,7 +48,6 @@ class PlainChanges(InterestingPermutations):
             #total_perm*=permutation
             total_perm=permutation*total_perm
             peal_sequence+=[permutation]
-            printPeal(self.act(peal=peal_direct))
             #c("prompt",permutation,total_perm)
         self.peal_direct=peal_direct
         self.peal_sequence=peal_sequence
@@ -69,9 +67,14 @@ class PlainChanges(InterestingPermutations):
         direction=hunt_["direction"]
         assert direction in {"up","down"}
         position=hunt_["position"]
+        position_=position
         swap_with=(position-1,position+1)[direction=="up"]
         #c(position,swap_with,direction,nelements)
-        if swap_with>=0 and swap_with<nelements: # move
+        # find domain by iterating upper hunts
+        cut_bellow=sum([hunts["hunt"+str(i)]["direction"]=="up" for i in range(hunt_["level"])])
+        cut_above=nelements-cut_bellow
+        domain=list(range(nelements))[cut_bellow:cut_above]
+        if swap_with in domain: # move
             #c("move")
             swap=self.neighbor_swaps[(position-1,position)[direction=="up"]]
             for ahunt in hunts:
@@ -83,18 +86,18 @@ class PlainChanges(InterestingPermutations):
             new_direction=("up","down")[direction=="up"]
             hunts[hunt]["direction"]=new_direction
             if hunt_["next_"]==None:
+                swap=self.neighbor_swaps[(domain[0],domain[-2+cut_bellow])[new_direction=="up"]]
                 #c("there is no subsequent hunt")
-                transpose_step=sum([hunts["hunt"+str(i)]["direction"]=="up" for i in range(hunt_["level"])])
-                swap=self.neighbor_swaps[(transpose_step,-1)[new_direction=="up"]]
-                c("--> transpose: ",transpose_step,swap)
+                #transpose_step=sum([hunts["hunt"+str(i)]["direction"]=="up" for i in range(hunt_["level"])])
+                #c("--> transpose: ",transpose_step,swap)
 #                if hunt_["level"]>0:
 #                    transpose_step=sum([hunts["hunt"+str(i)]["direction"]=="up" for i in range(hunt_["level"])])
 #                    swap=transposePermutation(swap,transpose_step)
                      
-            else: # 
+            else:
                 #c("there is a subsequent hunt")
                 subsequent_hunt=hunt_["next_"]
-                swap,hunts=self.performChange(nelements-1,hunts,subsequent_hunt)
+                swap,hunts=self.performChange(nelements,hunts,subsequent_hunt)
                 #swap=transposePermutation(swap,(0,1)[new_direction=="up"])
         return swap, hunts
     def act(self,domain=None,peal=None):

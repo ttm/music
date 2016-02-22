@@ -6,9 +6,10 @@ class PlainChanges(InterestingPermutations):
     """Present plain changes as swaps and act in domains to make peals
     
     http://www.gutenberg.org/files/18567/18567-h/18567-h.htm"""
-    def __init__(self,nelements=4,hunts=None):
+    def __init__(self,nelements=4,nhunts=None,hunts=None):
         InterestingPermutations.__init__(self,nelements)
-        hunts=self.initializeHunts(nelements)
+        hunts=self.initializeHunts(nelements,nhunts)
+        self.domains=[]
         hunts_=self.performPeal(nelements,dict(hunts)) # with the hunts, etc. 
         self.hunts=hunts
         #self.hunts_=hunts_
@@ -72,8 +73,10 @@ class PlainChanges(InterestingPermutations):
         #c(position,swap_with,direction,nelements)
         # find domain by iterating upper hunts
         cut_bellow=sum([hunts["hunt"+str(i)]["direction"]=="up" for i in range(hunt_["level"])])
-        cut_above=nelements-cut_bellow
+        cut_above=nelements-(hunt_["level"]-cut_bellow)
+        #cut_above=nelements-cut_bellow
         domain=list(range(nelements))[cut_bellow:cut_above]
+        self.domains+=[(domain,cut_bellow,cut_above,hunt_["level"],hunt,position,swap_with)]
         if swap_with in domain: # move
             #c("move")
             swap=self.neighbor_swaps[(position-1,position)[direction=="up"]]
@@ -82,23 +85,20 @@ class PlainChanges(InterestingPermutations):
                     hunts[ahunt]["position"]=position
             hunts[hunt]["position"]=swap_with
         else: # invert direction and move to next hunt and one less element
-            c("invert")
+            #c("invert")
             new_direction=("up","down")[direction=="up"]
             hunts[hunt]["direction"]=new_direction
+            self.domains+=["invert",new_direction, hunt]
             if hunt_["next_"]==None:
-                swap=self.neighbor_swaps[(domain[0],domain[-2+cut_bellow])[new_direction=="up"]]
+                #swap=self.neighbor_swaps[(domain[0],domain[-2+cut_bellow])[new_direction=="up"]]
+                swap=self.neighbor_swaps[(domain[0],domain[-2])[new_direction=="up"]]
                 #c("there is no subsequent hunt")
-                #transpose_step=sum([hunts["hunt"+str(i)]["direction"]=="up" for i in range(hunt_["level"])])
-                #c("--> transpose: ",transpose_step,swap)
-#                if hunt_["level"]>0:
-#                    transpose_step=sum([hunts["hunt"+str(i)]["direction"]=="up" for i in range(hunt_["level"])])
-#                    swap=transposePermutation(swap,transpose_step)
-                     
             else:
                 #c("there is a subsequent hunt")
                 subsequent_hunt=hunt_["next_"]
                 swap,hunts=self.performChange(nelements,hunts,subsequent_hunt)
                 #swap=transposePermutation(swap,(0,1)[new_direction=="up"])
+        self.domains+=[swap]
         return swap, hunts
     def act(self,domain=None,peal=None):
         if domain==None:

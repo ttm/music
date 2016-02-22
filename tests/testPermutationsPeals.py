@@ -18,6 +18,8 @@ pe6=M.structures.symmetry.PlainChanges(6,3)
 pe7=M.structures.symmetry.PlainChanges(7,4)
 pe8=M.structures.symmetry.PlainChanges(8,5)
 pe9=M.structures.symmetry.PlainChanges(9,6)
-pe10=M.structures.symmetry.PlainChanges(10,7)
+#pe10=M.structures.symmetry.PlainChanges(10,7) # might take too long and halt system
+#pe10=M.structures.symmetry.PlainChanges(11,7) # might take too long and halt system
+#pe10=M.structures.symmetry.PlainChanges(12,7) # might take too long and halt system
 
 

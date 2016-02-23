@@ -1,19 +1,33 @@
 import sys
-keys=tuple(sys.modules.keys())
+keys = tuple(sys.modules.keys())
 for key in keys:
     if "music" in key:
         del sys.modules[key]
 import music as M
-pe3=  M.structures.symmetry.PlainChanges(3)
-pe4=M.structures.symmetry.PlainChanges(4)
-pe5=M.structures.symmetry.PlainChanges(5)
-M.structures.symmetry.printPeal(pe4.act(),[0])
-pe6=M.structures.symmetry.PlainChanges(6,3)
-pe7=M.structures.symmetry.PlainChanges(7,4)
-pe8=M.structures.symmetry.PlainChanges(8,5)
-pe9=M.structures.symmetry.PlainChanges(9,6)
-pe10=M.structures.symmetry.PlainChanges(10,7) # might take too long and halt system
-pe11=M.structures.symmetry.PlainChanges(11,7) # might take too long and halt system
-pe12=M.structures.symmetry.PlainChanges(12,7) # might take too long and halt system
+from percolation.rdf import c
+
+def fact(x):
+    if x == 1:
+        return 1
+    return x*fact(x-1)
 
 
+nelements = 0
+while nelements not in range(3, 13):
+    nelements_maximum = input("make changes until maximum number of elements:\
+                    (min=3,,max=12,default=5) ")
+    try:
+        nelements = int(nelements_maximum)
+    except:
+        pass
+    if not nelements_maximum:
+        nelements_maximum = 5
+# generate peals with elements in numbers of 3 to 12
+peals = {}
+for nelements in range(3, int(nelements_maximum)+1):
+    key = "peal_with_" + str(nelements) + "_elements"
+    nhunts=nelements-3
+    peal = M.structures.symmetry.PlainChanges(nelements,nhunts)
+    peals[key] = peal
+    c(len(peal.peal_direct), fact(nelements))
+    assert len(peal.peal_direct) == fact(nelements)

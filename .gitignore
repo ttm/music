@@ -5,3 +5,5 @@ ipython_log.py
 *.swp
 *.pickle
 *.ropeproject
+*.wav
+*.egg-info/

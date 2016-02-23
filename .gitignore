@@ -4,3 +4,4 @@ ipython_log.py
 *.pyo
 *.swp
 *.pickle
+*.ropeproject

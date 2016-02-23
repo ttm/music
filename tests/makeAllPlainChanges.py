@@ -4,7 +4,7 @@ for key in keys:
     if "music" in key:
         del sys.modules[key]
 import music as M
-pe3=M.structures.symmetry.PlainChanges(3)
+pe3=  M.structures.symmetry.PlainChanges(3)
 pe4=M.structures.symmetry.PlainChanges(4)
 pe5=M.structures.symmetry.PlainChanges(5)
 M.structures.symmetry.printPeal(pe4.act(),[0])

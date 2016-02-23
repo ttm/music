@@ -42,8 +42,6 @@ class InterestingPermutations:
     def getSwaps(self):
         # contiguous swaps
         # swaps by distance between the indexes
-        # indicate ordering of swaps to make peals
-        # ascents, descents
         self.swaps=sorted(self.permutations_by_sizes[0], key=lambda x: -x.rank())
         self.swaps_as_comes=self.permutations_by_sizes[0]
         self.swaps_by_stepsizes=[]
@@ -53,7 +51,7 @@ class InterestingPermutations:
             self.swaps_by_stepsizes+=[[i for i in self.swaps if dist(i)==dist_]]
             dist_+=1
     def evenOdd(self,sequence):
-        # get even and odd permutations
+        # get even and odd permutations ?
         pass
     def getFullSymmetry(self):
         self.permutations=list(sympy.combinatorics.named_groups.SymmetricGroup(self.nelements).generate(method=self.method))

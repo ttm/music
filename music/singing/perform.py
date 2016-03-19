@@ -1,6 +1,8 @@
 import os
 import re
 from percolation import c
+from scipy.io import wavfile
+from music.utils import normalize
 
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -10,14 +12,26 @@ if not os.path.isdir(ECANTORIXCACHE):
     os.mkdir(ECANTORIXCACHE)
 
 
-def sing(text="ma-ry had a lit-tle lamb",
-        notes=(4,2,0,2,4,4,4),durs=(1,1,1,1,1,1,2), reference=60):
+#def sing(text="Mar-ry had a litt-le lamb",
+def sing(text="ba-na-nin-ha pra vo-cê",
+        notes=(4,2,0,2,4,4,4), durs=(1,1,1,1,1,1,2),
+        M='4/4', L='1/4', Q=120, K='C', reference=60,
+        lang='pt', transpose=-36):
     # write abc file
     # write make file
     # convert file to midi
     # sing it out
-    writeAbc(text,notes,durs)
-    # os.system('{}/make'.format(ECANTORIXCACHE))
+    writeAbc(text,notes,durs,M=M,L=L,Q=Q,K=K,reference=reference)
+    conf_text = '$ESPEAK_VOICE = "{}";'.format(lang)
+    conf_text += '$ESPEAK_TRANSPOSE = {}'.format(transpose);
+    with open(ECANTORIXCACHE+'/achant.conf', 'w') as f:
+        f.write(conf_text)
+    # write conf file
+    os.system('cp {}/Makefile {}/Makefile'.format(ECANTORIXDIR, ECANTORIXCACHE))
+    os.system('make -C {}'.format(ECANTORIXCACHE))
+    wread = wavfile.read(ECANTORIXCACHE+'/achant.wav')
+    assert wread[0]==44100
+    return normalize(wread[1])
 
     
 def writeAbc(text,notes,durs,M='4/4',L='1/4',Q=120,K='C',reference=60):
@@ -74,5 +88,5 @@ converter = Notes()
 
 
 if __name__ == '__main__':
-   sing()
+   narray = sing()
    print("finished")

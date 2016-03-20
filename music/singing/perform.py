@@ -12,18 +12,27 @@ if not os.path.isdir(ECANTORIXCACHE):
     os.mkdir(ECANTORIXCACHE)
 
 
-#def sing(text="Mar-ry had a litt-le lamb",
+# def sing(text="Mar-ry had a litt-le lamb",
 def sing(text="ba-na-nin-ha pra vo-cê",
         notes=(4,2,0,2,4,4,4), durs=(1,1,1,1,1,1,2),
         M='4/4', L='1/4', Q=120, K='C', reference=60,
-        lang='pt', transpose=-36):
+        lang='pt', transpose=-36, effect=None):
     # write abc file
     # write make file
     # convert file to midi
     # sing it out
+    reference -= 24
     writeAbc(text,notes,durs,M=M,L=L,Q=Q,K=K,reference=reference)
-    conf_text = '$ESPEAK_VOICE = "{}";'.format(lang)
-    conf_text += '$ESPEAK_TRANSPOSE = {}'.format(transpose);
+    conf_text = '$ESPEAK_VOICE = "{}";\n'.format(lang)
+    conf_text += '$ESPEAK_TRANSPOSE = {};'.format(transpose);
+    if effect == 'flint':
+        conf_text+="\ndo 'extravoices/flite.inc';"
+    elif effect == 'tremolo':
+        conf_text+="\ndo 'extravoices/tremolo.inc';"
+    elif effect == 'melt':
+        conf_text+="\ndo 'extravoices/melt.inc';"
+    elif effect:
+        raise ValueError('effect not understood')
     with open(ECANTORIXCACHE+'/achant.conf', 'w') as f:
         f.write(conf_text)
     # write conf file
@@ -32,6 +41,7 @@ def sing(text="ba-na-nin-ha pra vo-cê",
     wread = wavfile.read(ECANTORIXCACHE+'/achant.wav')
     assert wread[0]==44100
     return normalize(wread[1])
+    # return wread[1]
 
     
 def writeAbc(text,notes,durs,M='4/4',L='1/4',Q=120,K='C',reference=60):
@@ -57,24 +67,17 @@ def translateToAbc(notes, durs, reference):
     
 class Notes:
     def makeDict(self):
-        notes=re.findall(r'[\^]{0,1}[a-g]{1}','c^cd^def^fg^ga^ab')
-        self.notes=re.findall(r'[\^]{0,1}[a-g]{1}','c^cd^def^fg^ga^ab')
+        notes=re.findall(r'[\^\=]{0,1}[a-g]{1}','=c^c=d^de=f^f=g^g=a^ab')
+        # notes=re.findall(r'[\^]{0,1}[a-g]{1}','a^abc^cd^def^fg^g')
         notes_=[note.upper() for note in notes]
         notes__=[note+"," for note in notes_]
         notes___=[note+"," for note in notes__]
+        notes____=[note+"," for note in notes___]
         notes_u=[note+"'" for note in notes]
         notes__u=[note+"'" for note in notes_u]
         notes___u=[note+"'" for note in notes__u]
-        notes_all = notes___+notes__+notes_+notes+notes_u+notes__u+notes___u
-        self.notes_dict = dict([(i,j) for i, j in zip(range(24,97),notes_all)])
-        self.notes_=[note.upper() for note in notes]
-        self.notes__=[note+"," for note in notes_]
-        self.notes___=[note+"," for note in notes__]
-        self.notes_u=[note+"'" for note in notes]
-        self.notes__u=[note+"'" for note in notes_u]
-        self.notes___u=[note+"'" for note in notes__u]
-        self.notes_all = notes___+notes__+notes_+notes+notes_u+notes__u+notes___u
-
+        notes_all = notes____+notes___+notes__+notes_+notes+notes_u+notes__u+notes___u
+        self.notes_dict = dict([(i,j) for i, j in zip(range(12,97),notes_all)])
     def convert(self, notes, reference):
         if 'notes_dict' not in dir(self):
             self.makeDict()

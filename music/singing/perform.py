@@ -12,16 +12,17 @@ if not os.path.isdir(ECANTORIXCACHE):
     os.mkdir(ECANTORIXCACHE)
 
 
-# def sing(text="Mar-ry had a litt-le lamb",
-def sing(text="ba-na-nin-ha pra vo-cê",
+# def sing(text="ba-na-nin-ha pra vo-cê",
+def sing(text="Mar-ry had a litt-le lamb",
         notes=(4,2,0,2,4,4,4), durs=(1,1,1,1,1,1,2),
         M='4/4', L='1/4', Q=120, K='C', reference=60,
-        lang='pt', transpose=-36, effect=None):
+        lang='en', transpose=-36, effect=None):
+#        lang='pt', transpose=-36, effect=None):
     # write abc file
     # write make file
     # convert file to midi
     # sing it out
-    reference -= 24
+    # reference -= 24
     writeAbc(text,notes,durs,M=M,L=L,Q=Q,K=K,reference=reference)
     conf_text = '$ESPEAK_VOICE = "{}";\n'.format(lang)
     conf_text += '$ESPEAK_TRANSPOSE = {};'.format(transpose);
@@ -43,7 +44,7 @@ def sing(text="ba-na-nin-ha pra vo-cê",
     return normalize(wread[1])
     # return wread[1]
 
-    
+
 def writeAbc(text,notes,durs,M='4/4',L='1/4',Q=120,K='C',reference=60):
     text_='X:1\n'
     text_+='T:Some chanting for music python package\n'
@@ -64,7 +65,7 @@ def translateToAbc(notes, durs, reference):
     notes = converter.convert(notes, reference)
     return ''.join([i+j for i, j in zip(notes,durs)])
 
-    
+
 class Notes:
     def makeDict(self):
         notes=re.findall(r'[\^\=]{0,1}[a-g]{1}','=c^c=d^de=f^f=g^g=a^ab')

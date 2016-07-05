@@ -14,7 +14,7 @@ class CanonicalSynth:
     def synthSetup(self,table=None,vibrato_table=None,tremolo_table=None,vibrato_depth=.1,vibrato_frequency=2.,tremolo_depth=3.,tremolo_frequency=0.2,duration=2,fundamental_frequency=220):
         """Setup synth engine. ADSR is configured seperately"""
         if not table:
-            table=self.tables.sine
+            table=self.tables.triangle
         if vibrato_depth and vibrato_frequency:
             vibrato=True
             if not vibrato_table:
@@ -42,7 +42,7 @@ class CanonicalSynth:
         A_i=n.copy(A_) #
         ii=n.arange(Lambda_A,Lambda_D+Lambda_A,dtype=n.float)
         D=1-(1-a_S)*(   ( ii-Lambda_A )/( Lambda_D-1) )
-        D_i=n.copy(D) # 
+        D_i=n.copy(D) #
         #ii=n.arange(self.Lambda-self.Lambda_R,self.Lambda,dtype=n.float)
         #R=self.a_S-self.a_S*((ii-(self.Lambda-self.Lambda_R))/(self.Lambda_R-1))
         R=a_S*(n.linspace(1,0,Lambda_R))
@@ -80,7 +80,7 @@ class CanonicalSynth:
         Gammaa_i=n.floor(ii*self.tremolo_frequency*Lt/self.samplerate) # índices para a LUT
         Gammaa_i=n.array(Gammaa_i,n.int)
         # variação da amplitude em cada amostra
-        A_i=self.tremolo_table[Gammaa_i%Lt] 
+        A_i=self.tremolo_table[Gammaa_i%Lt]
         A_i=10.**((self.tremolo_depth/20.)*A_i)
         if sonic_vector!=None:
             return A_i*sound
@@ -100,10 +100,10 @@ class CanonicalSynth:
         Gammav_i=n.floor(ii*self.vibrato_frequency*Lv/self.samplerate) # índices para a LUT
         Gammav_i=n.array(Gammav_i,n.int)
         # padrão de variação do vibrato para cada amostra
-        Tv_i=self.vibrato_table[Gammav_i%Lv] 
+        Tv_i=self.vibrato_table[Gammav_i%Lv]
 
         # frequência em Hz em cada amostra
-        F_i=self.fundamental_frequency*(   2.**(  Tv_i*self.vibrato_depth/12.  )   ) 
+        F_i=self.fundamental_frequency*(   2.**(  Tv_i*self.vibrato_depth/12.  )   )
         # a movimentação na tabela por amostra
         Lt=len(self.table)
         D_gamma_i=F_i*(Lt/self.samplerate)
@@ -121,10 +121,10 @@ class CanonicalSynth:
         Gammav_i=n.floor(ii*self.vibrato_frequency*Lv/self.samplerate) # índices para a LUT
         Gammav_i=n.array(Gammav_i,n.int)
         # padrão de variação do vibrato para cada amostra
-        Tv_i=self.vibrato_table[Gammav_i%Lv] 
+        Tv_i=self.vibrato_table[Gammav_i%Lv]
 
         # frequência em Hz em cada amostra
-        F_i=self.fundamental_frequency*(   2.**(  Tv_i*self.vibrato_depth/12.  )   ) 
+        F_i=self.fundamental_frequency*(   2.**(  Tv_i*self.vibrato_depth/12.  )   )
         # a movimentação na tabela por amostra
         Lt=self.tables.size
         D_gamma_i=F_i*(Lt/self.samplerate)

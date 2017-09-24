@@ -84,7 +84,20 @@ M.oi.write(music_)
 
 ```
 
-## further information
+### dependencies
+The Python modules 
+sympy, numpy, scipy, colorama, termcolor
+are needed (and installed by the setup.py by default).
+
+You also need to install sox and abc2midi (abcmidi package in Ubuntu).
+The MIDI.pm and FFT.pm files are needed by eCantorix
+and can be installed with:
+  $ sudo cpan install MIDI
+  $ sudo cpan install Math::FFT
+
+or through your system's packaging system (e.g. apt for Ubuntu).
+
+### further information
 Music should be integrated to [AAVO], the participation ontology and the percolation package
 to enable [anthropological physics] experiments and social harnessing:
 - https://github.com/ttm/percolation

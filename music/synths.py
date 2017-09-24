@@ -11,6 +11,7 @@ class CanonicalSynth:
             self.tables=M.tables.Basic()
         self.synthSetup()
         self.adsrSetup()
+
     def synthSetup(self,table=None,vibrato_table=None,tremolo_table=None,vibrato_depth=.1,vibrato_frequency=2.,tremolo_depth=3.,tremolo_frequency=0.2,duration=2,fundamental_frequency=220):
         """Setup synth engine. ADSR is configured seperately"""
         if not table:
@@ -30,6 +31,7 @@ class CanonicalSynth:
         locals_=locals().copy(); del locals_["self"]
         for i in locals_:
             exec("self.{}={}".format(i,i))
+
     def adsrSetup(self,A=100.,D=40,S=-5.,R=50,render_note=False, adsr_method="absolute"):
         adsr_method=adsr_method # implement relative and False
         a_S=10**(S/20.)                       #
@@ -168,3 +170,44 @@ def makeGaussianNoise(self,mean,std,DUR=2):
     return r
 
 
+class IteratorSynth(CanonicalSynth):
+    """A synth that iterates through arbitrary lists of variables
+    
+
+    Any variable used by the CanonicalSynth can be used.
+    Just append the variable name with the token _sequence.
+
+    Example:
+    >>> isynth=M.IteratorSynth()
+    >>> isynth.fundamental_frequency_sequence = [220, 400, 100, 500]
+    >>> isynth.duration_sequence = [2, 1, 1.5]
+    >>> isynth.vibrato_frequency_sequence = [3, 6.5, 10]
+    >>> sounds=[]
+    >>> for i in range(300):
+            sounds += [isynth.renderIterate(tremolo_frequency=.2*i)]
+    >>> M.utils.write(M.H(*sounds),"./example.wav")
+
+    """
+
+    def renderIterate(self,**statevars):
+        self.absorbState(**statevars)
+        self.iterateElements()
+        return self.render()
+
+    def render(self):
+        sequences = [var for var in dir(self) if var.endswith("_sequence")]
+        lens = [len(self.__dict__[seq]) for seq in sequences]
+        iterations = max(lens)
+        sonic_vector = [self.renderInterate() for i in range(iterations)]
+        return sonic_vector
+
+    def iterateElements(self):
+        sequences=[var for var in dir(self) if var.endswith("_sequence")]
+        state_vars=[i[:-9] for i in sequences]
+        positions=[i+"_position" for i in sequences]
+        for sequence,state_var,position in zip(sequences,state_vars,positions):
+            if position not in dir(self):
+                self.__dict__[position]=0
+            self.__dict__[state_var]=self.__dict__[sequence][self.__dict__[position]]
+            self.__dict__[position]+=1
+            self.__dict__[position]%=len(self.__dict__[sequence])

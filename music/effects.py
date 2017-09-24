@@ -16,3 +16,5 @@ class Notch:
     pass
 class Wavelet:
     pass
+class Delays:
+    pass

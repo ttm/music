@@ -17,7 +17,7 @@ def sing(text="Mar-ry had a litt-le lamb",
         notes=(4,2,0,2,4,4,4), durs=(1,1,1,1,1,1,2),
         M='4/4', L='1/4', Q=120, K='C', reference=60,
         lang='en', transpose=-36, effect=None):
-#        lang='pt', transpose=-36, effect=None):
+#         lang='pt', transpose=-36, effect=None):
     # write abc file
     # write make file
     # convert file to midi

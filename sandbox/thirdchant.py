@@ -33,5 +33,5 @@ sonic_vector=M.singing.sing(text = text, notes=notes,reference=60,
 sonic_vector_=M.singing.sing(text = text, notes=notes_,reference=60,
         durs=durs,Q=120,lang='en',M="4/4",transpose=0)
 M.utils.write(H(sonic_vector,sonic_vector_)
-    ,filename="some_.wav",samplerate=44100)
+    ,filename="some__.wav",samplerate=44100)
 

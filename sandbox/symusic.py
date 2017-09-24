@@ -115,6 +115,7 @@ class Peals(InterestingPermutations):
             sequence,hunts=self.applyStep(peal[-1],hunts)
             peal+=[sequence]
     def moveDomain(self,domain,sequence):
+        pass
     def act(self,peal="rotation",domain=None):
         if domain==None:
             domain=list(range(self.nelements))

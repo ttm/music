@@ -1,6 +1,5 @@
 from percolation.rdf import c
 import sympy
-from sympy import combinatorics
 
 class InterestingPermutations:
     """Get permutations of n elements in meaningfull sequences.

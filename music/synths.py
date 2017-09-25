@@ -2,13 +2,37 @@ import numpy as n
 import music as M
 #from . import tables
 class CanonicalSynth:
-    """Simple synth for sound synthesis with vibrato and tremolo."""
-    def __init__(self,samplerate=44100,tables=None):
-        self.samplerate=samplerate
-        if tables:
-            self.tables=tables
-        else:
-            self.tables=M.tables.Basic()
+    """Simple synth for sound synthesis with vibrato, tremolo and ADSR.
+    
+    All functions but absorbState returns a sonic array.
+    You can parametrize the synth in any function call.
+    If you want to keep some set of states for specific
+    calls, clone your CanonicalSynth or create a new instance.
+    You can also pass arbitrary variables to user latter on.
+    
+    Parameters
+    ----------
+    f : scalar
+        The frequency of the note in Hertz.
+    d : scalar
+        The duration of the note in seconds.
+    fv : scalar
+        The frequency of the vibrato oscillations in Hertz.
+    nu : scalar
+        The maximum deviation of pitch in the vibrato in semitones.
+    tab : array_like
+        The table with the waveform to synthesize the sound.
+    tabv : array_like
+        The table with the waveform of the vibrato oscillatory pattern.
+
+    Examples
+    --------
+    >>> cs =  CanonicalSynth()
+    """
+    def __init__(s, **statevars):
+        s.absorbState(**statevars)
+        if not s.tables:
+            s.tables=M.tables.Basic()
         self.synthSetup()
         self.adsrSetup()
 
@@ -89,9 +113,9 @@ class CanonicalSynth:
         else:
             return A_i
 
-    def absorbState(self,**statevars):
+    def absorbState(s,**statevars):
         for varname in statevars:
-            exec("self.{}=statevars['{}']".format(varname,varname))
+            s.__dict__[varname]=statevars[varname]
 
     def rawRender(self,**statevars):
         self.absorbState(**statevars)

@@ -24,3 +24,4 @@ linux/bash:
   tries to use the singing module and no ~/.mass/ecantorix
   directory is found
 
+* How to make exponential fades reach 0??

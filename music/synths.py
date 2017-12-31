@@ -31,10 +31,12 @@ class CanonicalSynth:
     """
     def __init__(s, **statevars):
         s.absorbState(**statevars)
-        if not s.tables:
-            s.tables=M.tables.Basic()
-        self.synthSetup()
-        self.adsrSetup()
+        if "tables" not in dir(s):
+            s.tables = M.tables.Basic()
+        if "samplerate" not in dir(s):
+            s.samplerate = 44100
+        s.synthSetup()
+        s.adsrSetup()
 
     def synthSetup(self,table=None,vibrato_table=None,tremolo_table=None,vibrato_depth=.1,vibrato_frequency=2.,tremolo_depth=3.,tremolo_frequency=0.2,duration=2,fundamental_frequency=220):
         """Setup synth engine. ADSR is configured seperately"""
@@ -218,12 +220,12 @@ class IteratorSynth(CanonicalSynth):
         self.iterateElements()
         return self.render()
 
-    def render(self):
-        sequences = [var for var in dir(self) if var.endswith("_sequence")]
-        lens = [len(self.__dict__[seq]) for seq in sequences]
-        iterations = max(lens)
-        sonic_vector = [self.renderInterate() for i in range(iterations)]
-        return sonic_vector
+#     def render(self):
+#         sequences = [var for var in dir(self) if var.endswith("_sequence")]
+#         lens = [len(self.__dict__[seq]) for seq in sequences]
+#         iterations = max(lens)
+#         sonic_vector = [self.renderIterate() for i in range(iterations)]
+#         return sonic_vector
 
     def iterateElements(self):
         sequences=[var for var in dir(self) if var.endswith("_sequence")]

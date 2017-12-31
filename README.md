@@ -45,6 +45,8 @@ The modules are:
 * singing/ for singing with eCantorix
 * legacy/ for musical pieces that are rendered with Music (and might be appreciated directly or used as material to make more music)
 * music/ for remixing materials into new pieces and for generating new pieces from scratch (with arbitrary parametrization)
+* functions.py, a copy of mass/src/aux/functions.py, imported in music/utils.py
+as 'from .functions import * ' but it should be integrated into music package more properly.
 
 ### usage example
 

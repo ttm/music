@@ -1,7 +1,10 @@
 import numpy as n
 from scipy.io import wavfile
+from .functions import *
 def H(*args):
     return n.hstack(args)
+def V(*args):
+    return n.vstack(args)
 def db2Amp(db_difference):
     """Receives difference in decibels, returns amplitude proportion"""
     return 10.**(db_difference/20.)
@@ -45,3 +48,23 @@ def mix(self,list1,list2):
         sound+=list1
         sound[:l2]+=list2
     return sound
+def mixS(l1, l2=[], end=False):
+    if len(l1) != 2:
+        l1 = n.array((l1, l1))
+    if len(l2) != 2:
+        l2 = n.array((l2, l2))
+    if len(l1[0]) > len(l2[0]):
+        if not end:
+            l2_ = H( l2, n.zeros(( 2, len(l1[0])-len(l2[0]) )) )
+        else:
+            l2_ = H( n.zeros(( 2, len(l1[0])-len(l2[0]) )), l2 )
+        l1_ = l1
+    else:
+        if not end:
+            l1_ = H( l1, n.zeros(( 2, len(l2[0])-len(l1[0]) )) )
+        else:
+            l1_ = H( n.zeros(( 2, len(l2[0])-len(l1[0]) )), l1 )
+        l2_ = l2
+    return l1_+l2_
+
+

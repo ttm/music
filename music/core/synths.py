@@ -2,7 +2,16 @@ import numpy as n, music as M
 
 __doc__ = """Basic routines of synthesizers
 
-Should be used for ../synths.py"""
+All routines are directly derived from the
+MASS framework: https://github.com/ttm/mass
+Should be used at ../synths.py"""
+
+
+def V_(st=0, f=220, d=2., fv=2., nu=2., tab=Tr_i, tabv=S_):
+    """A shorthand for using V() with semitones"""
+
+    f_ = f*2**(st/12)
+    return V(f=_, d=2., fv=2., nu=2., tab=Tr_i, tabv=S_)
 
 
 def V(f=220, d=2., fv=2., nu=2., tab=Tr_i, tabv=S_):
@@ -79,8 +88,3 @@ def V(f=220, d=2., fv=2., nu=2., tab=Tr_i, tabv=S_):
     Gamma_i=n.array( Gamma_i, dtype=n.int) # já os índices
     return tab[Gamma_i%int(Lt)] # busca dos índices na tabela
 
-def V_(st=0, f=220, d=2., fv=2., nu=2., tab=Tr_i, tabv=S_):
-    """A shorthand for using V() with semitones"""
-
-    f_ = f*2**(st/12)
-    return V(f=_, d=2., fv=2., nu=2., tab=Tr_i, tabv=S_)

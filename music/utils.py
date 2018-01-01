@@ -67,4 +67,51 @@ def mixS(l1, l2=[], end=False):
         l2_ = l2
     return l1_+l2_
 
+def CF(s1, s2, dur=500, method='lin', fs=44100):
+    """
+    Cross fade in dur milisseconds.
 
+    """
+    ns = int(dur*fs/1000)
+    if len(s1.shape) != len(s2.shape):
+        print('enter s1 and s2 with the same shape')
+    if len(s1.shape) == 2:
+        s1_ = CF(s1[0], s2[0], locals()['dur'],
+                locals()['method'], locals()['fs'])
+        s2_ = CF(s1[1], s2[1], locals()['dur'],
+                locals()['method'], locals()['fs'])
+        s = n.array( (s1_, s2_) )
+        return s
+    s1[-ns:] *= F(nsamples=ns, method=method, fs=fs)
+    s2[:ns] *= F(nsamples=ns, method=method, fs=fs, out=False)
+    s = J(s1, s2, dur = -dur/1000)
+    return s
+
+def J(s1, s2, dur=0, nsamples=0, fs=44100):
+    """
+    Mix s1 and s2 placing the beggining of s2 after s1 by dur seconds
+
+    """
+    if len(s1.shape) == 2:
+        return resolveStereo(J, locals(), ['s1', 's2'])
+
+    if not nsamples:  # sample in s1 where s2[0] is added
+        ns = dur*fs
+    else:
+        ns = nsamples
+
+    if ns >= 0:
+        nst = ns + len(s2)
+    else:
+        nst = len(s1) +len(s2) +ns 
+
+    if nst < len(s1):
+        nst = len(s1)
+
+    s = n.zeros(nst)
+    s[:len(s1)] += s1
+    if ns >= 0:
+        s[ns:] += s2
+    else:
+        s[len(s1)+ns:] += s2
+    return s

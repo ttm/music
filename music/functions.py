@@ -246,6 +246,26 @@ def W_(fn, fs, sa):
     W(sa, fn, fs=44100)
 
 
+def resolveStereo(afunction, argdict, stereovars=['sonic_vector']):
+    ag1 = argdict.copy()
+    ag2 = argdict.copy()
+    for v in stereovars:
+        sv1 = argdict[v][0]
+        sv2 = argdict[v][1]
+        ag1[v] = sv1
+        ag2[v] = sv2
+
+    # sv1 = argdict['sonic_vector'][0]
+    # sv2 = argdict['sonic_vector'][1]
+    # ag1 = argdict.copy()
+    # ag1['sonic_vector'] = sv1
+    # ag2 = argdict.copy()
+    # ag2['sonic_vector'] = sv2
+    sv1_ = afunction(**ag1)
+    sv2_ = afunction(**ag2)
+    s = n.array( (sv1_, sv2_) )
+    return s
+
 ###################
 # Synthesis
 fs = 44100  # Hz, standard sample rate
@@ -1228,17 +1248,19 @@ def F(d=2, out=True, method="exp", dB=-80, alpha=1, perc=1,
 
     """
     if type(sonic_vector) in (n.ndarray, list):
+        if len(sonic_vector.shape) == 2:
+            return resolveStereo(F, locals())
         N = len(sonic_vector)
     elif nsamples:
         N = nsamples
     else:
         N = int(fs*d)
-    if method == "linear":
+    if 'lin' in method:
         if out:
             ai = L(method="linear", dev=0, nsamples=N)
         else:
             ai = L(method="linear", to=0, dev=0, nsamples=N)
-    if method == "exp":
+    if 'exp' in method:
         N0 = int(N*perc/100)
         N1 = N - N0
         if out:

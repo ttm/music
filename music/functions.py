@@ -245,27 +245,6 @@ def W_(fn, fs, sa):
     """To mimic scipy.io.wavefile input"""
     W(sa, fn, fs=44100)
 
-
-def resolveStereo(afunction, argdict, stereovars=['sonic_vector']):
-    ag1 = argdict.copy()
-    ag2 = argdict.copy()
-    for v in stereovars:
-        sv1 = argdict[v][0]
-        sv2 = argdict[v][1]
-        ag1[v] = sv1
-        ag2[v] = sv2
-
-    # sv1 = argdict['sonic_vector'][0]
-    # sv2 = argdict['sonic_vector'][1]
-    # ag1 = argdict.copy()
-    # ag1['sonic_vector'] = sv1
-    # ag2 = argdict.copy()
-    # ag2['sonic_vector'] = sv2
-    sv1_ = afunction(**ag1)
-    sv2_ = afunction(**ag2)
-    s = n.array( (sv1_, sv2_) )
-    return s
-
 ###################
 # Synthesis
 fs = 44100  # Hz, standard sample rate
@@ -1157,7 +1136,7 @@ def L(d=2, dev=10, alpha=1, to=True, method="exp",
         N = int(fs*d)
     samples = n.arange(N)
     N_ = N-1
-    if method == "linear":
+    if 'lin' in method:
         if to:
             a0 = 1
             al = dev
@@ -1165,7 +1144,7 @@ def L(d=2, dev=10, alpha=1, to=True, method="exp",
             a0 = dev
             al = 1
         E = a0 + (al - a0)*samples/N_
-    if method == "exp":
+    if 'exp' in method:
         if to:
             if alpha != 1:
                 samples_ = (samples/N_)**alpha
@@ -1786,7 +1765,7 @@ def L_(d=[2,4,2], dev=[5,-10,20], alpha=[1,.5, 20], method=["exp", "exp", "exp"]
     if type(sonic_vector) in (n.ndarray, list):
         N = len(sonic_vector)
     elif nsamples:
-        N = nsamples
+        N = sum(nsamples)
     else:
         N = int(fs*sum(d))
     samples = n.arange(N)
@@ -2008,63 +1987,6 @@ def T_(d=[[3,4,5],[2,3,7,4]], fa=[[2,6,20],[5,6.2,21,5]],
     s = n.prod(T_, axis=0)
     return s
 
-
-def mix(sonic_vectors, end=False, offset=0, fs=44100):
-    """
-    Mix sonic vectors.
-    
-    The operation consists in summing sample by sample [1].
-    This function helps when the sonic_vectors are not
-    of the same size.
-    
-    Parameters
-    ----------
-    sonic_vectors : list of sonic_arrays
-        The sonic vectors to be summed.
-    end : boolean
-        If True, sync the final samples.
-        If False (default) sync the initial samples.
-    offset : list of scalars
-        A list of the offsets for each sonic vectors
-        in seconds.
-    fs : integer
-        The sample rate. Only used if offset is supplied.
-
-    Returns
-    -------
-    S : ndarray
-        A numpy array where each value is a PCM sample of
-        the resulting sound.
-
-    Examples
-    --------
-    >>> W(mix(sonic_vectors=[V(), N()]))  # writes a WAV file with nodes
-
-    Notes
-    -----
-    Cite the following article whenever you use this function.
-
-    References
-    ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the 
-    discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
-
-    """
-    if offset:
-        for i, o in enumerate(offset):
-            sonic_vectors[i] = n.hstack(( n.zeros(offset*fs), sonic_vectors[i] ))
-            
-    amax = 0
-    for s in sonic_vectors:
-        amax = max(amax, len(s))
-    for i in range(len(sonic_vectors)):
-        if len(sonic_vectors[i]) < amax:
-            if end:
-                sonic_vectors[i] = n.hstack(( n.zeros(amax-len(sonic_vectors[i])), sonic_vectors[i] ))
-            else:
-                sonic_vectors[i] = n.hstack(( sonic_vectors[i], n.zeros(amax-len(sonic_vectors[i])) ))
-    s = n.sum(sonic_vectors, axis=0)
-    return s
 
 
 def trill(f=[440,440*2**(2/12)], ft=17, d=5, fs=44100):
@@ -2694,7 +2616,7 @@ def FM(f=220, d=2, fm=100, mu=2, tab=Tr, tabm=S,
     return s
 
 
-def AM(d=2, fm=50, a=.4, tabm=S, nsamples=0, sonic_vector=0, fs=44100):
+def AM(d=2, fm=50, a=.4, taba=S, nsamples=0, sonic_vector=0, fs=44100):
     """
     Synthesize an AM envelope or apply it to a sound.
     
@@ -2748,6 +2670,9 @@ def AM(d=2, fm=50, a=.4, tabm=S, nsamples=0, sonic_vector=0, fs=44100):
 
     The vibrato and FM patterns are considering when synthesizing the sound.
 
+    One might want to run this function twice to obtain
+    a stereo reverberation.
+
     Cite the following article whenever you use this function.
 
     References
@@ -2757,7 +2682,7 @@ def AM(d=2, fm=50, a=.4, tabm=S, nsamples=0, sonic_vector=0, fs=44100):
 
     """
 
-    taba = n.array(tabm)
+    taba = n.array(taba)
     if type(sonic_vector) in (n.ndarray, list):
         Lambda = len(sonic_vector)
     elif nsamples:
@@ -2767,7 +2692,7 @@ def AM(d=2, fm=50, a=.4, tabm=S, nsamples=0, sonic_vector=0, fs=44100):
     samples = n.arange(Lambda)
 
     l = len(taba)
-    Gammaa = (samples*fm*l/fs).astype(n.int)  # indexes for LUT
+    Gammaa = (samples*fs*l/fs).astype(n.int)  # indexes for LUT
     # amplitude variation at each sample
     Ta = taba[ Gammaa % l ] 
     T = 1 + Ta*a

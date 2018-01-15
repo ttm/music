@@ -1,4 +1,5 @@
 from percolation.rdf import c
+from sympy.combinatorics import Permutation as P
 import sympy
 
 class InterestingPermutations:
@@ -9,7 +10,7 @@ class InterestingPermutations:
     def __init__(self,nelements=4,method="dimino"):
         c("started permutations with",nelements,"elements")
         self.nelements=nelements
-        self.neutral_perm=sympy.combinatorics.Permutation([0],size=nelements)
+        self.neutral_perm=P([0],size=nelements)
         self.method=method
         self.getRotations()
         self.getMirrors()
@@ -21,18 +22,24 @@ class InterestingPermutations:
     def getAlternating(self):
         self.alternations=list(sympy.combinatorics.named_groups.AlternatingGroup(self.nelements).generate(method=self.method))
         self.alternations_complement=[i for i in self.alternations if i not in self.dihedral]
-        length=3
+        length_max=self.nelements
         self.alternations_by_sizes=[]
-        while length in [i.length() for i in self.alternations_complement]:
-            self.alternations_by_sizes+=[[i for i in self.alternations_complement if i.length()==length]]
-            length+=1
+        for l in range(0, 1+length_max):
+            # while length in [i.length() for i in self.alternations_complement]:
+            self.alternations_by_sizes.append(
+                    [i for i in self.alternations_complement if i.length()==l])
+
         assert len(self.alternations_complement)==sum([len(i) for i in self.alternations_by_sizes])
 
     def getRotations(self):
         """method dimino or coset"""
         self.rotations=list(sympy.combinatorics.named_groups.CyclicGroup(self.nelements).generate(method=self.method))
     def getMirrors(self):
-        self.dihedral=list(sympy.combinatorics.named_groups.DihedralGroup(self.nelements).generate(method=self.method))
+        if self.nelements > 2:  # bug in sympy?
+            self.dihedral = list(sympy.combinatorics.named_groups.DihedralGroup(self.nelements).generate(method=self.method))
+        else:
+            self.dihedral = [P([0], size=self.nelements),
+                    P([1,0], size=self.nelements)]
         self.mirrors=[i for i in self.dihedral if i not in self.rotations]
         if self.nelements%2==0: # even elements have edge and vertex mirrors
             self.edge_mirrors=[i for i in   self.mirrors if i.length()==self.nelements]

@@ -1,6 +1,6 @@
 from .. permutations import InterestingPermutations, transposePermutation
 from .plainChanges import PlainChanges
-from sympy.combinatorics import Permutation as p_
+# from sympy.combinatorics import Permutation as p_
 from colorama import init
 init()
 from termcolor import colored

@@ -919,7 +919,7 @@ def T(d=2, fa=2, dB=10, alpha=1, taba=S, nsamples=0, sonic_vector=0, fs=44100):
     l = len(taba)
     Gammaa = (samples*fa*l/fs).astype(n.int)  # indexes for LUT
     # amplitude variation at each sample
-    Ta = taba[ Gammaa % Lt ] 
+    Ta = taba[ Gammaa % l ] 
     if alpha != 1:
         T = 10.**((Ta*dB/20)**alpha)
     else:

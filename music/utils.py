@@ -14,9 +14,21 @@ def H(*args):
         for i,a in enumerate(args):
             if len(a.shape) == 1:
                 args[i] = n.array(( a, a ))
-
-
     return n.hstack(args)
+
+def read(fname):
+    s = wavfile.read(fname)
+    if s[1].dtype != 'int16':
+        print('implement non 16bit samples!')
+        return
+    fs_ = s[0]
+    if len(s[1].shape) == 2:
+        # l = s[1][:,0]/2**15
+        # r = s[1][:,1]/2**15
+        return n.array( s[1].T/2**15 )
+    else:
+        return s[1]/2**15
+
 def V(*args):
     return n.vstack(args)
 def db2Amp(db_difference):
@@ -37,9 +49,17 @@ def midi2HzInterval(midi_interval):
 def p2f(f0=220.,semitones=[0,7,7,4,7,0]):
     return [f0*2**(i/12) for i in semitones]
 
+  
 def normalize(vector):
     vector=vector.astype(n.float64)
-    return -1+2*(vector-vector.min())/(vector.max()-vector.min())
+    v = vector
+    v = -1+2*(vector-vector.min())/(vector.max()-vector.min())
+    if len(v.shape) == 2:
+        v[0] = v[0] - v[0].mean()
+        v[1] = v[1] - v[1].mean()
+    else:
+        v = v - v.mean()
+    return v
 normalize_=normalize
 def normalizeRows(vector):
     """Normalize each row of a bidimensional vector to [0,1]"""

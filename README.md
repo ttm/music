@@ -1,10 +1,14 @@
 # music
 A python package to make music and sounds
 based in the [MASS] (Music and Audio in Sample Sequences) framework.
+MASS is roughly a collection of psychophysical descriptions of musical elements
+in LPCM audio through equations and corresponding Python routines.
 
 Please refer to the article
 [Musical elements in the discrete-time representation of sound](https://arxiv.org/abs/1412.6853)
 for understanding the implementation and cite the work if you use this package.
+
+[MASS]: https://github.com/ttm/mass/
 
 ### core features
 * sample-based synthesis,
@@ -31,6 +35,30 @@ For greater control of customization, hacking and debugging, clone the repo and 
 
 This install method is especially useful when reloading modified module in subsequent runs of music.
 
+#### package structure
+The modules are:
+* utils.py for small functionalities (e.g. IO and conversions)
+    - this file also imports all the example functions available in the MASS framework.
+    These are in functions.py and include various synths, effects and utilities (envelope lines, etc).
+* core/ with basic algorithms derived from the MASS framework. Imports all from:
+    - functions.py: this file also imports all the example functions available in the MASS framework.
+    These are in functions.py and include various synths, effects and utilities (envelope lines, etc).
+    - classes.py: currently holds only the powerful class Being(), which will probably make the 
+* synths.py have experimental synths not included in MASS
+    - *NOTE*: one whoud check core.V\* synths to know about both most simple and most complex synths available.
+    This module is very incipient compared to the MASS framework.
+* effects.py for effects on a given PCM sonic array
+    - NOTE: one whoud check core.\* for a number of effects, from tremolo and AM to spatial and spectral manipulations.
+    Again, this module is very incipient compared to the MASS framework.
+* structures/ for higher level musical structures
+    - such as permutations (and related algebraic groups and change ringing peals), scales, chords, counterpoint, tunings, etc.
+    - 
+* singing/ for singing with eCantorix
+* legacy/ for musical pieces that are rendered with Music (and might be appreciated directly or used as material to make more music)
+* music/ for remixing materials into new pieces and for generating new pieces from scratch (with arbitrary parametrization)
+* functions.py, a copy of mass/src/aux/functions.py, imported in music/utils.py
+as 'from .functions import * ' but it should be integrated into music package more properly.
+
 ### coding conventions
 A function name has a verb if it changes state of initialized objects, if it only "returns something", it is has no verb in name.
 
@@ -40,19 +68,6 @@ Underline is used only in variable names where the words in variable name make s
 The code is the documentation. Code should be very readable to avoid writing unnecessary documentation and duplicating routine representations. This adds up to using docstrings to give context to the objects or omitting the docstrings.
 
 Every feature should be related to at least one legacy/ outline.
-
-#### package structure
-The modules are:
-* utils.py for small functionalities (e.g. IO and conversions)
-* core/ with basic algorithms derived from the MASS framework
-* synths.py for useful synthesis routines
-* effects.py for effects on a given PCM sonic array
-* structures/ for higher level musical structures such as permutations (and related algebraic groups and change ringing peals), scales, chords, counterpoint, tunings, etc.
-* singing/ for singing with eCantorix
-* legacy/ for musical pieces that are rendered with Music (and might be appreciated directly or used as material to make more music)
-* music/ for remixing materials into new pieces and for generating new pieces from scratch (with arbitrary parametrization)
-* functions.py, a copy of mass/src/aux/functions.py, imported in music/utils.py
-as 'from .functions import * ' but it should be integrated into music package more properly.
 
 ### usage example
 

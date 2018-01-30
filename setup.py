@@ -69,7 +69,7 @@ setup(
 
     # What does your project relate to?
     keywords=['physics', 'music', 'synthesis', 'psychophysics',
-            'symmetry', 'change ringing', 'group theory', 'toolbox',
+            'symmetry', 'change ringing', 'campanology', 'group theory', 'toolbox',
             'musical composition', 'art', 'artistic creation',
             'experimental music', 'contemporary music', 'MASS',
             'MASS framework', 'synthesizer', 'PCM', 'audio', 'sound',

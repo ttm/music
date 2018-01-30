@@ -14,9 +14,11 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.1.dev0',
+    # version='0.1.dev0',
+    # according to https://semver.org/
+    version='0.1.beta',
 
-    description='music is a python package making music and sounds',
+    description='music is a python package for making music and sounds, based on the MASS framework',
     long_description=long_description,
 
     # The project's main homepage.
@@ -27,7 +29,7 @@ setup(
     author_email='listamacambira@googlegroups.com',
 
     # Choose your license
-    license='MIT',
+    license='Public Domain',
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
@@ -35,7 +37,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 4 - Beta',
 
         # Indicate who your project is intended for
         'Intended Audience :: Science/Research',
@@ -58,7 +60,7 @@ setup(
         'Topic :: Multimedia :: Sound/Audio :: Sound Synthesis',
 
         # Pick your license as you wish (should match "license" above)
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: Public Domain',
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
@@ -66,7 +68,17 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='physics music synthesis toolbox',
+    keywords=['physics', 'music', 'synthesis', 'psychophysics',
+            'symmetry', 'change ringing', 'group theory', 'toolbox',
+            'musical composition', 'art', 'artistic creation',
+            'experimental music', 'contemporary music', 'MASS',
+            'MASS framework', 'synthesizer', 'PCM', 'audio', 'sound',
+            'acoustics', 'signal processing', 'multimedia', 'psychoactive',
+            'rotation', 'permutation', 'mirror', 'speech', 'singing',
+            'speech synthesis', 'numpy', 'sonic art', 'hifi', 'hi-fi',
+            'noise', 'high fidelity', 'hyper-fidelity', 'LUT', 'vibrato',
+            'tremolo', 'AM', 'FM', 'ADSR', 'HRTF', 'spatialization',
+            'spatial location'],
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
@@ -77,6 +89,7 @@ setup(
     # project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
+    # TODO: test with virtualenv to know the dependencies
     install_requires=['sympy', 'numpy', 'scipy', 'colorama', 'termcolor'],
 
     # List additional groups of dependencies here (e.g. development dependencies).

@@ -4,13 +4,19 @@ based in the [MASS] (Music and Audio in Sample Sequences) framework.
 
 Please refer to the article
 [Musical elements in the discrete-time representation of sound](https://arxiv.org/abs/1412.6853)
-for understanding the implementation and cite the work if you use it.
+for understanding the implementation and cite the work if you use this package.
 
 ### core features
-* sample-based synthesis, meaning methods where each sample is calculated individually. Usually not fit for real-time, but fidelity of sound wave to the mathematical models is maximized.
+* sample-based synthesis,
+meaning that the state is updated for each sample.
+(For example,  in a note with a vibrato, each sample is associated
+to a different frequency.)
+Thus, fidelity of the synthesized sound to the mathematical models is maximized.
 * musical structures, with emphasis in symmetry and discourse.
 * speech and singing interface.
-* idealized to be used as standalone and for audiovisualization of data (e.g. in compliance to the participation ontology and the percolation package for harnessing open linked social data).
+* idealized to be used as standalone and for audiovisualization of data 
+(e.g. for harnessing open linked social data in association to the participation ontology (PO)
+and the percolation package, or with the audiovidual analytics vocabulary and ontology (AAVO)).
 
 ### install with
     $ pip install music
@@ -18,10 +24,10 @@ or
 
     $ python setup.py music
 
-For greater control of customization (and debugging), clone the repo and install with pip with -e:
+For greater control of customization, hacking and debugging, clone the repo and install with pip with -e:
 
     $ git clone https://github.com/ttm/music.git
-    $ pip install -e <path_to_repo>
+    $ pip3 install -e <path_to_repo>
 
 This install method is especially useful when reloading modified module in subsequent runs of music.
 
@@ -109,3 +115,10 @@ This means mainly using RDF to link between music package facilities and media r
 [AAVO]: https://github.com/ttm/aavo
 [anthropological physics]: https://www.academia.edu/10356773/What_are_you_and_I_anthropological_physics_fundamentals_
 
+### deployment to pypi
+This package іs delivered by running:
+  $ python3 setup.py sdist
+  $ python3 setup.py bdist\_wheel
+  $ twine upload dist/
+
+Maybe use "python setup.py sdist upload -r pypi" ?

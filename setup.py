@@ -26,10 +26,10 @@ setup(
 
     # Author details
     author='Renato Fabbri',
-    author_email='listamacambira@googlegroups.com',
+    author_email='renato.fabbri@gmail.com',
 
     # Choose your license
-    license='Public Domain',
+    license='MIT',
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
@@ -60,7 +60,8 @@ setup(
         'Topic :: Multimedia :: Sound/Audio :: Sound Synthesis',
 
         # Pick your license as you wish (should match "license" above)
-        'License :: OSI Approved :: Public Domain',
+        # 'License :: OSI Approved :: Public Domain',
+        'License :: OSI Approved :: MIT License',
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.

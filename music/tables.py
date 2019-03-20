@@ -11,7 +11,7 @@ class Basic:
     def makeTables(self,size):
         self.sine=n.sin(n.linspace(0,2*n.pi,size,endpoint=False))
         self.saw=n.linspace(-1,1,size)
-        self.square=n.hstack( ( n.ones(size/2)*-1 , n.ones(size/2) )  )
+        self.square=n.hstack( ( n.ones(size//2)*-1 , n.ones(size//2) )  )
         foo=n.linspace(-1,1,size/2,endpoint=False)
         self.triangle=n.hstack(  ( foo , foo*-1 )   )
     def drawTables(self):

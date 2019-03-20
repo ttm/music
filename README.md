@@ -8,8 +8,6 @@ Please refer to the article
 [Musical elements in the discrete-time representation of sound](https://arxiv.org/abs/1412.6853)
 for understanding the implementation and cite the work if you use this package.
 
-[MASS]: 
-
 ### core features
 * sample-based synthesis,
 meaning that the state is updated for each sample.

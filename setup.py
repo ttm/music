@@ -16,7 +16,7 @@ setup(
     # https://packaging.python.org/en/latest/single_source_version.html
     # version='0.1.dev0',
     # according to https://semver.org/
-    version='0.6.beta',
+    version='0.7.beta',
 
     description='music is a python package for making music and sounds, based on the MASS framework',
     long_description=long_description,

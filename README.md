@@ -101,22 +101,22 @@ H = M.utils.H
 # 1) start a ѕynth
 b = M.core.Being()
 
-# 2) set its parameters though sequences to be iterated through
+# 2) set its parameters using sequences to be iterated through
 b.d_ = [1/2, 1/4, 1/4]  # durations in seconds
 b.fv_ = [0, 1,5,15,150,1500,15000]  # vibrato frequency
 b.nu_ = [5]  # vibrato depth in semitones (maximum deviation of pitch)
 b.f_ = [220, 330]  # frequencies for the notes
 
 # 3) render the wavfile
-b.render(30, 'aMusicalSound.wav')  # render 100 notes iterating though the lists above
+b.render(30, 'aMusicalSound.wav')  # render 30 notes iterating though the lists above
 
-# 3b) Or the the numpy arrays directly and use them to concatenate and/or mix sounds:
+# 3b) Or the numpy arrays directly and use them to concatenate and/or mix sounds:
 s1 = b.render(30)
 b.f_ += [440]
 b.fv_ = [1,2,3,4,5]
 s2 = b.render(30)
 
-# s1 then s2 then s1 and s2 at the same time, then at the same time but one in each lr channel,
+# s1 then s2 then s1 and s2 at the same time, then at the same time but one in each LR channel,
 # then s1 times s2 reversed, then s1+s2 but jumping 6 samples before using one:
 s3 = H(s1, s2, s1 + s2, (s1, s2),
        s1*s2[::-1],
@@ -169,13 +169,13 @@ M.core.WS(s_, 'geometric_music.wav')
 # Notice that you might relate a peal or any set of permutations
 # to a sonic characteristic (frequency, duration, vibrato depth, vibrato frequency,
 # attack duration, etc) through at least 3 methods:
-# 1) initiate a Being(), set its perms to the permutation sequence,
+# 1) initiate a Being(), set its permutations to the permutation sequence,
 # its domain to the values to be permuted, and its curseq to
-# the name of the Being sequence to be yield by the permutation of the domain.
+# the name of the Being sequence to be yielded by the permutation of the domain.
 #
-# 2) Achieve the sequence of values though peal.act() or just using permutation(domain)
+# 2) Achieve the sequence of values through peal.act() or just using permutation(domain)
 # for all the permutations at hand.
-# Then just render the notes directly (e.g. using M.core.V_) or handing the sequence of values
+# Then render the notes directly (e.g. using M.core.V_) or passing the sequence of values
 # to a synth, such as Being()
 #
 # 3) Using IteratorSynth as explained below. (potentially deprecated)
@@ -197,12 +197,11 @@ b.perms = pe3.peal_direct
 b.f_ = []
 b.curseq = 'f_'
 b.stay(nnotes)
-b.render(nnotes, 'theSound_campanology.wav')
+b.render(nnotes, 'theSound_campanology_.wav')
 
 
 ### OR (DEPRECATED, but still kept while not convinced to remove...)
 isynth = M.synths.IteratorSynth()
-isynth.fundamental_frequency_sequence=freqs
 isynth.fundamental_frequency_sequence=freqs
 isynth.tab_sequence = [T.sine, T.triangle, T.square, T.saw]
 
@@ -219,7 +218,7 @@ M.core.W(pcm_samples, 'something.wav')
 
 #### idealized usage example
 We didn't have the opportunity yet to make Music all we want it to be.
-Here is an example of what one should be able to do:
+Here is one example of what we idealize:
 
 ```python
 import music as M
@@ -241,11 +240,10 @@ M.oi.write(music_)
 
 ### dependencies
 The Python modules 
-sympy, numpy, scipy, colorama, termcolor
-are needed (and installed by the setup.py by default).
+are installed by setup.py by default.
 
-You also need to install espeak, sox and abc2midi (abcmidi package in Ubuntu).
-The MIDI.pm and FFT.pm files are needed by eCantorix to synthesize singing sequences,
+You also need to install espeak, sox and abc2midi (abcmidi package in Ubuntu) if you want to use the singing interface.
+Also, the MIDI.pm and FFT.pm files are needed by eCantorix to synthesize singing sequences,
 and can be installed with:
   $ sudo cpan install MIDI
   $ sudo cpan install Math::FFT
@@ -253,19 +251,13 @@ and can be installed with:
 or through your system's packaging system (e.g. apt for Ubuntu).
 
 ### further information
-Music should be integrated to [AAVO], the participation ontology and the percolation package
-to enable [anthropological physics] experiments and social harnessing:
-- https://github.com/ttm/percolation
-
-This means mainly using RDF to link between music package facilities and media rendering using diverse data sources as underlying material.
-
-[AAVO]: https://github.com/ttm/aavo
-[anthropological physics]: https://www.academia.edu/10356773/What_are_you_and_I_anthropological_physics_fundamentals_
+Music is intended for artistic uses, but was also designed for uses in psychophysics experiments and data sonification. E.g. the [Versinus](https://github.com/ttm/versinus) animated visualization method for evolving networks uses Music (an older version of it, actually) to render the musical track that represents networks structures.
 
 ### deployment to pypi
 This package іs delivered by running:
   $ python3 setup.py sdist
-  $ python3 setup.py bdist\_wheel
   $ twine upload dist/
 
 Maybe use "python setup.py sdist upload -r pypi" ?
+
+:::

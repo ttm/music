@@ -2,8 +2,8 @@ import numpy as n
 from scipy.io import wavfile
 # from .functions import *
 from numbers import Number
+from . import core
 
-# V_ = V
 def H(*args):
     stereo = 0
     args = [n.array(a) for a in args]
@@ -121,9 +121,9 @@ def CF(s1, s2, dur=500, method='lin', fs=44100):
                 locals()['method'], locals()['fs'])
         s = n.array( (s1_, s2_) )
         return s
-    s1[-ns:] *= F(nsamples=ns, method=method, fs=fs)
-    s2[:ns] *= F(nsamples=ns, method=method, fs=fs, out=False)
-    s = J(s1, s2, dur = -dur/1000)
+    s1[-ns:] *= core.F(nsamples=ns, method=method, fs=fs)
+    s2[:ns] *= core.F(nsamples=ns, method=method, fs=fs, out=False)
+    s = J(s1, s2, d = -dur/1000)
     return s
 
 
@@ -206,7 +206,7 @@ def J(s1, s2, d=0, nsamples=0, fs=44100):
     if nst < len(s1):
         nst = len(s1)
 
-    s = n.zeros(nst)
+    s = n.zeros(int(nst))
     s[:len(s1)] += s1
     print('s.shape', 's1.shape', 's2.shape', 'ns', 'nst',
             s.shape, s1.shape, s2.shape, ns, nst)
@@ -214,7 +214,7 @@ def J(s1, s2, d=0, nsamples=0, fs=44100):
         s[ns : ns+len(s2)] += s2
         # s[-len(s2):] += s2
     else:
-        s[len(s1)+ns:len(s1)+ns+len(s2)] += s2
+        s[int(len(s1)+ns): int(len(s1)+ns+len(s2))] += s2
     return s
 
 def J_(*args):
@@ -408,7 +408,7 @@ def profile(adict):
 
       d['analyses']['ndarray'] should return a general analysis of the ndarrays,
       including size in seconds of each considering fs.
-      mean and mean square values to have an idea of whats there.
+      Mean and mean square values to have an idea of what is there.
       RMS values in different scales and the overal RMS standard deviation 
       on a scale is helpful in grasping disconttinuities.
       The overal RMS mean of a scale is a hint of whether the variable
@@ -449,3 +449,4 @@ def profile(adict):
     #     else:
     #         print('unrecognized type, implement dealing with it')
     
+V_ = V

@@ -1,3 +1,13 @@
+from .. import tables
+from .functions import AD, V, W, H_
+import numpy as n
+H = H_
+T = tables.Basic()
+V_ = V
+n_ = n
+def ADV(note_dict={}, adsr_dict={}):
+    return AD(sonic_vector=V_(**note_dict), **adsr_dict)
+
 class Being:
     def __init__(self):
         rhythm = [1.] # repetition of one second
@@ -109,9 +119,9 @@ class Being:
                 fn = 'abeing.wav'
             if fn[-4:] != '.wav':
                 fn += '.wav'
-            M.utils.W(H(*notes), fn)
+            W(H(*notes), fn)
         else:
-            return notes
+            return H(*notes)
 
     def startBeing(self):
         self.dscale = 1

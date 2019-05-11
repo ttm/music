@@ -1,6 +1,5 @@
 import os
 import re
-from percolation import c
 from scipy.io import wavfile
 from music.utils import normalize
 
@@ -9,7 +8,11 @@ here = os.path.abspath(os.path.dirname(__file__))
 ECANTORIXDIR = here + '/ecantorix'
 ECANTORIXCACHE = ECANTORIXDIR + '/cache'
 if not os.path.isdir(ECANTORIXCACHE):
-    os.mkdir(ECANTORIXCACHE)
+    try:
+        os.system('git clone https://github.com/divVerent/ecantorix ' + ECANTORIXDIR)
+        os.mkdir(ECANTORIXCACHE)
+    except:
+        print('install git if you want singing facilities')
 
 
 # def sing(text="ba-na-nin-ha pra vo-cê",
@@ -84,9 +87,6 @@ class Notes:
             self.makeDict()
         notes_ = [reference + note for note in notes]
         notes__ = [self.notes_dict[note] for note in notes_]
-        c('notes', notes)
-        c('notes_', notes_)
-        c('notes__', notes__)
         return notes__
 converter = Notes()
 

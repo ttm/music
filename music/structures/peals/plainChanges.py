@@ -1,5 +1,4 @@
 from ..permutations import InterestingPermutations, transposePermutation
-from percolation.rdf import c
 import sympy
 from sympy.combinatorics import Permutation
 
@@ -19,6 +18,7 @@ class PlainChanges:
         self.domains=[]
         hunts_=self.performPeal(nelements,dict(hunts)) # with the hunts, etc.
         self.hunts=hunts
+        self.nelements = nelements
         #self.hunts_=hunts_
     def initializeHunts(self,nelements=4,nhunts=None):
         if not nhunts:
@@ -30,7 +30,7 @@ class PlainChanges:
         if nhunts>nelements:
             raise ValueError("There cannot be more hunts than elements")
         elif nhunts>nelements-3:
-            c("peals are the same if there are", nhunts-(nelements-3), "hunts less")
+            print("peals are the same if there are", nhunts-(nelements-3), "hunts less")
         hunts_dict={}
         for hunt in range(nhunts):
             # implement different starting settings here
@@ -48,14 +48,12 @@ class PlainChanges:
         total_perm=permutation
         peal_direct=[self.neutral_perm]
         peal_sequence=[permutation]
-        #c("prompt",permutation,total_perm)
         while total_perm!=self.neutral_perm:
             peal_direct+=[total_perm]
             permutation,hunts=self.performChange(nelements,hunts)
             #total_perm*=permutation
             total_perm=permutation*total_perm
             peal_sequence+=[permutation]
-            #c("prompt",permutation,total_perm)
         self.peal_direct=peal_direct
         self.peal_sequence=peal_sequence
         return hunts
@@ -76,7 +74,6 @@ class PlainChanges:
         position=hunt_["position"]
         position_=position
         swap_with=(position-1,position+1)[direction=="up"]
-        #c(position,swap_with,direction,nelements)
         # find domain by iterating upper hunts
         cut_bellow=sum([hunts["hunt"+str(i)]["direction"]=="up" for i in range(hunt_["level"])])
         cut_above=nelements-(hunt_["level"]-cut_bellow)
@@ -84,23 +81,19 @@ class PlainChanges:
         domain=list(range(nelements))[cut_bellow:cut_above]
         self.domains+=[(domain,cut_bellow,cut_above,hunt_["level"],hunt,position,swap_with)]
         if swap_with in domain: # move
-            #c("move")
             swap=self.neighbor_swaps[(position-1,position)[direction=="up"]]
             for ahunt in hunts:
                 if hunts[ahunt]["position"]==swap_with:
                     hunts[ahunt]["position"]=position
             hunts[hunt]["position"]=swap_with
         else: # invert direction and move to next hunt and one less element
-            #c("invert")
             new_direction=("up","down")[direction=="up"]
             hunts[hunt]["direction"]=new_direction
             self.domains+=["invert",new_direction, hunt]
             if hunt_["next_"]==None:
                 #swap=self.neighbor_swaps[(domain[0],domain[-2+cut_bellow])[new_direction=="up"]]
                 swap=self.neighbor_swaps[(domain[0],domain[-2])[new_direction=="up"]]
-                #c("there is no subsequent hunt")
             else:
-                #c("there is a subsequent hunt")
                 subsequent_hunt=hunt_["next_"]
                 swap,hunts=self.performChange(nelements,hunts,subsequent_hunt)
                 #swap=transposePermutation(swap,(0,1)[new_direction=="up"])

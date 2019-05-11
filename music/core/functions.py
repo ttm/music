@@ -55,6 +55,17 @@ properly.
 # ADSR
 
 H = n.hstack
+def H_(*args):
+    stereo = 0
+    args = [n.array(a) for a in args]
+    for a in args:
+        if len(a.shape) == 2:
+            stereo = 1
+    if stereo:
+        for i,a in enumerate(args):
+            if len(a.shape) == 1:
+                args[i] = n.array(( a, a ))
+    return n.hstack(args)
 #####################
 # IO
 def __n(sonic_vector, remove_bias=True):

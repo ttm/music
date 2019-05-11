@@ -16,7 +16,7 @@ setup(
     # https://packaging.python.org/en/latest/single_source_version.html
     # version='0.1.dev0',
     # according to https://semver.org/
-    version='0.1.beta',
+    version='0.6.beta',
 
     description='music is a python package for making music and sounds, based on the MASS framework',
     long_description=long_description,
@@ -83,7 +83,8 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=["music"],
+    # packages=["music"],
+    packages=find_packages(),
     #packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
 
     # List run-time dependencies here.  These will be installed by pip when your
@@ -91,7 +92,7 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     # TODO: test with virtualenv to know the dependencies
-    install_requires=['sympy', 'numpy', 'scipy', 'colorama', 'termcolor'],
+    install_requires=['sympy', 'numpy', 'scipy', 'colorama', 'termcolor', 'matplotlib'],
 
     # List additional groups of dependencies here (e.g. development dependencies).
     # You can install these using the following syntax, for example:

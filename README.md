@@ -3,20 +3,22 @@ A python package to make music and sounds
 based in the [MASS](https://github.com/ttm/mass/) (Music and Audio in Sample Sequences) framework.
 MASS is roughly a collection of psychophysical descriptions of musical elements
 in LPCM audio through equations and corresponding Python routines.
+It thus makes facilitated the creation of Python packages with various functionalities.
 
-Please refer to the article
-[Musical elements in the discrete-time representation of sound](https://arxiv.org/abs/1412.6853)
-for understanding the implementation and cite the work if you use this package.
+Refer to the article
+[Musical elements in the discrete-time representation of sound](https://github.com/ttm/mass/raw/master/doc/article.pdf)
+for further understanding the routines
+and please cite the work if you use this package.
 
 ### core features
-* sample-based synthesis,
-meaning that the state is updated for each sample.
+* Sample-based synthesis,
+meaning that the state is updated at each sample.
 (For example,  in a note with a vibrato, each sample is associated
 to a different frequency.)
 Thus, fidelity of the synthesized sound to the mathematical models is maximized.
-* musical structures, with emphasis in symmetry and discourse.
-* speech and singing interface.
-* idealized to be used as standalone and for audiovisualization of data 
+* Musical structures, with emphasis in symmetry and discourse.
+* Speech and singing interface.
+* Idealized to be used as standalone and for audiovisualization of data 
 (e.g. for harnessing open linked social data in association to the participation ontology (PO)
 and the percolation package, or with the audiovidual analytics vocabulary and ontology (AAVO)).
 
@@ -26,30 +28,29 @@ or
 
     $ python setup.py music
 
-For greater control of customization, hacking and debugging, clone the repo and install with pip with -e:
+For greater control of customization, hacking and debugging, clone the repository and install with pip using -e:
 
     $ git clone https://github.com/ttm/music.git
     $ pip3 install -e <path_to_repo>
 
-This install method is especially useful when reloading modified module in subsequent runs of music.
+This install method is especially useful when reloading the modified module in subsequent runs of music.
 
 #### package structure
 The modules are:
+* core.py
 * utils.py for small functionalities (e.g. IO and conversions)
-    - this file also imports all the example functions available in the MASS framework.
-    These are in functions.py and include various synths, effects and utilities (envelope lines, etc).
 * core/ with basic algorithms derived from the MASS framework. Imports all from:
     - functions.py: this file also imports all the example functions available in the MASS framework.
     These are in functions.py and include various synths, effects and utilities (envelope lines, etc).
-    - classes.py: currently holds only the powerful class Being(), which will probably make the 
-* synths.py have experimental synths not included in MASS
-    - *NOTE*: one whoud check core.V\* synths to know about both most simple and most complex synths available.
+    - classes.py: currently holds only the powerful class Being(), which should be further documented and its usage exemplified.
+* synths.py have additional synths not included in MASS
+    - *NOTE*: one should check the core module synths to know about the synths inherited directly from MASS, they range from very simple to great complexity.
     This module is very incipient compared to the MASS framework.
-* effects.py for effects on a given PCM sonic array
+* effects.py for sonic effects 
     - NOTE: one whoud check core.\* for a number of effects, from tremolo and AM to spatial and spectral manipulations.
-    Again, this module is very incipient compared to the MASS framework.
+    Again, this module is very incipient compared to the MASS framework. In fact, it is not implemented yet.
 * structures/ for higher level musical structures
-    - such as permutations (and related algebraic groups and change ringing peals), scales, chords, counterpoint, tunings, etc.
+    - such as permutations (and related to algebraic groups and change ringing peals), scales, chords, counterpoint, tunings, etc.
     - implemented are:
       * Plain Changes in any number of bells with any number of hunts (hun, half hunt, etc).
       The limitation here is really your machine and system, but you should be able to obtain
@@ -69,8 +70,8 @@ The modules are:
         * https://github.com/ttm/penalva/blob/master/penalva.py
         * https://github.com/ttm/lunhani/blob/master/lunhani.py
         * https://github.com/ttm/soares/blob/master/soares.py
-* legacy/ for musical pieces that are rendered with Music (and might be appreciated directly or used as material to make more music)
-    - currelty has only one musical piece (a silly one indeed).
+* legacy/ for musical pieces that are rendered with the music package (and might be appreciated directly or used as material to make more music)
+    - currently has only one musical piece (a silly one indeed).
 * music/ for remixing materials into new pieces and for generating new pieces from scratch (with arbitrary parametrization)
     - Don't exist yet; the sketches have not been migrated.
     - Should work in cooperation with the legacy/ module.
@@ -83,7 +84,7 @@ Underline is used only in variable names where the words in variable name make s
 
 The code is *the* documentation.
 Code should be very readable to avoid writing unnecessary documentation and duplicating routine representations.
-This adds up to using docstrings to give context to the objects or omitting the docstrings.
+This adds up to using docstrings to give context to the objects or omitting the docstrings and documenting the code lines directly.
 TODO: Doxigen or a similar tool should be employed ASAP.
 
 Ideally, every feature will be related to at least one legacy/ routine.
@@ -92,8 +93,8 @@ Ideally, every feature will be related to at least one legacy/ routine.
 
 ```python
 ### Basic usage
-import music as M
-T = M.tables
+import music as M, numpy as n
+T = M.tables.Basic()
 H = M.utils.H
 
 
@@ -120,6 +121,7 @@ s2 = b.render(30)
 s3 = H(s1, s2, s1 + s2, (s1, s2),
        s1*s2[::-1],
        s1[::7] + s2[::7])
+M.core.WS(s3, 'tempMusic.wav')
 
 # X) Tweak with special sets of permutations derived from change ringing (campanology)
 # or from finite group theory (algebra):
@@ -135,7 +137,7 @@ b.nu_= [0]
 b.d_ += [1/2]
 s4 = b.render(nnotes)
 
-b2 = Being()
+b2 = M.core.Being()
 b2.perms = pe4.peal_direct
 b2.domain = b.domain[::-1]
 b2.curseq = 'f_'
@@ -147,7 +149,7 @@ b2.fv_ = [1,3,6,15,100,1000,10000]
 b2.d_ = [1,1/6,1/6,1/6]
 s42 = b2.render(nnotes)
 
-i4 = M.structures.InterstingPermutations(4)
+i4 = M.structures.permutations.InterestingPermutations(4)
 b2.perms = i4.rotations
 b2.curseq = 'f_'
 b2.f_ = []
@@ -156,10 +158,11 @@ s43 = b2.render(nnotes)
 
 s43_ = M.core.F(sonic_vector=s43, d=5, method='lin')
 
+diff = s4.shape[0] - s42.shape[0]
+s42_ = H(s42, n.zeros(diff))
+s_ = H(s3, (s42_, s4), s43_)
 
-s_ = H(s3, (s42, s4), s43_)
-
-M.utils.WS(s_, 'geometric_music.wav')
+M.core.WS(s_, 'geometric_music.wav')
 
 
 ##############
@@ -185,25 +188,28 @@ nnotes = len(freqs)
 
 b = M.core.Being()
 b.f_ = freqs
-bp.render(nnotes, 'theSound_campanology.wav')
+b.render(nnotes, 'theSound_campanology.wav')
 
 ### OR
 b = M.core.Being()
 b.domain = [220, 440, 330]
-b.perms = pe3.direct_peal
+b.perms = pe3.peal_direct
 b.f_ = []
 b.curseq = 'f_'
-bp.stay(nnotes)
-bp.render(nnotes, 'theSound_campanology.wav')
+b.stay(nnotes)
+b.render(nnotes, 'theSound_campanology.wav')
 
 
 ### OR (DEPRECATED, but still kept while not convinced to remove...)
-isynth = M.IteratorSynth()
+isynth = M.synths.IteratorSynth()
 isynth.fundamental_frequency_sequence=freqs
 isynth.fundamental_frequency_sequence=freqs
 isynth.tab_sequence = [T.sine, T.triangle, T.square, T.saw]
 
-pcm_samples = M.H(*[isynth.renderInterate() for i in range(len(freqs))])
+pcm_samples = M.H(*[isynth.renderIterate() for i in range(len(freqs))])
+
+M.core.W(pcm_samples, 'something.wav')
+
 
 #######
 ## More interesting examples are found in:

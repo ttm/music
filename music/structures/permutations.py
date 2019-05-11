@@ -1,4 +1,3 @@
-from percolation.rdf import c
 from sympy.combinatorics import Permutation as P
 import sympy
 
@@ -8,7 +7,6 @@ class InterestingPermutations:
     mirrors are ordered by swaps (0,n-1..)"""
 
     def __init__(self,nelements=4,method="dimino"):
-        c("started permutations with",nelements,"elements")
         self.nelements=nelements
         self.neutral_perm=P([0],size=nelements)
         self.method=method
@@ -17,7 +15,6 @@ class InterestingPermutations:
         self.getAlternating()
         self.getFullSymmetry()
         self.getSwaps()
-        c("finished permutations with",nelements,"elements")
 
     def getAlternating(self):
         self.alternations=list(sympy.combinatorics.named_groups.AlternatingGroup(self.nelements).generate(method=self.method))

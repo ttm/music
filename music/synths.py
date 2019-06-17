@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as n
 import music as M
 #from . import tables

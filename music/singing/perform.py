@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import re
 from scipy.io import wavfile

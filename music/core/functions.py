@@ -272,7 +272,7 @@ S = n.sin(foo)  # one period of a sinusoid with Lt samples
 Q = n.hstack(  ( n.ones(int(Lt/2))*-1, n.ones(int(Lt/2)) )  )
 
 # Triangular
-foo = n.linspace(-1, 1, Lt/2, endpoint=False)
+foo = n.linspace(-1, 1, int(Lt/2), endpoint=False) #Casted Lt/2 as int to avoid TypeError
 Tr = n.hstack(  ( foo, foo[::-1] )   )
 
 # Sawtooth

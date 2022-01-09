@@ -254,9 +254,10 @@ or through your system's packaging system (e.g. apt for Ubuntu).
 Music is intended for artistic uses, but was also designed for uses in psychophysics experiments and data sonification. E.g. the [Versinus](https://github.com/ttm/versinus) animated visualization method for evolving networks uses Music (an older version of it, actually) to render the musical track that represents networks structures.
 
 ### deployment to pypi
-This package іs delivered by running:
-  $ python3 setup.py sdist
-  $ twine upload dist/
+This package іs deployed as follows:
+  $ python3 -m pip install --upgrade build
+  $ python3 -m build
+  $ twine upload dist/*
 
 Maybe use "python setup.py sdist upload -r pypi" ?
 

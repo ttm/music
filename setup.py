@@ -11,15 +11,12 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 setup(
     name='music',
 
-    # Versions should comply with PEP440.  For a discussion on single-sourcing
-    # the version across setup.py and the project code, see
-    # https://packaging.python.org/en/latest/single_source_version.html
-    # version='0.1.dev0',
-    # according to https://semver.org/
-    version='0.7.beta',
+    # Versions should comply with PEP440.
+    version='0.7b1',
 
     description='music is a python package for making music and sounds, based on the MASS framework',
     long_description=long_description,
+    long_description_content_type="text/markdown",
 
     # The project's main homepage.
     url='https://github.com/ttm/music',

@@ -2,7 +2,6 @@ import numpy as n
 from scipy.io import wavfile
 # from .functions import *
 from numbers import Number
-from . import core
 
 def H(*args):
     stereo = 0
@@ -105,27 +104,6 @@ def mixS(l1, l2=[], end=False):
             l1_ = H( n.zeros(( 2, len(l2[0])-len(l1[0]) )), l1 )
         l2_ = l2
     return l1_+l2_
-
-def CF(s1, s2, dur=500, method='lin', fs=44100):
-    """
-    Cross fade in dur milisseconds.
-
-    """
-    ns = int(dur*fs/1000)
-    if len(s1.shape) != len(s2.shape):
-        print('enter s1 and s2 with the same shape')
-    if len(s1.shape) == 2:
-        s1_ = CF(s1[0], s2[0], locals()['dur'],
-                locals()['method'], locals()['fs'])
-        s2_ = CF(s1[1], s2[1], locals()['dur'],
-                locals()['method'], locals()['fs'])
-        s = n.array( (s1_, s2_) )
-        return s
-    s1[-ns:] *= core.F(nsamples=ns, method=method, fs=fs)
-    s2[:ns] *= core.F(nsamples=ns, method=method, fs=fs, out=False)
-    s = J(s1, s2, d = -dur/1000)
-    return s
-
 
 def resolveStereo(afunction, argdict, stereovars=['sonic_vector']):
     ag1 = argdict.copy()

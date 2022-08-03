@@ -12,7 +12,7 @@ setup(
     name='music',
 
     # Versions should comply with PEP440.
-    version='0.7b1',
+    version='0.7b3',
 
     description='music is a python package for making music and sounds, based on the MASS framework',
     long_description=long_description,

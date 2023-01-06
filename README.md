@@ -1,4 +1,91 @@
-# music
+# IMPORTANT
+Don't use these algorithms if you risk seizure or convulsion.
+
+You are welcome to use the audio files created using music for enhancing mental health.
+In fact, there are employment of audiovisual stimulation for mental and neuronal health,
+for example in geriatrics.
+Recreative uses are encouraged, as no downside to brainwave-entrainment seems to be documented.
+Please visit [this modest sample of reports](wikilink) if interested in the theory.
+
+## music
+This set of algorithms now spotlights brainwave entraiment.
+For anyone interested, previous versions of the music framework is documented [MASS](https://github.com/ttm/mass/).
+
+## why
+The scientific literature suporting the benefits of audiovisual stimulation is abundant.
+One might even say that "brainwave entrainment is healthy" is a scientific fact [1][2].
+It lacks both a reliable and promptly available artisan tool
+and a correlate knowledge of specific use cases and their effects.
+
+[1]: alink
+[2]: another link
+
+## how
+The music Python Package makes available reliable open-source psychophysic algorithms that synthesize the sounds
+in "extreme quality".
+Calculations are performed sample-by-sample in large floating-point representations,
+using arbitrary-precision tables and matrix algebra to synthesize hours of tried-and-true PCM audio in (mili)seconds.
+
+The crowd-sourced information about the effects of the brainwave entrainment tracks made available as templates
+helps us better understand and harness brainwave entrainment.
+Please help us: write the effects of any of the hearded pieces and send it as a PR to the [music-data](https://pypi.org/project/music-data/).
+
+## usage
+import music as m, numpy as n
+T = M.tables.Basic('e')
+
+# 
+m.symetry(4).write()
+
+# 
+m.martigli(2).write()
+
+# 
+sym = m.symetry(5)
+mar = m.martigli(20)
+bin = m.binaural(40)  # the binaural frequency reported as raising 5-10% of IQ
+
+sym.mix(mar.mix(bin)).write()
+
+# beats in [0, 5]Hz.
+# At the central frequency (220Hz) of the Martigli oscillation,
+# the audio has a 0Hz beat.
+# At the extremal frequencies (200 and 240Hz), a 5Hz beat.
+m.martigli(20).mix(
+  m.martigli(25)
+).write()
+
+
+
+# starts at 0.3Hz low-theta, and finishes in a 60Hz delta
+m.martigli(20, [220.3, 280])
+  .mix(
+    m.martigli(20)
+  ).write()
+
+m.config.size = 60 * 60  # 1h is the standard piece size
+
+# starts at 0.3Hz low-theta, and finishes in a 60Hz delta
+m.martigli(20, [220.3, 280])
+  .mix(
+    m.martigli(20)
+  ).write()
+
+
+H = M.utils.H
+
+
+
+
+s = m.symetry(4, 'write')
+
+m = m.martigli(2, 'write')
+
+
+M.core.WS(s3, 'tempMusic.wav')
+
+
+music
 A python package to make music and sounds
 based in the [MASS](https://github.com/ttm/mass/) (Music and Audio in Sample Sequences) framework.
 MASS is roughly a collection of psychophysical descriptions of musical elements

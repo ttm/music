@@ -2800,28 +2800,32 @@ def noises(ntype="brown", d=2, fmin=15, fmax=15000, nsamples=0, fs=44100):
         return
     # random phases
     coefs = n.zeros(Lambda)
-    coefs[:Lambda//2] = n.exp(1j*n.random.uniform(0, 2*n.pi, Lambda//2))
-    if Lambda%2==0:
-        coefs[Lambda/2] = 1.  # max freq is only real (as explained in Sec. 2.5)
+    coefs[:Lambda // 2] = n.exp(1j * n.random.uniform(0, 2 * n.pi, Lambda // 2))
+    if Lambda % 2 == 0:
+        coefs[Lambda // 2] = 1.  # max freq is only real (as explained in Sec. 2.5)
 
     df = fs/Lambda
-    i0 = n.floor(fmin/df)  # first coefficient to be considered
-    il = n.floor(fmax/df)  # last coefficient to be considered
+    i0 = int(fmin // df)  # first coefficient to be considered
+    il = int(fmax // df)  # last coefficient to be considered
+    print(i0, 'heyman')
     coefs[:i0] = 0
     coefs[il:] = 0
 
-    factor = 10.**(prog/20.)
-    fi = n.arange(coefs.shape[0])*df # frequencies related to the coefficients
-    alphai = factor**(n.log2(fi[i0:il]/fmin))
+    factor = 10. ** (prog / 20.)
+    fi = n.arange(coefs.shape[0]) * df # frequencies related to the coefficients
+    alphai = factor ** (n.log2(fi[i0:il] / fmin))
     coefs[i0:il] *= alphai
 
-    # coefficients have real part even and imaginary part odd
-    if Lambda%2 == 0:
-        coefs[Lambda//2+1:] = n.conj(coefs[1:-1][::-1])
+    # temporal samples are real, thus:
+    # coefficients have real part even and imaginary part odd
+    if Lambda % 2 == 0:
+        second_half_index = Lambda // 2
+        coefs[second_half_index:] = n.conj(coefs[1:-1][::-1][:second_half_index])
     else:
-        coefs[Lambda//2+1:] = n.conj(coefs[1:][::-1])
+        second_half_index = Lambda // 2 + 1
+        coefs[second_half_index:] = n.conj(coefs[1:][::-1][:second_half_index])
 
-    # Achievement of the temporal samples of the noise
+    # map frequency into time
     noise = n.fft.ifft(coefs).real
     return noise
 

@@ -8,3 +8,5 @@ ipython_log.py
 *.wav
 *.egg-info/
 music/singing/ecantorix/
+dist/
+.DS_Store

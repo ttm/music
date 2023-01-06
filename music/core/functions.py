@@ -1524,7 +1524,7 @@ def VV(f=220, d=2, fv1=2, fv2=6, nu1=2, nu2=4, alphav1=1,
     return s
 
 
-def PVV(f1=220, f2=440, d=2, fv1=2, fv2=6, nu1=2, nu2=.5, alpha=1,
+def PVV(f1=220, f2=440, d=2, fv1=2, fv2=6, nu1=2, nu2=4, alpha=1,
         alphav1=1, alphav2=1, tab=Tr, tabv1=S, tabv2=S, nsamples=0, fs=44100):
     """
     A note with a glissando and a vibrato that also has a secondary oscillatory pattern.

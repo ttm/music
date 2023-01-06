@@ -4,6 +4,7 @@ for key in keys:
     if "music" in key:
         del sys.modules[key]
 from music.core import *
+from music import *
 print('imported')
 
 # basic 5Hz monaural beat:
@@ -154,34 +155,144 @@ tab = S
 
 #### exploration of each tech ####
 
-# binaural with glissandi
+# beat glissandi
+# s2 = N(f, d, tab)
+# s1 = P(f + 0.2, f + 60, d)
+# W(s1 + s2, 'monaural-0.2-60Hz.wav')
+# WS([s1, s2], 'binaural-0.2-60Hz.wav')
+
+# martigli-beat with glissandi
+martigli_depth = nu = 4  # semitones
+mp0 = 20
+mf0 = 1 / mp0
+# s2 = V(f, d, mf0, nu, tab=tab)
+# s1 = PV(f + 0.2, f + 60, d, mf0, nu)
+# W(s1 + s2, 'monaural-0.2-60Hz-20sMartigli.wav')
+# WS([s1, s2], 'binaural-0.2-60Hz-20sMartigli.wav')
+
+##############
+# martigli with a 2.5Hz vibrato
+# s1 = VV(f, d, 2.5, mf0, tab=tab)
+# W(s1, 'monaural-monofonic-Martigli+2.5vibSin.wav')
+# 
+# # martigli with a 5Hz vibrato
+# s2 = VV(f * 2, d, 5, mf0, tab=tab)
+# W(s1 + s2, 'monaural-Martiglis+2.5+5vibSin.wav')
+# WS([s1, s2], 'binaural-Martiglis+2.5+5vibSin.wav')
+# 
+##############
+# # martigli with a 0.5Hz vibrato
+# s1 = VV(f, d, 0.5, mf0, tab=tab)
+# W(s1, 'monaural-monofonic-Martigli+2.5vibSin.wav')
+
+# martigli with a 0.25Hz vibrato
+# s2 = VV(f, d, 0.25, mf0, tab=tab)
+# W(s1 + s2, 'monaural-Martiglis+0.5+0.25vibSin.wav')
+# WS([s1, s2], 'binaural-Martiglis+0.5+0.25vibSin.wav')
+
+###########
+# # martigli-beat-glissando with vibrato
+# # 0.25Hz vibrato
+# s1 = VV(f, d, 5, mf0, tab=tab)
+# s2 = PVV(f, f + 40, d, 5, mf0, tab=tab)
+# W(s1 + s2, 'monaural-Martiglis+0.5+0.25vibSinGliss0-40.wav')
+# WS([s1, s2], 'binaural-Martiglis+0.5+0.25vibSinGliss0-40.wav')
+# 
+# # lowering vibrato depth
+# s1 = VV(f, d, 5, mf0, nu1=0.2, tab=tab)
+# s2 = PVV(f, f + 40, d, 5, mf0, nu1=0.2, tab=tab)
+# W(s1 + s2, 'monaural-Martiglis+0.5+0.25vibSinGliss0-40Soft.wav')
+# WS([s1, s2], 'binaural-Martiglis+0.5+0.25vibSinGliss0-40Soft.wav')
+
+
+#### numerical interlude
+# a = sin(w1) + sin(w2)
+# b = 2 * sin([w1 + w2] / 2) * sin([w1 - w2] / 2)
+# a = b
+# Fourier(a) = Fourier(b) 
+# have all freq w1, w2, w3 = (w1 + w2) / 2, w4 = (w1 - w2) / 2
+# although they are just the sum of w1 and w2?
+
+w1 = 220
+w2 = 223
+d = 2
+fs = 44100
+nsamples = fs * d
+sample_indexes = n.arange(nsamples)
+s1 = n.sin(w1 * 2 * n.pi * sample_indexes / fs)
+s2 = n.sin(w2 * 2 * n.pi * sample_indexes / fs)
+s12 = s1 + s2
+W(s12, 'monaural-220-240-spectrum.wav')
+WS([s1, s2], 'binaural-220-240-spectrum.wav')
+# we can hear the 20Hz beat, but there is no fourier signature
+
+
+p.plot(n.abs(n.fft.fft(s1)))
+p.plot(n.abs(n.fft.fft(s2)))
+p.show()
+p.plot(n.abs(n.fft.fft(s12))) # zero spectral signature for 
+p.show()
+
+# beat mapping (w1, w2), each 2 frequency becomes the mean and deviation:
+w3 = (w1 + w2) / 2
+w4 = (w1 - w2) / 2
+s3 = n.sin(w3 * 2 * n.pi * sample_indexes / fs)
+s4 = n.sin(w4 * 2 * n.pi * sample_indexes / fs)
+s34_ = 2 * s3 * s4
+# a = b => s1 + s2 = 2 * s3 * s4
+
+# beat mapping(w3, w4) becomes w1, w2
+
+# in practice, do we hear both.
+# the frequency and temporal resolution are inversely proportional.
+
+# in the case above, the FFT has the 220 and 223 coefficients (w1, w2),
+# we hear 221.5 and a 1.5 beat (w3, w4).
+# in this case, the sensation w3, w4 is heard although the physical stimulus was w1 + w2.
+
+# what happens if we use not 2 real frequencies, but 3?
+
+# when our resolution between w1 & w2 gives up, we hear w3 and w4.
+
+
+diff = 
+
+p.plot(n.abs(n.fft.fft(s1)))
+p.plot(n.abs(n.fft.fft(s2)))
+p.show()
+p.plot(n.abs(n.fft.fft(s2 + s1))) # zero spectral signature for 
+p.show()
+
+
+
+
 
 # martigli-binaural-sym,
 #   central freq is note
 #   glissandi in central martigli to change note
 #   symmetry for the notes chosen
 
-f = 220
-d = 60 * 15  # 15 min
-tab = S
-mp0 = 20
-fv = mf0 = 1 / mp0
-fe = 40
-s1 = V(f, d, fv, tab=S)
-s2 = V(f + fe, d, fv, tab=S)
-W(s1 + s2, f'monaural-{fe}Hz_with_{mp0}s_vibrato.wav')
-WS([s1, s2], f'binaural-{fe}Hz_with_{mp0}s_vibrato.wav')
-
-# symmetric scale 
-symFreq = 5
-sym_ambit = 2  # an octave
-note_freqs = [f * sym_ambit ** (i / symFreq) for i in range(symFreq)] 
-
-sym = M.structures.symmetry.PlainChanges(symFreq)
-seqs = sum.act()
-seqs_freq = [[note_freqs[i] for i in j] for j in seqs]
-compasses = len(seqs)
-notes = compasses * len(seqs[0])
-
-nsamples_note = s1.shape[0] / notes
+# f = 220
+# d = 60 * 15  # 15 min
+# tab = S
+# mp0 = 20
+# fv = mf0 = 1 / mp0
+# fe = 40
+# s1 = V(f, d, fv, tab=S)
+# s2 = V(f + fe, d, fv, tab=S)
+# W(s1 + s2, f'monaural-{fe}Hz_with_{mp0}s_vibrato.wav')
+# WS([s1, s2], f'binaural-{fe}Hz_with_{mp0}s_vibrato.wav')
+# 
+# # symmetric scale
+# symFreq = 5
+# sym_ambit = 2  # an octave
+# note_freqs = [f * sym_ambit ** (i / symFreq) for i in range(symFreq)] 
+# 
+# sym = structures.symmetry.PlainChanges(symFreq)
+# seqs = sym.act()
+# seqs_freq = [[note_freqs[i] for i in j] for j in seqs]
+# compasses = len(seqs)
+# notes = compasses * len(seqs[0])
+# 
+# nsamples_note = s1.shape[0] / notes
 

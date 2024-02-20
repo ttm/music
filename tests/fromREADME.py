@@ -117,7 +117,7 @@ isynth = M.synths.IteratorSynth()
 isynth.fundamental_frequency_sequence=freqs
 isynth.tab_sequence = [T.sine, T.triangle, T.square, T.saw]
 
-pcm_samples = M.H(*[isynth.renderIterate() for i in range(len(freqs))])
+pcm_samples = H(*[isynth.renderIterate() for i in range(len(freqs))])
 
 M.core.W(pcm_samples, 'something.wav')
 

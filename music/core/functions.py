@@ -335,7 +335,7 @@ def N(f=220, d=2, tab=Tr, nsamples=0, fs=44100):
     samples = n.arange(nsamples)
     l = len(tab)
 
-    Gamma = (samples*f*l/fs).astype(n.int)
+    Gamma = (samples*f*l/fs).astype(n.int64)
     s = tab[ Gamma % l ]
     return s
 
@@ -404,7 +404,7 @@ def N_(f=220, d=2, phase=0, tab=Tr, nsamples=0, fs=44100):
     samples = n.arange(nsamples)
     l = len(tab)
     i0 = phase*l/(2*n.pi)
-    Gamma = (i0 + samples*f*l/fs).astype(n.int)
+    Gamma = (i0 + samples*f*l/fs).astype(n.int64)
     s = tab[ Gamma % l ]
     return s
 
@@ -551,8 +551,8 @@ def loc2(sonic_vector=N(), theta1=90, theta2=0, dist1=.1,
         TR = n.zeros(-Lambda_ITD)
     d_ = d[1:] - d[:-1]
     d2_ = d2[1:] - d2[:-1]
-    d__ = n.cumsum(d_).astype(n.int)
-    d2__ = n.cumsum(d2_).astype(n.int)
+    d__ = n.cumsum(d_).astype(n.int64)
+    d2__ = n.cumsum(d2_).astype(n.int64)
 
 
 def loc_(sonic_vector=N(), theta=-70, x=.1, y=.01, zeta=0.215,
@@ -837,7 +837,7 @@ def V(f=220, d=2, fv=4, nu=2, tab=Tr, tabv=S,
     samples = n.arange(Lambda)
 
     lv = len(tabv)
-    Gammav = (samples*fv*lv/fs).astype(n.int)  # LUT indexes
+    Gammav = (samples*fv*lv/fs).astype(n.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample
     Tv = tabv[ Gammav % lv ] 
 
@@ -848,7 +848,7 @@ def V(f=220, d=2, fv=4, nu=2, tab=Tr, tabv=S,
         F = f*2.**(  (Tv*nu/12)**alpha  ) 
     l = len(tab)
     D_gamma = F*(l/fs)  # shift in table between each sample
-    Gamma = n.cumsum(D_gamma).astype(n.int)  # total shift at each sample
+    Gamma = n.cumsum(D_gamma).astype(n.int64)  # total shift at each sample
     s = tab[ Gamma % l ]  # final sample lookup
     return s
 
@@ -928,7 +928,7 @@ def T(d=2, fa=2, dB=10, alpha=1, taba=S, nsamples=0, sonic_vector=0, fs=44100):
     samples = n.arange(Lambda)
 
     l = len(taba)
-    Gammaa = (samples*fa*l/fs).astype(n.int)  # indexes for LUT
+    Gammaa = (samples*fa*l/fs).astype(n.int64)  # indexes for LUT
     # amplitude variation at each sample
     Ta = taba[ Gammaa % l ] 
     if alpha != 1:
@@ -1354,7 +1354,7 @@ def P(f1=220, f2=440, d=2, alpha=1, tab=S, method="exp",
     else:
         F = f1 + (f2 - f1)*samples/(Lambda-1)
     l = len(tab)
-    Gamma = n.cumsum( F*l/fs ).astype(n.int)
+    Gamma = n.cumsum( F*l/fs ).astype(n.int64)
     s = tab[ Gamma % l ]
     return s
 
@@ -1421,7 +1421,7 @@ def PV(f1=220, f2=440, d=2, fv=4, nu=2, alpha=1,
     samples = n.arange(Lambda)
 
     lv = len(tabv)
-    Gammav = (samples*fv*lv/fs).astype(n.int)  # LUT indexes
+    Gammav = (samples*fv*lv/fs).astype(n.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample
     Tv = tabv[ Gammav % lv ] 
 
@@ -1430,7 +1430,7 @@ def PV(f1=220, f2=440, d=2, fv=4, nu=2, alpha=1,
     else:
         F = f1*(f2/f1)**( samples / (Lambda-1) )*2.**( (Tv*nu/12)**alpha )
     l = len(tab)
-    Gamma = n.cumsum( F*l/fs ).astype(n.int)
+    Gamma = n.cumsum( F*l/fs ).astype(n.int64)
     s = tab[ Gamma % l ]
     return s
 
@@ -1505,12 +1505,12 @@ def VV(f=220, d=2, fv1=2, fv2=6, nu1=2, nu2=4, alphav1=1,
     samples = n.arange(Lambda)
 
     lv1 = len(tabv1)
-    Gammav1 = (samples*fv1*lv1/fs).astype(n.int)  # LUT indexes
+    Gammav1 = (samples*fv1*lv1/fs).astype(n.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample
     Tv1 = tabv1[ Gammav1 % lv1 ] 
 
     lv2 = len(tabv2)
-    Gammav2 = (samples*fv2*lv2/fs).astype(n.int)  # LUT indexes
+    Gammav2 = (samples*fv2*lv2/fs).astype(n.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample
     Tv2 = tabv1[ Gammav2 % lv2 ] 
 
@@ -1519,7 +1519,7 @@ def VV(f=220, d=2, fv1=2, fv2=6, nu1=2, nu2=4, alphav1=1,
     else:
         F = f*2.**( (Tv1*nu1/12))*2.**( (Tv2*nu2/12))
     l = len(tab)
-    Gamma = n.cumsum( F*l/fs ).astype(n.int)
+    Gamma = n.cumsum( F*l/fs ).astype(n.int64)
     s = tab[ Gamma % l ]
     return s
 
@@ -1600,12 +1600,12 @@ def PVV(f1=220, f2=440, d=2, fv1=2, fv2=6, nu1=2, nu2=.5, alpha=1,
     samples = n.arange(Lambda)
 
     lv1 = len(tabv1)
-    Gammav1 = (samples*fv1*lv1/fs).astype(n.int)  # LUT indexes
+    Gammav1 = (samples*fv1*lv1/fs).astype(n.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample
     Tv1 = tabv1[ Gammav1 % lv1 ] 
 
     lv2 = len(tabv2)
-    Gammav2 = (samples*fv2*lv2/fs).astype(n.int)  # LUT indexes
+    Gammav2 = (samples*fv2*lv2/fs).astype(n.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample
     Tv2 = tabv1[ Gammav2 % lv2 ] 
 
@@ -1614,7 +1614,7 @@ def PVV(f1=220, f2=440, d=2, fv1=2, fv2=6, nu1=2, nu2=.5, alpha=1,
     else:
         F = f1*(f2/f1)**( samples / (Lambda-1) )*2.**( (Tv1*nu1/12))*2.**( (Tv2*nu2/12))
     l = len(tab)
-    Gamma = n.cumsum( F*l/fs ).astype(n.int)
+    Gamma = n.cumsum( F*l/fs ).astype(n.int64)
     s = tab[ Gamma % l ]
     return s
 
@@ -1692,7 +1692,7 @@ def PV_(f=[220, 440, 330], d=[[2,3],[2,5,3], [2,5,6,1,.4]],
         for j, dur in enumerate(vib):
             samples = n.arange(dur*fs)
             lv = len(tab[i+1][j])
-            Gammav = (samples*fv[i][j]*lv/fs).astype(n.int)  # LUT indexes
+            Gammav = (samples*fv[i][j]*lv/fs).astype(n.int64)  # LUT indexes
             # values of the oscillatory pattern at each sample
             Tv = tab[i+1][j][ Gammav % lv ] 
             if alpha[i+1][j] != 0:
@@ -1713,7 +1713,7 @@ def PV_(f=[220, 440, 330], d=[[2,3],[2,5,3], [2,5,6,1,.4]],
 
     F = n.prod(V_, axis=0)
     l = len(tab[0][0])
-    Gamma = n.cumsum( F*l/fs ).astype(n.int)
+    Gamma = n.cumsum( F*l/fs ).astype(n.int64)
     s_ = []
     pointer = 0
     for i, t in enumerate(tab[0]):
@@ -2156,10 +2156,10 @@ def D(f=220, d=2, tab=Tr, x=[-10, 10], y=[1,1], stereo=True,
         fl = f*speed/(speed+vsl)
         fr = f*speed/(speed+vsr)
 
-        Gamma = n.cumsum(fl*l/fs).astype(n.int)
+        Gamma = n.cumsum(fl*l/fs).astype(n.int64)
         sl = tab[ Gamma % l ]*IID_al[:-1]
 
-        Gamma = n.cumsum(fr*l/fs).astype(n.int)
+        Gamma = n.cumsum(fr*l/fs).astype(n.int64)
         sr = tab[ Gamma % l ]*IID_ar[:-1]
 
         ITD0 = (dl[0]-dr[0])/speed
@@ -2179,7 +2179,7 @@ def D(f=220, d=2, tab=Tr, x=[-10, 10], y=[1,1], stereo=True,
         vs = fs*(d[1:]-d[:-1])  # velocities at each point
         f_ = f*speed/(speed+vs)
 
-        Gamma = n.cumsum(f_*l/fs).astype(n.int)
+        Gamma = n.cumsum(f_*l/fs).astype(n.int64)
         s = tab[ Gamma % l ]*IID[:-1]
     return s
 
@@ -2287,7 +2287,7 @@ def D_(f=[220, 440, 330], d=[[2,3],[2,5,3], [2,5,6,1,.4],[4,6,1]],
         for j, dur in enumerate(vib):
             samples = n.arange(dur*fs)
             lv = len(tab[i+1][j])
-            Gammav = (samples*fv[i][j]*lv/fs).astype(n.int)  # LUT indexes
+            Gammav = (samples*fv[i][j]*lv/fs).astype(n.int64)  # LUT indexes
             # values of the oscillatory pattern at each sample
             Tv = tab[i+1][j][ Gammav % lv ] 
             if alpha[i+1][j] != 0:
@@ -2378,7 +2378,7 @@ def D_(f=[220, 440, 330], d=[[2,3],[2,5,3], [2,5,6,1,.4],[4,6,1]],
     if not stereo:
         V_.extend(F_)
         F = n.prod(V_, axis=0)
-        Gamma = n.cumsum( F*l/fs ).astype(n.int)
+        Gamma = n.cumsum( F*l/fs ).astype(n.int64)
         s_ = []
         pointer = 0
         for i, t in enumerate(tab[0]):
@@ -2395,7 +2395,7 @@ def D_(f=[220, 440, 330], d=[[2,3],[2,5,3], [2,5,6,1,.4],[4,6,1]],
         # left channel
         Vl = V_ + [F_[0]]
         F = n.prod(Vl, axis=0)
-        Gamma = n.cumsum( F*l/fs ).astype(n.int)
+        Gamma = n.cumsum( F*l/fs ).astype(n.int64)
         s_ = []
         pointer = 0
         for i, t in enumerate(tab[0]):
@@ -2412,7 +2412,7 @@ def D_(f=[220, 440, 330], d=[[2,3],[2,5,3], [2,5,6,1,.4],[4,6,1]],
         # right channel
         Vr = V_ + [F_[1]]
         F = n.prod(Vr, axis=0)
-        Gamma = n.cumsum( F*l/fs ).astype(n.int)
+        Gamma = n.cumsum( F*l/fs ).astype(n.int64)
         s_ = []
         pointer = 0
         for i, t in enumerate(tab[0]):
@@ -2633,7 +2633,7 @@ def FM(f=220, d=2, fm=100, mu=2, tab=Tr, tabm=S,
     samples = n.arange(Lambda)
 
     lm = len(tabm)
-    Gammam = (samples*fm*lm/fs).astype(n.int)  # LUT indexes
+    Gammam = (samples*fm*lm/fs).astype(n.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample
     Tm = tabm[ Gammam % lm ] 
 
@@ -2641,7 +2641,7 @@ def FM(f=220, d=2, fm=100, mu=2, tab=Tr, tabm=S,
     F = f + Tm*mu 
     l = len(tab)
     D_gamma = F*(l/fs)  # shift in table between each sample
-    Gamma = n.cumsum(D_gamma).astype(n.int)  # total shift at each sample
+    Gamma = n.cumsum(D_gamma).astype(n.int64)  # total shift at each sample
     s = tab[ Gamma % l ]  # final sample lookup
     return s
 
@@ -2722,7 +2722,7 @@ def AM(d=2, fm=50, a=.4, taba=S, nsamples=0, sonic_vector=0, fs=44100):
     samples = n.arange(Lambda)
 
     l = len(taba)
-    Gammaa = (samples*fs*l/fs).astype(n.int)  # indexes for LUT
+    Gammaa = (samples*fs*l/fs).astype(n.int64)  # indexes for LUT
     # amplitude variation at each sample
     Ta = taba[ Gammaa % l ] 
     T = 1 + Ta*a

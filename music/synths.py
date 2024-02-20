@@ -67,13 +67,13 @@ class CanonicalSynth:
         Lambda_D=int(D*self.samplerate*0.001) #
         Lambda_R=int(R*self.samplerate*0.001) #
 
-        ii=n.arange(Lambda_A,dtype=n.float)
+        ii=n.arange(Lambda_A,dtype=n.float64)
         A_=ii/(Lambda_A-1)
         A_i=n.copy(A_) #
-        ii=n.arange(Lambda_A,Lambda_D+Lambda_A,dtype=n.float)
+        ii=n.arange(Lambda_A,Lambda_D+Lambda_A,dtype=n.float64)
         D=1-(1-a_S)*(   ( ii-Lambda_A )/( Lambda_D-1) )
         D_i=n.copy(D) #
-        #ii=n.arange(self.Lambda-self.Lambda_R,self.Lambda,dtype=n.float)
+        #ii=n.arange(self.Lambda-self.Lambda_R,self.Lambda,dtype=n.float64)
         #R=self.a_S-self.a_S*((ii-(self.Lambda-self.Lambda_R))/(self.Lambda_R-1))
         R=a_S*(n.linspace(1,0,Lambda_R))
         R_i=n.copy(R) #
@@ -86,7 +86,7 @@ class CanonicalSynth:
     def adsrApply(self,audio_vec):
         Lambda=len(audio_vec)
         S=n.ones(Lambda-self.Lambda_R-(self.Lambda_A+
-                   self.Lambda_D),dtype=n.float)*self.a_S
+                   self.Lambda_D),dtype=n.float64)*self.a_S
         envelope=n.hstack((self.A_i, self.D_i, S, self.R_i))
         return envelope*audio_vec
 
@@ -108,7 +108,7 @@ class CanonicalSynth:
         ii=n.arange(Lambda)
         Lt=len(self.tremolo_table)
         Gammaa_i=n.floor(ii*self.tremolo_frequency*Lt/self.samplerate) # índices para a LUT
-        Gammaa_i=n.array(Gammaa_i,n.int)
+        Gammaa_i=n.array(Gammaa_i,n.int64)
         # variação da amplitude em cada amostra
         A_i=self.tremolo_table[Gammaa_i%Lt]
         A_i=10.**((self.tremolo_depth/20.)*A_i)
@@ -128,7 +128,7 @@ class CanonicalSynth:
         Lv=len(self.vibrato_table)
 
         Gammav_i=n.floor(ii*self.vibrato_frequency*Lv/self.samplerate) # índices para a LUT
-        Gammav_i=n.array(Gammav_i,n.int)
+        Gammav_i=n.array(Gammav_i,n.int64)
         # padrão de variação do vibrato para cada amostra
         Tv_i=self.vibrato_table[Gammav_i%Lv]
 
@@ -139,7 +139,7 @@ class CanonicalSynth:
         D_gamma_i=F_i*(Lt/self.samplerate)
         Gamma_i=n.cumsum(D_gamma_i) # a movimentação na tabela total
         Gamma_i=n.floor( Gamma_i) # já os índices
-        Gamma_i=n.array( Gamma_i, dtype=n.int) # já os índices
+        Gamma_i=n.array( Gamma_i, dtype=n.int64) # já os índices
         return self.table[Gamma_i%int(Lt)] # busca dos índices na tabela
 
     def render2(self,**statevars):
@@ -149,7 +149,7 @@ class CanonicalSynth:
         Lv=len(self.vibrato_table)
 
         Gammav_i=n.floor(ii*self.vibrato_frequency*Lv/self.samplerate) # índices para a LUT
-        Gammav_i=n.array(Gammav_i,n.int)
+        Gammav_i=n.array(Gammav_i,n.int64)
         # padrão de variação do vibrato para cada amostra
         Tv_i=self.vibrato_table[Gammav_i%Lv]
 
@@ -160,7 +160,7 @@ class CanonicalSynth:
         D_gamma_i=F_i*(Lt/self.samplerate)
         Gamma_i=n.cumsum(D_gamma_i) # a movimentação na tabela total
         Gamma_i=n.floor( Gamma_i) # já os índices
-        Gamma_i=n.array( Gamma_i, dtype=n.int) # já os índices
+        Gamma_i=n.array( Gamma_i, dtype=n.int64) # já os índices
         sound=self.table[Gamma_i%int(Lt)] # busca dos índices na tabela
         sound=self.adsrApply(sound)
         return sound
@@ -283,9 +283,9 @@ def sequenceOfStretches(x, s=[1,4,8,12], fs=44100):
     sound = []
     for ss in s:
         if ns/ss >= 1:
-            indexes = n.arange(0, l, ns/ss).round().astype(n.int)
+            indexes = n.arange(0, l, ns/ss).round().astype(n.int64)
         else:
-            indexes = n.arange(0, l-1, ns/ss).round().astype(n.int)
+            indexes = n.arange(0, l-1, ns/ss).round().astype(n.int64)
         if stereo:
             segment = x[:, indexes]
         else:

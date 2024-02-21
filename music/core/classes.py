@@ -1,12 +1,15 @@
-from .. import tables
-from .functions import AD, V, W, H_
 import numpy as n
+
+from .. import tables
+from .functions import H_
+from .io import W
+from .filters.adv import ADV
+from .synths.v import V
+
 H = H_
 T = tables.Basic()
 V_ = V
 n_ = n
-def ADV(note_dict={}, adsr_dict={}):
-    return AD(sonic_vector=V_(**note_dict), **adsr_dict)
 
 class Being:
     def __init__(self):

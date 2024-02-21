@@ -3,6 +3,13 @@ from scipy.io import wavfile
 # from .functions import *
 from numbers import Number
 
+
+def convolve(sig1, sig2):
+    if len(sig1) > len(sig2):
+        return convolve(sig1, sig2)
+    else:
+        return convolve(sig2, sig1)
+
 def H(*args):
     stereo = 0
     args = [n.array(a) for a in args]
@@ -428,3 +435,149 @@ def profile(adict):
     #         print('unrecognized type, implement dealing with it')
     
 V_ = V
+
+def rhythymToDurations(durations=[4, 2, 2, 4, 1,1,1,1, 2, 2, 4],
+        frequencies=None, duration=.25, BPM=None, total_duration=None):
+    """
+    Returns durations from rhythmic patterns.
+
+    Parameters
+    ----------
+    durations : interable of scalars
+        The relative durations of each item (e.g. note).
+    frequencies : iterable of scalars
+        The number of the entry's duration that fits into the pulse.
+        If supplied, durations is ignored.
+    duration : scalar
+        A basic duration (e.g. for the pulse) in seconds.
+    BPM : scalar
+        The number of beats per second.
+        If supplied, duration is ignored.
+    total_duration: scalar
+        The total duration of the sequence in seconds.
+        If supplied, both BPM and duration are ignored.
+
+    Returns
+    -------
+    durs : List of durations in seconds.
+
+    Examples
+    --------
+    >>> dt = [4, 2, 2, 4, 1,1,1,1, 2, 2, 4]
+    >>> durs0 = rhythymToDurations(dt, duration=.25)
+    >>> df = [4, 8, 8, 4, 16, 16, 16, 16, 8, 8, 4]
+    >>> durs0_ = rhythymToDurations(frequencies=df, duration=4)
+    >>> dtut = [4,2,2, [8, 1,1,1], 4, [4, 1,1,.5,.5], 3,1, 3,1, 4]
+    >>> durs1 = rhythymToDurations(dtut)
+    >>> dtuf2 = [4,8,8, [2, 3,3,3], 4, [4, 3,3,6,6], 16/3, 16, 16/3, 16, 4]
+    >>> durs1_ = rhythymToDurations(frequencies=dtut2, duration=4)
+    
+    Notes
+    -----
+    The durations parameter is considered to be in a temporal notation
+    for durations/rhythm: each entry is a relative duration to
+    be multiplied by the base duration given through duration,
+    BPM or total_duration.
+    >>> durs = [i*duration for i in durations]
+
+    The frequencies parameter is considered to be in a
+    frequential notation: each entry is the number of the
+    entry that fits a same duration (also given through duration,
+    BPM or total_duration).
+    >>> durs = [duration/i for i in frequencies]
+
+    The examples above yield (two by two) the same sequences of durations
+    by using duration=0.25 when in temporal notation or
+    duration=4 when in frequency notation.
+
+    To facilitate the description of rhythms (e.g. for tuplets),
+    some set of durations might be an iterable inside durations
+    or frequencies. In this case:
+        ### if mode is temporal:
+            total_dur = cell[0]*duration
+            # durations are proportional to remaining values:
+            d_ = [i/sum(cell[1:]) for i in cell[1:]]
+            durs = [i*total_dur for i in d_]
+        ### if mode is frequential:
+            total_dur = duration/cell[0]
+            # durations are inversely proportional to remaining values:
+            d_ = [i/sum(cell[1:]) for i in cell[1:]]
+            durs = [i*total_dur for i in d_]
+
+    An example for achieving the same sequence of durations through
+    temporal or frequential notation and with cells for tuplets
+    is the last two sequences of the examples.
+
+    It might be a good idea to incorporate also this notation:
+        d2 = [1, 4, 1, 4]  # [quarter note + 4 sixteenth notes] x 2
+
+    Cite the following article whenever you use this function.
+
+    References
+    ----------
+    .. [1] Fabbri, Renato, et al. "Musical elements in the 
+    discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    """
+    if not BPM and not total_duration:
+        dur = duration
+    elif BPM:
+        dur = BPM/60
+    else:
+        dur = None
+    durs = []
+    if frequencies:
+        if not dur:  # obtain from total_dur
+            durs_ = [1/i if not isinstance(i, (list, tuple, n.ndarray)) else 1/i[0] 
+                for i in frequencies]
+            dur = total_duration/sum(durs_)
+        for d in frequencies:
+            if isinstance(d, (list, tuple, n.ndarray)):
+                t_ = dur/d[0] # total timespan
+                d_ = [1/i for i in d[1:]]  # relative durations from the frequency
+                # normalize d_ to sum to t_
+                d__ = [t_*i/sum(d_) for i in d_]
+                # durs = [t_*i/sum(d[1:]) for i in d[1:]]
+                durs.extend(d__)
+            else:
+                durs.append(dur/d)
+    else:
+        if not dur:  #obtain from total_dur
+            durs_ = [i if not isinstance(i, (list, tuple, n.ndarray)) else i[0] 
+                for i in durations]
+            dur = total_duration/sum(durs_)
+        for d in durations:
+            if isinstance(d, (list, tuple, n.ndarray)):
+                t_ = d[0]*dur  # total timespan
+                # relative durations for the potential tuplet
+                d_ = [i/sum(d[1:]) for i in d[1:]]
+                # normalize d_ to fit t_
+                d__ = [i*t_ for i in d_]
+                # durs = [t_*i for i in d[1:]]
+                durs.extend(d__)
+            else:
+                durs.append(d*dur)
+    return durs
+            
+R = rhythymToDurations
+
+def S():
+    # Sine
+    foo = n.linspace(0, 2*n.pi,Lt(), endpoint=False)
+    return n.sin(foo)  # one period of a sinusoid with Lt samples
+
+def Q():
+ # Square
+ return n.hstack(  ( n.ones(int(Lt()/2))*-1, n.ones(int(Lt()/2)) )  )
+
+def Tr():
+    # Triangular
+    foo = n.linspace(-1, 1, Lt()//2, endpoint=False)
+    return n.hstack(  ( foo, foo[::-1] )   )
+
+def Sa():
+    # Sawtooth
+    return n.linspace(-1, 1, Lt())
+
+def Lt():
+    return 1024*16

@@ -1,3 +1,26 @@
+__all__ = {
+    'CanonicalSynth',
+    'IteratorSynth',
+    'D',
+    'D_',
+    'FM',
+    'loc',
+    'loc2',
+    'loc_',
+    'N',
+    'N_',
+    'noises',
+    'P',
+    'PV',
+    'PV_',
+    'PVV',
+    'T',
+    'T_',
+    'trill',
+    'V',
+    'V_'
+}
+
 from .CanonicalSynth import CanonicalSynth
 from .IteratorSynth import IteratorSynth
 

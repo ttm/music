@@ -1,5 +1,6 @@
 import numpy as np
 from ...utils import WAVEFORM_SINE, WAVEFORM_TRIANGULAR
+from ..filters import adsr
 
 
 def note(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
@@ -943,9 +944,8 @@ def note_with_pitches_vibratos(freqs=[220, 440, 330], durations=[[2, 3], [2, 5, 
     return s
 
 
-
 def note_with_vibrato(freq=220, duration=2, vibrato_freq=4,
-                      max_pitch_deviation=2, waveform_table=WAVEFORM_TRIANGULAR,
+                      max_pitch_dev=2, waveform_table=WAVEFORM_TRIANGULAR,
                       vibrato_waveform_table=WAVEFORM_SINE,
                       alpha=1, number_of_samples=0, sample_rate=44100):
     """
@@ -1029,9 +1029,9 @@ def note_with_vibrato(freq=220, duration=2, vibrato_freq=4,
 
     # frequency in Hz at each sample
     if alpha == 1:
-        f = freq * 2. ** (t_v * max_pitch_deviation / 12)
+        f = freq * 2. ** (t_v * max_pitch_dev / 12)
     else:
-        f = freq * 2. ** ((t_v * max_pitch_deviation / 12) ** alpha)
+        f = freq * 2. ** ((t_v * max_pitch_dev / 12) ** alpha)
     waveform_table_length = len(waveform_table)
     d_gamma = f * (waveform_table_length / sample_rate)  # shift in table between each sample
     gamma = np.cumsum(d_gamma).astype(np.int64)  # total shift at each sample
@@ -1040,7 +1040,7 @@ def note_with_vibrato(freq=220, duration=2, vibrato_freq=4,
 
 
 def note_with_vibratos(freq=220, duration=2, vibrato_freq=2, secondary_vibrato_freq=6, nu1=2, nu2=4, alphav1=1,
-                       alphav2=1, waveform_table=triangular_waveform(), vibrato_waveform_table=WAVEFORM_SINE, secondary_vibrato_waveform_table=WAVEFORM_SINE, number_of_samples=0, sample_rate=44100):
+                       alphav2=1, waveform_table=WAVEFORM_TRIANGULAR, vibrato_waveform_table=WAVEFORM_SINE, secondary_vibrato_waveform_table=WAVEFORM_SINE, number_of_samples=0, sample_rate=44100):
     """
     A note with a vibrato that also has a secondary oscillatory pattern.
 
@@ -1182,7 +1182,7 @@ def trill(freqs=[440, 440 * 2 ** (2 / 12)], notes_per_second=17, duration=5, sam
         ns = int(number_of_samples*(i+1) - pointer)
         note = note(freqs[i % len(freqs)], number_of_samples=ns,
                     waveform_table=WAVEFORM_TRIANGULAR, sample_rate=sample_rate)
-        s.append(synth_adsr_envelope(sonic_vector=note, release_duration=10))
+        s.append(adsr(sonic_vector=note, release_duration=10))
         pointer += ns
         i += 1
     return np.hstack(s)

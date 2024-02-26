@@ -3,6 +3,7 @@ from .notes import *
 from .noises import *
 
 __all__ = [
+    'am',
     'note',
     'note_with_doppler',
     'note_with_fm',

@@ -1,6 +1,6 @@
 import numpy as np
 from .loud import loud
-from ...utils import resolveStereo, J
+from ...utils import resolve_stereo, mix_with_offset
 
 
 def fade(duration=2, fade_out=True, method="exp", dB=-80, alpha=1, perc=1,
@@ -69,7 +69,7 @@ def fade(duration=2, fade_out=True, method="exp", dB=-80, alpha=1, perc=1,
     """
     if type(sonic_vector) in (np.ndarray, list):
         if len(sonic_vector.shape) == 2:
-            return resolveStereo(fade, locals())
+            return resolve_stereo(fade, locals())
         N = len(sonic_vector)
     elif number_of_samples:
         N = number_of_samples
@@ -118,5 +118,5 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin', sampl
         return s
     sonic_vector_1[-ns:] *= fade(number_of_samples=ns, method=method, sample_rate=sample_rate)
     sonic_vector_2[:ns] *= fade(number_of_samples=ns, method=method, sample_rate=sample_rate, fade_out=False)
-    s = J(sonic_vector_1, sonic_vector_2, d =-duration / 1000)
+    s = mix_with_offset(sonic_vector_1, sonic_vector_2, duration=-duration / 1000)
     return s

@@ -11,6 +11,29 @@ SONIC_VECTOR_MONO = np.random.uniform(size=100000)
 SONIC_VECTOR_STEREO = np.vstack((np.random.uniform(size=100000), np.random.uniform(size=100000)))
 
 
+def read_wav(filename: str):
+    """Reads a WAV file and return an array of its values.
+
+    Parameters
+    ----------
+    filename : string
+        File name
+
+    Returns
+    -------
+    NDArray
+        Values of the WAV file
+    """
+    s = wavfile.read(filename)
+    print(type(s[1] / 2 ** 15))
+    if s[1].dtype != 'int16':
+        print('implement non 16bit samples!')
+        return np.array(None)
+    if len(s[1].shape) == 2:
+        return np.array(s[1].tremolo / 2 ** 15)
+    return s[1] / 2 ** 15
+
+
 def write_wav_mono(sonic_vector=SONIC_VECTOR_MONO, filename="asound.wav", sample_rate=44100,
                    fades=0, bit_depth=16, remove_bias=True):
     """Writes a mono WAV file for a numpy array.

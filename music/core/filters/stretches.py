@@ -1,5 +1,5 @@
 import numpy as np
-from music.utils import H
+from music.utils import stereo_horizontal_stack
 
 
 def stretches(x, durations=[1, 4, 8, 12], sample_rate=44100):
@@ -17,7 +17,7 @@ def stretches(x, durations=[1, 4, 8, 12], sample_rate=44100):
 
     Examples
     --------
-    >>> asound = H(*[V(f=i, fv=j) for i, j in zip([220,440,330,440,330],
+    >>> asound = stereo_horizontal_stack(*[V(f=i, fv=j) for i, j in zip([220,440,330,440,330],
                                                   [.5,15,6,5,30])])
     >>> s = stretches(asound)
     >>> s = stretches(asound,durations=[.2,.3]*10+[.1,.2,.3,.4]*8+[.5,1.5,.5,1.,5.,.5,.25,.25,.5, 1., .5]*2)
@@ -52,5 +52,5 @@ def stretches(x, durations=[1, 4, 8, 12], sample_rate=44100):
         else:
             segment = x[indexes]
         sound.append(segment)
-    sound_ = H(*sound)
+    sound_ = stereo_horizontal_stack(*sound)
     return sound_

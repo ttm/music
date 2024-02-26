@@ -1,32 +1,33 @@
-import numpy as n
-from music.utils import convolve
-from music.core.synths import noises
+import numpy as np
+from ..synths import noise
 
-def R(d=1.9, d1=0.15, decay=-50, stat="brown", sonic_vector=0, fs=44100):
+
+def reverb(duration=1.9, first_phase_duration=0.15, decay=-50,
+           noise_type="brown", sonic_vector=0, sample_rate=44100):
     """
     Apply an artificial reverberation or return the impulse response.
 
     Parameters
     ----------
-    d : scalar
+    duration : scalar
         The total duration of the reverberation in seconds.
-    d1 : scalar
+    first_phase_duration : scalar
         The duration of the first phase of the reverberation
         in seconds.
     decay : scalar
         The total decay of the last incidence in decibels.
-    stat : string or scalar
+    noise_type : string or scalar
         A string or scalar specifying the noise.
         Passed to noises(ntype=scalar).
     sonic_vector : array_like
         An optional one dimensional array for the reverberation to
         be applied.
-    fs : scalar
+    sample_rate : scalar
         The sampling frequency.
 
     Returns
     -------
-    s : numpy.ndarray
+    result : numpy.ndarray
         An array if the impulse response of the reverberation
         (if sonic_vector is not specified),
         or with the reverberation applied to sonic_vector.
@@ -53,24 +54,25 @@ def R(d=1.9, d1=0.15, decay=-50, stat="brown", sonic_vector=0, fs=44100):
     arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
-    Lambda = int(d*fs)
-    Lambda1 =  int(d1*fs)
-    # Sound reincidence probability probability in the first period:
-    ii = n.arange(Lambda)
-    P = (ii[:Lambda1]/Lambda1)**2.
+    Lambda = int(duration * sample_rate)
+    Lambda1 = int(first_phase_duration * sample_rate)
+    # Sound reincidence probability in the first period:
+    ii = np.arange(Lambda)
+    p = (ii[:Lambda1] / Lambda1) ** 2.
     # incidences:
-    R1_ = n.random.random(Lambda1) < P
-    A = 10.**( (decay1/20)*(ii/(Lambda-1)) )
-    ### Eq. 76 First period of reverberation:
-    R1 = R1_*A[:Lambda1]  # first incidences
+    r1_ = np.random.random(Lambda1) < p
+    a = 10. ** ((decay / 20) * (ii / (Lambda - 1)))
+    # Eq. 76 First period of reverberation:
+    r1 = r1_ * a[:Lambda1]  # first incidences
 
-    ### Eq. 77 Second period of reverberation:
-    noise = noises(ntype, fmax=fs/2, nsamples=Lambda-Lambda1)
-    R2 = noise*A[Lambda1:Lambda]
-    ### Eq. 78 Impulse response of the reverberation
-    R = n.hstack((R1,R2))
-    R[0] = 1.
-    if type(sonic_vector) in (n.ndarray, list):
-        return convolve(sonic_vector, R)
+    # Eq. 77 Second period of reverberation:
+    noise = noise(noise_type, max_freq=sample_rate / 2, number_of_samples=Lambda - Lambda1)
+    r2 = noise * a[Lambda1:Lambda]
+
+    # Eq. 78 Impulse response of the reverberation
+    result = np.hstack((r1, r2))
+    result[0] = 1.
+    if type(sonic_vector) in (np.ndarray, list):
+        return np.convolve(sonic_vector, result)
     else:
-        return R
+        return result

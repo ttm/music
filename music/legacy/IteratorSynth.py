@@ -16,7 +16,7 @@ class IteratorSynth(CanonicalSynth):
     >>> sounds=[]
     >>> for i in range(300):
             sounds += [isynth.renderIterate(tremolo_frequency=.2*i)]
-    >>> M.utils.write(M.H(*sounds),"./example.wav")
+import music.core.io    >>> music.core.io.write_wav_mono(M.H(*sounds),"./example.wav")
 
     """
 

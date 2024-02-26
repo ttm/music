@@ -32,7 +32,7 @@ class CanonicalSynth:
     def __init__(s, **statevars):
         s.absorbState(**statevars)
         if "tables" not in dir(s):
-            s.tables = M.tables.Basic()
+            s.tables = M.legacy.tables.Basic()
         if "samplerate" not in dir(s):
             s.samplerate = 44100
         s.synthSetup()

@@ -1,7 +1,7 @@
 import numpy as n
 
-from music import tables
-from music.utils import H
+from music.legacy import tables
+from music.utils import stereo_horizontal_stack
 from music.core.io import write_wav_mono
 from music.core.filters.adsr import adsr
 from music.core.synths.notes import note_with_vibrato
@@ -107,7 +107,7 @@ class Being:
         if type(self.__dict__[self.curseq]) == list:
             self.__dict__[self.curseq].extend(sequence)
         else:
-            self.__dict__[self.curseq] = H(self.__dict__[self.curseq], sequence)
+            self.__dict__[self.curseq] = stereo_horizontal_stack(self.__dict__[self.curseq], sequence)
 
     def render(self, nn, fn=False):
         # Render nn notes of the Being!
@@ -129,9 +129,9 @@ class Being:
                 fn = 'abeing.wav'
             if fn[-4:] != '.wav':
                 fn += '.wav'
-            write_wav_mono(H(*notes), fn)
+            write_wav_mono(stereo_horizontal_stack(*notes), fn)
         else:
-            return H(*notes)
+            return stereo_horizontal_stack(*notes)
 
     def startBeing(self):
         self.dscale = 1

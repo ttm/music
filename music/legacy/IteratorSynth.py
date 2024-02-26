@@ -1,8 +1,9 @@
-from . import CanonicalSynth
+from .CanonicalSynth import CanonicalSynth
+
 
 class IteratorSynth(CanonicalSynth):
     """A synth that iterates through arbitrary lists of variables
-    
+
 
     Any variable used by the CanonicalSynth can be used.
     Just append the variable name with the token _sequence.

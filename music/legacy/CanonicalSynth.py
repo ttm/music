@@ -71,7 +71,7 @@ class CanonicalSynth:
         ii=n.arange(Lambda_A,Lambda_D+Lambda_A,dtype=n.float64)
         D=1-(1-a_S)*(   ( ii-Lambda_A )/( Lambda_D-1) )
         D_i=n.copy(D) #
-        #ii=n.arange(self.Lambda-self.Lambda_R,self.Lambda,dtype=n.float64)
+        #ii=np.arange(self.Lambda-self.Lambda_R,self.Lambda,dtype=np.float64)
         #R=self.a_S-self.a_S*((ii-(self.Lambda-self.Lambda_R))/(self.Lambda_R-1))
         R=a_S*(n.linspace(1,0,Lambda_R))
         R_i=n.copy(R) #

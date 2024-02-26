@@ -1,15 +1,22 @@
 import numpy as n
 
-from .. import tables
-from .functions import H_
-from .io import W
-from .filters.adv import ADV
-from .synths.v import V
+from music import tables
+from music.utils import H
+from music.core.io import write_wav_mono
+from music.core.filters.adsr import adsr
+from music.core.synths.notes import note_with_vibrato
+from music.utils import WAVEFORM_TRIANGULAR, WAVEFORM_SINE
 
-H = H_
 T = tables.Basic()
-V_ = V
 n_ = n
+
+def V_(st=0, freq=220, duration=2., vibrato_freq=2., max_pitch_dev=2., waveform_table=WAVEFORM_TRIANGULAR, vibrato_waveform_table=WAVEFORM_SINE):
+    """A shorthand for using V() with semitones"""
+    f_ = freq * 2 ** (st / 12)
+    return note_with_vibrato(freq=f_, duration=2., vibrato_freq=2., max_pitch_dev=2., waveform_table=WAVEFORM_TRIANGULAR, vibrato_waveform_table=WAVEFORM_SINE)
+
+def ADV(note_dict={}, adsr_dict={}):
+    return adsr(sonic_vector=V_(**note_dict), **adsr_dict)
 
 class Being:
     def __init__(self):
@@ -47,7 +54,7 @@ class Being:
         self.startBeing()
 
     def walk(self, n, method='straight'):
-        # walk n steps up (n<0 => walk |n| steps down, n==0 => don't move, return []
+        # walk np steps up (np<0 => walk |np| steps down, np==0 => don't move, return []
         if method == 'straight':
             # ** TTM
             sequence = [self.grid[self.pointer + i] for i in range(n)]
@@ -71,7 +78,7 @@ class Being:
         self.perms = perms
 
     def stay(self, n, method='perm'):
-        # stay somewhere for n notes (n<0 => stay for n cycles or n permutations)
+        # stay somewhere for np notes (np<0 => stay for np cycles or np permutations)
         if method == 'straight':
             sequence = [self.grid[(self.pointer + i) % self.seqsize] for i in range(n)]
         elif method == 'perm':
@@ -107,22 +114,22 @@ class Being:
         # Render with legatto, with V__ or whatever it is called
         self.mkArray()
         ii = n.arange(nn)
-        d = self.d_[ii%len(self.d_)]*self.dscale
-        f = self.f_[ii%len(self.f_)]
-        tab = self.tab_[ii%len(self.tab_)]
-        fv = self.fv_[ii%len(self.fv_)]
-        nu = self.nu_[ii%len(self.nu_)]
+        duration = self.d_[ii%len(self.d_)]*self.dscale
+        freq = self.f_[ii%len(self.f_)]
+        waveform_table = self.tab_[ii%len(self.tab_)]
+        vibrato_freq = self.fv_[ii%len(self.fv_)]
+        max_pitch_dev = self.nu_[ii%len(self.nu_)]
         A = self.A_[ii%len(self.A_)]
         D = self.D_[ii%len(self.D_)]
         S = self.S_[ii%len(self.S_)]
         R = self.R_[ii%len(self.R_)]
-        notes = [ADV({'f':ff, 'd':dd, 'fv':fvv, 'nu':nuu, 'tab': tabb}, {'A':AA, 'D': DD, 'S': SS, 'R':RR}) for ff,dd,fvv,nuu,tabb,AA,DD,SS,RR in zip(f, d, fv, nu, tab, A, D, S, R)]
+        notes = [ADV({'freq':ff, 'duration':dd, 'vibrato_freq':fvv, 'max_pitch_dev':nuu, 'waveform_table': tabb}, {'attack_duration':AA, 'decay_duration': DD, 'sustain_level': SS, 'release_duration':RR}) for ff,dd,fvv,nuu,tabb,AA,DD,SS,RR in zip(freq, duration, vibrato_freq, max_pitch_dev, waveform_table, A, D, S, R)]
         if fn:
             if type(fn) != str:
                 fn = 'abeing.wav'
             if fn[-4:] != '.wav':
                 fn += '.wav'
-            W(H(*notes), fn)
+            write_wav_mono(H(*notes), fn)
         else:
             return H(*notes)
 

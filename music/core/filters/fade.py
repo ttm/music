@@ -3,7 +3,7 @@ from .loud import loud
 from ...utils import resolve_stereo, mix_with_offset
 
 
-def fade(duration=2, fade_out=True, method="exp", dB=-80, alpha=1, perc=1,
+def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
          number_of_samples=0, sonic_vector=0, sample_rate=44100):
     """
     A fade in or out.
@@ -20,7 +20,7 @@ def fade(duration=2, fade_out=True, method="exp", dB=-80, alpha=1, perc=1,
     method : string
         "exp" for an exponential transition of amplitude (linear loudness).
         "linear" for a linear transition of amplitude.
-    dB : scalar
+    db : scalar
         The decibels from which to reach before using
         the linear transition to reach zero.
         Not used if method="linear".
@@ -64,36 +64,37 @@ def fade(duration=2, fade_out=True, method="exp", dB=-80, alpha=1, perc=1,
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time representation of sound."
+           arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     if type(sonic_vector) in (np.ndarray, list):
         if len(sonic_vector.shape) == 2:
             return resolve_stereo(fade, locals())
-        N = len(sonic_vector)
+        n = len(sonic_vector)
     elif number_of_samples:
-        N = number_of_samples
+        n = number_of_samples
     else:
-        N = int(sample_rate * duration)
+        n = int(sample_rate * duration)
     if 'lin' in method:
         if fade_out:
-            ai = loud(method="linear", trans_dev=0, number_of_samples=N)
+            ai = loud(method="linear", trans_dev=0, number_of_samples=n)
         else:
-            ai = loud(method="linear", to=0, trans_dev=0, number_of_samples=N)
+            ai = loud(method="linear", to=0, trans_dev=0, number_of_samples=n)
     if 'exp' in method:
-        N0 = int(N*perc/100)
-        N1 = N - N0
+        n0 = int(n*perc/100)
+        n1 = n - n0
         if fade_out:
-            ai1 = loud(trans_dev=dB, alpha=alpha, number_of_samples=N1)
-            if N0:
-                ai0 = loud(method="linear", trans_dev=0, number_of_samples=N0) * ai1[-1]
+            ai1 = loud(trans_dev=db, alpha=alpha, number_of_samples=n1)
+            if n0:
+                ai0 = loud(method="linear", trans_dev=0, number_of_samples=n0) * ai1[-1]
             else:
                 ai0 = []
             ai = np.hstack((ai1, ai0))
         else:
-            ai1 = loud(trans_dev=dB, to=0, alpha=alpha, number_of_samples=N1)
-            if N0:
-                ai0 = loud(method="linear", to=0, trans_dev=0, number_of_samples=N0) * ai1[0]
+            ai1 = loud(trans_dev=db, to=0, alpha=alpha, number_of_samples=n1)
+            if n0:
+                ai0 = loud(method="linear", to=0, trans_dev=0, number_of_samples=n0) * ai1[0]
             else:
                 ai0 = []
             ai = np.hstack((ai0, ai1))

@@ -4,34 +4,36 @@ for key in keys:
     if "music" in key:
         del sys.modules[key]
 import music as M
-from percolation.rdf import c
-H = M.utils.H
+import numpy as n
+#from percolation.rdf import c
+H = M.utils.stereo_horizontal_stack
 
-durs  = 1,  1, 1, 1      ,1,1, 1, 1
-notes = 0,  2,   4,  5,   7,9, 11, 12
-text  = 'sin-ging my ass out for you yes'
-sonic_vector=M.singing.sing(text = text, notes=notes,reference=60,
-        durs=durs,Q=120,lang='en',M="4/4",transpose=0)
-sonic_vector_=M.singing.sing(text = text, notes=notes[::-1],reference=60,
-        durs=durs,Q=120,lang='en',M="4/4",transpose=0)
-M.utils.write(H(sonic_vector,sonic_vector_)
-    ,filename="some.wav",samplerate=44100)
+# durs  = 1,  2,   1,  2,   1, 2
+# notes = 0,  2,   3,  2,   8,7,
+# text  = 'wake up  out of your sleep'
+# sonic_vector=M.singing.sing(text = text, notes=notes,
+#         durs=durs,Q=120,lang='en',M="3/4")
 
-durs  = 1,  1, 1, 1      ,1,1, 1, 1
-notes = 0,  2,   3,  5,   7,9, 11, 12
-notes_ = 12, 10, 8, 7, 5, 3, 2, 0
-text  = 'sin-ging my ass out for you yes'
-sonic_vector=M.singing.sing(text = text, notes=notes,reference=60,
-        durs=durs,Q=120,lang='en',M="4/4",transpose=0)
-sonic_vector_=M.singing.sing(text = text, notes=notes_,reference=60,
-        durs=durs,Q=120,lang='en',M="4/4",transpose=0)
-M.utils.write(H(sonic_vector,sonic_vector_)
-    ,filename="some_.wav",samplerate=44100)
+# M.utils.write(sonic_vector,filename="some.wav",samplerate=44100)
+#
+# sonic_vector=M.singing.sing(text = "wa-a-a-a-a-a", notes=notes,
+#         durs=durs,Q=120,lang='en',K="Cm")
 
-sonic_vector=M.singing.sing(text = text, notes=notes,reference=60,
-        durs=durs,Q=120,lang='en',M="4/4",transpose=0)
-sonic_vector_=M.singing.sing(text = text, notes=notes_,reference=60,
-        durs=durs,Q=120,lang='en',M="4/4",transpose=0)
-M.utils.write(H(sonic_vector,sonic_vector_)
-    ,filename="some__.wav",samplerate=44100)
+sonic_vector = M.singing.sing(text = 'eu a-mo a ta-ís tei-xei-ra fa-bri', notes=(0, 5,5, 4, 2,7, 7,8,7, 4,0), durs=(2, 1,2, 1, 1,2, 1,1,1, 1,2), lang = 'pt',transpose=0, reference=60-36)
+M.utils.write(sonic_vector,filename="thirdChant.wav",samplerate=44100)
 
+
+peal = M.structures.symmetry.PlainChanges(3,1)
+semi = 2**(1/12)
+f0 = 220*2
+notes = [f0, f0*semi**4, f0*semi**8]
+sy = M.synths.CanonicalSynth()
+note_vecs = []
+for permutation in peal.peal_direct:
+    notes_ = permutation(notes)
+    print(notes_)
+    for note in notes_:
+        note_vector = sy.render(fundamental_frequency=note, duration=.2)
+        note_vecs.append(note_vector)
+peal_vec = n.hstack(note_vecs*4)
+M.utils.write(peal_vec, filename='peal.wav', samplerate=44100)

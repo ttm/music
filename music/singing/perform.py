@@ -73,6 +73,7 @@ def translate_to_abc(notes, durs, reference):
 class Notes:
     def __init__(self):
         self.notes_dict = None
+        self.make_dict()
 
     def make_dict(self):
         notes = re.findall(r'[\^=]?[a-g]', '=c^c=d^de=f^f=g^g=a^ab')

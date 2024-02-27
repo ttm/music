@@ -1,4 +1,6 @@
 import numpy as np
+from numbers import Number
+
 
 def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
           number_of_samples=0, sample_rate=44100):
@@ -28,6 +30,8 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
         It should be > fmin.
     number_of_samples : integer
         The number of samples of the resulting sonic vector.
+    sample_rate : integer
+        _description_
 
     Notes
     -----
@@ -46,9 +50,9 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
 
     """
     if number_of_samples:
-        Lambda = number_of_samples
+        lambda_noise = number_of_samples
     else:
-        Lambda = int(duration * sample_rate)
+        lambda_noise = int(duration * sample_rate)
     if noise_type == "white":
         prog = 0
     elif noise_type == "pink":
@@ -69,61 +73,73 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
                 Check docstring for more information.")
         return
     # random phases
-    coefs = np.zeros(Lambda)
-    coefs[:Lambda//2] = np.exp(1j * np.random.uniform(0, 2 * np.pi, Lambda // 2))
-    if Lambda%2==0:
-        coefs[Lambda/2] = 1.  # max freq is only real (as explained in Sec. 2.5)
+    coefs = np.zeros(lambda_noise)
+    coefs[:lambda_noise // 2] = np.exp(1j * np.random.uniform(0, 2 * np.pi, lambda_noise // 2))
+    if lambda_noise % 2 == 0:
+        coefs[lambda_noise / 2] = 1.  # max freq is only real (as explained in Sec. 2.5)
 
-    df = sample_rate / Lambda
+    df = sample_rate / lambda_noise
     i0 = np.floor(min_freq / df)  # first coefficient to be considered
     il = np.floor(max_freq / df)  # last coefficient to be considered
     coefs[:i0] = 0
     coefs[il:] = 0
 
-    factor = 10.**(prog/20.)
-    fi = np.arange(coefs.shape[0]) * df # frequencies related to the coefficients
-    alphai = factor**(np.log2(fi[i0:il] / min_freq))
+    factor = 10. ** (prog / 20.)
+    fi = np.arange(coefs.shape[0]) * df  # frequencies related to the coefficients
+    alphai = factor ** (np.log2(fi[i0:il] / min_freq))
     coefs[i0:il] *= alphai
 
     # coefficients have real part even and imaginary part odd
-    if Lambda%2 == 0:
-        coefs[Lambda//2+1:] = np.conj(coefs[1:-1][::-1])
+    if lambda_noise % 2 == 0:
+        coefs[lambda_noise // 2 + 1:] = np.conj(coefs[1:-1][::-1])
     else:
-        coefs[Lambda//2+1:] = np.conj(coefs[1:][::-1])
+        coefs[lambda_noise // 2 + 1:] = np.conj(coefs[1:][::-1])
 
     # Achievement of the temporal samples of the noise
     noise = np.fft.ifft(coefs).real
     return noise
 
 
-def makeGaussianNoise(self,mean,std,DUR=2):
-    Lambda = DUR*self.samples_beat # Lambda sempre par
-    df = self.samplerate/float(Lambda)
-    MEAN=mean
-    STD=.1
-    coefs = np.exp(1j * np.random.uniform(0, 2 * np.pi, Lambda))
+def make_gaussian_noise(mean, std, duration=2):
+    """
+    Make gaussian noises.
+
+    Parameters
+    ----------
+    mean
+    std
+    duration
+
+    Returns
+    -------
+
+    """
+    # FIXME: unresolved samples_beat and samplerate
+    lambda_noise = duration * samples_beat  # Lambda sempre par
+    df = samplerate / float(lambda_noise)
+    coefs = np.exp(1j * np.random.uniform(0, 2 * np.pi, lambda_noise))
     # real par, imaginaria impar
-    coefs[Lambda/2+1:] = np.real(coefs[1:Lambda / 2])[::-1] - 1j * \
-                         np.imag(coefs[1:Lambda / 2])[::-1]
+    coefs[lambda_noise / 2 + 1:] = np.real(coefs[1:lambda_noise / 2])[::-1] - 1j * \
+                                   np.imag(coefs[1:lambda_noise / 2])[::-1]
     coefs[0] = 0.  # sem bias
-    if Lambda%2==0:
-        coefs[Lambda/2] = 0.  # freq max eh real simplesmente
+    if lambda_noise % 2 == 0:
+        coefs[lambda_noise / 2] = 0.  # freq max eh real simplesmente
 
     # as frequências relativas a cada coeficiente
     # acima de Lambda/2 nao vale
     fi = np.arange(coefs.shape[0]) * df
     f0 = 15.  # iniciamos o ruido em 15 Hz
-    f1=(mean-std/2)*3000
-    f2=(mean+std/2)*3000
+    f1 = (mean - std / 2) * 3000
+    f2 = (mean + std / 2) * 3000
     i1 = np.floor(f1 / df)  # primeiro coef a valer
     i2 = np.floor(f2 / df)  # ultimo coef a valer
     coefs[:i1] = np.zeros(i1)
-    coefs[i2:]=np.zeros(len(coefs[i2:]))
+    coefs[i2:] = np.zeros(len(coefs[i2:]))
 
     # obtenção do ruído em suas amostras temporais
     ruido = np.fft.ifft(coefs)
     r = np.real(ruido)
-    r = ((r-r.min())/(r.max()-r.min()))*2-1
+    r = ((r - r.min()) / (r.max() - r.min())) * 2 - 1
 
     # fazer tre_freq variar conforme measures2
     return r

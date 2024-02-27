@@ -49,7 +49,7 @@ class TestSong2:
         M.core.io.write_wav_mono(tremolos,"TV.wav") # saved to fooname.wav
 
         f0=220.
-        M_=M.utils.midi2HzInterval
+        M_=M.utils.midi_to_hz_interval
         H=np.hstack
         R=synth.render2
         notes_=[T(tremolo_depth=2.,duration=4.)*R(fundamental_frequency=f0*M_(7),duration=4.,vibrato_frequency=4.)+

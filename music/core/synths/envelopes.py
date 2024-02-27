@@ -1,13 +1,13 @@
 import numpy as np
 from music.utils import WAVEFORM_SINE, WAVEFORM_TRIANGULAR
 
-
+# FIXME: Unused param (`fm`)
 def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
        number_of_samples=0, sonic_vector=0, sample_rate=44100):
     """
     Synthesize an AM envelope or apply it to a sound.
 
-    Set fm=0 or a=0 for a constant envelope with value 1.
+    Set fm=0 or max_amplitude=0 for a constant envelope with value 1.
     An AM is a linear oscillatory pattern of amplitude [1].
 
     Parameters
@@ -16,7 +16,7 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
         The duration of the envelope in seconds.
     fm : scalar
         The frequency of the modular in Hertz.
-    a : scalar in [0,1]
+    max_amplitude : scalar in [0,1]
         The maximum deviation of amplitude of the AM.
     waveform_table : array_like
         The table with the waveform for the tremolo oscillatory pattern.
@@ -30,7 +30,7 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
 
     Returns
     -------
-    T : ndarray
+    t : ndarray
         A numpy array where each value is a PCM sample
         of the envelope.
         if sonic_vector is 0.
@@ -71,24 +71,24 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
 
     waveform_table = np.array(waveform_table)
     if type(sonic_vector) in (np.ndarray, list):
-        Lambda = len(sonic_vector)
+        lambda_am = len(sonic_vector)
     elif number_of_samples:
-        Lambda = number_of_samples
+        lambda_am = number_of_samples
     else:
-        Lambda = np.floor(sample_rate * duration)
-    samples = np.arange(Lambda)
+        lambda_am = np.floor(sample_rate * duration)
+    samples = np.arange(lambda_am)
 
     l = len(waveform_table)
-    Gammaa = (samples * sample_rate * l / sample_rate).astype(np.int64)  # indexes for LUT
+    gamma_am = (samples * sample_rate * l / sample_rate).astype(np.int64)  # indexes for LUT
     # amplitude variation at each sample
-    Ta = waveform_table[Gammaa % l]
-    T = 1 + Ta * a
+    t_am = waveform_table[gamma_am % l]
+    t = 1 + t_am * max_amplitude
     if type(sonic_vector) in (np.ndarray, list):
-        return T * sonic_vector
+        return t * sonic_vector
     else:
-        return T
-    
-    
+        return t
+
+
 def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
             waveform_table=WAVEFORM_SINE, number_of_samples=0,
             sonic_vector=0, sample_rate=44100):
@@ -135,10 +135,10 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
 
     Examples
     --------
-    >>> W(V()*T())  # writes a WAV file of a note with tremolo
-    >>> s = H( [V()*T(fa=i, dB=j) for i, j in zip([6, 15, 100], [2, 1, 20])] )  # OR
-    >>> s = H( [T(fa=i, dB=j, sonic_vector=V()) for i, j in zip([6, 15, 100], [2, 1, 20])] )
-    >>> envelope2 = T(440, 1.5, 60)  # a lengthy envelope
+    >>> W(V()*t())  # writes a WAV file of a note with tremolo
+    >>> s = H( [V()*t(fa=i, dB=j) for i, j in zip([6, 15, 100], [2, 1, 20])] )  # OR
+    >>> s = H( [t(fa=i, dB=j, sonic_vector=V()) for i, j in zip([6, 15, 100], [2, 1, 20])] )
+    >>> envelope2 = t(440, 1.5, 60)  # a lengthy envelope
 
     Notes
     -----
@@ -158,25 +158,25 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
 
     waveform_table = np.array(waveform_table)
     if type(sonic_vector) in (np.ndarray, list):
-        Lambda = len(sonic_vector)
+        lambda_tremolo = len(sonic_vector)
     elif number_of_samples:
-        Lambda = number_of_samples
+        lambda_tremolo = number_of_samples
     else:
-        Lambda = np.floor(sample_rate * duration)
-    samples = np.arange(Lambda)
+        lambda_tremolo = np.floor(sample_rate * duration)
+    samples = np.arange(lambda_tremolo)
 
     l = len(waveform_table)
-    Gammaa = (samples * tremolo_freq * l / sample_rate).astype(np.int64)  # indexes for LUT
+    gamma_tremolo = (samples * tremolo_freq * l / sample_rate).astype(np.int64)  # indexes for LUT
     # amplitude variation at each sample
-    Ta = waveform_table[Gammaa % l]
+    table_amp = waveform_table[gamma_tremolo % l]
     if alpha != 1:
-        T = 10. ** ((Ta * max_db_dev / 20) ** alpha)
+        t = 10. ** ((table_amp * max_db_dev / 20) ** alpha)
     else:
-        T = 10. ** (Ta * max_db_dev / 20)
+        t = 10. ** (table_amp * max_db_dev / 20)
     if type(sonic_vector) in (np.ndarray, list):
-        return T * sonic_vector
+        return t * sonic_vector
     else:
-        return T
+        return t
 
 
 # FIXME: Unused param (`sample_rate`)
@@ -248,33 +248,33 @@ def tremolos(durations=[[3, 4, 5], [2, 3, 7, 4]],
     for i in range(len(waveform_tables)):
         for j in range(i):
             waveform_tables[i][j] = np.array(waveform_tables[i][j])
-    T_ = []
+    t_ = []
     if number_of_samples:
         for i, ns in enumerate(number_of_samples):
-            T_.append([])
+            t_.append([])
             for j, ns_ in enumerate(ns):
                 s = tremolo(tremolo_freq=tremolo_freqs[i][j], max_db_dev=max_db_devs[i][j], alpha=alpha[i][j],
                             waveform_table=waveform_tables[i][j], number_of_samples=ns_)
-                T_[-1].append(s)
+                t_[-1].append(s)
     else:
         for i, durs in enumerate(durations):
-            T_.append([])
+            t_.append([])
             for j, dur in enumerate(durs):
                 s = tremolo(dur, tremolo_freqs[i][j], max_db_devs[i][j], alpha[i][j],
                             waveform_table=waveform_tables[i][j])
-                T_[-1].append(s)
+                t_[-1].append(s)
     amax = 0
     if type(sonic_vector) in (np.ndarray, list):
         amax = len(sonic_vector)
-    for i in range(len(T_)):
-        T_[i] = np.hstack(T_[i])
-        amax = max(amax, len(T_[i]))
-    for i in range(len(T_)):
-        if len(T_[i]) < amax:
-            T_[i] = np.hstack((T_[i], np.ones(amax - len(T_[i])) * T_[i][-1]))
+    for i in range(len(t_)):
+        t_[i] = np.hstack(t_[i])
+        amax = max(amax, len(t_[i]))
+    for i in range(len(t_)):
+        if len(t_[i]) < amax:
+            t_[i] = np.hstack((t_[i], np.ones(amax - len(t_[i])) * t_[i][-1]))
     if type(sonic_vector) in (np.ndarray, list):
         if len(sonic_vector) < amax:
             sonic_vector = np.hstack((sonic_vector, np.zeros(amax - len(sonic_vector))))
-        T_.append(sonic_vector)
-    s = np.prod(T_, axis=0)
+        t_.append(sonic_vector)
+    s = np.prod(t_, axis=0)
     return s

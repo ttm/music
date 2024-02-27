@@ -44,7 +44,7 @@ def localize(sonic_vector=note(), theta=0, distance=0, x=.1, y=.01,
     --------
     R : A reverberator.
     loc_ : a less naive implementation of localization
-    by ITD and IID.
+    by itd and IID.
     hrtf : performs localization by means of a
     Head Related Transfer Function.
 
@@ -56,7 +56,7 @@ def localize(sonic_vector=note(), theta=0, distance=0, x=.1, y=.01,
 
     Notes
     -----
-    Uses the most naive ITD and IID calculations as described in [1].
+    Uses the most naive itd and IID calculations as described in [1].
     A less naive method is implemented in loc_().
     Nonetheless, if dist is small enough (e.g. <.3),
     the perception of theta occurs and might be used.
@@ -71,7 +71,7 @@ def localize(sonic_vector=note(), theta=0, distance=0, x=.1, y=.01,
       in a Doppler Effect).
 
     When az = tan^{-1}(y/x) lies in the 'cone of confusion',
-    many values of x and y have the same ITD and IID [1].
+    many values of x and y have the same itd and IID [1].
     Furthermore, lateral sources have the low frequencies
     diffracted and reach the opposite ear with a delay
     of ~0.7s [1].
@@ -102,17 +102,17 @@ def localize(sonic_vector=note(), theta=0, distance=0, x=.1, y=.01,
     dr = np.sqrt((x - zeta / 2) ** 2 + y ** 2)  # distance from right ear
     dl = np.sqrt((x + zeta / 2) ** 2 + y ** 2)  # distance from left ear
 
-    IID_a = dr/dl  # proportion of amplitudes from left to right ear
-    ITD = (dl-dr)/speed  # seconds
-    Lambda_ITD = int(ITD * sample_rate)
+    iid_a = dr / dl  # proportion of amplitudes from left to right ear
+    itd = (dl - dr) / speed  # seconds
+    lambda_itd = int(itd * sample_rate)
 
     if x > 0:
-        TL = np.hstack((np.zeros(Lambda_ITD), IID_a * sonic_vector))
-        TR = np.hstack((sonic_vector, np.zeros(Lambda_ITD)))
+        tl = np.hstack((np.zeros(lambda_itd), iid_a * sonic_vector))
+        tr = np.hstack((sonic_vector, np.zeros(lambda_itd)))
     else:
-        TL = np.hstack((sonic_vector, np.zeros(-Lambda_ITD)))
-        TR = np.hstack((np.zeros(-Lambda_ITD), sonic_vector * (1 / IID_a)))
-    s = np.vstack((TL, TR))
+        tl = np.hstack((sonic_vector, np.zeros(-lambda_itd)))
+        tr = np.hstack((np.zeros(-lambda_itd), sonic_vector * (1 / iid_a)))
+    s = np.vstack((tl, tr))
     return s
 
 
@@ -130,22 +130,22 @@ def localize_linear(sonic_vector=note(), theta1=90, theta2=0, dist=.1,
     y2 = np.sin(theta2) * dist
     speed = 331.3 + .606 * air_temp
 
-    Lambda = len(sonic_vector)
-    L_ = L-1
-    xpos = x1 + (x2 - x1) * np.arange(Lambda) / L_
-    ypos = y1 + (y2 - y1) * np.arange(Lambda) / L_
+    lambda_l = len(sonic_vector)
+    l_ = L - 1  # FIXME: Unresolved L
+    xpos = x1 + (x2 - x1) * np.arange(lambda_l) / l_
+    ypos = y1 + (y2 - y1) * np.arange(lambda_l) / l_
     d = np.sqrt((xpos - zeta / 2) ** 2 + ypos ** 2)
     d2 = np.sqrt((xpos + zeta / 2) ** 2 + ypos ** 2)
-    IID_a = d/d2
-    ITD = (d2-d)/speed
-    Lambda_ITD = int(ITD * sample_rate)
+    iid_a = d / d2
+    itd = (d2 - d) / speed
+    lambda_itd = int(itd * sample_rate)
 
     if x1 > 0:
-        TL = np.zeros(Lambda_ITD)
-        TR = np.array([])
+        tl = np.zeros(lambda_itd)
+        tr = np.array([])
     else:
-        TL = np.array([])
-        TR = np.zeros(-Lambda_ITD)
+        tl = np.array([])
+        tr = np.zeros(-lambda_itd)
     d_ = d[1:] - d[:-1]
     d2_ = d2[1:] - d2[:-1]
     d__ = np.cumsum(d_).astype(np.int64)
@@ -175,9 +175,6 @@ def loc_(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
         If theta is supplied, x and y are ignored
         and dist must also be supplied
         for the sound localization to have effect.
-    dist : scalar
-        The distance of the source from the listener
-        in meters.
     zeta : scalar
         The distance between the ears in meters.
     air_temp : scalar
@@ -240,9 +237,9 @@ def loc_(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
     norms = np.abs(c)
     angles = np.angle(c)
 
-    Lambda = len(sonic_vector)
-    max_coef = int(Lambda/2)
-    df = 2 * sample_rate / Lambda
+    lambda_l = len(sonic_vector)
+    max_coef = int(lambda_l / 2)
+    df = 2 * sample_rate / lambda_l
 
     # zero theta in right ahead and counter-clockwise is positive
     # theta_ = 2*np.pi*theta/360
@@ -259,9 +256,9 @@ def loc_(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
         s = []
         energy = np.cumsum(norms[:max_coef] ** 2)
         p = 0.01
-        cutoff = energy.max()*(1 - p)
+        cutoff = energy.max() * (1 - p)
         ncoeffs = (energy < cutoff).sum()
-        maxfreq = ncoeffs*df
+        maxfreq = ncoeffs * df
         if maxfreq <= 4000:
             foo = .3
         else:
@@ -273,82 +270,82 @@ def loc_(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
         # ITD implies a phase change
         # IID implies a change in the norm
         for i in range(max_coef):
-            if i==0:
+            if i == 0:
                 continue
             f = freqs[i]
             if f <= 4000:
-                ITD = .3 * zeta * np.sin(theta_) / speed
+                itd = .3 * zeta * np.sin(theta_) / speed
             else:
-                ITD = .2 * zeta * np.sin(theta_) / speed
-            IID = 1 + ( (f/1000)**.8 ) * np.sin(abs(theta_))
+                itd = .2 * zeta * np.sin(theta_) / speed
+            iid = 1 + ((f / 1000) ** .8) * np.sin(abs(theta_))
             # not needed, coefs are duplicated afterwards:
             # if i != Lambda/2:
             #     IID *= 2
             # IID > 0 : left ear has amplification
             # ITD > 0 : right ear has a delay
             # relate ITD to phase change (anglesl)
-            lamb = 1/f
+            lamb = 1 / f
             if theta_ > 0:
-                change = ITD - (ITD//lamb)*lamb
-                change_ = (change/lamb) * 2 * np.pi
+                change = itd - (itd // lamb) * lamb
+                change_ = (change / lamb) * 2 * np.pi
                 anglesr[i] += change_
-                normsl[i] *= IID
+                normsl[i] *= iid
             else:
-                ITD = -ITD
-                change = ITD - (ITD//lamb)*lamb
-                change_ = (change/lamb) * 2 * np.pi
+                itd = -itd
+                change = itd - (itd // lamb) * lamb
+                change_ = (change / lamb) * 2 * np.pi
                 anglesl[i] += change_
-                normsr[i] *= IID
+                normsr[i] *= iid
 
     elif method == "brute":
         print("This can take a long time...")
         for i in range(ncoeffs):
-            if i==0:
+            if i == 0:
                 continue
             f = freqs[i]
             if f <= 4000:
-                ITD = .3 * zeta * np.sin(theta_) / speed
+                itd = .3 * zeta * np.sin(theta_) / speed
             else:
-                ITD = .2 * zeta * np.sin(theta_) / speed
-            IID = 1 + ( (f/1000)**.8 ) * np.sin(abs(theta_))
+                itd = .2 * zeta * np.sin(theta_) / speed
+            iid = 1 + ((f / 1000) ** .8) * np.sin(abs(theta_))
             # IID > 0 : left ear has amplification
             # ITD > 0 : right ear has a delay
-            ITD_l = abs(int(sample_rate * ITD))
-            if i == Lambda/2:
-                amplitude = norms[i]/Lambda
+            itd_l = abs(int(sample_rate * itd))
+            if i == lambda_l / 2:
+                amplitude = norms[i] / lambda_l
             else:
-                amplitude = 2*norms[i]/Lambda
-            sine = note_with_phase(frequency=f, number_of_samples=Lambda, waveform_table=WAVEFORM_SINE,
+                amplitude = 2 * norms[i] / lambda_l
+            sine = note_with_phase(freq=f, number_of_samples=lambda_l, waveform_table=WAVEFORM_SINE,
                                    sample_rate=sample_rate, phase=angles[i]) * amplitude
 
             # Account for phase and energy
             if theta_ > 0:
-                TL = sine*IID
-                TR = np.copy(sine)
+                tl = sine * iid
+                tr = np.copy(sine)
             else:
-                TL = np.copy(sine)
-                TR = sine*IID
+                tl = np.copy(sine)
+                tr = sine * iid
 
             if theta > 0:
-                TL = np.hstack((TL, np.zeros(ITD_l)))
-                TR = np.hstack((np.zeros(ITD_l), TR))
+                tl = np.hstack((tl, np.zeros(itd_l)))
+                tr = np.hstack((np.zeros(itd_l), tr))
             else:
-                TL = np.hstack((np.zeros(ITD_l), TL))
-                TR = np.hstack((TR, np.zeros(ITD_l)))
+                tl = np.hstack((np.zeros(itd_l), tl))
+                tr = np.hstack((tr, np.zeros(itd_l)))
 
-            TL = np.hstack((TL, np.zeros(maxsize - len(TL))))
-            TR = np.hstack((TR, np.zeros(maxsize - len(TR))))
-            s_ = np.vstack((TL, TR))
+            tl = np.hstack((tl, np.zeros(maxsize - len(tl))))
+            tr = np.hstack((tr, np.zeros(maxsize - len(tr))))
+            s_ = np.vstack((tl, tr))
             s += s_
     if method == "ifft":
         coefsl = normsl * np.e ** (anglesl * 1j)
-        coefsl[max_coef+1:] = np.real(coefsl[1:max_coef])[::-1] - 1j * \
-                              np.imag(coefsl[1:max_coef])[::-1]
+        coefsl[max_coef + 1:] = np.real(coefsl[1:max_coef])[::-1] - 1j * \
+                                np.imag(coefsl[1:max_coef])[::-1]
         sl = np.fft.ifft(coefsl).real
 
         coefsr = normsr * np.e ** (anglesr * 1j)
-        coefsr[max_coef+1:] = np.real(coefsr[1:max_coef])[::-1] - 1j * \
-                              np.imag(coefsr[1:max_coef])[::-1]
+        coefsr[max_coef + 1:] = np.real(coefsr[1:max_coef])[::-1] - 1j * \
+                                np.imag(coefsr[1:max_coef])[::-1]
         sr = np.fft.ifft(coefsr).real
         s = np.vstack((sl, sr))
     # If in need to force energy to be preserved, try:

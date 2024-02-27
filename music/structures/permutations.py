@@ -32,6 +32,8 @@ class InterestingPermutations:
         self.get_swaps()
 
     def get_alternating(self):
+        """_summary_
+        """
         self.alternations = list(AlternatingGroup(self.nelements).generate(method=self.method))
         self.alternations_complement = [i for i in self.alternations if i not in self.dihedral]
         length_max = self.nelements
@@ -48,6 +50,8 @@ class InterestingPermutations:
         self.rotations = list(sympy.combinatorics.named_groups.CyclicGroup(self.nelements).generate(method=self.method))
 
     def get_mirrors(self):
+        """_summary_
+        """
         if self.nelements > 2:  # bug in sympy?
             self.dihedral = list(
                 sympy.combinatorics.named_groups.DihedralGroup(self.nelements).generate(method=self.method))
@@ -61,8 +65,9 @@ class InterestingPermutations:
             assert len(self.edge_mirrors + self.vertex_mirrors) == len(self.mirrors)
 
     def get_swaps(self):
-        # contiguous swaps
-        # swaps by distance between the indexes
+        """contiguos swaps
+        swaps by distance between the indexes
+        """
         self.swaps = sorted(self.permutations_by_sizes[0], key=lambda x: -x.rank())
         self.swaps_as_comes = self.permutations_by_sizes[0]
         self.swaps_by_stepsizes = []
@@ -74,10 +79,19 @@ class InterestingPermutations:
             dist_ += 1
 
     def even_odd(self, sequence):
+        """_summary_
+
+        Parameters
+        ----------
+        sequence : _type_
+            _description_
+        """
         # get even and odd permutations ?
         pass
 
     def get_full_symmetry(self):
+        """_summary_
+        """
         self.permutations = list(
             sympy.combinatorics.named_groups.SymmetricGroup(self.nelements).generate(method=self.method))
         # sympy.combinatorics.generators.symmetric(self.nelements)
@@ -89,6 +103,18 @@ class InterestingPermutations:
 
 
 def dist(swap):
+    """_summary_
+
+    Parameters
+    ----------
+    swap : _type_
+        _description_
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
     if swap.size % 2 == 0:
         half = swap.size / 2
     else:
@@ -100,6 +126,20 @@ def dist(swap):
 
 
 def transpose_permutation(permutation, step=1):
+    """_summary_
+
+    Parameters
+    ----------
+    permutation : _type_
+        _description_
+    step : int, optional
+        _description_, by default 1
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
     if not step:
         return permutation
     new_indexes = (i + step for i in permutation.support())

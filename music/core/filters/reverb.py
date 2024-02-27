@@ -54,20 +54,20 @@ def reverb(duration=1.9, first_phase_duration=0.15, decay=-50,
     arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
-    Lambda = int(duration * sample_rate)
-    Lambda1 = int(first_phase_duration * sample_rate)
+    lambda_r = int(duration * sample_rate)
+    lambda1 = int(first_phase_duration * sample_rate)
     # Sound reincidence probability in the first period:
-    ii = np.arange(Lambda)
-    p = (ii[:Lambda1] / Lambda1) ** 2.
+    ii = np.arange(lambda_r)
+    p = (ii[:lambda1] / lambda1) ** 2.
     # incidences:
-    r1_ = np.random.random(Lambda1) < p
-    a = 10. ** ((decay / 20) * (ii / (Lambda - 1)))
+    r1_ = np.random.random(lambda1) < p
+    a = 10. ** ((decay / 20) * (ii / (lambda_r - 1)))
     # Eq. 76 First period of reverberation:
-    r1 = r1_ * a[:Lambda1]  # first incidences
+    r1 = r1_ * a[:lambda1]  # first incidences
 
     # Eq. 77 Second period of reverberation:
-    noise = noise(noise_type, max_freq=sample_rate / 2, number_of_samples=Lambda - Lambda1)
-    r2 = noise * a[Lambda1:Lambda]
+    noise = noise(noise_type, max_freq=sample_rate / 2, number_of_samples=lambda_r - lambda1)
+    r2 = noise * a[lambda1:lambda_r]
 
     # Eq. 78 Impulse response of the reverberation
     result = np.hstack((r1, r2))

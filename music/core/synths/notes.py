@@ -66,8 +66,8 @@ def note(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
 
 
 def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
-                 x=[-10, 10], y=[1, 1], stereo=True, zeta=0.215, air_temp=20,
-                 number_of_samples=0, sample_rate=44100):
+                      x=[-10, 10], y=[1, 1], stereo=True, zeta=0.215, air_temp=20,
+                      number_of_samples=0, sample_rate=44100):
     """
     A simple note with a transition of localization and resulting Doppler effect.
 
@@ -129,47 +129,47 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     if not number_of_samples:
         number_of_samples = int(duration * sample_rate)
     samples = np.arange(number_of_samples)
-    l = len(waveform_table)
+    length = len(waveform_table)
     speed = 331.3 + .606 * air_temp
 
-    x = x[0] + (x[1] - x[0]) * np.arange(number_of_samples + 1) / (number_of_samples)
-    y = y[0] + (y[1] - y[0]) * np.arange(number_of_samples + 1) / (number_of_samples)
+    x = x[0] + (x[1] - x[0]) * np.arange(number_of_samples + 1) / number_of_samples
+    y = y[0] + (y[1] - y[0]) * np.arange(number_of_samples + 1) / number_of_samples
     if stereo:
-        dl = np.sqrt( (x+zeta/2)**2 + y**2 )
-        dr = np.sqrt( (x-zeta/2)**2 + y**2 )
-        iid_al = 1/dl
-        iid_ar = 1/dr
+        dl = np.sqrt((x + zeta / 2) ** 2 + y ** 2)
+        dr = np.sqrt((x - zeta / 2) ** 2 + y ** 2)
+        iid_al = 1 / dl
+        iid_ar = 1 / dr
 
         vsl = sample_rate * (dl[1:] - dl[:-1])
         vsr = sample_rate * (dr[1:] - dr[:-1])
         fl = freq * speed / (speed + vsl)
         fr = freq * speed / (speed + vsr)
 
-        gamma = np.cumsum(fl * l / sample_rate).astype(np.int64)
-        sl = waveform_table[gamma % l] * iid_al[:-1]
+        gamma = np.cumsum(fl * length / sample_rate).astype(np.int64)
+        sl = waveform_table[gamma % length] * iid_al[:-1]
 
-        gamma = np.cumsum(fr * l / sample_rate).astype(np.int64)
-        sr = waveform_table[gamma % l] * iid_ar[:-1]
+        gamma = np.cumsum(fr * length / sample_rate).astype(np.int64)
+        sr = waveform_table[gamma % length] * iid_ar[:-1]
 
-        ITD0 = (dl[0]-dr[0])/speed
-        lambda_itd = ITD0 * sample_rate
+        itd0 = (dl[0] - dr[0]) / speed
+        lambda_itd = itd0 * sample_rate
 
         if x[0] > 0:
-            TL = np.hstack(( np.zeros(int(lambda_itd)), sl ))
-            TR = np.hstack(( sr, np.zeros(int(lambda_itd)) ))
+            tl = np.hstack((np.zeros(int(lambda_itd)), sl))
+            tr = np.hstack((sr, np.zeros(int(lambda_itd))))
         else:
-            TL = np.hstack(( sl, np.zeros(-int(lambda_itd)) ))
-            TR = np.hstack(( np.zeros(-int(lambda_itd)), sr ))
-        result = np.vstack(( TL, TR ))
+            tl = np.hstack((sl, np.zeros(-int(lambda_itd))))
+            tr = np.hstack((np.zeros(-int(lambda_itd)), sr))
+        result = np.vstack((tl, tr))
     else:
         duration = np.sqrt(x ** 2 + y ** 2)
-        IID = 1 / duration
+        iid = 1 / duration
 
         vs = sample_rate * (duration[1:] - duration[:-1])  # velocities at each point
         f_ = freq * speed / (speed + vs)
 
-        gamma = np.cumsum(f_ * l / sample_rate).astype(np.int64)
-        result = waveform_table[gamma % l] * IID[:-1]
+        gamma = np.cumsum(f_ * length / sample_rate).astype(np.int64)
+        result = waveform_table[gamma % length] * iid[:-1]
     return result
 
 
@@ -381,19 +381,19 @@ def note_with_pitch(start_freq=220, end_freq=440, duration=2, alpha=1,
     """
     waveform_table = np.array(waveform_table)
     if number_of_samples:
-        Lambda = number_of_samples
+        lambda_p = number_of_samples
     else:
-        Lambda = int(sample_rate * duration)
-    samples = np.arange(Lambda)
-    if method=="exp":
+        lambda_p = int(sample_rate * duration)
+    samples = np.arange(lambda_p)
+    if method == "exp":
         if alpha != 1:
-            F = start_freq * (end_freq / start_freq) ** ((samples / (Lambda - 1)) ** alpha)
+            f = start_freq * (end_freq / start_freq) ** ((samples / (lambda_p - 1)) ** alpha)
         else:
-            F = start_freq * (end_freq / start_freq) ** (samples / (Lambda - 1))
+            f = start_freq * (end_freq / start_freq) ** (samples / (lambda_p - 1))
     else:
-        F = start_freq + (end_freq - start_freq) * samples / (Lambda - 1)
+        f = start_freq + (end_freq - start_freq) * samples / (lambda_p - 1)
     waveform_table_length = len(waveform_table)
-    gamma = np.cumsum(F * waveform_table_length / sample_rate).astype(np.int64)
+    gamma = np.cumsum(f * waveform_table_length / sample_rate).astype(np.int64)
     s = waveform_table[gamma % waveform_table_length]
     return s
 
@@ -456,30 +456,35 @@ def note_with_pitch_vibrato(start_freq=220, end_freq=440, duration=2,
     waveform_table = np.array(waveform_table)
     vibrato_waveform_table = np.array(vibrato_waveform_table)
     if number_of_samples:
-        Lambda = number_of_samples
+        lambda_pv = number_of_samples
     else:
-        Lambda = int(sample_rate * duration)
-    samples = np.arange(Lambda)
+        lambda_pv = int(sample_rate * duration)
+    samples = np.arange(lambda_pv)
 
     lv = len(vibrato_waveform_table)
-    Gammav = (samples * vibrato_freq * lv / sample_rate).astype(np.int64)  # LUT indexes
+    gammav = (samples * vibrato_freq * lv / sample_rate).astype(np.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample
-    Tv = vibrato_waveform_table[Gammav % lv] 
+    tv = vibrato_waveform_table[gammav % lv]
 
     if alpha != 1 or alpha_vibrato != 1:
-        F = start_freq * (end_freq / start_freq) ** ((samples / (Lambda - 1)) ** alpha) * 2. ** ((Tv * max_pitch_dev / 12) ** alpha_vibrato)
+        f = start_freq * (end_freq / start_freq) ** ((samples / (lambda_pv - 1)) ** alpha) * 2. ** (
+                (tv * max_pitch_dev / 12) ** alpha_vibrato)
     else:
-        F = start_freq * (end_freq / start_freq) ** (samples / (Lambda - 1)) * 2. ** ((Tv * max_pitch_dev / 12) ** alpha)
-    l = len(waveform_table)
-    Gamma = np.cumsum(F * l / sample_rate).astype(np.int64)
-    s = waveform_table[Gamma % l]
+        f = start_freq * (end_freq / start_freq) ** (samples / (lambda_pv - 1)) * 2. ** (
+                (tv * max_pitch_dev / 12) ** alpha)
+    length = len(waveform_table)
+    gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
+    s = waveform_table[gamma % length]
     return s
 
 
-def note_with_pitch_vibratos_localization(freqs=[220, 440, 330], durations=[[2, 3], [2, 5, 3], [2, 5, 6, 1, .4], [4, 6, 1]],
-                                          vibratos_freqs=[[2, 6, 1], [.5, 15, 2, 6, 3]], max_pitch_devs=[[2, 1, 5], [4, 3, 7, 10, 3]],
-                                          alpha=[[1, 1] , [1,1,1], [1,1,1,1,1], [1,1,1]],
-                                          x=[-10,10,5,3], y=[1,1,.1,.1], method=['lin','exp','lin'],
+# FIXME: Unused param (`number_of_samples`)
+def note_with_pitch_vibratos_localization(freqs=[220, 440, 330],
+                                          durations=[[2, 3], [2, 5, 3], [2, 5, 6, 1, .4], [4, 6, 1]],
+                                          vibratos_freqs=[[2, 6, 1], [.5, 15, 2, 6, 3]],
+                                          max_pitch_devs=[[2, 1, 5], [4, 3, 7, 10, 3]],
+                                          alpha=[[1, 1], [1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1]],
+                                          x=[-10, 10, 5, 3], y=[1, 1, .1, .1], method=['lin', 'exp', 'lin'],
                                           waveform_tables=[[WAVEFORM_TRIANGULAR, WAVEFORM_TRIANGULAR],
                                                            [WAVEFORM_SINE, WAVEFORM_TRIANGULAR, WAVEFORM_SINE],
                                                            [WAVEFORM_SINE, WAVEFORM_SINE, WAVEFORM_SINE, WAVEFORM_SINE,
@@ -563,171 +568,171 @@ def note_with_pitch_vibratos_localization(freqs=[220, 440, 330], durations=[[2, 
 
     """
     # pitch transition contributions
-    F_ = []
+    f_ = []
     for i, dur in enumerate(durations[0]):
-        Lambda_ = int(sample_rate * dur)
-        samples = np.arange(Lambda_)
+        lambda_ = int(sample_rate * dur)
+        samples = np.arange(lambda_)
         f1, f2 = freqs[i:i + 2]
         if alpha[0][i] != 1:
-            F = f1*(f2/f1)**( (samples / (Lambda_-1))**alpha[0][i] )
+            f = f1 * (f2 / f1) ** ((samples / (lambda_ - 1)) ** alpha[0][i])
         else:
-            F = f1*(f2/f1)**( samples / (Lambda_-1) )
-        F_.append(F)
-    Ft = np.hstack(F_)
+            f = f1 * (f2 / f1) ** (samples / (lambda_ - 1))
+        f_.append(f)
+    ft = np.hstack(f_)
 
     # vibrato contributions
-    V_=[]
+    v_ = []
     for i, vib in enumerate(durations[1:-1]):
-        v_=[]
+        v_ = []
         for j, dur in enumerate(vib):
             samples = np.arange(dur * sample_rate)
             lv = len(waveform_tables[i + 1][j])
-            Gammav = (samples * vibratos_freqs[i][j] * lv / sample_rate).astype(np.int64)  # LUT indexes
+            gammav = (samples * vibratos_freqs[i][j] * lv / sample_rate).astype(np.int64)  # LUT indexes
             # values of the oscillatory pattern at each sample
-            Tv = waveform_tables[i + 1][j][Gammav % lv]
-            if alpha[i+1][j] != 0:
-                F = 2.**((Tv * max_pitch_devs[i][j] / 12) ** alpha[i + 1][j])
+            tv = waveform_tables[i + 1][j][gammav % lv]
+            if alpha[i + 1][j] != 0:
+                f = 2. ** ((tv * max_pitch_devs[i][j] / 12) ** alpha[i + 1][j])
             else:
-                F = 2.**(Tv * max_pitch_devs[i][j] / 12)
-            v_.append(F)
+                f = 2. ** (tv * max_pitch_devs[i][j] / 12)
+            v_.append(f)
 
-        V=np.hstack(v_)
-        V_.append(V)
+        v = np.hstack(v_)
+        v_.append(v)
 
-    V_ = [Ft] + V_
+    v_ = [ft] + v_
 
     # Doppler/location localization contributions
     speed = 331.3 + .606 * air_temp
     dl_ = []
     dr_ = []
     d_ = []
-    F_ = []
-    IID_a = []
+    f_ = []
+    iid_a = []
     if stereo:
         for i in range(len(method)):
             m = method[i]
             a = alpha[-1][i]
-            Lambda = int(sample_rate * durations[-1][i])
+            lambda_d = int(sample_rate * durations[-1][i])
             if m == 'exp':
                 if a == 1:
-                    foo = np.arange(Lambda + 1) / Lambda
+                    foo = np.arange(lambda_d + 1) / lambda_d
                 else:
-                    foo = (np.arange(Lambda + 1) / Lambda) ** a
-                xi = x[i]*(x[i+1] / x[i])**( foo )
-                yi = y[i]*(y[i+1] / y[i])**( foo )
+                    foo = (np.arange(lambda_d + 1) / lambda_d) ** a
+                xi = x[i] * (x[i + 1] / x[i]) ** foo
+                yi = y[i] * (y[i + 1] / y[i]) ** foo
             else:
-                xi = x[i] + (x[i+1] - x[i]) * np.arange(Lambda + 1) / Lambda
-                yi = y[i] + (y[i+1] - y[i]) * np.arange(Lambda + 1) / Lambda
+                xi = x[i] + (x[i + 1] - x[i]) * np.arange(lambda_d + 1) / lambda_d
+                yi = y[i] + (y[i + 1] - y[i]) * np.arange(lambda_d + 1) / lambda_d
             dl = np.sqrt((xi + zeta / 2) ** 2 + yi ** 2)
             dr = np.sqrt((xi - zeta / 2) ** 2 + yi ** 2)
-            if len(F_) == 0:
-                ITD0 = (dl[0]-dr[0])/speed
-                Lambda_ITD = ITD0 * sample_rate
-            IID_al = 1/dl
-            IID_ar = 1/dr
+            if len(f_) == 0:
+                itd0 = (dl[0] - dr[0]) / speed
+                lambda_itd = itd0 * sample_rate
+            iid_al = 1 / dl
+            iid_ar = 1 / dr
 
             vsl = sample_rate * (dl[1:] - dl[:-1])
             vsr = sample_rate * (dr[1:] - dr[:-1])
-            fl = speed/(speed+vsl)
-            fr = speed/(speed+vsr)
+            fl = speed / (speed + vsl)
+            fr = speed / (speed + vsr)
 
-            F_.append(np.vstack((fl, fr)))
-            IID_a.append(np.vstack((IID_al[:-1], IID_ar[:-1])))
+            f_.append(np.vstack((fl, fr)))
+            iid_a.append(np.vstack((iid_al[:-1], iid_ar[:-1])))
     else:
         for i in range(len(method)):
             m = method[i]
             a = alpha[-1][i]
-            Lambda = int(sample_rate * durations[-1][i])
+            lambda_d = int(sample_rate * durations[-1][i])
             if m == 'exp':
                 if a == 1:
-                    foo = np.arange(Lambda + 1) / Lambda
+                    foo = np.arange(lambda_d + 1) / lambda_d
                 else:
-                    foo = (np.arange(Lambda + 1) / Lambda) ** a
-                xi = x[i]*(x[i+1] / x[i])**( foo )
-                yi = y[i]*(y[i+1] / y[i])**( foo )
+                    foo = (np.arange(lambda_d + 1) / lambda_d) ** a
+                xi = x[i] * (x[i + 1] / x[i]) ** foo
+                yi = y[i] * (y[i + 1] / y[i]) ** foo
             else:
-                xi = x[i] + (x[i+1] - x[i]) * np.arange(Lambda + 1) / (Lambda)
-                yi = y[i] + (y[i+1] - y[i]) * np.arange(Lambda + 1) / (Lambda)
+                xi = x[i] + (x[i + 1] - x[i]) * np.arange(lambda_d + 1) / lambda_d
+                yi = y[i] + (y[i + 1] - y[i]) * np.arange(lambda_d + 1) / lambda_d
             durations = np.sqrt(xi ** 2 + yi ** 2)
-            IID = 1 / durations
+            iid = 1 / durations
 
             vs = sample_rate * (durations[1:] - durations[:-1])  # velocities at each point
-            f_ = speed/(speed+vs)
+            f_ = speed / (speed + vs)
 
-            F_.append(f_)
-            IID_a.append(IID[:-1])
-    F_ = np.hstack(F_)
-    IID_a = np.hstack(IID_a)
+            f_.append(f_)
+            iid_a.append(iid[:-1])
+    f_ = np.hstack(f_)
+    iid_a = np.hstack(iid_a)
 
     # find maximum size, fill others with ones
-    amax = max([len(i) if len(i.shape)==1 else len(i[0]) for i in V_+[F_]])
-    for i, contrib in enumerate(V_[1:]):
-            V_[i+1] = np.hstack((contrib, np.ones(amax - len(contrib))))
-    V_[0] = np.hstack((V_[0], np.ones(amax - len(V_[0])) * freqs[-1]))
+    amax = max([len(i) if len(i.shape) == 1 else len(i[0]) for i in v_ + [f_]])
+    for i, contrib in enumerate(v_[1:]):
+        v_[i + 1] = np.hstack((contrib, np.ones(amax - len(contrib))))
+    v_[0] = np.hstack((v_[0], np.ones(amax - len(v_[0])) * freqs[-1]))
     if stereo:
-        F_ = np.hstack((F_, np.ones((2, amax - len(F_[0])))))
+        f_ = np.hstack((f_, np.ones((2, amax - len(f_[0])))))
     else:
-        F_ = np.hstack((F_, np.ones(amax - len(F_))))
+        f_ = np.hstack((f_, np.ones(amax - len(f_))))
 
-    l = len(waveform_tables[0][0])
+    length = len(waveform_tables[0][0])
     if not stereo:
-        V_.extend(F_)
-        F = np.prod(V_, axis=0)
-        Gamma = np.cumsum(F * l / sample_rate).astype(np.int64)
+        v_.extend(f_)
+        f = np.prod(v_, axis=0)
+        gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
         s_ = []
         pointer = 0
         for i, t in enumerate(waveform_tables[0]):
-            Lambda = int(sample_rate * durations[0][i])
-            s = t[ Gamma[pointer:pointer+Lambda] % l ]
-            pointer += Lambda
+            lambda_d = int(sample_rate * durations[0][i])
+            s = t[gamma[pointer:pointer + lambda_d] % length]
+            pointer += lambda_d
             s_.append(s)
-        s =  t[ Gamma[pointer:] % l ]
+        s = t[gamma[pointer:] % length]
         s_.append(s)
         s = np.hstack(s_)
-        s[:len(IID_a)] *= IID_a
-        s[len(IID_a):] *= IID_a[-1]
+        s[:len(iid_a)] *= iid_a
+        s[len(iid_a):] *= iid_a[-1]
     else:
         # left channel
-        Vl = V_ + [F_[0]]
-        F = np.prod(Vl, axis=0)
-        Gamma = np.cumsum(F * l / sample_rate).astype(np.int64)
+        Vl = v_ + [f_[0]]
+        f = np.prod(Vl, axis=0)
+        gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
         s_ = []
         pointer = 0
         for i, t in enumerate(waveform_tables[0]):
-            Lambda = int(sample_rate * durations[0][i])
-            s = t[ Gamma[pointer:pointer+Lambda] % l ]
-            pointer += Lambda
+            lambda_d = int(sample_rate * durations[0][i])
+            s = t[gamma[pointer:pointer + lambda_d] % length]
+            pointer += lambda_d
             s_.append(s)
-        s =  t[ Gamma[pointer:] % l ]
+        s = t[gamma[pointer:] % length]
         s_.append(s)
-        TL = np.hstack(s_)
-        TL[:len(IID_a[0])] *=  IID_a[0]
-        TL[len( IID_a[0]):] *= IID_a[0][-1]
+        tl = np.hstack(s_)
+        tl[:len(iid_a[0])] *= iid_a[0]
+        tl[len(iid_a[0]):] *= iid_a[0][-1]
 
         # right channel
-        Vr = V_ + [F_[1]]
-        F = np.prod(Vr, axis=0)
-        Gamma = np.cumsum(F * l / sample_rate).astype(np.int64)
+        vr = v_ + [f_[1]]
+        f = np.prod(vr, axis=0)
+        gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
         s_ = []
         pointer = 0
         for i, t in enumerate(waveform_tables[0]):
-            Lambda = int(sample_rate * durations[0][i])
-            s = t[ Gamma[pointer:pointer+Lambda] % l ]
-            pointer += Lambda
+            lambda_d = int(sample_rate * durations[0][i])
+            s = t[gamma[pointer:pointer + lambda_d] % length]
+            pointer += lambda_d
             s_.append(s)
-        s =  t[ Gamma[pointer:] % l ]
+        s = t[gamma[pointer:] % length]
         s_.append(s)
-        TR = np.hstack(s_)
-        TR[:len(IID_a[1])] *=  IID_a[1]
-        TR[len( IID_a[1]):] *= IID_a[1][-1]
+        tr = np.hstack(s_)
+        tr[:len(iid_a[1])] *= iid_a[1]
+        tr[len(iid_a[1]):] *= iid_a[1][-1]
 
         if x[0] > 0:
-            TL = np.hstack((np.zeros(int(Lambda_ITD)), TL))
-            TR = np.hstack((TR, np.zeros(int(Lambda_ITD))))
+            tl = np.hstack((np.zeros(int(lambda_itd)), tl))
+            tr = np.hstack((tr, np.zeros(int(lambda_itd))))
         else:
-            TL = np.hstack((TL, np.zeros(-int(Lambda_ITD))))
-            TR = np.hstack((np.zeros(-int(Lambda_ITD)), TR))
-        s = np.vstack((TL, TR))
+            tl = np.hstack((tl, np.zeros(-int(lambda_itd))))
+            tr = np.hstack((np.zeros(-int(lambda_itd)), tr))
+        s = np.vstack((tl, tr))
     return s
 
 
@@ -735,7 +740,8 @@ def note_with_pitch_vibratos(start_freq=220, end_freq=440, duration=2,
                              vibrato_freq=2, secondary_vibrato_freq=6,
                              max_pitch_dev=2, secondary_max_pitch_dev=.5,
                              alpha=1, alphav1=1, alphav2=1,
-                             waveform_table=WAVEFORM_TRIANGULAR, tabv1=WAVEFORM_SINE, tabv2=WAVEFORM_SINE, number_of_samples=0, sample_rate=44100):
+                             waveform_table=WAVEFORM_TRIANGULAR, tabv1=WAVEFORM_SINE, tabv2=WAVEFORM_SINE,
+                             number_of_samples=0, sample_rate=44100):
     """
     A note with a glissando and a vibrato that also has a secondary oscillatory pattern.
 
@@ -804,36 +810,37 @@ def note_with_pitch_vibratos(start_freq=220, end_freq=440, duration=2,
     tabv1 = np.array(tabv1)
     tabv2 = np.array(tabv2)
     if number_of_samples:
-        Lambda = number_of_samples
+        lambda_pvv = number_of_samples
     else:
-        Lambda = int(sample_rate * duration)
-    samples = np.arange(Lambda)
+        lambda_pvv = int(sample_rate * duration)
+    samples = np.arange(lambda_pvv)
 
     lv1 = len(tabv1)
-    Gammav1 = (samples * vibrato_freq * lv1 / sample_rate).astype(np.int64)  # LUT indexes
+    gammav1 = (samples * vibrato_freq * lv1 / sample_rate).astype(np.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample
-    Tv1 = tabv1[ Gammav1 % lv1 ]
+    tv1 = tabv1[gammav1 % lv1]
 
     lv2 = len(tabv2)
-    Gammav2 = (samples * secondary_vibrato_freq * lv2 / sample_rate).astype(np.int64)  # LUT indexes
+    gammav2 = (samples * secondary_vibrato_freq * lv2 / sample_rate).astype(np.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample
-    Tv2 = tabv1[ Gammav2 % lv2 ]
+    tv2 = tabv1[gammav2 % lv2]
 
-    if alpha !=1 or alphav1 != 1 or alphav2 != 1:
-        F = start_freq * (end_freq / start_freq) ** ((samples / (Lambda - 1)) ** alpha) * 2. ** ((Tv1 * max_pitch_dev / 12) ** alphav1) * 2. ** ((Tv2 * secondary_max_pitch_dev / 12) ** alphav2)
+    if alpha != 1 or alphav1 != 1 or alphav2 != 1:
+        f = start_freq * (end_freq / start_freq) ** ((samples / (lambda_pvv - 1)) ** alpha) * 2. ** (
+                (tv1 * max_pitch_dev / 12) ** alphav1) * 2. ** ((tv2 * secondary_max_pitch_dev / 12) ** alphav2)
     else:
-        F = start_freq * (end_freq / start_freq) ** (samples / (Lambda - 1)) * 2. ** ( (Tv1 * max_pitch_dev / 12)) * 2. ** ( (Tv2 * secondary_max_pitch_dev / 12))
-    l = len(waveform_table)
-    Gamma = np.cumsum(F * l / sample_rate).astype(np.int64)
-    s = waveform_table[Gamma % l]
+        f = start_freq * (end_freq / start_freq) ** (samples / (lambda_pvv - 1)) * 2. ** (
+            (tv1 * max_pitch_dev / 12)) * 2. ** (tv2 * secondary_max_pitch_dev / 12)
+    length = len(waveform_table)
+    gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
+    s = waveform_table[gamma % length]
     return s
 
 
-
-
 def note_with_pitches_vibratos(freqs=[220, 440, 330], durations=[[2, 3], [2, 5, 3], [2, 5, 6, 1, .4]],
-                               vibratos_freqs=[[2, 6, 1], [.5, 15, 2, 6, 3]], vibratos_max_pitch_devs=[[2, 1, 5], [4, 3, 7, 10, 3]],
-                               alpha=[[1, 1] , [1, 1, 1], [1, 1, 1, 1, 1]],
+                               vibratos_freqs=[[2, 6, 1], [.5, 15, 2, 6, 3]],
+                               vibratos_max_pitch_devs=[[2, 1, 5], [4, 3, 7, 10, 3]],
+                               alpha=[[1, 1], [1, 1, 1], [1, 1, 1, 1, 1]],
                                waveform_tables=[[WAVEFORM_TRIANGULAR, WAVEFORM_TRIANGULAR],
                                                 [WAVEFORM_SINE, WAVEFORM_TRIANGULAR, WAVEFORM_SINE],
                                                 [WAVEFORM_SINE, WAVEFORM_SINE, WAVEFORM_SINE, WAVEFORM_SINE,
@@ -890,55 +897,55 @@ def note_with_pitches_vibratos(freqs=[220, 440, 330], durations=[[2, 3], [2, 5, 
 
     """
     # pitch transition contributions
-    F_ = []
+    f_ = []
     for i, dur in enumerate(durations[0]):
-        Lambda_ = int(sample_rate * dur)
-        samples = np.arange(Lambda_)
+        lambda_ = int(sample_rate * dur)
+        samples = np.arange(lambda_)
         f1, f2 = freqs[i:i + 2]
         if alpha[0][i] != 1:
-            F = f1*(f2/f1)**( (samples / (Lambda_-1))**alpha[0][i] )
+            f = f1 * (f2 / f1) ** ((samples / (lambda_ - 1)) ** alpha[0][i])
         else:
-            F = f1*(f2/f1)**( samples / (Lambda_-1) )
-        F_.append(F)
-    Ft = np.hstack(F_)
+            f = f1 * (f2 / f1) ** (samples / (lambda_ - 1))
+        f_.append(f)
+    ft = np.hstack(f_)
 
     # vibrato contributions
-    V_=[]
+    v_ = []
     for i, vib in enumerate(durations[1:]):
-        v_=[]
+        v_ = []
         for j, dur in enumerate(vib):
             samples = np.arange(dur * sample_rate)
             lv = len(waveform_tables[i + 1][j])
-            Gammav = (samples * vibratos_freqs[i][j] * lv / sample_rate).astype(np.int64)  # LUT indexes
+            gammav = (samples * vibratos_freqs[i][j] * lv / sample_rate).astype(np.int64)  # LUT indexes
             # values of the oscillatory pattern at each sample
-            Tv = waveform_tables[i + 1][j][Gammav % lv]
-            if alpha[i+1][j] != 0:
-                F = 2.**((Tv * vibratos_max_pitch_devs[i][j] / 12) ** alpha[i + 1][j])
+            tv = waveform_tables[i + 1][j][gammav % lv]
+            if alpha[i + 1][j] != 0:
+                f = 2. ** ((tv * vibratos_max_pitch_devs[i][j] / 12) ** alpha[i + 1][j])
             else:
-                F = 2.**(Tv * vibratos_max_pitch_devs[i][j] / 12)
-            v_.append(F)
+                f = 2. ** (tv * vibratos_max_pitch_devs[i][j] / 12)
+            v_.append(f)
 
-        V=np.hstack(v_)
-        V_.append(V)
+        v = np.hstack(v_)
+        v_.append(v)
 
     # find maximum size, fill others with ones
-    V_ = [Ft] + V_
-    amax = max([len(i) for i in V_])
-    for i, contrib in enumerate(V_[1:]):
-        V_[i+1] = np.hstack((contrib, np.ones(amax - len(contrib))))
-    V_[0] = np.hstack((V_[0], np.ones(amax - len(V_[0])) * freqs[-1]))
+    v_ = [ft] + v_
+    amax = max([len(i) for i in v_])
+    for i, contrib in enumerate(v_[1:]):
+        v_[i + 1] = np.hstack((contrib, np.ones(amax - len(contrib))))
+    v_[0] = np.hstack((v_[0], np.ones(amax - len(v_[0])) * freqs[-1]))
 
-    F = np.prod(V_, axis=0)
-    l = len(waveform_tables[0][0])
-    Gamma = np.cumsum(F * l / sample_rate).astype(np.int64)
+    f = np.prod(v_, axis=0)
+    length = len(waveform_tables[0][0])
+    gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
     s_ = []
     pointer = 0
     for i, t in enumerate(waveform_tables[0]):
-        Lambda = int(sample_rate * durations[0][i])
-        s = t[ Gamma[pointer:pointer+Lambda] % l ]
-        pointer += Lambda
+        lambda_2 = int(sample_rate * durations[0][i])
+        s = t[gamma[pointer:pointer + lambda_2] % length]
+        pointer += lambda_2
         s_.append(s)
-    s =  t[ Gamma[pointer:] % l ]
+    s = t[gamma[pointer:] % length]
     s_.append(s)
     s = np.hstack(s_)
     return s
@@ -1040,7 +1047,8 @@ def note_with_vibrato(freq=220, duration=2, vibrato_freq=4,
 
 
 def note_with_vibratos(freq=220, duration=2, vibrato_freq=2, secondary_vibrato_freq=6, nu1=2, nu2=4, alphav1=1,
-                       alphav2=1, waveform_table=WAVEFORM_TRIANGULAR, vibrato_waveform_table=WAVEFORM_SINE, secondary_vibrato_waveform_table=WAVEFORM_SINE, number_of_samples=0, sample_rate=44100):
+                       alphav2=1, waveform_table=WAVEFORM_TRIANGULAR, vibrato_waveform_table=WAVEFORM_SINE,
+                       secondary_vibrato_waveform_table=WAVEFORM_SINE, number_of_samples=0, sample_rate=44100):
     """
     A note with a vibrato that also has a secondary oscillatory pattern.
 
@@ -1103,28 +1111,28 @@ def note_with_vibratos(freq=220, duration=2, vibrato_freq=2, secondary_vibrato_f
     vibrato_waveform_table = np.array(vibrato_waveform_table)
     secondary_vibrato_waveform_table = np.array(secondary_vibrato_waveform_table)
     if number_of_samples:
-        Lambda = number_of_samples
+        lambda_vv = number_of_samples
     else:
-        Lambda = int(sample_rate * duration)
-    samples = np.arange(Lambda)
+        lambda_vv = int(sample_rate * duration)
+    samples = np.arange(lambda_vv)
 
     lv1 = len(vibrato_waveform_table)
-    Gammav1 = (samples * vibrato_freq * lv1 / sample_rate).astype(np.int64)  # LUT indexes
+    gammav1 = (samples * vibrato_freq * lv1 / sample_rate).astype(np.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample
-    Tv1 = vibrato_waveform_table[Gammav1 % lv1]
+    tv1 = vibrato_waveform_table[gammav1 % lv1]
 
     lv2 = len(secondary_vibrato_waveform_table)
-    Gammav2 = (samples * secondary_vibrato_freq * lv2 / sample_rate).astype(np.int64)  # LUT indexes
+    gammav2 = (samples * secondary_vibrato_freq * lv2 / sample_rate).astype(np.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample
-    Tv2 = vibrato_waveform_table[Gammav2 % lv2]
+    tv2 = vibrato_waveform_table[gammav2 % lv2]
 
     if alphav1 != 1 or alphav2 != 1:
-        F = freq * 2. ** ((Tv1 * nu1 / 12) ** alphav1) * 2. ** ((Tv2 * nu2 / 12) ** alphav2)
+        f = freq * 2. ** ((tv1 * nu1 / 12) ** alphav1) * 2. ** ((tv2 * nu2 / 12) ** alphav2)
     else:
-        F = freq * 2. ** ( (Tv1 * nu1 / 12)) * 2. ** ( (Tv2 * nu2 / 12))
-    l = len(waveform_table)
-    Gamma = np.cumsum(F * l / sample_rate).astype(np.int64)
-    s = waveform_table[Gamma % l]
+        f = freq * 2. ** (tv1 * nu1 / 12) * 2. ** (tv2 * nu2 / 12)
+    length = len(waveform_table)
+    gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
+    s = waveform_table[gamma % length]
     return s
 
 
@@ -1178,8 +1186,8 @@ def trill(freqs=[440, 440 * 2 ** (2 / 12)], notes_per_second=17, duration=5, sam
     pointer = 0
     i = 0
     s = []
-    while pointer+number_of_samples < duration*44100:
-        ns = int(number_of_samples*(i+1) - pointer)
+    while pointer + number_of_samples < duration * 44100:
+        ns = int(number_of_samples * (i + 1) - pointer)
         note = note(freqs[i % len(freqs)], number_of_samples=ns,
                     waveform_table=WAVEFORM_TRIANGULAR, sample_rate=sample_rate)
         s.append(adsr(sonic_vector=note, release_duration=10))

@@ -44,7 +44,7 @@ def fir(samples, sonic_vector, freq=True, max_freq=True):
     return np.convolve(samples, sonic_vector)
 
 
-def iir(sonic_vector, A, B):
+def iir(sonic_vector, a, b):
     """
     Apply an IIR filter to a signal.
 
@@ -53,9 +53,9 @@ def iir(sonic_vector, A, B):
     sonic_vector : array_like
         An one dimensional array representing the signal
         (potentially a sound) for the filter to by applied to.
-    A : iterable of scalars
+    a : iterable of scalars
         The feedforward coefficients.
-    B : iterable of scalars
+    b : iterable of scalars
         The feedback filter coefficients.
 
     Notes
@@ -74,13 +74,13 @@ def iir(sonic_vector, A, B):
     signal = sonic_vector
     signal_ = []
     for i in range(len(signal)):
-        samples_A = signal[i::-1][:len(A)]
-        A_coeffs = A[:i + 1]
-        A_contrib = (samples_A * A_coeffs).sum()
+        samples_a = signal[i::-1][:len(a)]
+        a_coeffs = a[:i + 1]
+        a_contrib = (samples_a * a_coeffs).sum()
 
-        samples_B = signal_[-1:-1 - i:-1][:len(B) - 1]
-        B_coeffs = B[1:i + 1]
-        B_contrib = (samples_B * B_coeffs).sum()
-        t_i = (A_contrib + B_contrib) / B[0]
+        samples_b = signal_[-1:-1 - i:-1][:len(b) - 1]
+        b_coeffs = b[1:i + 1]
+        b_contrib = (samples_b * b_coeffs).sum()
+        t_i = (a_contrib + b_contrib) / b[0]
         signal_.append(t_i)
     return np.array(signal_)

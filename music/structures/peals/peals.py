@@ -48,6 +48,15 @@ class Peals(InterestingPermutations):  # TODO
         self.an_eight_and_forty()  # TODO
 
     def transpositions_peal(self, permutation, peal_name="transposition_peal"):
+        """_summary_
+
+        Parameters
+        ----------
+        permutation : _type_
+            _description_
+        peal_name : str, optional
+            _description_, by default "transposition_peal"
+        """
         self.peals[peal_name] = [Permutation(i) for i in permutation.transpositions()]
 
     def twenty_all_over(self):

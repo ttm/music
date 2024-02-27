@@ -38,7 +38,7 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
 
     Returns
     -------
-    E : ndarray
+    e : ndarray
         A numpy array where each value is a value of the envelope 
         for the PCM samples.
         If sonic_vector is supplied,
@@ -68,13 +68,13 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
 
     """
     if type(sonic_vector) in (np.ndarray, list):
-        N = len(sonic_vector)
+        n = len(sonic_vector)
     elif number_of_samples:
-        N = number_of_samples
+        n = number_of_samples
     else:
-        N = int(sample_rate * duration)
-    samples = np.arange(N)
-    N_ = N-1
+        n = int(sample_rate * duration)
+    samples = np.arange(n)
+    n_ = n - 1
     if 'lin' in method:
         if to:
             a0 = 1
@@ -82,23 +82,23 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
         else:
             a0 = trans_dev
             al = 1
-        E = a0 + (al - a0)*samples/N_
+        e = a0 + (al - a0) * samples / n_
     if 'exp' in method:
         if to:
             if alpha != 1:
-                samples_ = (samples/N_)**alpha
+                samples_ = (samples / n_) ** alpha
             else:
-                samples_ = (samples/N_)
+                samples_ = (samples / n_)
         else:
             if alpha != 1:
-                samples_ = ( (N_-samples)/N_)**alpha
+                samples_ = ((n_ - samples) / n_) ** alpha
             else:
-                samples_ = ( (N_-samples)/N_)
-        E = 10**(samples_ * trans_dev / 20)
+                samples_ = ((n_ - samples) / n_)
+        e = 10 ** (samples_ * trans_dev / 20)
     if type(sonic_vector) in (np.ndarray, list):
-        return E*sonic_vector
+        return e * sonic_vector
     else:
-        return E
+        return e
 
 
 def louds(durations=[2, 4, 2], trans_devs=[5, -10, 20], alpha=[1, .5, 20],
@@ -141,11 +141,11 @@ def louds(durations=[2, 4, 2], trans_devs=[5, -10, 20], alpha=[1, .5, 20],
 
     Returns
     -------
-    E : ndarray
+    e : ndarray
         A numpy array where each value is a value of the envelope
         for the PCM samples.
         If sonic_vector is supplied,
-        E is the sonic vector with the envelope applied to it.
+        e is the sonic vector with the envelope applied to it.
 
     See Also
     --------
@@ -168,12 +168,12 @@ def louds(durations=[2, 4, 2], trans_devs=[5, -10, 20], alpha=[1, .5, 20],
 
     """
     if type(sonic_vector) in (np.ndarray, list):
-        N = len(sonic_vector)
+        n = len(sonic_vector)
     elif number_of_samples:
-        N = sum(number_of_samples)
+        n = sum(number_of_samples)
     else:
-        N = int(sample_rate * sum(durations))
-    samples = np.arange(N)
+        n = int(sample_rate * sum(durations))
+    samples = np.arange(n)
     s = []
     fact = 1
     if number_of_samples:
@@ -188,12 +188,12 @@ def louds(durations=[2, 4, 2], trans_devs=[5, -10, 20], alpha=[1, .5, 20],
                       method=method[i], sample_rate=sample_rate) * fact
             s.append(s_)
             fact = s_[-1]
-    E = np.hstack(s)
+    e = np.hstack(s)
     if type(sonic_vector) in (np.ndarray, list):
-        if len(E) < len(sonic_vector):
-            s = np.hstack((E, np.ones(len(sonic_vector) - len(E)) * E[-1]))
-        if len(E) > len(sonic_vector):
-            sonic_vector = np.hstack((sonic_vector, np.ones(len(E) - len(sonic_vector)) * E[-1]))
-        return sonic_vector*E
+        if len(e) < len(sonic_vector):
+            s = np.hstack((e, np.ones(len(sonic_vector) - len(e)) * e[-1]))
+        if len(e) > len(sonic_vector):
+            sonic_vector = np.hstack((sonic_vector, np.ones(len(e) - len(sonic_vector)) * e[-1]))
+        return sonic_vector * e
     else:
-        return E
+        return e

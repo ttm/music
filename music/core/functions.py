@@ -41,7 +41,7 @@ properly.
 
 def normalize(sonic_vector, remove_bias=True):
     """
-    Normalize mono sonic_vector.
+    Normalize a mono sonic vector.
     
     The final array will have values only between -1 and 1.
     
@@ -75,7 +75,7 @@ def normalize(sonic_vector, remove_bias=True):
 
 def normalize_stereo_sonic_vector(sonic_vector, remove_bias=True, normalize_sep=False):
     """
-    Normalize a stereo sonic_vector.
+    Normalize a stereo sonic vector.
     
     The final array will have values only between -1 and 1.
     
@@ -122,7 +122,7 @@ def normalize_stereo_sonic_vector(sonic_vector, remove_bias=True, normalize_sep=
                 s = t * 2 - 1
             else:
                 amb1 = t.max() - t.min()
-                amb = max(amb1, amb2)
+                amb = max(amb1, amb2)  # FIXME: amb2 unresolved here
                 t = (t - t.min()) / amb
                 t = (t - t.min()) / amb
                 s = t * 2 - 1

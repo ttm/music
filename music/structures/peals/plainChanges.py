@@ -27,6 +27,25 @@ class PlainChanges:
         # self.hunts_=hunts_
 
     def initialize_hunts(self, nelements=4, nhunts=None):
+        """_summary_
+
+        Parameters
+        ----------
+        nelements : int, optional
+            _description_, by default 4
+        nhunts : _type_, optional
+            _description_, by default None
+
+        Returns
+        -------
+        _type_
+            _description_
+
+        Raises
+        ------
+        ValueError
+            _description_
+        """
         if not nhunts:
             if nelements > 4:
                 nhunts = 2
@@ -49,6 +68,20 @@ class PlainChanges:
         return hunts_dict
 
     def perform_peal(self, nelements, hunts=None):
+        """_summary_
+
+        Parameters
+        ----------
+        nelements : _type_
+            _description_
+        hunts : _type_, optional
+            _description_, by default None
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
         if hunts is None:
             hunts = self.initialize_hunts(nelements)
         permutation, hunts = self.perform_change(nelements, hunts)
@@ -114,6 +147,20 @@ class PlainChanges:
         return swap, hunts
 
     def act(self, domain=None, peal=None):
+        """_summary_
+
+        Parameters
+        ----------
+        domain : _type_, optional
+            _description_, by default None
+        peal : _type_, optional
+            _description_, by default None
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
         if domain is None:
             domain = list(range(self.nelements))
         if peal is None:
@@ -121,6 +168,13 @@ class PlainChanges:
         return [i(domain) for i in peal]
 
     def act_all(self, domain=None):
+        """_summary_
+
+        Parameters
+        ----------
+        domain : _type_, optional
+            _description_, by default None
+        """
         if domain is None:
             domain = list(range(self.nelements))
         acted_peals = {}

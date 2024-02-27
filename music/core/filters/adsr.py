@@ -75,10 +75,10 @@ def adsr(envelope_duration=2, attack_duration=20,
 
     Examples
     --------
-    >>> W(V()*AD())  # writes a WAV file of a note with ADSR envelope
-    >>> s = H( [V()*AD(A=i, R=j) for i, j in zip([6, 50, 300], [100, 10, 200])] )  # OR
-    >>> s = H( [AD(A=i, R=j, sonic_vector=V()) for i, j in zip([6, 15, 100], [2, 2, 20])] )
-    >>> envelope = AD(d=440, A=10e3, D=0, R=5e3)  # a lengthy envelope
+    >>> W(V()*ad())  # writes a WAV file of a note with ADSR envelope
+    >>> s = H( [V()*ad(A=i, R=j) for i, j in zip([6, 50, 300], [100, 10, 200])] )  # OR
+    >>> s = H( [ad(A=i, R=j, sonic_vector=V()) for i, j in zip([6, 15, 100], [2, 2, 20])] )
+    >>> envelope = ad(d=440, A=10e3, D=0, R=5e3)  # a lengthy envelope
 
     Notes
     -----
@@ -91,35 +91,36 @@ def adsr(envelope_duration=2, attack_duration=20,
 
     """
     if type(sonic_vector) in (np.ndarray, list):
-        Lambda = len(sonic_vector)
+        lambda_adsr = len(sonic_vector)
     elif number_of_samples:
-        Lambda = number_of_samples
+        lambda_adsr = number_of_samples
     else:
-        Lambda = int(envelope_duration * sample_rate)
-    Lambda_A = int(attack_duration * sample_rate * 0.001)
-    Lambda_D = int(decay_duration * sample_rate * 0.001)
-    Lambda_R = int(release_duration * sample_rate * 0.001)
+        lambda_adsr = int(envelope_duration * sample_rate)
+    lambda_a = int(attack_duration * sample_rate * 0.001)
+    lambda_d = int(decay_duration * sample_rate * 0.001)
+    lambda_r = int(release_duration * sample_rate * 0.001)
 
     perc = to_zero / attack_duration
-    attack_duration = fade(fade_out=0, method=transition, alpha=alpha, dB=db_dev, perc=perc, number_of_samples=Lambda_A)
+    attack_duration = fade(fade_out=0, method=transition, alpha=alpha, db=db_dev, perc=perc, number_of_samples=lambda_a)
 
-    decay_duration = loud(trans_dev=sustain_level, method=transition, alpha=alpha, number_of_samples=Lambda_D)
+    decay_duration = loud(trans_dev=sustain_level, method=transition, alpha=alpha, number_of_samples=lambda_d)
 
-    a_S = 10 ** (sustain_level / 20.)
-    sustain_level = np.ones(Lambda - (Lambda_A + Lambda_R + Lambda_D)) * a_S
+    a_s = 10 ** (sustain_level / 20.)
+    sustain_level = np.ones(lambda_adsr - (lambda_a + lambda_r + lambda_d)) * a_s
 
     perc = to_zero / release_duration
-    release_duration = fade(method=transition, alpha=alpha, dB=db_dev, perc=perc, number_of_samples=Lambda_R) * a_S
+    release_duration = fade(method=transition, alpha=alpha, db=db_dev, perc=perc, number_of_samples=lambda_r) * a_s
 
-    AD = np.hstack((attack_duration, decay_duration, sustain_level, release_duration))
+    ad = np.hstack((attack_duration, decay_duration, sustain_level, release_duration))
     if type(sonic_vector) in (np.ndarray, list):
-        return sonic_vector * AD
+        return sonic_vector * ad
     else:
-        return AD
+        return ad
 
 
 def adsr_vibrato(note_dict={}, adsr_dict={}):
     return adsr(sonic_vector=note_with_vibrato(**note_dict), **adsr_dict)
+
 
 def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
                 sustain_level=-5, release_duration=50, transition="exp", alpha=1,
@@ -136,9 +137,15 @@ def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
     else:
         sonic_vector1 = 0
         sonic_vector2 = 0
-    s1 = adsr(envelope_duration=duration, attack_duration=attack_duration, decay_duration=decay_duration, sustain_level=sustain_level, release_duration=release_duration, transition=transition, alpha=alpha,
-              db_dev=db_dev, to_zero=to_zero, number_of_samples=number_of_samples, sonic_vector=sonic_vector1, sample_rate=sample_rate)
-    s2 = adsr(envelope_duration=duration, attack_duration=attack_duration, decay_duration=decay_duration, sustain_level=sustain_level, release_duration=release_duration, transition=transition, alpha=alpha,
-              db_dev=db_dev, to_zero=to_zero, number_of_samples=number_of_samples, sonic_vector=sonic_vector2, sample_rate=sample_rate)
+    s1 = adsr(envelope_duration=duration, attack_duration=attack_duration,
+              decay_duration=decay_duration, sustain_level=sustain_level,
+              release_duration=release_duration, transition=transition, alpha=alpha,
+              db_dev=db_dev, to_zero=to_zero, number_of_samples=number_of_samples,
+              sonic_vector=sonic_vector1, sample_rate=sample_rate)
+    s2 = adsr(envelope_duration=duration, attack_duration=attack_duration,
+              decay_duration=decay_duration, sustain_level=sustain_level,
+              release_duration=release_duration, transition=transition, alpha=alpha,
+              db_dev=db_dev, to_zero=to_zero, number_of_samples=number_of_samples,
+              sonic_vector=sonic_vector2, sample_rate=sample_rate)
     s = np.vstack((s1, s2))
     return s

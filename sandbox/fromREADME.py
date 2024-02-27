@@ -3,7 +3,7 @@ keys = tuple(sys.modules.keys())
 for key in keys:
     if "music" in key:
         del sys.modules[key]
-sys.path.append("/Users/jacopo/Developer/music")
+sys.path.append("/")
 import numpy as np
 import music
 
@@ -32,7 +32,7 @@ s2 = b.render(30)
 
 # s1 then s2 then s1 and s2 at the same time, then at the same time but one in each LR channel,
 # then s1 times s2 reversed, then s1+s2 but jumping 6 samples before using one:
-s3 = music.utils.stereo_horizontal_stack(s1, s2, s1 + s2, (s1, s2),
+s3 = music.utils.horizontal_stack(s1, s2, s1 + s2, (s1, s2),
        s1*s2[::-1],
        s1[::7] + s2[::7])
 music.core.io.write_wav_stereo(s3, 'tempMusic.wav')
@@ -40,7 +40,7 @@ music.core.io.write_wav_stereo(s3, 'tempMusic.wav')
 # X) Tweak with special sets of permutations derived from change ringing (campanology)
 # or from finite group theory (algebra):
 nel = 4
-pe4 = music.structures.symmetry.PlainChanges(nel)
+pe4 = music.structures.peals.PlainChanges.PlainChanges(nel)
 b.perms = pe4.peal_direct
 b.domain = [220*2**(i/12) for i in (0,3,6,9)]
 b.curseq = 'f_'
@@ -73,8 +73,8 @@ s43 = b2.render(nnotes)
 s43_ = music.core.filters.fade(sonic_vector=s43, duration=5, method='lin')
 
 diff = s4.shape[0] - s42.shape[0]
-s42_ = music.utils.stereo_horizontal_stack(s42, np.zeros(diff))
-s_ = music.utils.stereo_horizontal_stack(s3, (s42_, s4), s43_)
+s42_ = music.utils.horizontal_stack(s42, np.zeros(diff))
+s_ = music.utils.horizontal_stack(s3, (s42_, s4), s43_)
 
 music.core.io.write_wav_stereo(s_, 'geometric_music.wav')
 
@@ -94,8 +94,8 @@ music.core.io.write_wav_stereo(s_, 'geometric_music.wav')
 #
 # 3) Using IteratorSynth as explained below. (potentially deprecated)
 
-pe3 = music.structures.symmetry.PlainChanges(3)
-music.structures.symmetry.printPeal(pe3.act(), [0])
+pe3 = music.structures.peals.PlainChanges.PlainChanges(3)
+music.structures.symmetry.print_peal(pe3.act(), [0])
 freqs = sum(pe3.act([220,440,330]), [])
 
 nnotes = len(freqs)
@@ -119,7 +119,7 @@ isynth = music.legacy.IteratorSynth.IteratorSynth()
 isynth.fundamental_frequency_sequence=freqs
 isynth.tab_sequence = [T.sine, T.triangle, T.square, T.saw]
 
-pcm_samples = music.utils.stereo_horizontal_stack(*[isynth.renderIterate() for i in range(len(freqs))])
+pcm_samples = music.utils.H(*[isynth.renderIterate() for i in range(len(freqs))])
 
 music.core.io.write_wav_mono(pcm_samples, 'something.wav')
 

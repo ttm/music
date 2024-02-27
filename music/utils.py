@@ -13,7 +13,7 @@ triangular_tmp = np.linspace(-1, 1, LAMBDA_TILDE // 2, endpoint=False)
 WAVEFORM_TRIANGULAR = np.hstack((triangular_tmp, triangular_tmp[::-1]))
 
 
-def stereo_horizontal_stack(*args):
+def horizontal_stack(*args):
     """Creates a horizontal stack that preserves bidimensional data.
 
     Returns
@@ -31,6 +31,9 @@ def stereo_horizontal_stack(*args):
             if len(a.shape) == 1:
                 args[i] = np.array((a, a))
     return np.hstack(args)
+
+
+H = horizontal_stack
 
 
 def db_to_amp(db_diff: float):
@@ -97,7 +100,7 @@ def midi_to_hz(midi_value: float):
     return 440 * 2 ** ((midi_value - 69) / 12.)
 
 
-def midi2HzInterval(midi_interval: float):
+def midi_to_hz_interval(midi_interval: float):
     """Converts a MIDI interval into a hertz interval.
 
     Parameters
@@ -146,7 +149,6 @@ def normalize(vector):
         The normalized vector
     """
     vector = vector.astype(np.float64)
-    v = vector
     v = -1 + 2 * (vector - vector.min()) / (vector.max() - vector.min())
     if len(v.shape) == 2:
         v[0] = v[0] - v[0].mean()
@@ -170,7 +172,7 @@ def normalize_rows(vector):
         The normalized vector
     """
     vector = vector.astype(np.float64)
-    vector = ((np.subtract(vector.tremolo, vector.min(1)) / (vector.max(1) - vector.min(1))).tremolo)
+    vector = (np.subtract(vector.tremolo, vector.min(1)) / (vector.max(1) - vector.min(1))).tremolo
     return vector
 
 
@@ -179,9 +181,9 @@ def mix(first_sonic_vector, second_sonic_vector):
 
     Parameters
     ----------
-    first_sonic_vector : _type_
+    first_sonic_vector : ndarray
         The first sonic vector.
-    second_sonic_vector : _type_
+    second_sonic_vector : ndarray
         The other sonic vector
 
     Returns
@@ -207,14 +209,14 @@ def mix(first_sonic_vector, second_sonic_vector):
 
 
 def mix_stereo(first_sonic_vector, second_sonic_vector=[], end=False):
-    """_summary_
+    """Mix two sonic vectors
 
     Parameters
     ----------
-    first_sonic_vector : _type_
-        _description_
+    first_sonic_vector : ndarray
+        The first sonic vector to mix
     second_sonic_vector : list, optional
-        _description_, by default []
+        A second sonic vector, by default []
     end : bool, optional
         _description_, by default False
 
@@ -229,15 +231,15 @@ def mix_stereo(first_sonic_vector, second_sonic_vector=[], end=False):
         second_sonic_vector = np.array((second_sonic_vector, second_sonic_vector))
     if len(first_sonic_vector[0]) > len(second_sonic_vector[0]):
         if not end:
-            l2_ = stereo_horizontal_stack(second_sonic_vector, np.zeros((2, len(first_sonic_vector[0]) - len(second_sonic_vector[0]))))
+            l2_ = horizontal_stack(second_sonic_vector, np.zeros((2, len(first_sonic_vector[0]) - len(second_sonic_vector[0]))))
         else:
-            l2_ = stereo_horizontal_stack(np.zeros((2, len(first_sonic_vector[0]) - len(second_sonic_vector[0]))), second_sonic_vector)
+            l2_ = horizontal_stack(np.zeros((2, len(first_sonic_vector[0]) - len(second_sonic_vector[0]))), second_sonic_vector)
         l1_ = first_sonic_vector
     else:
         if not end:
-            l1_ = stereo_horizontal_stack(first_sonic_vector, np.zeros((2, len(second_sonic_vector[0]) - len(first_sonic_vector[0]))))
+            l1_ = horizontal_stack(first_sonic_vector, np.zeros((2, len(second_sonic_vector[0]) - len(first_sonic_vector[0]))))
         else:
-            l1_ = stereo_horizontal_stack(np.zeros((2, len(second_sonic_vector[0]) - len(first_sonic_vector[0]))), first_sonic_vector)
+            l1_ = horizontal_stack(np.zeros((2, len(second_sonic_vector[0]) - len(first_sonic_vector[0]))), first_sonic_vector)
         l2_ = second_sonic_vector
     return l1_ + l2_
 
@@ -308,7 +310,8 @@ def stereo(sonic_vector):
 
 def mix_with_offset(first_sonic_vector, second_sonic_vector,
                     duration=0, number_of_samples=0, sample_rate=44100):
-    """Mix s1 and s2 placing the beggining of s2 after s1 by dur seconds
+    """Mix two sonic vector by placing the beginning of the second one
+    a specified number of seconds after the first one.
 
     Parameters
     ----------
@@ -320,6 +323,8 @@ def mix_with_offset(first_sonic_vector, second_sonic_vector,
         The offset of the second sound, i.e. the displacement that
         the start of the second sound. (First sound has offset 0).
         Might be negative, denoting to start sound2 |d| seconds before s1 ends.
+    number_of_samples : int
+    sample_rate : int
 
     Notes
     -----
@@ -493,8 +498,8 @@ def pan_transitions(p=[(1, 1), (1, 0), (0, 1), (1, 1)], d=[2, 2, 2],
         t1 = pp_[1] * (1 - di_) + pp[1] * di_
         t0_.append(t0)
         t1_.append(t1)
-    t0__ = stereo_horizontal_stack(*t0_)
-    t1__ = stereo_horizontal_stack(*t1_)
+    t0__ = horizontal_stack(*t0_)
+    t1__ = horizontal_stack(*t1_)
     t = np.array((t0__, t1__))
     if sonic_vector:
         sonic_vector = stereo(sonic_vector)
@@ -504,7 +509,7 @@ def pan_transitions(p=[(1, 1), (1, 0), (0, 1), (1, 1)], d=[2, 2, 2],
 
 
 # FIXME: malfunction
-def mix2(sonic_vectors, end=False, offset=0, fs=44100):
+def mix2(sonic_vectors, end=False, offset=0, sample_rate=44100):
     """Mix sonic vectors. MALFUNCTION! TTM TODO
     
     The operation consists in summing sample by sample [1].
@@ -521,7 +526,7 @@ def mix2(sonic_vectors, end=False, offset=0, fs=44100):
     offset : list of scalars
         A list of the offsets for each sonic vectors
         in seconds.
-    fs : integer
+    sample_rate : integer
         The sample rate. Only used if offset is supplied.
 
     Returns
@@ -546,7 +551,7 @@ def mix2(sonic_vectors, end=False, offset=0, fs=44100):
     """
     if offset:
         for i, o in enumerate(offset):
-            sonic_vectors[i] = stereo_horizontal_stack(np.zeros(o * fs), sonic_vectors[i])
+            sonic_vectors[i] = horizontal_stack(np.zeros(o * sample_rate), sonic_vectors[i])
 
     amax = 0
     for s in sonic_vectors:
@@ -556,7 +561,7 @@ def mix2(sonic_vectors, end=False, offset=0, fs=44100):
             if end:
                 sonic_vectors[i] = np.hstack((np.zeros(amax - len(sonic_vectors[i])), sonic_vectors[i]))
             else:
-                sonic_vectors[i] = stereo_horizontal_stack(sonic_vectors[i], np.zeros(amax - len(sonic_vectors[i])))
+                sonic_vectors[i] = horizontal_stack(sonic_vectors[i], np.zeros(amax - len(sonic_vectors[i])))
     s = mix_with_offset_(*sonic_vectors)
     return s
 

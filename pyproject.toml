@@ -1,0 +1,66 @@
+[project]
+name = 'music'
+version = '0.7b3'
+authors = [
+  { name='Renato Fabbri', email='renato.fabbri@gmail.com' },
+]
+description = 'music is a python package for making music and sounds, based on the MASS framework'
+license = {file = "LICENSE"}
+readme = 'README.md'
+requires-python = '>=3.12'
+dependencies = [
+    'colorama >= 0.4.6',
+    'matplotlib >= 3.7.1',
+    'numpy >= 1.26.4',
+    'scipy >= 1.12.0',
+    'symp >= 1.12',
+    'termcolor >= 2.4.0'
+]
+classifiers = [
+    'Programming Language :: Python :: 3',
+    'License :: OSI Approved :: MIT License',
+    'Operating System :: OS Independent',
+    'Development Status :: 4 - Beta',
+    'Intended Audience :: Science/Research',
+    'Intended Audience :: Developers',
+    'Intended Audience :: Telecommunications Industry',
+    'Intended Audience :: Education',
+    'Intended Audience :: Religion',
+    'Intended Audience :: Other Audience',
+    'Topic :: Scientific/Engineering :: Physics',
+    'Topic :: Scientific/Engineering :: Visualization',
+    'Topic :: Scientific/Engineering :: Information Analysis',
+    'Topic :: Multimedia :: Sound/Audio :: Sound Synthesis',
+    'Topic :: Multimedia :: Sound/Audio :: Editors',
+    'Topic :: Multimedia :: Sound/Audio :: Mixers',
+    'Topic :: Multimedia :: Sound/Audio :: Speech',
+    'Topic :: Artistic Software',
+    'Topic :: Other/Nonlisted Topic',
+    'Topic :: Text Processing',
+    'Topic :: Text Processing :: Linguistic',
+    'Topic :: Multimedia :: Sound/Audio :: Sound Synthesis',
+]
+keywords = [
+    'physics', 'music', 'synthesis', 'psychophysics',
+    'symmetry', 'change ringing', 'campanology', 'group theory', 'toolbox',
+    'musical composition', 'art', 'artistic creation',
+    'experimental music', 'contemporary music', 'MASS',
+    'MASS framework', 'synthesizer', 'PCM', 'audio', 'sound',
+    'acoustics', 'signal processing', 'multimedia', 'psychoactive',
+    'rotation', 'permutation', 'mirror', 'speech', 'singing',
+    'speech synthesis', 'numpy', 'sonic art', 'hifi', 'hi-fi',
+    'noise', 'high fidelity', 'hyper-fidelity', 'LUT', 'vibrato',
+    'tremolo', 'AM', 'FM', 'ADSR', 'HRTF', 'spatialization',
+    'spatial location'
+]
+
+[project.urls]
+Homepage = 'https://github.com/pypa/sampleproject'
+Issues = 'https://github.com/pypa/sampleproject/issues'
+
+[build-system]
+requires = ['setuptools>=61.0']
+build-backend = 'setuptools.build_meta'
+
+[tool.setuptools]
+packages = ['music']

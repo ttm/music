@@ -20,7 +20,7 @@ classifiers = [
     'Programming Language :: Python :: 3',
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
-    'Development Status :: 4 - Beta',
+    'Development Status :: 5 - Production/Stable',
     'Intended Audience :: Science/Research',
     'Intended Audience :: Developers',
     'Intended Audience :: Telecommunications Industry',
@@ -51,12 +51,13 @@ keywords = [
     'speech synthesis', 'numpy', 'sonic art', 'hifi', 'hi-fi',
     'noise', 'high fidelity', 'hyper-fidelity', 'LUT', 'vibrato',
     'tremolo', 'AM', 'FM', 'ADSR', 'HRTF', 'spatialization',
-    'spatial location'
+    'spatial location', 'brainwave entrainment', 'neuromodulation',
+    'binaural beats', 'monaural beats', 'isochronic tones'
 ]
 
 [project.urls]
-Homepage = 'https://github.com/pypa/sampleproject'
-Issues = 'https://github.com/pypa/sampleproject/issues'
+Homepage = 'https://github.com/ttm/music'
+Issues = 'https://github.com/ttm/music/issues'
 
 [build-system]
 requires = ['setuptools>=61.0']

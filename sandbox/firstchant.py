@@ -4,8 +4,8 @@ for key in keys:
     if "music" in key:
         del sys.modules[key]
 import music as M
-from percolation.rdf import c
-H = M.utils.H
+#from percolation.rdf import c
+H = M.utils.stereo_horizontal_stack
 
 # sonic_vector=M.singing.sing(text = "pa-la-vras são muito le-gais")
 # M.utils.write(sonic_vector,filename="achant.wav", normalize=False,samplerate=44100)

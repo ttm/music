@@ -1,114 +1,269 @@
-import numpy as n
-from scipy.io import wavfile
-# from .functions import *
-from numbers import Number
+"""
+This module is home of some basic functions used throughout the `music` package
+which are not strictly related to the field of computational music.
+"""
 
-def H(*args):
+import numpy as np
+
+LAMBDA_TILDE = 1024 * 16
+WAVEFORM_SINE = np.sin(np.linspace(0, 2 * np.pi, LAMBDA_TILDE, endpoint=False))
+WAVEFORM_SAWTOOTH = np.linspace(-1, 1, LAMBDA_TILDE)
+WAVEFORM_SQUARE = np.hstack((np.ones(int(LAMBDA_TILDE / 2)) * -1, np.ones(int(LAMBDA_TILDE / 2))))
+triangular_tmp = np.linspace(-1, 1, LAMBDA_TILDE // 2, endpoint=False)
+WAVEFORM_TRIANGULAR = np.hstack((triangular_tmp, triangular_tmp[::-1]))
+
+
+def horizontal_stack(*args):
+    """Creates a horizontal stack that preserves bidimensional data.
+
+    Returns
+    -------
+    ndarray
+        a horizontal stack
+    """
     stereo = 0
-    args = [n.array(a) for a in args]
+    args = [np.array(a) for a in args]
     for a in args:
         if len(a.shape) == 2:
             stereo = 1
     if stereo:
-        for i,a in enumerate(args):
+        for i, a in enumerate(args):
             if len(a.shape) == 1:
-                args[i] = n.array(( a, a ))
-    return n.hstack(args)
+                args[i] = np.array((a, a))
+    return np.hstack(args)
 
-def read(fname):
-    s = wavfile.read(fname)
-    if s[1].dtype != 'int16':
-        print('implement non 16bit samples!')
-        return
-    fs_ = s[0]
-    if len(s[1].shape) == 2:
-        # l = s[1][:,0]/2**15
-        # r = s[1][:,1]/2**15
-        return n.array( s[1].T/2**15 )
-    else:
-        return s[1]/2**15
 
-def V(*args):
-    return n.vstack(args)
-def db2Amp(db_difference):
-    """Receives difference in decibels, returns amplitude proportion"""
-    return 10.**(db_difference/20.)
-def amp2Db(amp_difference):
-    """Receives amplitude proportion, returns decibel difference"""
-    return 20.*n.log10(amp_difference)
-def hz2Midi(hz_val):
-    """Receives Herz value and returns midi note value"""
-    return 69+12*n.log2(hz_val/440)
-def midi2Hz(midi_val):
-    """Receives midi note value and returns corresponding Herz frequency"""
-    #return 440*n.log2((69+midi_val)/69)
-    return 440*2**((midi_val-69)/12.)
-def midi2HzInterval(midi_interval):
-    return 2**(midi_interval/12)
-def p2f(f0=220.,semitones=[0,7,7,4,7,0]):
-    return [f0*2**(i/12) for i in semitones]
+H = horizontal_stack
+
+
+def db_to_amp(db_diff: float):
+    """Receives difference in decibels, returns difference in amplitude
+
+    Parameters
+    ----------
+    db_diff : float
+        Difference in decibels
+
+    Returns
+    -------
+    float
+        Amplitude difference
+    """
+    return 10. ** (db_diff / 20.)
+
+
+def amp_to_db(amp_diff: float):
+    """Receives amplitude difference, returns difference in decibels
+
+    Parameters
+    ----------
+    amp_diff : float
+        Differene in amplitude
+
+    Returns
+    -------
+    float
+        Difference in decibels
+    """
+    return 20. * np.log10(amp_diff)
+
+
+def hz_to_midi(hz_value: float):
+    """Converts a hertz value into a MIDI note
+
+    Parameters
+    ----------
+    hz_value : float
+        Hertz value
+
+    Returns
+    -------
+    numpy.float64
+        MIDI note value corresponding to the hertz value
+    """
+    return 69 + 12 * np.log2(hz_value / 440)
+
+
+def midi_to_hz(midi_value: float):
+    """Converts a MIDI note to the corrisponding hertz value
+
+    Parameters
+    ----------
+    midi_value : float
+        MIDI note
+
+    Returns
+    -------
+    float
+        Hertz value
+    """
+    return 440 * 2 ** ((midi_value - 69) / 12.)
+
+
+def midi_to_hz_interval(midi_interval: float):
+    """Converts a MIDI interval into a hertz interval.
+
+    Parameters
+    ----------
+    midi_interval : float
+        MIDI interval to convert
+
+    Returns
+    -------
+    float
+        Hertz interval
+    """
+    return 2 ** (midi_interval / 12)
+
+
+def pitch_to_freq(start_freq=220., semitones=[0, 7, 7, 4, 7, 0]):
+    """Produces a list of frequencies based on a list of semitones and a
+    starting frequency.
+
+    Parameters
+    ----------
+    start_freq : float, optional
+        Starting frequency, by default 220.
+    semitones : list, optional
+        List of semitones, by default [0,7,7,4,7,0]
+
+    Returns
+    -------
+    list
+        List of frequencies
+    """
+    return [start_freq * 2 ** (i / 12) for i in semitones]
+
 
 def normalize(vector):
-    vector=vector.astype(n.float64)
-    v = vector
-    v = -1+2*(vector-vector.min())/(vector.max()-vector.min())
+    """Normalizes a whole vector.
+
+    Parameters
+    ----------
+    vector : _type_
+        The vector to be normalized
+
+    Returns
+    -------
+    _type_
+        The normalized vector
+    """
+    vector = vector.astype(np.float64)
+    v = -1 + 2 * (vector - vector.min()) / (vector.max() - vector.min())
     if len(v.shape) == 2:
         v[0] = v[0] - v[0].mean()
         v[1] = v[1] - v[1].mean()
     else:
         v = v - v.mean()
     return v
-normalize_=normalize
-def normalizeRows(vector):
-    """Normalize each row of a bidimensional vector to [0,1]"""
-    vector=vector.astype(n.float64)
-    vector=((n.subtract(self.vector.T,self.vector.min(1)) / (self.vector.max(1)-self.vector.min(1))).T)
-    return vector
-def write(sonic_vector,filename="sound_music_name.wav", normalize=True,samplerate=44100):
-    if normalize:
-        sonic_vector=normalize_(sonic_vector)
-    sonic_vector_ = n.int16(sonic_vector * float(2**15-1))
-    wavfile.write(filename,samplerate, sonic_vector_) # escrita do som
-def mix(self,list1,list2):
+
+
+def normalize_rows(vector):
+    """Normalizes each row of a bidimensional vector to [0,1].
+
+    Parameters
+    ----------
+    vector : _type_
+        The vector to be normalized
+
+    Returns
+    -------
+    _type_
+        The normalized vector
     """
+    vector = vector.astype(np.float64)
+    vector = (np.subtract(vector.tremolo, vector.min(1)) / (vector.max(1) - vector.min(1))).tremolo
+    return vector
+
+
+def mix(first_sonic_vector, second_sonic_vector):
+    """Mixes two sonic vectors.
+
+    Parameters
+    ----------
+    first_sonic_vector : ndarray
+        The first sonic vector.
+    second_sonic_vector : ndarray
+        The other sonic vector
+
+    Returns
+    -------
+    _type_
+        A mixed sonic vector
+    
     See Also
     --------
     (.functions).mix2 : a better mixer
-
     """
-    l1=len(list1); l2=len(list2)
-    if l1<l2:
-        sound=n.zeros(l2)
-        sound+=list2
-        sound[:l1]+=list1
+    l1 = len(first_sonic_vector)
+    l2 = len(second_sonic_vector)
+    if l1 < l2:
+        sound = np.zeros(l2)
+        sound += second_sonic_vector
+        sound[:l1] += first_sonic_vector
     else:
-        sound=n.zeros(l1)
-        sound+=list1
-        sound[:l2]+=list2
+        sound = np.zeros(l1)
+        sound += first_sonic_vector
+        sound[:l2] += second_sonic_vector
     return sound
-def mixS(l1, l2=[], end=False):
-    if len(l1) != 2:
-        l1 = n.array((l1, l1))
-    if len(l2) != 2:
-        l2 = n.array((l2, l2))
-    if len(l1[0]) > len(l2[0]):
+
+
+def mix_stereo(first_sonic_vector, second_sonic_vector=[], end=False):
+    """Mix two sonic vectors
+
+    Parameters
+    ----------
+    first_sonic_vector : ndarray
+        The first sonic vector to mix
+    second_sonic_vector : list, optional
+        A second sonic vector, by default []
+    end : bool, optional
+        _description_, by default False
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+    if len(first_sonic_vector) != 2:
+        first_sonic_vector = np.array((first_sonic_vector, first_sonic_vector))
+    if len(second_sonic_vector) != 2:
+        second_sonic_vector = np.array((second_sonic_vector, second_sonic_vector))
+    if len(first_sonic_vector[0]) > len(second_sonic_vector[0]):
         if not end:
-            l2_ = H( l2, n.zeros(( 2, len(l1[0])-len(l2[0]) )) )
+            l2_ = horizontal_stack(second_sonic_vector, np.zeros((2, len(first_sonic_vector[0]) - len(second_sonic_vector[0]))))
         else:
-            l2_ = H( n.zeros(( 2, len(l1[0])-len(l2[0]) )), l2 )
-        l1_ = l1
+            l2_ = horizontal_stack(np.zeros((2, len(first_sonic_vector[0]) - len(second_sonic_vector[0]))), second_sonic_vector)
+        l1_ = first_sonic_vector
     else:
         if not end:
-            l1_ = H( l1, n.zeros(( 2, len(l2[0])-len(l1[0]) )) )
+            l1_ = horizontal_stack(first_sonic_vector, np.zeros((2, len(second_sonic_vector[0]) - len(first_sonic_vector[0]))))
         else:
-            l1_ = H( n.zeros(( 2, len(l2[0])-len(l1[0]) )), l1 )
-        l2_ = l2
-    return l1_+l2_
+            l1_ = horizontal_stack(np.zeros((2, len(second_sonic_vector[0]) - len(first_sonic_vector[0]))), first_sonic_vector)
+        l2_ = second_sonic_vector
+    return l1_ + l2_
 
-def resolveStereo(afunction, argdict, stereovars=['sonic_vector']):
+
+def resolve_stereo(afunction, argdict, stereo_vars=['sonic_vector']):
+    """_summary_
+
+    Parameters
+    ----------
+    afunction : _type_
+        _description_
+    argdict : _type_
+        _description_
+    stereo_vars : list, optional
+        _description_, by default ['sonic_vector']
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
     ag1 = argdict.copy()
     ag2 = argdict.copy()
-    for v in stereovars:
+    for v in stereo_vars:
         argdict[v] = stereo(argdict[v])
         sv1 = argdict[v][0]
         sv2 = argdict[v][1]
@@ -123,36 +278,53 @@ def resolveStereo(afunction, argdict, stereovars=['sonic_vector']):
     # ag2['sonic_vector'] = sv2
     sv1_ = afunction(**ag1)
     sv2_ = afunction(**ag2)
-    s = n.array( (sv1_, sv2_) )
+    s = np.array((sv1_, sv2_))
     return s
 
+
 def stereo(sonic_vector):
-    s = n.array(sonic_vector)
+    """_summary_
+
+    Parameters
+    ----------
+    sonic_vector : _type_
+        _description_
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+    s = np.array(sonic_vector)
     if len(s.shape) == 1:
-        ss = n.array(( s, s ))
+        ss = np.array((s, s))
     elif s.shape[0] > 2:
         print('keeping first two channels in left and right. The rest will be added to both left and right')
-        ss = n.array(( s[0], s[1] ))
+        ss = np.array((s[0], s[1]))
         for sss in s[2:]:
             ss += sss
     else:
         ss = s
     return ss
 
-def J(s1, s2, d=0, nsamples=0, fs=44100):
-    """
-    Mix s1 and s2 placing the beggining of s2 after s1 by dur seconds
+
+def mix_with_offset(first_sonic_vector, second_sonic_vector,
+                    duration=0, number_of_samples=0, sample_rate=44100):
+    """Mix two sonic vector by placing the beginning of the second one
+    a specified number of seconds after the first one.
 
     Parameters
     ----------
-    s1 : numeric array
+    first_sonic_vector : numeric array
         A sequence of PCM samples.
-    s2 : numeric array
+    second_sonic_vector : numeric array
         Another sequence of PCM samples.
-    d : numeric
+    duration : numeric
         The offset of the second sound, i.e. the displacement that
         the start of the second sound. (First sound has offset 0).
         Might be negative, denoting to start sound2 |d| seconds before s1 ends.
+    number_of_samples : int
+    sample_rate : int
 
     Notes
     -----
@@ -165,39 +337,39 @@ def J(s1, s2, d=0, nsamples=0, fs=44100):
     (.functions).mix2 : a better mixer
 
     """
-    s1 = n.array(s1)
-    s2 = n.array(s2)
-    if 2 in [len(s1.shape), len(s2.shape)]:
-        return resolveStereo(J, locals(), ['s1', 's2'])
-    dur = d
+    first_sonic_vector = np.array(first_sonic_vector)
+    second_sonic_vector = np.array(second_sonic_vector)
+    if 2 in [len(first_sonic_vector.shape), len(second_sonic_vector.shape)]:
+        return resolve_stereo(mix_with_offset, locals(), ['s1', 's2'])
+    dur = duration
 
-    if not nsamples:  # sample in s1 where s2[0] is added
-        ns = dur*fs
+    if not number_of_samples:  # sample in s1 where s2[0] is added
+        ns = dur * sample_rate
     else:
-        ns = nsamples
+        ns = number_of_samples
 
     if ns >= 0:
-        nst = ns + len(s2)
+        nst = ns + len(second_sonic_vector)
     else:
-        nst = len(s1) + len(s2) + ns 
+        nst = len(first_sonic_vector) + len(second_sonic_vector) + ns
 
-    if nst < len(s1):
-        nst = len(s1)
+    if nst < len(first_sonic_vector):
+        nst = len(first_sonic_vector)
 
-    s = n.zeros(int(nst))
-    s[:len(s1)] += s1
+    s = np.zeros(int(nst))
+    s[:len(first_sonic_vector)] += first_sonic_vector
     print('s.shape', 's1.shape', 's2.shape', 'ns', 'nst',
-            s.shape, s1.shape, s2.shape, ns, nst)
+          s.shape, first_sonic_vector.shape, second_sonic_vector.shape, ns, nst)
     if ns >= 0:
-        s[ns : ns+len(s2)] += s2
+        s[ns: ns + len(second_sonic_vector)] += second_sonic_vector
         # s[-len(s2):] += s2
     else:
-        s[int(len(s1)+ns): int(len(s1)+ns+len(s2))] += s2
+        s[int(len(first_sonic_vector) + ns): int(len(first_sonic_vector) + ns + len(second_sonic_vector))] += second_sonic_vector
     return s
 
-def J_(*args):
-    """
-    Mix sonic vectors with offsets.
+
+def mix_with_offset_(*args):
+    """Mix sonic vectors with offsets.
 
     Parameters
     ----------
@@ -229,20 +401,20 @@ def J_(*args):
     #         i += 1
     #     sounds.append(the_sound)
     #     offsets.append(offset)
-    # return n.zeros(args[0].shape[-1])
+    # return np.zeros(args[0].shape[-1])
     # return mix2(sounds, False, offsets, 44100)
-    i = 0 # DEPRECATED
+    i = 0  # DEPRECATED
     s = []
     while i < len(args):
-        a = args[i] # new array
-        if type(a) not in (n.ndarray, list):
+        a = args[i]  # new array
+        if type(a) not in (np.ndarray, list):
             print("Something odd happened,")
             print("skipping a value that should have heen a sequence of numbers:", a)
             i += 1
             continue
-        if len(args) > i+1:
-            offset = args[i+1] # potentialy duration
-            if n.isscalar(offset):
+        if len(args) > i + 1:
+            offset = args[i + 1]  # potentialy duration
+            if np.isscalar(offset):
                 i += 2
             else:
                 offset = 0
@@ -250,12 +422,32 @@ def J_(*args):
         else:
             offset = 0
             i += 1
-        s = J(s, a, d=offset)
+        s = mix_with_offset(s, a, duration=offset)
     return s
 
-def panTransitions(p=[(1,1),(1,0),(0,1),(1,1)], d=[2,2,2],
-        method=['lin','circ','exp'], fs=44100, sonic_vector=None):
-    """
+
+def pan_transitions(p=[(1, 1), (1, 0), (0, 1), (1, 1)], d=[2, 2, 2],
+                    method=['lin', 'circ', 'exp'], sample_rate=44100, sonic_vector=None):
+    """_summary_
+
+    Parameters
+    ----------
+    p : list, optional
+        _description_, by default [(1,1),(1,0),(0,1),(1,1)]
+    d : list, optional
+        _description_, by default [2,2,2]
+    method : list, optional
+        _description_, by default ['lin','circ','exp']
+    sample_rate : int, optional
+        _description_, by default 44100
+    sonic_vector : _type_, optional
+        _description_, by default None
+
+    Returns
+    -------
+    _type_
+        _description_
+    
     Notes
     -----
     Each pan transition i starts and ends amplitude envelope
@@ -300,25 +492,25 @@ def panTransitions(p=[(1,1),(1,0),(0,1),(1,1)], d=[2,2,2],
     for i, pp in enumerate(p[1:]):
         # t0 = pp[0] - pp_[0]
         # t1 = pp[1] - pp_[1]
-        di = d[i]*fs
-        di_ = n.arange(di)/di
-        t0 = pp_[0]*(1-di_) + pp[0]*di_
-        t1 = pp_[1]*(1-di_) + pp[1]*di_
+        di = d[i] * sample_rate
+        di_ = np.arange(di) / di
+        t0 = pp_[0] * (1 - di_) + pp[0] * di_
+        t1 = pp_[1] * (1 - di_) + pp[1] * di_
         t0_.append(t0)
         t1_.append(t1)
-    t0__ = H(*t0_)
-    t1__ = H(*t1_)
-    t = n.array(( t0__, t1__))
+    t0__ = horizontal_stack(*t0_)
+    t1__ = horizontal_stack(*t1_)
+    t = np.array((t0__, t1__))
     if sonic_vector:
         sonic_vector = stereo(sonic_vector)
-        return J(sonic_vector, t)
+        return mix_with_offset(sonic_vector, t)
     else:
         return t
 
 
-def mix2(sonic_vectors, end=False, offset=0, fs=44100):
-    """
-    Mix sonic vectors. MALFUNCTION! TTM TODO
+# FIXME: malfunction
+def mix2(sonic_vectors, end=False, offset=0, sample_rate=44100):
+    """Mix sonic vectors. MALFUNCTION! TTM TODO
     
     The operation consists in summing sample by sample [1].
     This function helps when the sonic_vectors are not
@@ -334,7 +526,7 @@ def mix2(sonic_vectors, end=False, offset=0, fs=44100):
     offset : list of scalars
         A list of the offsets for each sonic vectors
         in seconds.
-    fs : integer
+    sample_rate : integer
         The sample rate. Only used if offset is supplied.
 
     Returns
@@ -345,7 +537,7 @@ def mix2(sonic_vectors, end=False, offset=0, fs=44100):
 
     Examples
     --------
-    >>> W(mix2(sonic_vectors=[V(), N()]))  # writes a WAV file with nodes
+    >>> W(mix2(sonic_vectors=[np.vstack(), N()]))  # writes a WAV file with nodes
 
     Notes
     -----
@@ -359,18 +551,18 @@ def mix2(sonic_vectors, end=False, offset=0, fs=44100):
     """
     if offset:
         for i, o in enumerate(offset):
-            sonic_vectors[i] = H(n.zeros(o*fs), sonic_vectors[i] )
-            
+            sonic_vectors[i] = horizontal_stack(np.zeros(o * sample_rate), sonic_vectors[i])
+
     amax = 0
     for s in sonic_vectors:
         amax = max(amax, len(s))
     for i in range(len(sonic_vectors)):
         if len(sonic_vectors[i]) < amax:
             if end:
-                sonic_vectors[i] = n.hstack(( n.zeros(amax-len(sonic_vectors[i])), sonic_vectors[i] ))
+                sonic_vectors[i] = np.hstack((np.zeros(amax - len(sonic_vectors[i])), sonic_vectors[i]))
             else:
-                sonic_vectors[i] = H( sonic_vectors[i], n.zeros(amax-len(sonic_vectors[i])) )
-    s = J_(*sonic_vectors)
+                sonic_vectors[i] = horizontal_stack(sonic_vectors[i], np.zeros(amax - len(sonic_vectors[i])))
+    s = mix_with_offset_(*sonic_vectors)
     return s
 
 
@@ -421,10 +613,131 @@ def profile(adict):
     """
     # for key in adict:
     #     avar = adict[key]
-    #     if type(sonic_vector) == n.ndarray:
+    #     if type(sonic_vector) == np.ndarray:
     #     elif type(sonic_vector) == list:
-    #     elif n.isscalar(avar):
+    #     elif np.isscalar(avar):
     #     else:
     #         print('unrecognized type, implement dealing with it')
+
+
+def rhythm_to_durations(durations=[4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4],
+                        freqs=None, duration=.25, bpm=None, total_duration=None):
+    """Returns durations from rhythmic patterns.
+
+    Parameters
+    ----------
+    durations : interable of scalars
+        The relative durations of each item (e.g. note).
+    freqs : iterable of scalars
+        The number of the entry's duration that fits into the pulse.
+        If supplied, durations is ignored.
+    duration : scalar
+        A basic duration (e.g. for the pulse) in seconds.
+    bpm : scalar
+        The number of beats per second.
+        If supplied, duration is ignored.
+    total_duration: scalar
+        The total duration of the sequence in seconds.
+        If supplied, both BPM and duration are ignored.
+
+    Returns
+    -------
+    durs : List of durations in seconds.
+
+    Examples
+    --------
+    >>> dt = [4, 2, 2, 4, 1,1,1,1, 2, 2, 4]
+    >>> durs0 = rhythm_to_durations(dt, duration=.25)
+    >>> df = [4, 8, 8, 4, 16, 16, 16, 16, 8, 8, 4]
+    >>> durs0_ = rhythm_to_durations(freqs=df, duration=4)
+    >>> dtut = [4,2,2, [8, 1,1,1], 4, [4, 1,1,.5,.5], 3,1, 3,1, 4]
+    >>> durs1 = rhythm_to_durations(dtut)
+    >>> dtuf2 = [4,8,8, [2, 3,3,3], 4, [4, 3,3,6,6], 16/3, 16, 16/3, 16, 4]
+    >>> durs1_ = rhythm_to_durations(freqs=dtut2, duration=4)
     
-V_ = V
+    Notes
+    -----
+    The durations parameter is considered to be in a temporal notation
+    for durations/rhythm: each entry is a relative duration to
+    be multiplied by the base duration given through duration,
+    BPM or total_duration.
+    >>> durs = [i*duration for i in durations]
+
+    The frequencies parameter is considered to be in a
+    frequential notation: each entry is the number of the
+    entry that fits a same duration (also given through duration,
+    BPM or total_duration).
+    >>> durs = [duration/i for i in freqs]
+
+    The examples above yield (two by two) the same sequences of durations
+    by using duration=0.25 when in temporal notation or
+    duration=4 when in frequency notation.
+
+    To facilitate the description of rhythms (e.g. for tuplets),
+    some set of durations might be an iterable inside durations
+    or frequencies. In this case:
+        ### if mode is temporal:
+            total_dur = cell[0]*duration
+            # durations are proportional to remaining values:
+            d_ = [i/sum(cell[1:]) for i in cell[1:]]
+            durs = [i*total_dur for i in d_]
+        ### if mode is frequential:
+            total_dur = duration/cell[0]
+            # durations are inversely proportional to remaining values:
+            d_ = [i/sum(cell[1:]) for i in cell[1:]]
+            durs = [i*total_dur for i in d_]
+
+    An example for achieving the same sequence of durations through
+    temporal or frequential notation and with cells for tuplets
+    is the last two sequences of the examples.
+
+    It might be a good idea to incorporate also this notation:
+        d2 = [1, 4, 1, 4]  # [quarter note + 4 sixteenth notes] x 2
+
+    Cite the following article whenever you use this function.
+
+    References
+    ----------
+    .. [1] Fabbri, Renato, et al. "Musical elements in the 
+    discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    """
+    if not bpm and not total_duration:
+        dur = duration
+    elif bpm:
+        dur = bpm / 60
+    else:
+        dur = None
+    durs = []
+    if freqs:
+        if not dur:  # obtain from total_dur
+            durs_ = [1 / i if not isinstance(i, (list, tuple, np.ndarray)) else 1 / i[0]
+                     for i in freqs]
+            dur = total_duration / sum(durs_)
+        for d in freqs:
+            if isinstance(d, (list, tuple, np.ndarray)):
+                t_ = dur / d[0]  # total timespan
+                d_ = [1 / i for i in d[1:]]  # relative durations from the frequency
+                # normalize d_ to sum to t_
+                d__ = [t_ * i / sum(d_) for i in d_]
+                # durs = [t_*i/sum(d[1:]) for i in d[1:]]
+                durs.extend(d__)
+            else:
+                durs.append(dur / d)
+    else:
+        if not dur:  # obtain from total_dur
+            durs_ = [i if not isinstance(i, (list, tuple, np.ndarray)) else i[0]
+                     for i in durations]
+            dur = total_duration / sum(durs_)
+        for d in durations:
+            if isinstance(d, (list, tuple, np.ndarray)):
+                t_ = d[0] * dur  # total timespan
+                # relative durations for the potential tuplet
+                d_ = [i / sum(d[1:]) for i in d[1:]]
+                # normalize d_ to fit t_
+                d__ = [i * t_ for i in d_]
+                # durs = [t_*i for i in d[1:]]
+                durs.extend(d__)
+            else:
+                durs.append(d * dur)
+    return durs

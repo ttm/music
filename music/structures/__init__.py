@@ -1,2 +1,2 @@
 from . import symmetry
-from . import sumfree
+from .peals import PlainChanges

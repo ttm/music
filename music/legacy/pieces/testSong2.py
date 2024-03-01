@@ -1,13 +1,13 @@
-import music as M, numpy as n
+import music as M, numpy as np
+synth=M.legacy.CanonicalSynth
 
-synth=M.synths.CanonicalSynth()
 
 class TestSong2:
     def __init__(self):
         global M
 
         note=synth.render()
-        M.utils.write(note) # saved to fooname.wav
+        M.core.io.write_wav_mono(note) # saved to fooname.wav
 
         note=synth.rawRender()
         note2=synth.rawRender(duration=4.)
@@ -18,8 +18,8 @@ class TestSong2:
         note6=synth.rawRender(duration=4.,vibrato_frequency=0.5,vibrato_depth=8.)
         notes=[note,note2,note3,note4,note5,note6]
         notes=[synth.adsrApply(i) for i in notes]
-        vibratos=n.hstack(notes)
-        M.utils.write(vibratos,"vibratos.wav") # saved to fooname.wav
+        vibratos=np.hstack(notes)
+        M.core.io.write_wav_mono(vibratos,"vibratos.wav") # saved to fooname.wav
         # tremoloEnvelope
         note6=synth.rawRender(duration=4.,vibrato_frequency=0.)
         note7=synth.rawRender(fundamental_frequency=440.,duration=4.,vibrato_frequency=0.)
@@ -30,8 +30,8 @@ class TestSong2:
 
         notes=[note6*te,note6*te2,note6*te3,note6*te4]
         notes=[synth.adsrApply(i) for i in notes]
-        tremolos=n.hstack(notes)
-        M.utils.write(tremolos,"tremolos.wav") # saved to fooname.wav
+        tremolos=np.hstack(notes)
+        M.core.io.write_wav_mono(tremolos,"tremolos.wav") # saved to fooname.wav
 
         # tremolog + envelope
         R=synth.rawRender
@@ -45,12 +45,12 @@ class TestSong2:
         T(tre_freq=8.,duration=4.)*R(duration=4.,vibrato_frequency=4.),
         T(tre_freq=4.,duration=4.)*R(duration=4.,vibrato_frequency=8.)]
         notes=[synth.adsrApply(i) for i in notes]
-        tremolos=n.hstack(notes)
-        M.utils.write(tremolos,"TV.wav") # saved to fooname.wav
+        tremolos=np.hstack(notes)
+        M.core.io.write_wav_mono(tremolos,"TV.wav") # saved to fooname.wav
 
         f0=220.
-        M_=M.utils.midi2HzInterval
-        H=n.hstack
+        M_=M.utils.midi_to_hz_interval
+        H=np.hstack
         R=synth.render2
         notes_=[T(tremolo_depth=2.,duration=4.)*R(fundamental_frequency=f0*M_(7),duration=4.,vibrato_frequency=4.)+
         T(tremolo_depth=2.,duration=4.)*R(        fundamental_frequency=f0,duration=4.,vibrato_frequency=4.),
@@ -123,10 +123,10 @@ class TestSong2:
             exec("self.{}={}".format(i,i))
     def render(self):
         A=synth.adsrApply
-        H=n.hstack
+        H=np.hstack
         synth.adsrSetup(0,0,0,3000)
-        vibrosong=A(H(self.notes_+[n.zeros(44100)]))
-        M.utils.write(vibrosong,"vibrosong.wav")
+        vibrosong=A(H(self.notes_ + [np.zeros(44100)]))
+        M.core.io.write_wav_mono(vibrosong,"vibrosong.wav")
 
 
 

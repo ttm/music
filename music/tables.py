@@ -1,4 +1,6 @@
-import numpy as n
+"""_summary_
+"""
+import numpy as np
 import pylab as p
 
 
@@ -9,17 +11,30 @@ class Basic:
     with size samples.
     """
     def __init__(self, size=2048):
+        self.triangle = None
+        self.square = None
+        self.saw = None
+        self.sine = None
         self.size = size
-        self.makeTables(size)
+        self.make_tables(size)
 
-    def makeTables(self, size):
-        self.sine = n.sin(n.linspace(0, 2 * n.pi, size, endpoint=False))
-        self.saw = n.linspace(-1, 1, size)
-        self.square = n.hstack((n.ones(size // 2)*-1, n.ones(size // 2)))
-        foo = n.linspace(-1, 1, size // 2, endpoint=False)
-        self.triangle = n.hstack((foo, foo*-1))
+    def make_tables(self, size):
+        """_summary_
 
-    def drawTables(self):
+        Parameters
+        ----------
+        size : _type_
+            _description_
+        """
+        self.sine = np.sin(np.linspace(0, 2 * np.pi, size, endpoint=False))
+        self.saw = np.linspace(-1, 1, size)
+        self.square = np.hstack((np.ones(size // 2) * -1, np.ones(size // 2)))
+        foo = np.linspace(-1, 1, size // 2, endpoint=False)
+        self.triangle = np.hstack((foo, foo * -1))
+
+    def draw_tables(self):
+        """_summary_
+        """
         p.plot(self.sine, "-o")
         p.plot(self.saw, "-o")
         p.plot(self.square, "-o")

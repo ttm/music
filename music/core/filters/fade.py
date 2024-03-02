@@ -26,9 +26,9 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
         Not used if method="linear".
     alpha : scalar
         An index to make the exponential fade slower or faster [1].
-        Ignored it transitions="linear". 
+        Ignored it transitions="linear".
     perc : scalar
-        The percentage of the fade that is linear to assure it reaches zero.
+        The percentage of the fade that is linear to ensure it reaches zero.
         Has no effect if method="linear".
     number_of_samples : integer
         The number of samples of the fade. If supplied, d is ignored.
@@ -36,13 +36,15 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
         Samples for the fade to be applied to.
         If supplied, d and nsamples are ignored.
     sample_rate : integer
-        The sample rate. Only used if nsamples and sonic_vector are not supplied.
+        The sample rate.
+        Only used if number_of_samples and sonic_vector are not supplied.
 
     Returns
     -------
     T : ndarray
-        A numpy array where each value is a value of the envelope for the PCM samples.
-        If sonic_vector is input, T is the sonic vector with the fade applied to it.
+        Each value is a value of the envelope for the PCM samples.
+        If sonic_vector is input,
+        T is the sonic vector with the fade applied to it.
 
     See Also
     --------
@@ -54,8 +56,10 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
     Examples
     --------
     >>> W(V()*fade())  # writes a WAV file with a fade in
-    >>> s = H( [V()*fade(fade_out=i, method=j) for i, j in zip([1, 0, 1], ["exp", "exp", "linear"])] )  # OR
-    >>> s = H( [fade(fade_out=i, method=j, sonic_vector=V()) for i, j in zip([1, 0, 1], ["exp", "exp", "linear"])] )
+    >>> s = H( [V()*fade(fade_out=i, method=j) for i, j in zip([1, 0, 1],
+                         ["exp", "exp", "linear"])] )  # OR
+    >>> s = H( [fade(fade_out=i, method=j, sonic_vector=V()) for i, j in
+              zip([1, 0, 1], ["exp", "exp", "linear"])] )
     >>> envelope = fade(duration=10, fade_out=0, perc=0.1)  # a lengthy fade in
 
     Notes
@@ -64,7 +68,8 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time representation of sound."
+    .. [1] Fabbri, Renato, et al.
+           "Musical elements in the discrete-time representation of sound."
            arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
@@ -87,14 +92,16 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
         if fade_out:
             ai1 = loud(trans_dev=db, alpha=alpha, number_of_samples=n1)
             if n0:
-                ai0 = loud(method="linear", trans_dev=0, number_of_samples=n0) * ai1[-1]
+                ai0 = loud(method="linear", trans_dev=0,
+                           number_of_samples=n0) * ai1[-1]
             else:
                 ai0 = []
             ai = np.hstack((ai1, ai0))
         else:
             ai1 = loud(trans_dev=db, to=0, alpha=alpha, number_of_samples=n1)
             if n0:
-                ai0 = loud(method="linear", to=0, trans_dev=0, number_of_samples=n0) * ai1[0]
+                ai0 = loud(method="linear", to=0, trans_dev=0,
+                           number_of_samples=n0) * ai1[0]
             else:
                 ai0 = []
             ai = np.hstack((ai0, ai1))
@@ -104,20 +111,26 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
         return ai
 
 
-def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin', sample_rate=44100):
+def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
+               sample_rate=44100):
     """
-    Cross fade in dur milisseconds.
+    Cross fade in duration milisseconds.
 
     """
     ns = int(duration * sample_rate / 1000)
     if len(sonic_vector_1.shape) != len(sonic_vector_2.shape):
         print('enter s1 and s2 with the same shape')
     if len(sonic_vector_1.shape) == 2:
-        s1_ = cross_fade(sonic_vector_1[0], sonic_vector_2[0], duration, method, sample_rate)
-        s2_ = cross_fade(sonic_vector_1[1], sonic_vector_2[1], duration, method, sample_rate)
+        s1_ = cross_fade(sonic_vector_1[0], sonic_vector_2[0], duration,
+                         method, sample_rate)
+        s2_ = cross_fade(sonic_vector_1[1], sonic_vector_2[1], duration,
+                         method, sample_rate)
         s = np.array((s1_, s2_))
         return s
-    sonic_vector_1[-ns:] *= fade(number_of_samples=ns, method=method, sample_rate=sample_rate)
-    sonic_vector_2[:ns] *= fade(number_of_samples=ns, method=method, sample_rate=sample_rate, fade_out=False)
-    s = mix_with_offset(sonic_vector_1, sonic_vector_2, duration=-duration / 1000)
+    sonic_vector_1[-ns:] *= fade(number_of_samples=ns, method=method,
+                                 sample_rate=sample_rate)
+    sonic_vector_2[:ns] *= fade(number_of_samples=ns, method=method,
+                                sample_rate=sample_rate, fade_out=False)
+    s = mix_with_offset(sonic_vector_1, sonic_vector_2,
+                        duration=-duration / 1000)
     return s

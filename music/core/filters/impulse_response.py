@@ -15,16 +15,16 @@ def fir(samples, sonic_vector, freq=True, max_freq=True):
         the signal (e.g. sound) for the FIR filter
         to be applied to.
     freq : boolean
-        Set to True if samples are frequency absolute values
+        Set to True if samples holds frequency amplitude absolute values
         or False if samples is an impulse response.
         If max_freq=True, the separations between the frequencies
-        are fs/(2*N-2).
+        are: fs / (2 * N - 2).
         If max_freq=False, the separation between the frequencies
-        are fs/(2*N-1).
+        are fs / (2 * N - 1).
         Where N is the length of the provided samples.
     max_freq : boolean
-        Set to true if the last item in the samples is related
-        to the Nyquist frequency fs/2.
+        Set to True if the last item in the samples is related
+        to the Nyquist frequency fs / 2.
         Ignored if freq=False.
 
     Notes
@@ -41,7 +41,7 @@ def fir(samples, sonic_vector, freq=True, max_freq=True):
         s = np.hstack((samples, samples[1:-1][::-1]))
     else:
         s = np.hstack((samples, samples[1:][::-1]))
-    return np.convolve(samples, sonic_vector)
+    return np.convolve(s, sonic_vector)
 
 
 def iir(sonic_vector, a, b):
@@ -51,7 +51,7 @@ def iir(sonic_vector, a, b):
     Parameters
     ----------
     sonic_vector : array_like
-        An one dimensional array representing the signal
+        An one-dimensional array representing the signal
         (potentially a sound) for the filter to by applied to.
     a : iterable of scalars
         The feedforward coefficients.

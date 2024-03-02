@@ -28,9 +28,9 @@ def reverb(duration=1.9, first_phase_duration=0.15, decay=-50,
     Returns
     -------
     result : numpy.ndarray
-        An array if the impulse response of the reverberation
-        (if sonic_vector is not specified),
-        or with the reverberation applied to sonic_vector.
+        An array with the impulse response of the reverberation.
+        If sonic_vector is specified:
+        the reverberation applied to sonic_vector.
 
     Notes
     -----
@@ -49,7 +49,7 @@ def reverb(duration=1.9, first_phase_duration=0.15, decay=-50,
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the 
+    .. [1] Fabbri, Renato, et al. "Musical elements in the
     discrete-time representation of sound."
     arXiv preprint arXiv:abs/1412.6853 (2017)
 
@@ -66,8 +66,9 @@ def reverb(duration=1.9, first_phase_duration=0.15, decay=-50,
     r1 = r1_ * a[:lambda1]  # first incidences
 
     # Eq. 77 Second period of reverberation:
-    noise = noise(noise_type, max_freq=sample_rate / 2, number_of_samples=lambda_r - lambda1)
-    r2 = noise * a[lambda1:lambda_r]
+    noise_ = noise(noise_type, max_freq=sample_rate / 2,
+                   number_of_samples=lambda_r - lambda1)
+    r2 = noise_ * a[lambda1:lambda_r]
 
     # Eq. 78 Impulse response of the reverberation
     result = np.hstack((r1, r2))

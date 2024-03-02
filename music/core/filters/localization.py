@@ -44,7 +44,7 @@ def localize(sonic_vector=note(), theta=0, distance=0, x=.1, y=.01,
     --------
     R : A reverberator.
     loc_ : a less naive implementation of localization
-    by itd and IID.
+    by ITD and IID.
     hrtf : performs localization by means of a
     Head Related Transfer Function.
 
@@ -52,11 +52,11 @@ def localize(sonic_vector=note(), theta=0, distance=0, x=.1, y=.01,
     --------
     >>> WS(localize())  # write a soundfile that is localized
     >>> WS(H([localize(V(d=1), x=i, y=j) for i, j in
-    ...   zip([.1,.7,np.pi-.1,np.pi-.7], [.1,.1,.1,.1])]))
+    ...   zip([.1, .7, np.pi - .1, np.pi - .7], [.1, .1, .1, .1])]))
 
     Notes
     -----
-    Uses the most naive itd and IID calculations as described in [1].
+    Uses the most naive ITD and IID calculations as described in [1].
     A less naive method is implemented in loc_().
     Nonetheless, if dist is small enough (e.g. <.3),
     the perception of theta occurs and might be used.
@@ -71,26 +71,27 @@ def localize(sonic_vector=note(), theta=0, distance=0, x=.1, y=.01,
       in a Doppler Effect).
 
     When az = tan^{-1}(y/x) lies in the 'cone of confusion',
-    many values of x and y have the same itd and IID [1].
+    many values of x and y have the same ITD and IID [1].
     Furthermore, lateral sources have the low frequencies
     diffracted and reach the opposite ear with a delay
     of ~0.7s [1].
     The height of a source and if it is in front or
-    behind a listener are cues given by te HRTF [1].
+    behind a listener are cues given by the HRTF [1].
     These issues are not taken into account in this
     function.
 
     The value of zeta is ~0.215 for adult humans [1].
 
     This implementation assumes that the speed
-    of sound (in air) is s = 331.3+0.606*temp.
+    of sound (in air) is s = 331.2 + 0.606 * temp.
 
     Cite the following article whenever you use this function.
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the 
-    discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the
+    discrete-time representation of sound."
+    arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     if theta:
@@ -119,7 +120,9 @@ def localize(sonic_vector=note(), theta=0, distance=0, x=.1, y=.01,
 def localize_linear(sonic_vector=note(), theta1=90, theta2=0, dist=.1,
                     zeta=0.215, air_temp=20, sample_rate=44100):
     """
-    A linear variation of localization
+    A linear variation of the localize function.
+
+    See localize.
 
     """
     theta1 = 2 * np.pi * theta1 / 360
@@ -131,7 +134,8 @@ def localize_linear(sonic_vector=note(), theta1=90, theta2=0, dist=.1,
     speed = 331.3 + .606 * air_temp
 
     lambda_l = len(sonic_vector)
-    l_ = L - 1  # FIXME: Unresolved L
+    L = lambda_l  # FIXME: assure L is lambda_l
+    l_ = L - 1
     xpos = x1 + (x2 - x1) * np.arange(lambda_l) / l_
     ypos = y1 + (y2 - y1) * np.arange(lambda_l) / l_
     d = np.sqrt((xpos - zeta / 2) ** 2 + ypos ** 2)
@@ -150,10 +154,13 @@ def localize_linear(sonic_vector=note(), theta1=90, theta2=0, dist=.1,
     d2_ = d2[1:] - d2[:-1]
     d__ = np.cumsum(d_).astype(np.int64)
     d2__ = np.cumsum(d2_).astype(np.int64)
+    # FIXME: here we have missing the correct use of the variables calculated
+    # and also the return statement
+    return iid_a, tl, tr, d__, d2__
 
 
-def loc_(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
-         air_temp=20, method="ifft", sample_rate=44100):
+def localize2(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
+              air_temp=20, method="ifft", sample_rate=44100):
     """
     Make a mono sound stereo and localize it by experimental methods.
 
@@ -199,7 +206,7 @@ def loc_(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
     See Also
     --------
     R : A reverberator.
-    loc : a more naive and fast implementation of localization
+    localize : a more naive and fast implementation of localization
     by ITD and IID.
     hrtf : performs localization by means of a
     Head Related Transfer Function.
@@ -221,7 +228,8 @@ def loc_(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
     References
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the
-    discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+    discrete-time representation of sound."
+    arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     if method not in ("ifft", "brute"):
@@ -263,7 +271,8 @@ def loc_(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
             foo = .3
         else:
             foo = .2
-        maxsize = len(sonic_vector) + sample_rate * foo * np.sin(abs(theta_)) / speed
+        maxsize = len(sonic_vector) + sample_rate * foo * np.sin(
+                abs(theta_)) / speed
         s = np.zeros((2, maxsize))
 
     if method == "ifft":
@@ -315,8 +324,10 @@ def loc_(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
                 amplitude = norms[i] / lambda_l
             else:
                 amplitude = 2 * norms[i] / lambda_l
-            sine = note_with_phase(freq=f, number_of_samples=lambda_l, waveform_table=WAVEFORM_SINE,
-                                   sample_rate=sample_rate, phase=angles[i]) * amplitude
+            sine = note_with_phase(freq=f, number_of_samples=lambda_l,
+                                   waveform_table=WAVEFORM_SINE,
+                                   sample_rate=sample_rate,
+                                   phase=angles[i]) * amplitude
 
             # Account for phase and energy
             if theta_ > 0:
@@ -339,13 +350,15 @@ def loc_(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
             s += s_
     if method == "ifft":
         coefsl = normsl * np.e ** (anglesl * 1j)
-        coefsl[max_coef + 1:] = np.real(coefsl[1:max_coef])[::-1] - 1j * \
-                                np.imag(coefsl[1:max_coef])[::-1]
+        coefsl[max_coef + 1:] = np.real(
+                coefsl[1:max_coef])[::-1] - 1j * np.imag(
+                        coefsl[1:max_coef])[::-1]
         sl = np.fft.ifft(coefsl).real
 
         coefsr = normsr * np.e ** (anglesr * 1j)
-        coefsr[max_coef + 1:] = np.real(coefsr[1:max_coef])[::-1] - 1j * \
-                                np.imag(coefsr[1:max_coef])[::-1]
+        coefsr[max_coef + 1:] = np.real(
+                coefsr[1:max_coef])[::-1] - 1j * np.imag(
+                        coefsr[1:max_coef])[::-1]
         sr = np.fft.ifft(coefsr).real
         s = np.vstack((sl, sr))
     # If in need to force energy to be preserved, try:

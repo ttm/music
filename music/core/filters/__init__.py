@@ -16,7 +16,7 @@ __all__ = [
     'iir',
     'localize',
     'localize_linear',
-    'loc_',   # TODO: find a better name
+    'localize2',
     'loud',
     'louds',  # TODO: check if the name is correct
     'reverb',

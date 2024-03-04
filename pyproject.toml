@@ -26,7 +26,6 @@ classifiers = [
     'Intended Audience :: Developers',
     'Intended Audience :: Education',
     'Intended Audience :: Religion',
-    'Intended Audience :: Other Audience',
     'Topic :: Scientific/Engineering :: Physics',
     'Topic :: Scientific/Engineering :: Visualization',
     'Topic :: Scientific/Engineering :: Information Analysis',
@@ -36,7 +35,6 @@ classifiers = [
     'Topic :: Multimedia :: Sound/Audio :: Speech',
     'Topic :: Multimedia :: Sound/Audio :: Sound Synthesis',
     'Topic :: Artistic Software',
-    'Topic :: Other/Nonlisted Topic',
 ]
 keywords = [
     'acoustics',

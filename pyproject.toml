@@ -55,8 +55,8 @@ keywords = [
 ]
 
 [project.urls]
-Homepage = 'https://github.com/pypa/sampleproject'
-Issues = 'https://github.com/pypa/sampleproject/issues'
+Homepage = 'https://github.com/ttm/music'
+Issues = 'https://github.com/ttm/music/issues'
 
 [build-system]
 requires = ['setuptools>=61.0']

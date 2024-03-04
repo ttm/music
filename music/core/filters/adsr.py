@@ -11,10 +11,10 @@ def adsr(envelope_duration=2, attack_duration=20,
          sample_rate=44100):
     """
     Synthesize an ADSR envelope.
-    
+
     ADSR (Atack, Decay, Sustain, Release) is a very traditional
     loudness envelope in sound synthesis [1].
-    
+
     Parameters
     ----------
     envelope_duration : scalar
@@ -29,7 +29,7 @@ def adsr(envelope_duration=2, attack_duration=20,
     release_duration : scalar
         The duration of the Release in milliseconds.
     transition : string
-        "exp" for exponential transitions of amplitude 
+        "exp" for exponential transitions of amplitude
         (linear loudness).
         "linear" for linear transitions of amplitude.
     alpha : scalar or array_like
@@ -76,8 +76,10 @@ def adsr(envelope_duration=2, attack_duration=20,
     Examples
     --------
     >>> W(V()*ad())  # writes a WAV file of a note with ADSR envelope
-    >>> s = H( [V()*ad(A=i, R=j) for i, j in zip([6, 50, 300], [100, 10, 200])] )  # OR
-    >>> s = H( [ad(A=i, R=j, sonic_vector=V()) for i, j in zip([6, 15, 100], [2, 2, 20])] )
+    >>> s = H( [V()*ad(A=i, R=j) for i, j in zip([6, 50, 300],
+                                                 [100, 10, 200])] )  # OR
+    >>> s = H( [ad(A=i, R=j, sonic_vector=V()) for i, j in zip([6, 15, 100],
+                                                               [2, 2, 20])] )
     >>> envelope = ad(d=440, A=10e3, D=0, R=5e3)  # a lengthy envelope
 
     Notes
@@ -86,8 +88,9 @@ def adsr(envelope_duration=2, attack_duration=20,
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the 
-    discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the
+    discrete-time representation of sound." arXiv preprint
+    arXiv:abs/1412.6853 (2017)
 
     """
     if type(sonic_vector) in (np.ndarray, list):
@@ -101,17 +104,22 @@ def adsr(envelope_duration=2, attack_duration=20,
     lambda_r = int(release_duration * sample_rate * 0.001)
 
     perc = to_zero / attack_duration
-    attack_duration = fade(fade_out=0, method=transition, alpha=alpha, db=db_dev, perc=perc, number_of_samples=lambda_a)
+    attack_duration = fade(fade_out=0, method=transition, alpha=alpha,
+                           db=db_dev, perc=perc, number_of_samples=lambda_a)
 
-    decay_duration = loud(trans_dev=sustain_level, method=transition, alpha=alpha, number_of_samples=lambda_d)
+    decay_duration = loud(trans_dev=sustain_level, method=transition,
+                          alpha=alpha, number_of_samples=lambda_d)
 
     a_s = 10 ** (sustain_level / 20.)
-    sustain_level = np.ones(lambda_adsr - (lambda_a + lambda_r + lambda_d)) * a_s
+    sustain_level = np.ones(lambda_adsr -
+                            (lambda_a + lambda_r + lambda_d)) * a_s
 
     perc = to_zero / release_duration
-    release_duration = fade(method=transition, alpha=alpha, db=db_dev, perc=perc, number_of_samples=lambda_r) * a_s
+    release_duration = fade(method=transition, alpha=alpha, db=db_dev,
+                            perc=perc, number_of_samples=lambda_r) * a_s
 
-    ad = np.hstack((attack_duration, decay_duration, sustain_level, release_duration))
+    ad = np.hstack((attack_duration, decay_duration, sustain_level,
+                    release_duration))
     if type(sonic_vector) in (np.ndarray, list):
         return sonic_vector * ad
     else:
@@ -119,12 +127,19 @@ def adsr(envelope_duration=2, attack_duration=20,
 
 
 def adsr_vibrato(note_dict={}, adsr_dict={}):
+    """
+    Creates a note with a vibrato and an ADSR envelope.
+
+    Check the adsr and the note_with_vibrato functions.
+
+    """
     return adsr(sonic_vector=note_with_vibrato(**note_dict), **adsr_dict)
 
 
 def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
-                sustain_level=-5, release_duration=50, transition="exp", alpha=1,
-                db_dev=-80, to_zero=1, number_of_samples=0, sonic_vector=0, sample_rate=44100):
+                sustain_level=-5, release_duration=50, transition="exp",
+                alpha=1, db_dev=-80, to_zero=1, number_of_samples=0,
+                sonic_vector=0, sample_rate=44100):
     """
     A shorthand to make an ADSR envelope for a stereo sound.
 
@@ -139,13 +154,15 @@ def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
         sonic_vector2 = 0
     s1 = adsr(envelope_duration=duration, attack_duration=attack_duration,
               decay_duration=decay_duration, sustain_level=sustain_level,
-              release_duration=release_duration, transition=transition, alpha=alpha,
-              db_dev=db_dev, to_zero=to_zero, number_of_samples=number_of_samples,
-              sonic_vector=sonic_vector1, sample_rate=sample_rate)
+              release_duration=release_duration, transition=transition,
+              alpha=alpha, db_dev=db_dev, to_zero=to_zero,
+              number_of_samples=number_of_samples, sonic_vector=sonic_vector1,
+              sample_rate=sample_rate)
     s2 = adsr(envelope_duration=duration, attack_duration=attack_duration,
               decay_duration=decay_duration, sustain_level=sustain_level,
-              release_duration=release_duration, transition=transition, alpha=alpha,
-              db_dev=db_dev, to_zero=to_zero, number_of_samples=number_of_samples,
-              sonic_vector=sonic_vector2, sample_rate=sample_rate)
+              release_duration=release_duration, transition=transition,
+              alpha=alpha, db_dev=db_dev, to_zero=to_zero,
+              number_of_samples=number_of_samples, sonic_vector=sonic_vector2,
+              sample_rate=sample_rate)
     s = np.vstack((s1, s2))
     return s

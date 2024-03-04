@@ -38,10 +38,15 @@ classifiers = [
 ]
 keywords = [
     'acoustics',
+    'AM',
     'art',
     'audio',
     'campanology',
+    'change ringing',
     'filter',
+    'FM',
+    'HRTF',
+    'LUT',
     'MASS',
     'multimedia',
     'music',
@@ -55,7 +60,7 @@ keywords = [
     'sound',
     'spatialization',
     'speech',
-    'synth',
+    'synth'
 ]
 
 [project.urls]

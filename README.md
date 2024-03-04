@@ -66,9 +66,7 @@ cpan install Math::FFT
 
 ## Examples
 
-Inside the examples folder you can find some scripts that use the main features of Music.
-
-<!-- TODO: add a list of examples -->
+Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) you can find some scripts that use the main features of Music.
 
 ## Package structure
 

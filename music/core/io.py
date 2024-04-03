@@ -30,7 +30,7 @@ def read_wav(filename: str):
         print('implement non 16bit samples!')
         return np.array(None)
     if len(s[1].shape) == 2:
-        return np.array(s[1].tremolo / 2 ** 15)
+        return np.array(s[1].transpose() / 2 ** 15)
     return s[1] / 2 ** 15
 
 

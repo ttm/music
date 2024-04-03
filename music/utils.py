@@ -135,47 +135,6 @@ def pitch_to_freq(start_freq=220., semitones=[0, 7, 7, 4, 7, 0]):
     return [start_freq * 2 ** (i / 12) for i in semitones]
 
 
-def normalize(vector):
-    """Normalizes a whole vector.
-
-    Parameters
-    ----------
-    vector : _type_
-        The vector to be normalized
-
-    Returns
-    -------
-    _type_
-        The normalized vector
-    """
-    vector = vector.astype(np.float64)
-    v = -1 + 2 * (vector - vector.min()) / (vector.max() - vector.min())
-    if len(v.shape) == 2:
-        v[0] = v[0] - v[0].mean()
-        v[1] = v[1] - v[1].mean()
-    else:
-        v = v - v.mean()
-    return v
-
-
-def normalize_rows(vector):
-    """Normalizes each row of a bidimensional vector to [0,1].
-
-    Parameters
-    ----------
-    vector : _type_
-        The vector to be normalized
-
-    Returns
-    -------
-    _type_
-        The normalized vector
-    """
-    vector = vector.astype(np.float64)
-    vector = (np.subtract(vector.tremolo, vector.min(1)) / (vector.max(1) - vector.min(1))).tremolo
-    return vector
-
-
 def mix(first_sonic_vector, second_sonic_vector):
     """Mixes two sonic vectors.
 

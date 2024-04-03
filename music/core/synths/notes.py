@@ -50,7 +50,7 @@ def note(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the 
+    .. [1] Fabbri, Renato, et al. "Musical elements in the
     discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
@@ -128,7 +128,7 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     waveform_table = np.array(waveform_table)
     if not number_of_samples:
         number_of_samples = int(duration * sample_rate)
-    samples = np.arange(number_of_samples)
+    # samples = np.arange(number_of_samples)
     length = len(waveform_table)
     speed = 331.3 + .606 * air_temp
 
@@ -418,10 +418,10 @@ def note_with_pitch_vibrato(start_freq=220, end_freq=440, duration=2,
     max_pitch_dev : scalar
         The maximum deviation of pitch of the vibrato in semitones.
     alpha : scalar
-        An index to begin the transitions faster or slower. 
+        An index to begin the transitions faster or slower.
         If alpha != 1, the transition is not of linear pitch.
     alpha_vibrato : scalar
-        An index to distort the pitch deviation of the vibrato. 
+        An index to distort the pitch deviation of the vibrato.
     waveform_table : array_like
         The table with the waveform to synthesize the sound.
     vibrato_waveform_table : array_like
@@ -603,9 +603,9 @@ def note_with_pitch_vibratos_localization(freqs=[220, 440, 330],
 
     # Doppler/location localization contributions
     speed = 331.3 + .606 * air_temp
-    dl_ = []
-    dr_ = []
-    d_ = []
+    # dl_ = []
+    # dr_ = []
+    # d_ = []
     f_ = []
     iid_a = []
     if stereo:
@@ -1188,9 +1188,9 @@ def trill(freqs=[440, 440 * 2 ** (2 / 12)], notes_per_second=17, duration=5, sam
     s = []
     while pointer + number_of_samples < duration * 44100:
         ns = int(number_of_samples * (i + 1) - pointer)
-        note = note(freqs[i % len(freqs)], number_of_samples=ns,
-                    waveform_table=WAVEFORM_TRIANGULAR, sample_rate=sample_rate)
-        s.append(adsr(sonic_vector=note, release_duration=10))
+        note_ = note(freqs[i % len(freqs)], number_of_samples=ns,
+                     waveform_table=WAVEFORM_TRIANGULAR, sample_rate=sample_rate)
+        s.append(adsr(sonic_vector=note_, release_duration=10))
         pointer += ns
         i += 1
     return np.hstack(s)

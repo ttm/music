@@ -11,9 +11,8 @@ def print_peal(peal, hunts=[0, 1]):
     Print peal with colored numbers. Hunt have also colored background
 
     TODO: documentation
-    
+
     """
-    reset = 'reset'
     # colors='black',
     # colors='redasd','green','yellow','blue','magenta','cyan'#,'white'
     colors = 'yellow', 'magenta', 'green', 'red', 'blue', 'white', 'grey', 'cyan'
@@ -37,7 +36,7 @@ class Peals(InterestingPermutations):  # TODO
 
     Also check peal rules, such as conditions for trueness.
       - Wikipedia seemed ok last time.
-    
+
     """
 
     def __init__(self):

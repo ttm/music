@@ -330,7 +330,7 @@ def note_with_phase(freq=220, duration=2, phase=0,
     return result
 
 
-def note_with_pitch(start_freq=220, end_freq=440, duration=2, alpha=1,
+def note_with_glissando(start_freq=220, end_freq=440, duration=2, alpha=1,
                     waveform_table=WAVEFORM_SINE, method="exp",
                     number_of_samples=0, sample_rate=44100):
     """
@@ -398,7 +398,7 @@ def note_with_pitch(start_freq=220, end_freq=440, duration=2, alpha=1,
     return s
 
 
-def note_with_pitch_vibrato(start_freq=220, end_freq=440, duration=2,
+def note_with_glissando_vibrato(start_freq=220, end_freq=440, duration=2,
                             vibrato_freq=4, max_pitch_dev=2, alpha=1, alpha_vibrato=1,
                             waveform_table=WAVEFORM_SINE, vibrato_waveform_table=WAVEFORM_SINE,
                             number_of_samples=0, sample_rate=44100):
@@ -479,7 +479,7 @@ def note_with_pitch_vibrato(start_freq=220, end_freq=440, duration=2,
 
 
 # FIXME: Unused param (`number_of_samples`)
-def note_with_pitch_vibratos_localization(freqs=[220, 440, 330],
+def note_with_vibrato_sequence_and_localization(freqs=[220, 440, 330],
                                           durations=[[2, 3], [2, 5, 3], [2, 5, 6, 1, .4], [4, 6, 1]],
                                           vibratos_freqs=[[2, 6, 1], [.5, 15, 2, 6, 3]],
                                           max_pitch_devs=[[2, 1, 5], [4, 3, 7, 10, 3]],
@@ -736,7 +736,7 @@ def note_with_pitch_vibratos_localization(freqs=[220, 440, 330],
     return s
 
 
-def note_with_pitch_vibratos(start_freq=220, end_freq=440, duration=2,
+def note_with_two_vibratos_and_glissando(start_freq=220, end_freq=440, duration=2,
                              vibrato_freq=2, secondary_vibrato_freq=6,
                              max_pitch_dev=2, secondary_max_pitch_dev=.5,
                              alpha=1, alphav1=1, alphav2=1,
@@ -837,7 +837,7 @@ def note_with_pitch_vibratos(start_freq=220, end_freq=440, duration=2,
     return s
 
 
-def note_with_pitches_vibratos(freqs=[220, 440, 330], durations=[[2, 3], [2, 5, 3], [2, 5, 6, 1, .4]],
+def note_with_vibratos_and_glissandos(freqs=[220, 440, 330], durations=[[2, 3], [2, 5, 3], [2, 5, 6, 1, .4]],
                                vibratos_freqs=[[2, 6, 1], [.5, 15, 2, 6, 3]],
                                vibratos_max_pitch_devs=[[2, 1, 5], [4, 3, 7, 10, 3]],
                                alpha=[[1, 1], [1, 1, 1], [1, 1, 1, 1, 1]],
@@ -1046,7 +1046,7 @@ def note_with_vibrato(freq=220, duration=2, vibrato_freq=4,
     return result
 
 
-def note_with_vibratos(freq=220, duration=2, vibrato_freq=2, secondary_vibrato_freq=6, nu1=2, nu2=4, alphav1=1,
+def note_with_two_vibratos(freq=220, duration=2, vibrato_freq=2, secondary_vibrato_freq=6, nu1=2, nu2=4, alphav1=1,
                        alphav2=1, waveform_table=WAVEFORM_TRIANGULAR, vibrato_waveform_table=WAVEFORM_SINE,
                        secondary_vibrato_waveform_table=WAVEFORM_SINE, number_of_samples=0, sample_rate=44100):
     """
@@ -1138,7 +1138,7 @@ def note_with_vibratos(freq=220, duration=2, vibrato_freq=2, secondary_vibrato_f
 
 def trill(freqs=[440, 440 * 2 ** (2 / 12)], notes_per_second=17, duration=5, sample_rate=44100):
     """
-    Make a trill.
+    Makes a trill.
 
     This is just a simple function for exemplifying
     the synthesis of trills.

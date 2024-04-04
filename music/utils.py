@@ -149,7 +149,7 @@ def mix(first_sonic_vector, second_sonic_vector):
     -------
     _type_
         A mixed sonic vector
-    
+
     See Also
     --------
     (.functions).mix2 : a better mixer
@@ -289,7 +289,7 @@ def mix_with_offset(first_sonic_vector, second_sonic_vector,
     -----
     if d<0, it should satisfy -d*fs < s1.shape[-1]
 
-    TODO: enhance/recycle J_ and mix2 or delete them. TTM 
+    TODO: enhance/recycle J_ and mix2 or delete them. TTM
 
     See Also
     --------
@@ -406,7 +406,7 @@ def pan_transitions(p=[(1, 1), (1, 0), (0, 1), (1, 1)], d=[2, 2, 2],
     -------
     _type_
         _description_
-    
+
     Notes
     -----
     Each pan transition i starts and ends amplitude envelope
@@ -416,7 +416,7 @@ def pan_transitions(p=[(1, 1), (1, 0), (0, 1), (1, 1)], d=[2, 2, 2],
     to understand the pan transition methods:
 
         'lin' fades linearly in and out:
-            x*k_i+y*(1-k_i) 
+            x*k_i+y*(1-k_i)
             or
             s1_i*x_i +s2_i*(1-x_i) = (s1-s2)*x_i + s_2
         'circ' keeps amplitude one using
@@ -470,11 +470,11 @@ def pan_transitions(p=[(1, 1), (1, 0), (0, 1), (1, 1)], d=[2, 2, 2],
 # FIXME: malfunction
 def mix2(sonic_vectors, end=False, offset=0, sample_rate=44100):
     """Mix sonic vectors. MALFUNCTION! TTM TODO
-    
+
     The operation consists in summing sample by sample [1].
     This function helps when the sonic_vectors are not
     of the same size.
-    
+
     Parameters
     ----------
     sonic_vectors : list of sonic_arrays
@@ -504,7 +504,7 @@ def mix2(sonic_vectors, end=False, offset=0, sample_rate=44100):
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the 
+    .. [1] Fabbri, Renato, et al. "Musical elements in the
     discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
@@ -532,13 +532,13 @@ def profile(adict):
     Should return a dictionary with the following structure:
       d['type']['scalar'] should return all the names of scalar variables
       as strings.
-      scalar: all names in numeric, string, float, integer, 
+      scalar: all names in numeric, string, float, integer,
       collections: all names in dict, list, set, ndarray
 
       d['analyses']['ndarray'] should return a general analysis of the ndarrays,
       including size in seconds of each considering fs.
       Mean and mean square values to have an idea of what is there.
-      RMS values in different scales and the overal RMS standard deviation 
+      RMS values in different scales and the overal RMS standard deviation
       on a scale is helpful in grasping disconttinuities.
       The overal RMS mean of a scale is a hint of whether the variable
       is meant to be used (or usable as) PCM samples or parametrization.
@@ -613,7 +613,7 @@ def rhythm_to_durations(durations=[4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4],
     >>> durs1 = rhythm_to_durations(dtut)
     >>> dtuf2 = [4,8,8, [2, 3,3,3], 4, [4, 3,3,6,6], 16/3, 16, 16/3, 16, 4]
     >>> durs1_ = rhythm_to_durations(freqs=dtut2, duration=4)
-    
+
     Notes
     -----
     The durations parameter is considered to be in a temporal notation
@@ -657,7 +657,7 @@ def rhythm_to_durations(durations=[4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4],
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the 
+    .. [1] Fabbri, Renato, et al. "Musical elements in the
     discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """

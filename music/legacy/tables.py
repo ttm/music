@@ -1,6 +1,7 @@
 import numpy as n
 import pylab as p
 
+
 class Basic:
     """Provide primary tables for lookup
 

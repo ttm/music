@@ -100,35 +100,36 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
     return noise
 
 
-def make_gaussian_noise(mean, std, duration=2):
+def make_gaussian_noise(mean, std, duration=2, sample_rate=44100):
     """
     Make gaussian noises.
 
     Parameters
     ----------
-    mean
-    std
-    duration
+    mean: scalar
+    std: scalar
+    duration: scalar
+        The duration of the noise in seconds
 
     Returns
     -------
 
     """
-    # FIXME: unresolved samples_beat and samplerate
-    lambda_noise = duration * samples_beat  # Lambda sempre par
-    df = samplerate / float(lambda_noise)
+    # FIXME: unresolved samples_beat and samplerate, substituted for sample_rate for now
+    lambda_noise = duration * samples_rate  # Lambda sempre par
+    df = sample_rate / float(lambda_noise)
     coefs = np.exp(1j * np.random.uniform(0, 2 * np.pi, lambda_noise))
     # real par, imaginaria impar
     coefs[lambda_noise / 2 + 1:] = np.real(coefs[1:lambda_noise / 2])[::-1] - 1j * \
-                                   np.imag(coefs[1:lambda_noise / 2])[::-1]
+        np.imag(coefs[1:lambda_noise / 2])[::-1]
     coefs[0] = 0.  # sem bias
     if lambda_noise % 2 == 0:
         coefs[lambda_noise / 2] = 0.  # freq max eh real simplesmente
 
     # as frequências relativas a cada coeficiente
     # acima de Lambda/2 nao vale
-    fi = np.arange(coefs.shape[0]) * df
-    f0 = 15.  # iniciamos o ruido em 15 Hz
+    # fi = np.arange(coefs.shape[0]) * df
+    # f0 = 15.  # iniciamos o ruido em 15 Hz
     f1 = (mean - std / 2) * 3000
     f2 = (mean + std / 2) * 3000
     i1 = np.floor(f1 / df)  # primeiro coef a valer

@@ -1,5 +1,6 @@
 import sympy
-from sympy.combinatorics import Permutation
+
+# from sympy.combinatorics import Permutation
 
 
 class PlainChanges:
@@ -21,7 +22,8 @@ class PlainChanges:
                 i, i + 1, size=nelements)
             for i in range(nelements - 1)]
         self.domains = []
-        hunts_ = self.perform_peal(nelements, dict(hunts))  # with the hunts, etc.
+        # FIXME: unused?
+        # hunts_ = self.perform_peal(nelements, dict(hunts))  # with the hunts, etc.
         self.hunts = hunts
         self.nelements = nelements
         # self.hunts_=hunts_
@@ -118,7 +120,7 @@ class PlainChanges:
         direction = hunt_["direction"]
         assert direction in {"up", "down"}
         position = hunt_["position"]
-        position_ = position
+        # position_ = position
         swap_with = (position - 1, position + 1)[direction == "up"]
         # find domain by iterating upper hunts
         cut_bellow = sum([hunts["hunt" + str(i)]["direction"] == "up" for i in range(hunt_["level"])])

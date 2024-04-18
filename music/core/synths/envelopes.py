@@ -32,7 +32,8 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     -------
     t : ndarray
         A numpy array where each value is a PCM sample of the envelope.
-        If sonic_vectoris input, T is the sonic vector with the AM applied to it.
+        If sonic_vectoris input, T is the sonic vector with the AM applied
+        to it.
 
     See Also
     --------
@@ -43,14 +44,17 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     Examples
     --------
     >>> W(V()*am())  # writes a WAV file of a note with tremolo
-    >>> s = H( [V()*am(fm=i, a=j) for i, j in zip([60, 150, 100], [2, 1, 20])] )  # OR
-    >>> s = H( [am(fm=i, a=j, sonic_vector=V()) for i, j in zip([60, 150, 100], [2, 1, 20])] )
+    >>> s = H([V()*am(fm=i, a=j) for i, j in zip([60, 150, 100],
+                                                 [2, 1, 20])])
+    >>> s = H([am(fm=i, a=j, sonic_vector=V()) for i, j in zip([60, 150, 100],
+                                                               [2, 1, 20])])
     >>> envelope2 = am(440, 150, 60)  # a lengthy envelope
 
     Notes
     -----
-    In the MASS framework implementation, for obtaining a sound with a tremolo (or AM),
-    the tremolo pattern is considered separately from a synthesis of the sound.
+    In the MASS framework implementation, for obtaining a sound with a tremolo
+    (or AM), the tremolo pattern is considered separately from a synthesis of
+    the sound.
 
     The AM is an oscilattory pattern of amplitude
     while the tremolo is an oscilattory pattern of loudness
@@ -65,8 +69,8 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the
-    discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
 
@@ -79,10 +83,11 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
         lambda_am = np.floor(sample_rate * duration)
     samples = np.arange(lambda_am)
 
-    l = len(waveform_table)
-    gamma_am = (samples * fm * l / sample_rate).astype(np.int64)  # indexes for LUT
+    length = len(waveform_table)
+    # indexes for LUT
+    gamma_am = (samples * fm * length / sample_rate).astype(np.int64)
     # amplitude variation at each sample
-    t_am = waveform_table[gamma_am % l]
+    t_am = waveform_table[gamma_am % length]
     t = 1 + t_am * max_amplitude
     if type(sonic_vector) in (np.ndarray, list):
         return t * sonic_vector
@@ -123,7 +128,8 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     -------
     t : ndarray
         A numpy array where each value is a PCM sample of the envelope.
-        If sonic_vector is input, t is the sonic vector with the tremolo applied to it.
+        If sonic_vector is input, t is the sonic vector with the tremolo
+        applied to it.
 
     See Also
     --------
@@ -134,14 +140,16 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     Examples
     --------
     >>> W(V()*t())  # writes a WAV file of a note with tremolo
-    >>> s = H( [V()*t(fa=i, dB=j) for i, j in zip([6, 15, 100], [2, 1, 20])] )  # OR
-    >>> s = H( [t(fa=i, dB=j, sonic_vector=V()) for i, j in zip([6, 15, 100], [2, 1, 20])] )
+    >>> s = H([V()*t(fa=i, dB=j) for i, j in zip([6, 15, 100], [2, 1, 20])])
+    >>> s = H([t(fa=i, dB=j, sonic_vector=V()) for i, j in zip([6, 15, 100],
+                                                               [2, 1, 20])])
     >>> envelope2 = t(440, 1.5, 60)  # a lengthy envelope
 
     Notes
     -----
-    In the MASS framework implementation, for obtaining a sound with a tremolo (or AM),
-    the tremolo pattern is considered separately from a synthesis of the sound.
+    In the MASS framework implementation, for obtaining a sound with a tremolo
+    (or AM), the tremolo pattern is considered separately from a synthesis of
+    the sound.
 
     The vibrato and FM patterns are considering when synthesizing the sound.
 
@@ -151,8 +159,8 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the
-    discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
 
@@ -165,10 +173,12 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
         lambda_tremolo = np.floor(sample_rate * duration)
     samples = np.arange(lambda_tremolo)
 
-    l = len(waveform_table)
-    gamma_tremolo = (samples * tremolo_freq * l / sample_rate).astype(np.int64)  # indexes for LUT
+    length = len(waveform_table)
+    # indexes for LUT
+    gamma_tremolo = (samples * tremolo_freq * length /
+                     sample_rate).astype(np.int64)
     # amplitude variation at each sample
-    table_amp = waveform_table[gamma_tremolo % l]
+    table_amp = waveform_table[gamma_tremolo % length]
     if alpha != 1:
         t = 10. ** ((table_amp * max_db_dev / 20) ** alpha)
     else:
@@ -184,7 +194,8 @@ def tremolos(durations=[[3, 4, 5], [2, 3, 7, 4]],
              max_db_devs=[[10, 20, 1], [5, 7, 9, 2]],
              alpha=[[1, 1, 1], [1, 1, 1, 9]],
              waveform_tables=[[WAVEFORM_SINE, WAVEFORM_SINE, WAVEFORM_SINE],
-                              [WAVEFORM_TRIANGULAR, WAVEFORM_TRIANGULAR, WAVEFORM_TRIANGULAR, WAVEFORM_SINE]],
+                              [WAVEFORM_TRIANGULAR, WAVEFORM_TRIANGULAR,
+                               WAVEFORM_TRIANGULAR, WAVEFORM_SINE]],
              number_of_samples=0, sonic_vector=0, sample_rate=44100):
     """
     An envelope with multiple tremolos.
@@ -240,7 +251,8 @@ def tremolos(durations=[[3, 4, 5], [2, 3, 7, 4]],
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
 
     """
@@ -252,15 +264,18 @@ def tremolos(durations=[[3, 4, 5], [2, 3, 7, 4]],
         for i, ns in enumerate(number_of_samples):
             t_.append([])
             for j, ns_ in enumerate(ns):
-                s = tremolo(tremolo_freq=tremolo_freqs[i][j], max_db_dev=max_db_devs[i][j], alpha=alpha[i][j],
-                            waveform_table=waveform_tables[i][j], number_of_samples=ns_, sample_rate=sample_rate)
+                s = tremolo(tremolo_freq=tremolo_freqs[i][j],
+                            max_db_dev=max_db_devs[i][j], alpha=alpha[i][j],
+                            waveform_table=waveform_tables[i][j],
+                            number_of_samples=ns_, sample_rate=sample_rate)
                 t_[-1].append(s)
     else:
         for i, durs in enumerate(durations):
             t_.append([])
             for j, dur in enumerate(durs):
-                s = tremolo(dur, tremolo_freqs[i][j], max_db_devs[i][j], alpha[i][j],
-                            waveform_table=waveform_tables[i][j], sample_rate=sample_rate)
+                s = tremolo(dur, tremolo_freqs[i][j], max_db_devs[i][j],
+                            alpha[i][j], waveform_table=waveform_tables[i][j],
+                            sample_rate=sample_rate)
                 t_[-1].append(s)
     amax = 0
     if type(sonic_vector) in (np.ndarray, list):
@@ -273,7 +288,8 @@ def tremolos(durations=[[3, 4, 5], [2, 3, 7, 4]],
             t_[i] = np.hstack((t_[i], np.ones(amax - len(t_[i])) * t_[i][-1]))
     if type(sonic_vector) in (np.ndarray, list):
         if len(sonic_vector) < amax:
-            sonic_vector = np.hstack((sonic_vector, np.zeros(amax - len(sonic_vector))))
+            sonic_vector = np.hstack((sonic_vector,
+                                      np.zeros(amax - len(sonic_vector))))
         t_.append(sonic_vector)
     s = np.prod(t_, axis=0)
     return s

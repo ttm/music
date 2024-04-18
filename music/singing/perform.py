@@ -9,7 +9,8 @@ ECANTORIXDIR = here + '/ecantorix'
 ECANTORIXCACHE = ECANTORIXDIR + '/cache'
 if not os.path.isdir(ECANTORIXCACHE):
     try:
-        os.system('git clone https://github.com/divVerent/ecantorix ' + ECANTORIXDIR)
+        os.system('git clone https://github.com/divVerent/ecantorix ' +
+                  ECANTORIXDIR)
         os.mkdir(ECANTORIXCACHE)
     except IOError:
         print('install git if you want singing facilities')
@@ -40,7 +41,8 @@ def sing(text="Mar-ry had a litt-le lamb",
     with open(ECANTORIXCACHE + '/achant.conf', 'w') as f:
         f.write(conf_text)
     # write conf file
-    os.system('cp {}/Makefile {}/Makefile'.format(ECANTORIXDIR, ECANTORIXCACHE))
+    os.system('cp {}/Makefile {}/Makefile'.format(ECANTORIXDIR,
+                                                  ECANTORIXCACHE))
     os.system('make -C {}'.format(ECANTORIXCACHE))
     wread = wavfile.read(ECANTORIXCACHE + '/achant.wav')
     assert wread[0] == 44100
@@ -85,8 +87,10 @@ class Notes:
         notes_u = [note + "'" for note in notes]
         notes__u = [note + "'" for note in notes_u]
         notes___u = [note + "'" for note in notes__u]
-        notes_all = notes____ + notes___ + notes__ + notes_ + notes + notes_u + notes__u + notes___u
-        self.notes_dict = dict([(i, j) for i, j in zip(range(12, 97), notes_all)])
+        notes_all = notes____ + notes___ + notes__ + notes_ + notes + \
+            notes_u + notes__u + notes___u
+        self.notes_dict = dict([(i, j) for i, j in zip(range(12, 97),
+                                                       notes_all)])
 
     def convert(self, notes, reference):
         if 'notes_dict' not in dir(self):

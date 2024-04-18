@@ -8,7 +8,8 @@ from .functions import normalize, normalize_stereo_sonic_vector
 from .filters import adsr, adsr_stereo
 
 SONIC_VECTOR_MONO = np.random.uniform(size=100000)
-SONIC_VECTOR_STEREO = np.vstack((np.random.uniform(size=100000), np.random.uniform(size=100000)))
+SONIC_VECTOR_STEREO = np.vstack((np.random.uniform(size=100000),
+                                 np.random.uniform(size=100000)))
 
 
 def read_wav(filename: str):
@@ -34,14 +35,14 @@ def read_wav(filename: str):
     return s[1] / 2 ** 15
 
 
-def write_wav_mono(sonic_vector=SONIC_VECTOR_MONO, filename="asound.wav", sample_rate=44100,
-                   fades=0, bit_depth=16, remove_bias=True):
+def write_wav_mono(sonic_vector=SONIC_VECTOR_MONO, filename="asound.wav",
+                   sample_rate=44100, fades=0, bit_depth=16, remove_bias=True):
     """Writes a mono WAV file for a numpy array.
-    
+
     One can also use, for example:
         import sounddevice as S
         S.play(__n(array))
-    
+
     Parameters
     ----------
     sonic_vector : array_like
@@ -66,24 +67,25 @@ def write_wav_mono(sonic_vector=SONIC_VECTOR_MONO, filename="asound.wav", sample
     W_ : Writes an array with the same arguments
     and order of them as scipy.io.wavfile.
     WS ; Write a stereo file.
-    
+
     """
     result = normalize(sonic_vector, remove_bias) * (2 ** (bit_depth - 1) - 1)
     if fades:
-        result = adsr(attack_duration=fades[0], sustain_level=0, release_duration=fades[1], sonic_vector=result)
+        result = adsr(attack_duration=fades[0], sustain_level=0,
+                      release_duration=fades[1], sonic_vector=result)
     if bit_depth not in (8, 16, 32, 64):
         print("bit_depth values allowed are only 8, 16, 32 and 64")
         print(f"File {filename} not written")
-    # TODO: Sarebbe meglio trovare un'alternativa che non utilizzi `eval()`
     nn = eval("np.int" + str(bit_depth))
     result = nn(result)
     wavfile.write(filename, sample_rate, result)
 
 
-def write_wav_stereo(sonic_vector=SONIC_VECTOR_STEREO, filename="asound.wav", sample_rate=44100,
-                     fades=0, bit_depth=16, remove_bias=True, normalize_separately=False):
+def write_wav_stereo(sonic_vector=SONIC_VECTOR_STEREO, filename="asound.wav",
+                     sample_rate=44100, fades=0, bit_depth=16,
+                     remove_bias=True, normalize_separately=False):
     """Write a stereo WAV files for a numpy array.
-    
+
     Parameters
     ----------
     sonic_vector : array_like
@@ -111,15 +113,17 @@ def write_wav_stereo(sonic_vector=SONIC_VECTOR_STEREO, filename="asound.wav", sa
     --------
     __ns : Normalizes a stereo array to [-1,1]
     W ; Write a mono file.
-    
+
     """
-    result = normalize_stereo_sonic_vector(sonic_vector, remove_bias, normalize_separately) * (2 ** (bit_depth - 1) - 1)
+    result = normalize_stereo_sonic_vector(sonic_vector, remove_bias,
+                                           normalize_separately) * \
+        (2 ** (bit_depth - 1) - 1)
     if fades:
-        result = adsr_stereo(attack_duration=fades[0], sustain_level=0, release_duration=fades[1], sonic_vector=result)
+        result = adsr_stereo(attack_duration=fades[0], sustain_level=0,
+                             release_duration=fades[1], sonic_vector=result)
     if bit_depth not in (8, 16, 32, 64):
         print("bit_depth values allowed are only 8, 16, 32 and 64")
         print(f"File {filename} not written")
-    # TODO: Come per `write_wav_mono()`
     nn = eval("np.int" + str(bit_depth))
     result = nn(result)
     wavfile.write(filename, sample_rate, result.T)

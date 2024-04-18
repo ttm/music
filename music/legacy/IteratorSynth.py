@@ -16,7 +16,8 @@ class IteratorSynth(CanonicalSynth):
     >>> sounds=[]
     >>> for i in range(300):
             sounds += [isynth.renderIterate(tremolo_frequency=.2*i)]
-import music.core.io    >>> music.core.io.write_wav_mono(M.H(*sounds),"./example.wav")
+    >>> import music.core.io
+    >>> music.core.io.write_wav_mono(M.H(*sounds),"./example.wav")
 
     """
 
@@ -36,9 +37,11 @@ import music.core.io    >>> music.core.io.write_wav_mono(M.H(*sounds),"./example
         sequences = [var for var in dir(self) if var.endswith("_sequence")]
         state_vars = [i[:-9] for i in sequences]
         positions = [i+"_position" for i in sequences]
-        for sequence, state_var, position in zip(sequences, state_vars, positions):
+        for sequence, state_var, position in zip(sequences, state_vars,
+                                                 positions):
             if position not in dir(self):
                 self.__dict__[position] = 0
-            self.__dict__[state_var] = self.__dict__[sequence][self.__dict__[position]]
+            self.__dict__[state_var] = \
+                self.__dict__[sequence][self.__dict__[position]]
             self.__dict__[position] += 1
             self.__dict__[position] %= len(self.__dict__[sequence])

@@ -15,13 +15,16 @@ def print_peal(peal, hunts=[0, 1]):
     """
     # colors='black',
     # colors='redasd','green','yellow','blue','magenta','cyan'#,'white'
-    colors = 'yellow', 'magenta', 'green', 'red', 'blue', 'white', 'grey', 'cyan'
-    hcolors = 'on_white', 'on_blue', 'on_red', 'on_grey', 'on_yellow', 'on_magenta', 'on_green', 'on_cyan'
+    colors = 'yellow', 'magenta', 'green', 'red', 'blue', 'white', 'grey', \
+        'cyan'
+    hcolors = 'on_white', 'on_blue', 'on_red', 'on_grey', 'on_yellow', \
+        'on_magenta', 'on_green', 'on_cyan'
     final_string = ''
     for sequence in peal:
         final_string += ''.join(
-            colored(i, colors[i], hcolors[-(i + 1)]) if i in hunts else colored(i, colors[i], "on_white", ["bold"]) for
-            i in sequence) + '\n'
+            colored(i, colors[i], hcolors[-(i + 1)]) if i in hunts else
+            colored(i, colors[i], "on_white", ["bold"]) for i in sequence) + \
+            '\n'
     print(final_string)
 
 
@@ -56,7 +59,8 @@ class Peals(InterestingPermutations):  # TODO
         peal_name : str, optional
             _description_, by default "transposition_peal"
         """
-        self.peals[peal_name] = [Permutation(i) for i in permutation.transpositions()]
+        self.peals[peal_name] = [Permutation(i)
+                                 for i in permutation.transpositions()]
 
     def twenty_all_over(self):
         pass

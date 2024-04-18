@@ -34,48 +34,63 @@ class InterestingPermutations:
     def get_alternating(self):
         """_summary_
         """
-        self.alternations = list(AlternatingGroup(self.nelements).generate(method=self.method))
-        self.alternations_complement = [i for i in self.alternations if i not in self.dihedral]
+        self.alternations = list(AlternatingGroup(self.nelements).
+                                 generate(method=self.method))
+        self.alternations_complement = [i for i in self.alternations
+                                        if i not in self.dihedral]
         length_max = self.nelements
         self.alternations_by_sizes = []
         for length in range(0, 1 + length_max):
-            # while length in [i.length() for i in self.alternations_complement]:
+            # while length in [i.length()
+            #                  for i in self.alternations_complement]:
             self.alternations_by_sizes.append(
-                [i for i in self.alternations_complement if i.length() == length])
+                [i for i in self.alternations_complement
+                 if i.length() == length])
 
-        assert len(self.alternations_complement) == sum([len(i) for i in self.alternations_by_sizes])
+        assert len(self.alternations_complement) ==\
+            sum([len(i)for i in self.alternations_by_sizes])
 
     def get_rotations(self):
         """method dimino or coset"""
-        self.rotations = list(sympy.combinatorics.named_groups.CyclicGroup(self.nelements).generate(method=self.method))
+        self.rotations = list(sympy.combinatorics.named_groups.
+                              CyclicGroup(self.nelements).
+                              generate(method=self.method))
 
     def get_mirrors(self):
         """_summary_
         """
         if self.nelements > 2:  # bug in sympy?
-            self.dihedral = list(
-                sympy.combinatorics.named_groups.DihedralGroup(self.nelements).generate(method=self.method))
+            self.dihedral = list(sympy.combinatorics.named_groups.
+                                 DihedralGroup(self.nelements).
+                                 generate(method=self.method))
         else:
             self.dihedral = [Permutation([0], size=self.nelements),
                              Permutation([1, 0], size=self.nelements)]
         self.mirrors = [i for i in self.dihedral if i not in self.rotations]
-        if self.nelements % 2 == 0:  # even elements have edge and vertex mirrors
-            self.edge_mirrors = [i for i in self.mirrors if i.length() == self.nelements]
-            self.vertex_mirrors = [i for i in self.mirrors if i.length() == self.nelements - 2]
-            assert len(self.edge_mirrors + self.vertex_mirrors) == len(self.mirrors)
+        # even elements have edge and vertex mirrors
+        if self.nelements % 2 == 0:
+            self.edge_mirrors = [i for i in self.mirrors
+                                 if i.length() == self.nelements]
+            self.vertex_mirrors = [i for i in self.mirrors
+                                   if i.length() == self.nelements - 2]
+            assert len(self.edge_mirrors + self.vertex_mirrors) ==\
+                len(self.mirrors)
 
     def get_swaps(self):
         """contiguos swaps
         swaps by distance between the indexes
         """
-        self.swaps = sorted(self.permutations_by_sizes[0], key=lambda x: -x.rank())
+        self.swaps = sorted(self.permutations_by_sizes[0],
+                            key=lambda x: -x.rank())
         self.swaps_as_comes = self.permutations_by_sizes[0]
         self.swaps_by_stepsizes = []
-        self.neighbor_swaps = [sympy.combinatorics.Permutation(i, i + 1, size=self.nelements) for i in
-                               range(self.nelements - 1)]
+        self.neighbor_swaps = [sympy.combinatorics.
+                               Permutation(i, i + 1, size=self.nelements)
+                               for i in range(self.nelements - 1)]
         dist_ = 1
         while dist_ in [dist(i) for i in self.swaps]:
-            self.swaps_by_stepsizes += [[i for i in self.swaps if dist(i) == dist_]]
+            self.swaps_by_stepsizes += [[i for i in self.swaps
+                                         if dist(i) == dist_]]
             dist_ += 1
 
     def even_odd(self, sequence):
@@ -92,13 +107,15 @@ class InterestingPermutations:
     def get_full_symmetry(self):
         """_summary_
         """
-        self.permutations = list(
-            sympy.combinatorics.named_groups.SymmetricGroup(self.nelements).generate(method=self.method))
+        self.permutations = list(sympy.combinatorics.named_groups.
+                                 SymmetricGroup(self.nelements).
+                                 generate(method=self.method))
         # sympy.combinatorics.generators.symmetric(self.nelements)
         self.permutations_by_sizes = []
         length = 2
         while length in [i.length() for i in self.permutations]:
-            self.permutations_by_sizes += [[i for i in self.permutations if i.length() == length]]
+            self.permutations_by_sizes += [[i for i in self.permutations
+                                            if i.length() == length]]
             length += 1
 
 

@@ -1,10 +1,10 @@
-from .adsr import *
-from .fade import *
-from .impulse_response import *
-from .localization import *
-from .loud import *
+from .adsr import adsr, adsr_stereo, adsr_vibrato
+from .fade import cross_fade, fade
+from .impulse_response import fir, iir
+from .localization import localize, localize2, localize_linear
+from .loud import loud, louds
 from .reverb import reverb
-from .stretches import *
+from .stretches import stretches
 
 __all__ = [
     'adsr',
@@ -15,10 +15,10 @@ __all__ = [
     'fir',
     'iir',
     'localize',
-    'localize_linear',
     'localize2',
+    'localize_linear',
     'loud',
-    'louds',  # TODO: check if the name is correct
+    'louds',
     'reverb',
     'stretches'
 ]

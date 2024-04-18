@@ -16,14 +16,16 @@ class PlainChanges:
         self.acted_peals = None
         self.peals = None
         hunts = self.initialize_hunts(nelements, nhunts)
-        self.neutral_perm = sympy.combinatorics.Permutation([0], size=nelements)
+        self.neutral_perm = sympy.combinatorics.Permutation([0],
+                                                            size=nelements)
         self.neighbor_swaps = [
             sympy.combinatorics.Permutation(
                 i, i + 1, size=nelements)
             for i in range(nelements - 1)]
         self.domains = []
         # FIXME: unused?
-        # hunts_ = self.perform_peal(nelements, dict(hunts))  # with the hunts, etc.
+        # with the hunts, etc.
+        # hunts_ = self.perform_peal(nelements, dict(hunts))
         self.hunts = hunts
         self.nelements = nelements
         # self.hunts_=hunts_
@@ -57,7 +59,8 @@ class PlainChanges:
         if nhunts > nelements:
             raise ValueError("There cannot be more hunts than elements")
         elif nhunts > nelements - 3:
-            print("peals are the same if there are", nhunts - (nelements - 3), "hunts less")
+            print("peals are the same if there are", nhunts - (nelements - 3),
+                  "hunts less")
         hunts_dict = {}
         for hunt in range(nhunts):
             # implement different starting settings here
@@ -65,8 +68,9 @@ class PlainChanges:
                 next_ = None
             else:
                 next_ = "hunt" + str(hunt + 1)
-            hunts_dict["hunt" + str(hunt)] = dict(level=hunt, position=hunt, status="started", direction="up",
-                                                  next_=next_)
+            hunts_dict["hunt" + str(hunt)] = dict(level=hunt, position=hunt,
+                                                  status="started",
+                                                  direction="up", next_=next_)
         return hunts_dict
 
     def perform_peal(self, nelements, hunts=None):
@@ -123,13 +127,16 @@ class PlainChanges:
         # position_ = position
         swap_with = (position - 1, position + 1)[direction == "up"]
         # find domain by iterating upper hunts
-        cut_bellow = sum([hunts["hunt" + str(i)]["direction"] == "up" for i in range(hunt_["level"])])
+        cut_bellow = sum([hunts["hunt" + str(i)]["direction"] == "up"
+                          for i in range(hunt_["level"])])
         cut_above = nelements - (hunt_["level"] - cut_bellow)
         # cut_above=nelements-cut_bellow
         domain = list(range(nelements))[cut_bellow:cut_above]
-        self.domains += [(domain, cut_bellow, cut_above, hunt_["level"], hunt, position, swap_with)]
+        self.domains += [(domain, cut_bellow, cut_above, hunt_["level"], hunt,
+                          position, swap_with)]
         if swap_with in domain:  # move
-            swap = self.neighbor_swaps[(position - 1, position)[direction == "up"]]
+            swap = self.neighbor_swaps[(position - 1, position)
+                                       [direction == "up"]]
             for ahunt in hunts:
                 if hunts[ahunt]["position"] == swap_with:
                     hunts[ahunt]["position"] = position
@@ -140,10 +147,12 @@ class PlainChanges:
             self.domains += ["invert", new_direction, hunt]
             if hunt_["next_"] is None:
                 # swap=self.neighbor_swaps[(domain[0],domain[-2+cut_bellow])[new_direction=="up"]]
-                swap = self.neighbor_swaps[(domain[0], domain[-2])[new_direction == "up"]]
+                swap = self.neighbor_swaps[(domain[0], domain[-2])
+                                           [new_direction == "up"]]
             else:
                 subsequent_hunt = hunt_["next_"]
-                swap, hunts = self.perform_change(nelements, hunts, subsequent_hunt)
+                swap, hunts = self.perform_change(nelements, hunts,
+                                                  subsequent_hunt)
                 # swap=transposePermutation(swap,(0,1)[new_direction=="up"])
         self.domains += [swap]
         return swap, hunts
@@ -181,6 +190,7 @@ class PlainChanges:
             domain = list(range(self.nelements))
         acted_peals = {}
         for peal in self.peals:
-            acted_peals[peal + "_acted"] = [i(domain) for i in self.peals[peal]]
+            acted_peals[peal + "_acted"] = [i(domain)
+                                            for i in self.peals[peal]]
         self.domain = domain
         self.acted_peals = acted_peals

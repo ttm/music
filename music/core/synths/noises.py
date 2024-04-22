@@ -145,7 +145,7 @@ def gaussian_noise(mean=1, std=0.5, duration=2, sample_rate=44100):
                     (noise_vector.max() - noise_vector.min())) * 2 - 1
 
     # fazer tre_freq variar conforme measures2
-    return music.core.normalize(noise_vector)
+    return music.core.normalize_mono(noise_vector)
 
 
 def silence(duration=1.0, sample_rate=44100):

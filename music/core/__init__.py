@@ -1,5 +1,6 @@
 from ..utils import (
     amp_to_db,
+    convert_to_stereo,
     db_to_amp,
     horizontal_stack,
     hz_to_midi,
@@ -14,8 +15,7 @@ from ..utils import (
     pitch_to_freq,
     profile,
     resolve_stereo,
-    rhythm_to_durations,
-    stereo
+    rhythm_to_durations
 )
 from .filters import (
     adsr,
@@ -53,7 +53,7 @@ from .synths import (
     silence,
     tremolo,
     tremolos,
-    trill,
+    trill
 )
 
 __all__ = [
@@ -62,6 +62,7 @@ __all__ = [
     'adsr',
     'am',
     'amp_to_db',
+    'convert_to_stereo',
     'cross_fade',
     'db_to_amp',
     'fade',
@@ -104,11 +105,10 @@ __all__ = [
     'reverb',
     'rhythm_to_durations',
     'silence',
-    'stereo',
     'stretches',
     'tremolo',
     'tremolos',
     'trill',
     'write_wav_mono',
-    'write_wav_stereo',
+    'write_wav_stereo'
 ]

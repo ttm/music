@@ -14,7 +14,21 @@ n_ = n
 def V_(st=0, freq=220, duration=2., vibrato_freq=2., max_pitch_dev=2.,
        waveform_table=WAVEFORM_TRIANGULAR,
        vibrato_waveform_table=WAVEFORM_SINE):
-    """A shorthand for using V() with semitones"""
+    """A shorthand for generating a note with vibrato.
+
+    Args:
+        st (float): Semitones relative to the base frequency.
+        freq (float): Base frequency of the note.
+        duration (float): Duration of the note in seconds.
+        vibrato_freq (float): Frequency of the vibrato.
+        max_pitch_dev (float): Maximum pitch deviation.
+        waveform_table (array): Table representing the waveform of the note.
+        vibrato_waveform_table (array): Table representing the waveform of the
+                                        vibrato.
+
+    Returns:
+        array: A note with vibrato.
+    """
     f_ = freq * 2 ** (st / 12)
     return note_with_vibrato(freq=f_, duration=2., vibrato_freq=2.,
                              max_pitch_dev=2.,
@@ -23,6 +37,16 @@ def V_(st=0, freq=220, duration=2., vibrato_freq=2., max_pitch_dev=2.,
 
 
 def ADV(note_dict={}, adsr_dict={}):
+    """Apply ADSR envelope to a note with vibrato.
+
+    Args:
+        note_dict (dict): Dictionary containing parameters for the note.
+        adsr_dict (dict): Dictionary containing parameters for the ADSR
+                          envelope.
+
+    Returns:
+        array: Note with applied ADSR envelope.
+    """
     return adsr(sonic_vector=V_(**note_dict), **adsr_dict)
 
 
@@ -67,8 +91,15 @@ class Being:
         self.startBeing()
 
     def walk(self, n, method='straight'):
-        # walk np steps up (np<0 => walk |np| steps down, np==0 => don't move,
-        # return []
+        """Walk a certain number of steps.
+
+        Args:
+            n (int): Number of steps.
+            method (str): Method of walking.
+
+        Returns:
+            array: Sequence of steps.
+        """
         if method == 'straight':
             # ** TTM
             sequence = [self.grid[self.pointer + i] for i in range(n)]
@@ -82,20 +113,50 @@ class Being:
         self.addSeq(sequence)
 
     def setPar(self, par='f'):
-        # set parameter to be developed in walks and stays
+        """Set parameter to be developed in walks and stays.
+
+        Args:
+            par (str): Parameter to be set.
+
+        Returns:
+            None
+        """
         if par == 'f':
             self.grid = self.fgrid
             self.pointer = self.fpointer
 
     def setSize(self, ss):
+        """Set the size.
+
+        Args:
+            ss (int): Size to set.
+
+        Returns:
+            None
+        """
         self.seqsize = ss
 
     def setPerms(self, perms):
+        """Set permutations.
+
+        Args:
+            perms (list): List of permutations.
+
+        Returns:
+            None
+        """
         self.perms = perms
 
     def stay(self, n, method='perm'):
-        # stay somewhere for np notes (np<0 => stay for np cycles or
-        # np permutations)
+        """Stay for a certain number of notes.
+
+        Args:
+            n (int): Number of notes.
+            method (str): Method of staying.
+
+        Returns:
+            array: Sequence of stayed notes.
+        """
         if method == 'straight':
             sequence = [self.grid[(self.pointer + i) % self.seqsize]
                         for i in range(n)]
@@ -123,6 +184,14 @@ class Being:
         self.total_notes += n
 
     def addSeq(self, sequence):
+        """Add sequence to the Being.
+
+        Args:
+            sequence (array): Sequence to add.
+
+        Returns:
+            None
+        """
         if isinstance(self.__dict__[self.curseq], list):
             self.__dict__[self.curseq].extend(sequence)
         else:
@@ -130,8 +199,15 @@ class Being:
                 horizontal_stack(self.__dict__[self.curseq], sequence)
 
     def render(self, nn, fn=False):
-        # Render nn notes of the Being!
-        # Render with legatto, with V__ or whatever it is called
+        """Render notes of the Being.
+
+        Args:
+            nn (int): Number of notes to render.
+            fn (str or bool): File name to save the rendered notes.
+
+        Returns:
+            array or None: Rendered notes.
+        """
         self.mkArray()
         ii = n.arange(nn)
         duration = self.d_[ii % len(self.d_)]*self.dscale
@@ -160,6 +236,14 @@ class Being:
             return horizontal_stack(*notes)
 
     def startBeing(self):
+        """Start the Being.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         self.dscale = 1
         self.d_ = [1]
         self.f_ = [220]
@@ -174,6 +258,14 @@ class Being:
         self.total_notes = 0
 
     def mkArray(self):
+        """Make array.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         self.d_ = n.array(self.d_)
         self.f_ = n.array(self.f_)
         self.fv_ = n.array(self.fv_)
@@ -185,13 +277,23 @@ class Being:
         self.R_ = n.array(self.R_)
 
     def howl(self):
-        # some sound ressembing a toki pona mu, a grown or any other animal
-        # noise.
+        """Produce a howling sound.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         pass
 
     def freeze(self):
-        # a long sound/note with the parameters set into the being
+        """Freeze the Being.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         pass
-    # use sequences of parameters to be iterated though with or without
-    # permutations.
-    # use the fact that sequences of different sizes might yield longer cycles

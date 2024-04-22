@@ -4,7 +4,7 @@ This module contains method to write sonic vectors into WAV files.
 
 import numpy as np
 from scipy.io import wavfile
-from .functions import normalize, normalize_stereo_sonic_vector
+from .functions import normalize_mono, normalize_stereo
 from .filters import adsr, adsr_stereo
 
 SONIC_VECTOR_MONO = np.random.uniform(size=100000)
@@ -69,7 +69,8 @@ def write_wav_mono(sonic_vector=SONIC_VECTOR_MONO, filename="asound.wav",
     WS ; Write a stereo file.
 
     """
-    result = normalize(sonic_vector, remove_bias) * (2 ** (bit_depth - 1) - 1)
+    result = normalize_mono(sonic_vector, remove_bias) * \
+        (2 ** (bit_depth - 1) - 1)
     if fades:
         result = adsr(attack_duration=fades[0], sustain_level=0,
                       release_duration=fades[1], sonic_vector=result)
@@ -115,9 +116,9 @@ def write_wav_stereo(sonic_vector=SONIC_VECTOR_STEREO, filename="asound.wav",
     W ; Write a mono file.
 
     """
-    result = normalize_stereo_sonic_vector(sonic_vector, remove_bias,
-                                           normalize_separately) * \
-        (2 ** (bit_depth - 1) - 1)
+    result = normalize_stereo(sonic_vector, remove_bias,
+                              normalize_separately) * (2 ** 
+                                                       (bit_depth - 1) - 1)
     if fades:
         result = adsr_stereo(attack_duration=fades[0], sustain_level=0,
                              release_duration=fades[1], sonic_vector=result)

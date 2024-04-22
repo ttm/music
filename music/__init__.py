@@ -1,5 +1,6 @@
 from .utils import (
     amp_to_db,
+    convert_to_stereo,
     db_to_amp,
     horizontal_stack,
     hz_to_midi,
@@ -14,8 +15,7 @@ from .utils import (
     pitch_to_freq,
     profile,
     resolve_stereo,
-    rhythm_to_durations,
-    stereo
+    rhythm_to_durations
 )
 from .core import (
     adsr_stereo,
@@ -78,6 +78,7 @@ __all__ = [
     'Basic',
     'Being',
     'CanonicalSynth',
+    'convert_to_stereo',
     'cross_fade',
     'db_to_amp',
     'dist',
@@ -129,7 +130,6 @@ __all__ = [
     'reverb',
     'rhythm_to_durations',
     'silence',
-    'stereo',
     'stretches',
     'transpose_permutation',
     'tremolo',

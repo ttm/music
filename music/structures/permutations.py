@@ -1,12 +1,44 @@
+"""Provides tools for working with interesting permutations.
+
+This module defines the `InterestingPermutations` class, which facilitates the
+generation and manipulation of permutations with specific properties. It also
+includes utility functions for permutation operations.
+
+Classes:
+    - InterestingPermutations: Provides tools for generating and manipulating
+    permutations with specific properties.
+
+Functions:
+    - dist: Calculates the distance between elements in a swap permutation.
+    - transpose_permutation: Transposes a permutation by a specified step.
+
+Example:
+    To work with interesting permutations:
+
+    >>> from sympy.combinatorics import Permutation
+    >>> from sympy.combinatorics.named_groups import AlternatingGroup
+    >>> interesting_perms = InterestingPermutations(nelements=4,
+    >>>                                             method="dimino")
+    >>> print(interesting_perms.alternations)
+
+"""
 from sympy.combinatorics import Permutation
 from sympy.combinatorics.named_groups import AlternatingGroup
 import sympy
 
 
 class InterestingPermutations:
-    """Get permutations of n elements in meaningfull sequences.
-    mirrors are ordered by swaps (0,n-1...)"""
+    """Get permutations of n elements in meaningful sequences.
+    Mirrors are ordered by swaps (0,n-1...).
 
+    Methods:
+        - get_alternating: Generates permutations in the alternating group.
+        - get_rotations: Generates rotations of permutations.
+        - get_mirrors: Generates mirror permutations.
+        - get_swaps: Generates swap permutations.
+        - even_odd: Determines if a permutation is even or odd.
+        - get_full_symmetry: Generates permutations with full symmetry.
+    """
     def __init__(self, nelements=4, method="dimino"):
         self.permutations_by_sizes = None
         self.permutations = None
@@ -32,7 +64,10 @@ class InterestingPermutations:
         self.get_swaps()
 
     def get_alternating(self):
-        """_summary_
+        """Generates permutations in the alternating group.
+
+        This method generates permutations in the alternating group of the
+        specified size using the provided generation method.
         """
         self.alternations = list(AlternatingGroup(self.nelements).
                                  generate(method=self.method))
@@ -51,13 +86,20 @@ class InterestingPermutations:
             sum([len(i)for i in self.alternations_by_sizes])
 
     def get_rotations(self):
-        """method dimino or coset"""
+        """Generates rotations of permutations.
+
+        This method generates rotations of permutations of the specified size
+        using the provided generation method.
+        """
         self.rotations = list(sympy.combinatorics.named_groups.
                               CyclicGroup(self.nelements).
                               generate(method=self.method))
 
     def get_mirrors(self):
-        """_summary_
+        """Generates mirror permutations.
+
+        This method generates mirror permutations of the specified size using
+        the provided generation method.
         """
         if self.nelements > 2:  # bug in sympy?
             self.dihedral = list(sympy.combinatorics.named_groups.
@@ -77,8 +119,10 @@ class InterestingPermutations:
                 len(self.mirrors)
 
     def get_swaps(self):
-        """contiguos swaps
-        swaps by distance between the indexes
+        """Generates swap permutations.
+
+        This method generates swap permutations of the specified size using
+        the provided generation method.
         """
         self.swaps = sorted(self.permutations_by_sizes[0],
                             key=lambda x: -x.rank())
@@ -94,18 +138,27 @@ class InterestingPermutations:
             dist_ += 1
 
     def even_odd(self, sequence):
-        """_summary_
+        """Determines if a permutation is even or odd.
 
-        Parameters
-        ----------
-        sequence : _type_
-            _description_
+        This method determines if a given permutation is even or odd based on
+        its sequence of elements.
+
+        Parameters:
+            sequence (list): The sequence of elements representing the
+                             permutation.
+
+        Returns:
+            str: Either 'even' or 'odd' indicating the parity of the
+                 permutation.
         """
         # get even and odd permutations ?
         pass
 
     def get_full_symmetry(self):
-        """_summary_
+        """Generates permutations with full symmetry.
+
+        This method generates permutations with full symmetry of the specified
+        size using the provided generation method.
         """
         self.permutations = list(sympy.combinatorics.named_groups.
                                  SymmetricGroup(self.nelements).

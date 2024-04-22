@@ -14,146 +14,256 @@ triangular_tmp = np.linspace(-1, 1, LAMBDA_TILDE // 2, endpoint=False)
 WAVEFORM_TRIANGULAR = np.hstack((triangular_tmp, triangular_tmp[::-1]))
 
 
-def horizontal_stack(*args):
-    """Creates a horizontal stack that preserves bidimensional data.
+def horizontal_stack(*arrays):
+    """Creates a horizontal stack of arrays while preserving bidimensional
+       data.
+
+    This function takes multiple arrays as input and stacks them horizontally.
+    If any of the input arrays are bidimensional (have two dimensions), the
+    function ensures that they are treated as stereo data by duplicating mono
+    channels to both left and right channels.
+
+    Parameters
+    ----------
+    *arrays : array_like
+        The arrays to be stacked horizontally. Can be one-dimensional (mono)
+        or two-dimensional (stereo).
 
     Returns
     -------
     ndarray
-        a horizontal stack
+        A numpy array representing the horizontal stack of input arrays.
+
+    Examples
+    --------
+    >>> mono_array1 = np.array([0.1, 0.2, 0.3])
+    >>> mono_array2 = np.array([0.4, 0.5, 0.6])
+    >>> stereo_array = np.array([[1, 2, 3], [4, 5, 6]])
+    >>> stacked_array = create_horizontal_stack(mono_array1, stereo_array,
+    >>>                                         mono_array2)
+    >>> stacked_array.shape
+    (2, 9)
     """
-    stereo_stack = 0
-    args = [np.array(a) for a in args]
-    for a in args:
-        if len(a.shape) == 2:
-            stereo_stack = 1
-    if stereo_stack:
-        for i, a in enumerate(args):
-            if len(a.shape) == 1:
-                args[i] = np.array((a, a))
-    return np.hstack(args)
+    # Initialize a flag to indicate whether stereo data is present
+    stereo_present = False
+
+    # Convert input arrays to numpy arrays
+    arrays = [np.array(arr) for arr in arrays]
+
+    # Check if any of the input arrays are bidimensional (stereo)
+    for arr in arrays:
+        if len(arr.shape) == 2:
+            stereo_present = True
+            break
+
+    # If stereo data is present, ensure that mono channels are duplicated to
+    # both left and right channels
+    if stereo_present:
+        for i, arr in enumerate(arrays):
+            if len(arr.shape) == 1:
+                arrays[i] = np.array((arr, arr))
+
+    # Return the horizontal stack of arrays
+    return np.hstack(arrays)
 
 
 H = horizontal_stack
 
 
-def db_to_amp(db_diff: float):
-    """Receives difference in decibels, returns difference in amplitude
+def db_to_amp(db_difference: float) -> float:
+    """Converts a difference in decibels to a difference in amplitude.
+
+    This function takes a difference in decibels as input and returns the
+    corresponding difference in amplitude.
 
     Parameters
     ----------
-    db_diff : float
-        Difference in decibels
+    db_difference : float
+        The difference in decibels to be converted.
 
     Returns
     -------
     float
-        Amplitude difference
+        The difference in amplitude corresponding to the input difference
+        in decibels.
+
+    Examples
+    --------
+    >>> db_to_amp(6)
+    2.0
+    >>> db_to_amp(-6)
+    0.5
     """
-    return 10. ** (db_diff / 20.)
+    return 10. ** (db_difference / 20.)
 
 
-def amp_to_db(amp_diff: float):
-    """Receives amplitude difference, returns difference in decibels
+def amp_to_db(amplitude_difference: float) -> float:
+    """Converts a difference in amplitude to a difference in decibels.
+
+    This function takes a difference in amplitude as input and returns the
+    corresponding difference in decibels.
 
     Parameters
     ----------
-    amp_diff : float
-        Differene in amplitude
+    amplitude_difference : float
+        The difference in amplitude to be converted.
 
     Returns
     -------
     float
-        Difference in decibels
+        The difference in decibels corresponding to the input difference
+        in amplitude.
+
+    Examples
+    --------
+    >>> amp_to_db(2.0)
+    6.0
+    >>> amp_to_db(0.5)
+    -6.0
     """
-    return 20. * np.log10(amp_diff)
+    return 20. * np.log10(amplitude_difference)
 
 
-def hz_to_midi(hz_value: float):
-    """Converts a hertz value into a MIDI note
+def hz_to_midi(hertz_value: float) -> np.float64:
+    """Converts a frequency in Hertz to a MIDI note number.
+
+    This function takes a frequency value in Hertz as input and returns
+    the corresponding MIDI note number.
 
     Parameters
     ----------
-    hz_value : float
-        Hertz value
+    hertz_value : float
+        The frequency value in Hertz to be converted.
 
     Returns
     -------
     numpy.float64
-        MIDI note value corresponding to the hertz value
+        The MIDI note number corresponding to the input frequency value.
+
+    Examples
+    --------
+    >>> hz_to_midi(440)
+    69.0
+    >>> hz_to_midi(880)
+    81.0
     """
-    return 69 + 12 * np.log2(hz_value / 440)
+    return 69 + 12 * np.log2(hertz_value / 440)
 
 
-def midi_to_hz(midi_value: float):
-    """Converts a MIDI note to the corrisponding hertz value
+def midi_to_hz(midi_value: float) -> float:
+    """Converts a MIDI note number to the corresponding frequency in Hertz.
+
+    This function takes a MIDI note number as input and returns the
+    corresponding frequency value in Hertz.
 
     Parameters
     ----------
     midi_value : float
-        MIDI note
+        The MIDI note number to be converted.
 
     Returns
     -------
     float
-        Hertz value
+        The frequency value in Hertz corresponding to the input MIDI not
+        number.
+
+    Examples
+    --------
+    >>> midi_to_hz(69)
+    440.0
+    >>> midi_to_hz(81)
+    880.0
     """
     return 440 * 2 ** ((midi_value - 69) / 12.)
 
 
-def midi_to_hz_interval(midi_interval: float):
-    """Converts a MIDI interval into a hertz interval.
+def midi_to_hz_interval(midi_interval: float) -> float:
+    """Converts a MIDI interval to the corresponding frequency interval in
+       Hertz.
+
+    This function takes a MIDI interval (measured in semitones) as input and
+    returns the corresponding frequency interval in Hertz.
 
     Parameters
     ----------
     midi_interval : float
-        MIDI interval to convert
+        The MIDI interval (measured in semitones) to be converted.
 
     Returns
     -------
     float
-        Hertz interval
+        The frequency interval in Hertz corresponding to the input MIDI
+        interval.
+
+    Examples
+    --------
+    >>> midi_to_hz_interval(12)
+    2.0
+    >>> midi_to_hz_interval(-12)
+    0.5
     """
     return 2 ** (midi_interval / 12)
 
 
-def pitch_to_freq(start_freq=220., semitones=[0, 7, 7, 4, 7, 0]):
-    """Produces a list of frequencies based on a list of semitones and a
+def pitch_to_freq(start_freq: float = 220.,
+                  semitones: list = [0, 7, 7, 4, 7, 0]) -> list:
+    """Generates a list of frequencies based on a list of semitones and a
     starting frequency.
+
+    This function calculates a list of frequencies based on the given list of
+    semitones and a starting frequency. Each semitone value represents the
+    number of semitones above or below the starting frequency.
 
     Parameters
     ----------
     start_freq : float, optional
-        Starting frequency, by default 220.
+        The starting frequency in Hertz, by default 220.
     semitones : list, optional
-        List of semitones, by default [0,7,7,4,7,0]
+        The list of semitone offsets relative to the starting frequency,
+        by default [0, 7, 7, 4, 7, 0].
 
     Returns
     -------
     list
-        List of frequencies
+        A list of frequencies calculated from the given semitones and starting
+        frequency.
+
+    Examples
+    --------
+    >>> pitch_to_freq()  # Default semitones [0, 7, 7, 4, 7, 0]
+    [220.0, 493.8833012561241, 493.8833012561241, 329.62755691286986,
+     493.8833012561241, 220.0]
+    >>> pitch_to_freq(start_freq=440, semitones=[0, 12, 12, 12])
+    [440.0, 880.0, 880.0, 880.0]
     """
     return [start_freq * 2 ** (i / 12) for i in semitones]
 
 
-def mix(first_sonic_vector, second_sonic_vector):
+def mix(first_sonic_vector: np.ndarray,
+        second_sonic_vector: np.ndarray) -> np.ndarray:
     """Mixes two sonic vectors.
+
+    This function mixes two sonic vectors of different lengths. It creates a
+    new sonic vector by summing the samples of the input sonic vectors. If one
+    of the input sonic vectors is shorter than the other, it is padded with
+    zeros to match the length of the longer sonic vector before mixing.
 
     Parameters
     ----------
     first_sonic_vector : ndarray
         The first sonic vector.
     second_sonic_vector : ndarray
-        The other sonic vector
+        The second sonic vector.
 
     Returns
     -------
-    _type_
-        A mixed sonic vector
+    ndarray
+        A mixed sonic vector containing the sum of the input sonic vectors.
 
     See Also
     --------
-    (.functions).mix2 : a better mixer
+    mix2 : A better mixer function that provides more control over the mixing
+           process.
     """
     l1 = len(first_sonic_vector)
     l2 = len(second_sonic_vector)
@@ -168,28 +278,47 @@ def mix(first_sonic_vector, second_sonic_vector):
     return sound
 
 
-def mix_stereo(first_sonic_vector, second_sonic_vector=[], end=False):
-    """Mix two sonic vectors
+def mix_stereo(first_sonic_vector: np.ndarray,
+               second_sonic_vector: np.ndarray = [],
+               end: bool = False) -> np.ndarray:
+    """Mixes two stereo sonic vectors.
+
+    This function mixes two stereo sonic vectors. If only one sonic vector is
+    provided, it is duplicated to create a stereo mix. Optionally, the shorter
+    sonic vector can be padded with zeros to match the length of the longer
+    sonic vector before mixing.
 
     Parameters
     ----------
     first_sonic_vector : ndarray
-        The first sonic vector to mix
-    second_sonic_vector : list, optional
-        A second sonic vector, by default []
+        The first stereo sonic vector to mix.
+    second_sonic_vector : ndarray, optional
+        The second stereo sonic vector to mix, by default None. If not
+        provided, the first sonic vector is duplicated to create a stereo mix.
     end : bool, optional
-        _description_, by default False
+        A flag indicating whether to append the second sonic vector at the end
+        of the first sonic vector (if False) or at the beginning (if True), by
+        default False.
 
     Returns
     -------
-    _type_
-        _description_
+    ndarray
+        A stereo sonic vector containing the mix of the input sonic vectors.
+
+    Notes
+    -----
+    If `second_sonic_vector` is not provided, the `end` parameter is ignored.
+
     """
     if len(first_sonic_vector) != 2:
         first_sonic_vector = np.array((first_sonic_vector, first_sonic_vector))
-    if len(second_sonic_vector) != 2:
-        second_sonic_vector = np.array((second_sonic_vector,
-                                        second_sonic_vector))
+    if second_sonic_vector is None:
+        second_sonic_vector = first_sonic_vector
+    else:
+        if len(second_sonic_vector) != 2:
+            second_sonic_vector = np.array((second_sonic_vector,
+                                            second_sonic_vector))
+
     if len(first_sonic_vector[0]) > len(second_sonic_vector[0]):
         if not end:
             l2_ = horizontal_stack(second_sonic_vector,
@@ -214,68 +343,90 @@ def mix_stereo(first_sonic_vector, second_sonic_vector=[], end=False):
 
 
 def resolve_stereo(afunction, argdict, stereo_vars=['sonic_vector']):
-    """_summary_
+    """Resolve stereo arguments for a function.
 
     Parameters
     ----------
-    afunction : _type_
-        _description_
-    argdict : _type_
-        _description_
+    afunction : function
+        The function to apply the resolved arguments to.
+    argdict : dict
+        The dictionary of arguments to resolve.
     stereo_vars : list, optional
-        _description_, by default ['sonic_vector']
+        List of variable names that represent stereo data, by default
+        ['sonic_vector']
 
     Returns
     -------
-    _type_
-        _description_
+    numpy.ndarray
+        Stereo output of the function.
     """
     ag1 = argdict.copy()
     ag2 = argdict.copy()
     for v in stereo_vars:
-        argdict[v] = stereo(argdict[v])
+        argdict[v] = convert_to_stereo(argdict[v])
         sv1 = argdict[v][0]
         sv2 = argdict[v][1]
         ag1[v] = sv1
         ag2[v] = sv2
 
-    # sv1 = argdict['sonic_vector'][0]
-    # sv2 = argdict['sonic_vector'][1]
-    # ag1 = argdict.copy()
-    # ag1['sonic_vector'] = sv1
-    # ag2 = argdict.copy()
-    # ag2['sonic_vector'] = sv2
     sv1_ = afunction(**ag1)
     sv2_ = afunction(**ag2)
     s = np.array((sv1_, sv2_))
     return s
 
 
-def stereo(sonic_vector):
-    """_summary_
+def convert_to_stereo(sound_vector):
+    """Converts a sound vector to stereo format.
+
+    Converts a mono or multi-channel sound vector into stereo format. If the
+    input vector is mono, it duplicates the signal to both left and right
+    channels. If the input vector has more than two channels, it keeps only
+    the first two channels (left and right) and sums the rest to both left and
+    right channels.
 
     Parameters
     ----------
-    sonic_vector : _type_
-        _description_
+    sound_vector : array_like
+        The input sound vector to be converted to stereo format. Can be a
+        one-dimensional array (mono) or a two-dimensional array (stereo or
+        multi-channel).
 
     Returns
     -------
-    _type_
-        _description_
+    stereo_sound : ndarray
+        A two-dimensional numpy array representing the sound vector in stereo
+        format. The first row corresponds to the left channel, and the second
+        row corresponds to the right channel.
+
+    Examples
+    --------
+    >>> mono_vector = np.array([0.1, 0.2, 0.3, 0.4])
+    >>> stereo_vector = convert_to_stereo(mono_vector)
+    >>> stereo_vector.shape
+    (2, 4)
     """
-    s = np.array(sonic_vector)
-    if len(s.shape) == 1:
-        ss = np.array((s, s))
-    elif s.shape[0] > 2:
-        print('keeping first two channels in left and right. \
-              The rest will be added to both left and right')
-        ss = np.array((s[0], s[1]))
-        for sss in s[2:]:
-            ss += sss
+    # Convert the input sound vector to a numpy array
+    sound_array = np.array(sound_vector)
+
+    # Check the shape of the input array
+    if len(sound_array.shape) == 1:
+        # If the input vector is mono, duplicate it for both left and right
+        # channels.
+        stereo_sound = np.array((sound_array, sound_array))
+    elif sound_array.shape[0] > 2:
+        # If the input vector has more than two channels, keep only the first
+        # two (left and right) and sum the rest to both left and right channels
+        print('Keeping first two channels in left and right. '
+              'The rest will be added to both left and right.')
+        stereo_sound = np.array((sound_array[0], sound_array[1]))
+        for channel in sound_array[2:]:
+            stereo_sound += channel
     else:
-        ss = s
-    return ss
+        # If the input vector is already stereo, return it without any
+        # modifications
+        stereo_sound = sound_array
+
+    return stereo_sound
 
 
 def mix_with_offset(first_sonic_vector, second_sonic_vector,
@@ -402,25 +553,26 @@ def mix_with_offset_(*args):
 def pan_transitions(p=[(1, 1), (1, 0), (0, 1), (1, 1)], d=[2, 2, 2],
                     method=['lin', 'circ', 'exp'], sample_rate=44100,
                     sonic_vector=None):
-    """_summary_
+    """Applies pan transitions to a sonic vector.
 
     Parameters
     ----------
-    p : list, optional
-        _description_, by default [(1,1),(1,0),(0,1),(1,1)]
+    p : list of tuples, optional
+        List of pan positions, where each tuple represents the amplitude
+        envelope of each channel, by default [(1,1),(1,0),(0,1),(1,1)]
     d : list, optional
-        _description_, by default [2,2,2]
+        List of durations for each transition, by default [2,2,2]
     method : list, optional
-        _description_, by default ['lin','circ','exp']
+        List of pan transition methods, by default ['lin','circ','exp']
     sample_rate : int, optional
-        _description_, by default 44100
-    sonic_vector : _type_, optional
-        _description_, by default None
+        Sample rate of the audio, by default 44100
+    sonic_vector : ndarray, optional
+        Input sonic vector, by default None
 
     Returns
     -------
-    _type_
-        _description_
+    ndarray
+        Stereo audio signal with pan transitions applied.
 
     Notes
     -----
@@ -458,6 +610,14 @@ def pan_transitions(p=[(1, 1), (1, 0), (0, 1), (1, 1)], d=[2, 2, 2],
     using weber-fechner and steven's laws.
     E.g. pitch_trans = [pitch0*X**(i/Y) for i in range(12)]
          pitch_trans = [pitch0 + X*i**Y for i in range(12)]
+
+    Examples
+    --------
+    >>> p = [(0, 1), (1, 0), (0, 1), (1, 1)]
+    >>> d = [2, 2, 2]
+    >>> method = ['lin', 'circ', 'exp']
+    >>> sonic_vector = np.random.rand(2, 44100 * 6)  # Random stereo signal
+    >>> result = pan_transitions(p, d, method, sonic_vector=sonic_vector)
     """
 
     pp_ = p[0]
@@ -476,7 +636,7 @@ def pan_transitions(p=[(1, 1), (1, 0), (0, 1), (1, 1)], d=[2, 2, 2],
     t1__ = horizontal_stack(*t1_)
     t = np.array((t0__, t1__))
     if sonic_vector:
-        sonic_vector = stereo(sonic_vector)
+        sonic_vector = convert_to_stereo(sonic_vector)
         return mix_with_offset(sonic_vector, t)
     else:
         return t

@@ -1,15 +1,30 @@
-import sympy
+"""
+Present plain changes as swaps and act in domains to make peals.
 
-# from sympy.combinatorics import Permutation
+Reference:
+- http://www.gutenberg.org/files/18567/18567-h/18567-h.htm
+"""
+
+import sympy
 
 
 class PlainChanges:
-    """Present plain changes as swaps and act in domains to make peals
-
-    http://www.gutenberg.org/files/18567/18567-h/18567-h.htm"""
+    """
+    Presents plain changes as swaps and acts in domains to make peals.
+    """
 
     def __init__(self, nelements=4, nhunts=None, hunts=None):
-        # InterestingPermutations.__init__(self,nelements)
+        """
+        Initializes a PlainChanges object.
+
+        Parameters:
+            nelements (int, optional): The number of elements. Defaults to 4.
+            nhunts (int, optional): The number of hunts. Defaults to None.
+            hunts (dict, optional): The hunts dictionary. Defaults to None.
+
+        Raises:
+            ValueError: If the number of hunts is invalid.
+        """
         self.peal_direct = None
         self.peal_sequence = None
         self.domain = None
@@ -19,36 +34,25 @@ class PlainChanges:
         self.neutral_perm = sympy.combinatorics.Permutation([0],
                                                             size=nelements)
         self.neighbor_swaps = [
-            sympy.combinatorics.Permutation(
-                i, i + 1, size=nelements)
+            sympy.combinatorics.Permutation(i, i + 1, size=nelements)
             for i in range(nelements - 1)]
         self.domains = []
-        # FIXME: unused?
-        # with the hunts, etc.
-        # hunts_ = self.perform_peal(nelements, dict(hunts))
         self.hunts = hunts
         self.nelements = nelements
-        # self.hunts_=hunts_
 
     def initialize_hunts(self, nelements=4, nhunts=None):
-        """_summary_
+        """
+        Initializes the hunts dictionary.
 
-        Parameters
-        ----------
-        nelements : int, optional
-            _description_, by default 4
-        nhunts : _type_, optional
-            _description_, by default None
+        Parameters:
+            nelements (int, optional): The number of elements. Defaults to 4.
+            nhunts (int, optional): The number of hunts. Defaults to None.
 
-        Returns
-        -------
-        _type_
-            _description_
+        Returns:
+            dict: The hunts dictionary.
 
-        Raises
-        ------
-        ValueError
-            _description_
+        Raises:
+            ValueError: If the number of hunts is invalid.
         """
         if not nhunts:
             if nelements > 4:
@@ -63,7 +67,6 @@ class PlainChanges:
                   "hunts less")
         hunts_dict = {}
         for hunt in range(nhunts):
-            # implement different starting settings here
             if hunt == nhunts - 1:
                 next_ = None
             else:
@@ -74,31 +77,25 @@ class PlainChanges:
         return hunts_dict
 
     def perform_peal(self, nelements, hunts=None):
-        """_summary_
+        """
+        Performs a peal.
 
-        Parameters
-        ----------
-        nelements : _type_
-            _description_
-        hunts : _type_, optional
-            _description_, by default None
+        Parameters:
+            nelements (int): The number of elements.
+            hunts (dict, optional): The hunts dictionary. Defaults to None.
 
-        Returns
-        -------
-        _type_
-            _description_
+        Returns:
+            dict: The updated hunts dictionary.
         """
         if hunts is None:
             hunts = self.initialize_hunts(nelements)
         permutation, hunts = self.perform_change(nelements, hunts)
-        # peal_sequence=[permutation]
         total_perm = permutation
         peal_direct = [self.neutral_perm]
         peal_sequence = [permutation]
         while total_perm != self.neutral_perm:
             peal_direct += [total_perm]
             permutation, hunts = self.perform_change(nelements, hunts)
-            # total_perm*=permutation
             total_perm = permutation * total_perm
             peal_sequence += [permutation]
         self.peal_direct = peal_direct
@@ -106,71 +103,62 @@ class PlainChanges:
         return hunts
 
     def perform_change(self, nelements, hunts, hunt=None):
-        """Perform change procedure from 'hunt' on to subsequent hunts.
+        """
+        Performs a change procedure.
 
-        Return permutation of the change and the hunts dictionary.
-        Peals should be classified by restrictions satisfied by permutations
-        between changes:
-            1) canonical peal: only adjacent swaps allowed.
-               E.g. plain changes, twenty all over.
-            2) semi-canonical peal: only adjacent chunks are displaced,
-               at least one permutation needs more than one swap.
-               E.g.: rotations, mirrors.
-            3) free peal: at least one permutation displaces non-adjacent
-               indexes. E.g. paradox peal, phoenix peal, any nondihedral? """
+        Parameters:
+            nelements (int): The number of elements.
+            hunts (dict): The hunts dictionary.
+            hunt (str, optional): The current hunt. Defaults to None.
+
+        Returns:
+            Permutation: The permutation of the change.
+            dict: The updated hunts dictionary.
+        """
         if hunt is None:
             hunt = "hunt0"
         hunt_ = hunts[hunt]
         direction = hunt_["direction"]
         assert direction in {"up", "down"}
         position = hunt_["position"]
-        # position_ = position
         swap_with = (position - 1, position + 1)[direction == "up"]
-        # find domain by iterating upper hunts
         cut_bellow = sum([hunts["hunt" + str(i)]["direction"] == "up"
                           for i in range(hunt_["level"])])
         cut_above = nelements - (hunt_["level"] - cut_bellow)
-        # cut_above=nelements-cut_bellow
         domain = list(range(nelements))[cut_bellow:cut_above]
         self.domains += [(domain, cut_bellow, cut_above, hunt_["level"], hunt,
                           position, swap_with)]
-        if swap_with in domain:  # move
+        if swap_with in domain:
             swap = self.neighbor_swaps[(position - 1, position)
                                        [direction == "up"]]
             for ahunt in hunts:
                 if hunts[ahunt]["position"] == swap_with:
                     hunts[ahunt]["position"] = position
             hunts[hunt]["position"] = swap_with
-        else:  # invert direction and move to next hunt and one less element
+        else:
             new_direction = ("up", "down")[direction == "up"]
             hunts[hunt]["direction"] = new_direction
             self.domains += ["invert", new_direction, hunt]
             if hunt_["next_"] is None:
-                # swap=self.neighbor_swaps[(domain[0],domain[-2+cut_bellow])[new_direction=="up"]]
                 swap = self.neighbor_swaps[(domain[0], domain[-2])
                                            [new_direction == "up"]]
             else:
                 subsequent_hunt = hunt_["next_"]
                 swap, hunts = self.perform_change(nelements, hunts,
                                                   subsequent_hunt)
-                # swap=transposePermutation(swap,(0,1)[new_direction=="up"])
         self.domains += [swap]
         return swap, hunts
 
     def act(self, domain=None, peal=None):
-        """_summary_
+        """
+        Acts in a domain using a peal.
 
-        Parameters
-        ----------
-        domain : _type_, optional
-            _description_, by default None
-        peal : _type_, optional
-            _description_, by default None
+        Parameters:
+            domain (list, optional): The domain. Defaults to None.
+            peal (list, optional): The peal. Defaults to None.
 
-        Returns
-        -------
-        _type_
-            _description_
+        Returns:
+            list: The acted domain.
         """
         if domain is None:
             domain = list(range(self.nelements))
@@ -179,12 +167,11 @@ class PlainChanges:
         return [i(domain) for i in peal]
 
     def act_all(self, domain=None):
-        """_summary_
+        """
+        Acts in all peals using a domain.
 
-        Parameters
-        ----------
-        domain : _type_, optional
-            _description_, by default None
+        Parameters:
+            domain (list, optional): The domain. Defaults to None.
         """
         if domain is None:
             domain = list(range(self.nelements))

@@ -1,4 +1,3 @@
-# from . import pieces
 from .CanonicalSynth import CanonicalSynth
 from .IteratorSynth import IteratorSynth
 from .classes import Being

@@ -4,7 +4,20 @@ synth = M.legacy.CanonicalSynth
 
 
 class TestSong2:
+    """
+    Class for testing the CanonicalSynth by generating various sounds and
+    saving them to WAV files.
+
+    Examples
+    --------
+    >>> test_song = TestSong2()
+    # TODO: Add more examples
+    """
     def __init__(self):
+        """
+        Initializes the TestSong2 instance and generates various sounds using
+        the CanonicalSynth.
+        """
         global M
 
         note = synth.render()

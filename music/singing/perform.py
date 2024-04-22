@@ -2,7 +2,7 @@
 import os
 import re
 from scipy.io import wavfile
-from music.utils import normalize
+from music.core import normalize_mono
 
 here = os.path.abspath(os.path.dirname(__file__))
 ECANTORIXDIR = here + '/ecantorix'
@@ -46,7 +46,7 @@ def sing(text="Mar-ry had a litt-le lamb",
     os.system('make -C {}'.format(ECANTORIXCACHE))
     wread = wavfile.read(ECANTORIXCACHE + '/achant.wav')
     assert wread[0] == 44100
-    return normalize(wread[1])
+    return normalize_mono(wread[1])
     # return wread[1]
 
 

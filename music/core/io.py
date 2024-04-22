@@ -117,7 +117,7 @@ def write_wav_stereo(sonic_vector=SONIC_VECTOR_STEREO, filename="asound.wav",
 
     """
     result = normalize_stereo(sonic_vector, remove_bias,
-                              normalize_separately) * (2 ** 
+                              normalize_separately) * (2 **
                                                        (bit_depth - 1) - 1)
     if fades:
         result = adsr_stereo(attack_duration=fades[0], sustain_level=0,

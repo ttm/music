@@ -151,8 +151,24 @@ class InterestingPermutations:
             str: Either 'even' or 'odd' indicating the parity of the
                  permutation.
         """
-        # get even and odd permutations ?
-        pass
+        n = len(sequence)
+        visited = [False] * n
+        parity = 0
+
+        for i in range(n):
+            if not visited[i]:
+                cycle_length = 0
+                x = i
+
+                while not visited[x]:
+                    visited[x] = True
+                    x = sequence[x]
+                    cycle_length += 1
+
+                if cycle_length > 0:
+                    parity += cycle_length - 1
+
+        return 'even' if parity % 2 == 0 else 'odd'
 
     def get_full_symmetry(self):
         """Generates permutations with full symmetry.
@@ -173,17 +189,35 @@ class InterestingPermutations:
 
 
 def dist(swap):
-    """_summary_
+    """
+    Computes the cyclic distance between the two elements of a permutation.
 
     Parameters
     ----------
-    swap : _type_
-        _description_
+    swap : sympy.combinatorics.Permutation
+        A permutation object with exactly two elements in its support.
 
     Returns
     -------
-    _type_
-        _description_
+    int
+        The cyclic distance between the two elements.
+
+    Notes
+    -----
+    The distance is adjusted to account for the circular nature of the
+    permutation. If the difference is greater than or equal to half the size
+    of the permutation, the distance is calculated as the size of the
+    permutation minus the difference.
+
+    Examples
+    --------
+    >>> from sympy.combinatorics import Permutation
+    >>> perm = Permutation([1, 0, 2])
+    >>> dist(perm)
+    1
+    >>> perm = Permutation([2, 0, 1])
+    >>> dist(perm)
+    1
     """
     if swap.size % 2 == 0:
         half = swap.size / 2
@@ -196,19 +230,34 @@ def dist(swap):
 
 
 def transpose_permutation(permutation, step=1):
-    """_summary_
+    """
+    Transposes (shifts) the elements of a permutation by a given step.
 
     Parameters
     ----------
-    permutation : _type_
-        _description_
+    permutation : sympy.combinatorics.Permutation
+        The permutation to be transposed.
     step : int, optional
-        _description_, by default 1
+        The number of positions to shift each element of the permutation,
+        by default 1.
 
     Returns
     -------
-    _type_
-        _description_
+    sympy.combinatorics.Permutation
+        A new permutation with elements shifted by the specified step.
+
+    Notes
+    -----
+    If `step` is 0, the function returns the original permutation.
+
+    Examples
+    --------
+    >>> from sympy.combinatorics import Permutation
+    >>> perm = Permutation([2, 0, 1])
+    >>> transpose_permutation(perm, 1)
+    Permutation([3, 1, 2])
+    >>> transpose_permutation(perm, 0)
+    Permutation([2, 0, 1])
     """
     if not step:
         return permutation

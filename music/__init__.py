@@ -56,7 +56,7 @@ from .core import (
     write_wav_mono,
     write_wav_stereo,
 )
-from .tables import Basic
+from .tables import PrimaryTables
 from .structures import (
     dist,
     GenericPeal,
@@ -75,7 +75,6 @@ __all__ = [
     'adsr',
     'am',
     'amp_to_db',
-    'Basic',
     'Being',
     'CanonicalSynth',
     'convert_to_stereo',
@@ -123,6 +122,7 @@ __all__ = [
     'Peals',
     'pitch_to_freq',
     'PlainChanges',
+    'PrimaryTables',
     'print_peal',
     'profile',
     'read_wav',
@@ -136,5 +136,5 @@ __all__ = [
     'tremolos',
     'trill',
     'write_wav_mono',
-    'write_wav_stereo',
+    'write_wav_stereo'
 ]

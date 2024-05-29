@@ -7,8 +7,8 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     """
     Synthesize an AM envelope or apply it to a sound.
 
-    Set fm=0 or max_amplitude=0 for a constant envelope with value 1.
-    An AM is a linear oscillatory pattern of amplitude [1].
+    Set fm=0 or max_amplitude=0 for a constant envelope with value 1. An AM is
+    a linear oscillatory pattern of amplitude [1].
 
     Parameters
     ----------
@@ -31,15 +31,14 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     Returns
     -------
     t : ndarray
-        A numpy array where each value is a PCM sample of the envelope.
-        If sonic_vectoris input, T is the sonic vector with the AM applied
-        to it.
+        A numpy array where each value is a PCM sample of the envelope. If
+        sonic_vectoris input, T is the sonic vector with the AM applied to it.
 
     See Also
     --------
-    V : A musical note with an oscillation of pitch.
-    FM : A linear oscillation of fundamental frequency.
-    T : A tremolo, an oscillation of loudness.
+    note_with_vibrato : A musical note with an oscillation of pitch.
+    fm : A linear oscillation of fundamental frequency.
+    tremolo : A tremolo, an oscillation of loudness.
 
     Examples
     --------
@@ -56,14 +55,12 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     (or AM), the tremolo pattern is considered separately from a synthesis of
     the sound.
 
-    The AM is an oscilattory pattern of amplitude
-    while the tremolo is an oscilattory pattern of loudness
-    being: loudness ~ log(amplitude)
+    The AM is an oscilattory pattern of amplitude while the tremolo is an
+    oscilattory pattern of loudness being: loudness ~ log(amplitude)
 
     The vibrato and FM patterns are considered when synthesizing the sound.
 
-    One might want to run this function twice to obtain
-    a stereo reverberation.
+    One might want to run this function twice to obtain a stereo reverberation.
 
     Cite the following article whenever you use this function.
 
@@ -101,8 +98,8 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     """
     Synthesize a tremolo envelope or apply it to a sound.
 
-    Set fa=0 or dB=0 for a constant envelope with value 1.
-    A tremolo is an oscillatory pattern of loudness [1].
+    Set fa=0 or dB=0 for a constant envelope with value 1. A tremolo is an
+    oscillatory pattern of loudness [1].
 
     Parameters
     ----------
@@ -133,9 +130,9 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
 
     See Also
     --------
-    V : A musical note with an oscillation of pitch.
-    FM : A linear oscillation of fundamental frequency.
-    AM : A linear oscillation of amplitude.
+    note_with_vibrato : A musical note with an oscillation of pitch.
+    fm : A linear oscillation of fundamental frequency.
+    am : A linear oscillation of amplitude.
 
     Examples
     --------
@@ -216,30 +213,27 @@ def tremolos(durations=[[3, 4, 5], [2, 3, 7, 4]],
     number_of_samples : iterable of iterable of scalars
         The number of samples or each tremolo.
     sonic_vector : array_like
-        The sound to which apply the tremolos.
-        If supplied, the tremolo lines are
-        applied to the sound and missing samples
-        are completed by zeros (if sonic_vector
-        is smaller then the lengthiest tremolo)
-        or ones (is sonic_vector is larger).
+        The sound to which apply the tremolos. If supplied, the tremolo lines
+        are applied to the sound and missing samples are completed by zeros
+        (if sonic_vector is smaller then the lengthiest tremolo) or ones
+        (is sonic_vector is larger).
     sample_rate : integer
         The sample rate
 
     Returns
     -------
     s : ndarray
-        A numpy array where each value is a value of the envelope
-        for the PCM samples.
-        If sonic_vector is supplied,
-        E is the sonic vector with the envelope applied to it.
+        A numpy array where each value is a value of the envelope for the PCM
+        samples. If sonic_vector is supplied, e is the sonic vector with the
+        envelope applied to it.
 
     See Also
     --------
-    L : An envelope for a loudness transition.
-    L_ : An envelope with an arbitrary number of transitions.
-    F : Fade in and out.
-    AD : An ADSR envelope.
-    T : An oscillation of loudness.
+    loud : An envelope for a loudness transition.
+    louds : An envelope with an arbitrary number of transitions.
+    fade : Fade in and out.
+    adsr : An ADSR envelope.
+    tremolo : An oscillation of loudness.
 
     Examples
     --------

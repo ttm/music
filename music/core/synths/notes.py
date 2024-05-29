@@ -43,9 +43,9 @@ def note(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
 
     Notes
     -----
-    In the MASS framework implementation,
-    for a sound with a vibrato (or FM) to be synthesized using LUT,
-    the vibrato pattern is considered when performing the lookup calculations.
+    In the MASS framework implementation, for a sound with a vibrato (or FM)
+    to be synthesized using LUT, the vibrato pattern is considered when
+    performing the lookup calculations.
 
     The tremolo and AM patterns are implemented as separate amplitude
     envelopes.
@@ -111,8 +111,8 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
 
     See Also
     --------
-    D_ : a note with arbitrary vibratos, transitions of pitch
-         and transitions of localization.
+    D_ : a note with arbitrary vibratos, transitions of pitch and transitions
+         of localization.
     PV_ : a note with an arbitrary sequence of pitch transition and a
           meta-vibrato.
 
@@ -281,10 +281,8 @@ def note_with_phase(freq=220, duration=2, phase=0,
     """
     Synthesize a basic musical note with a phase.
 
-    Is useful in more complex synthesis routines.
-    For synthesizing a musical note directly,
-    you probably want to use N() and disconsider
-    the phase.
+    It's useful in more complex synthesis routines. For synthesizing a musical
+    note directly, you probably want to use note() and disconsider the phase.
 
     Parameters
     ----------
@@ -322,9 +320,9 @@ def note_with_phase(freq=220, duration=2, phase=0,
 
     Notes
     -----
-    In the MASS framework implementation,
-    for a sound with a vibrato (or FM) to be synthesized using LUT,
-    the vibrato pattern is considered when performing the lookup calculations.
+    In the MASS framework implementation, for a sound with a vibrato (or FM)
+    to be synthesized using LUT, the vibrato pattern is considered when
+    performing the lookup calculations.
 
     The tremolo and AM patterns are implemented as separate amplitude
     envelopes.
@@ -596,8 +594,8 @@ def note_with_vibrato_seq_localization(freqs=[220, 440, 330],
 
     Notes
     -----
-    Check the functions above for more information about
-    how each feature of this function is implemented.
+    Check the functions above for more information about how each feature of
+    this function is implemented.
 
     Cite the following article whenever you use this function.
 

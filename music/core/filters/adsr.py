@@ -12,8 +12,8 @@ def adsr(envelope_duration=2, attack_duration=20,
     """
     Synthesize an ADSR envelope.
 
-    ADSR (Atack, Decay, Sustain, Release) is a very traditional
-    loudness envelope in sound synthesis [1].
+    ADSR (Atack, Decay, Sustain, Release) is a very traditional loudness
+    envelope in sound synthesis [1].
 
     Parameters
     ----------
@@ -33,54 +33,48 @@ def adsr(envelope_duration=2, attack_duration=20,
         (linear loudness).
         "linear" for linear transitions of amplitude.
     alpha : scalar or array_like
-        An index to make the exponential fade slower or faster [1].
-        Ignored it transitions="linear" or alpha=1.
-        If it is an array_like, it should hold three values to be used
-        in Attack, Decay and Release.
+        An index to make the exponential fade slower or faster [1]. Ignored it
+        transitions="linear" or alpha=1. If it is an array_like, it should
+        hold three values to be used in Attack, Decay and Release.
     db_dev : scalar or array_like
-        The decibels deviation to reach before using a linear fade
-        to reach zero amplitude.
-        If it is an array_like, it should hold two values,
-        one for Attack and another for Release.
-        Ignored if trans="linear".
+        The decibels deviation to reach before using a linear fade to reach
+        zero amplitude. If it is an array_like, it should hold two values, one
+        for Attack and another for Release. Ignored if trans="linear".
     to_zero : scalar or array_like
-        The duration in milliseconds for linearly departing from zero
-        in the Attack and reaching the value of zero at the end
-        of the Release.
-        If it is an array_like, it should hold two values,
-        one for Attack and another for Release.
-        Is ignored if trans="linear".
+        The duration in milliseconds for linearly departing from zero in the
+        Attack and reaching the value of zero at the end of the Release. If it
+        is an array_like, it should hold two values, one for Attack and
+        another for Release. It's ignored if trans="linear".
     number_of_samples : integer
-        The number of samples of the envelope.
-        If supplied, d is ignored.
+        The number of samples of the envelope. If supplied, d is ignored.
     sonic_vector : array_like
-        Samples for the ADSR envelope to be applied to.
-        If supplied, d and nsamples are ignored.
+        Samples for the ADSR envelope to be applied to. If supplied, d and
+        nsamples are ignored.
     sample_rate : integer
         The sample rate.
 
     Returns
     -------
-    AD : ndarray
-        A numpy array where each value is a value of
-        the envelope for the PCM samples if sonic_vector is 0.
-        If sonic_vector is input,
-        AD is the sonic vector with the ADSR envelope applied to it.
+    as : ndarray
+        A numpy array where each value is a value of the envelope for the PCM
+        samples if sonic_vector is 0. If sonic_vector is input, ad is the
+        sonic vector with the ADSR envelope applied to it.
 
     See Also
     --------
-    T : An oscillation of loudness.
-    L : A loudness transition.
-    F : A fade in or fade out.
+    tremolo : An oscillation of loudness.
+    loud : A loudness transition.
+    fade : A fade in or fade out.
 
     Examples
     --------
-    >>> W(V()*ad())  # writes a WAV file of a note with ADSR envelope
-    >>> s = H( [V()*ad(A=i, R=j) for i, j in zip([6, 50, 300],
-                                                 [100, 10, 200])] )  # OR
-    >>> s = H( [ad(A=i, R=j, sonic_vector=V()) for i, j in zip([6, 15, 100],
-                                                               [2, 2, 20])] )
-    >>> envelope = ad(d=440, A=10e3, D=0, R=5e3)  # a lengthy envelope
+    >>> write_wav_mono(note_with_vibrato() * adsr())
+    >>> s = horizontal_stack([note_with_vibrato() *
+    ...                       adsr(attack_duration=i, release_duration=j)
+    ...                       for i, j in zip([6, 50, 300], [100, 10, 200])])
+    >>> s = horizontal_stack([adsr(A=i, R=j, sonic_vector=note_with_vibrato())
+    ...                       for i, j in zip([6, 15, 100], [2, 2, 20])])
+    >>> envelope = adsr(d=440, A=10e3, D=0, R=5e3)
 
     Notes
     -----
@@ -88,9 +82,8 @@ def adsr(envelope_duration=2, attack_duration=20,
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the
-    discrete-time representation of sound." arXiv preprint
-    arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     if type(sonic_vector) in (np.ndarray, list):
@@ -143,7 +136,7 @@ def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
     """
     A shorthand to make an ADSR envelope for a stereo sound.
 
-    See ADSR() for more information.
+    See adsr() for more information.
 
     """
     if type(sonic_vector) in (np.ndarray, list):

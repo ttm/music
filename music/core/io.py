@@ -46,16 +46,16 @@ def write_wav_mono(sonic_vector=SONIC_VECTOR_MONO, filename="asound.wav",
     Parameters
     ----------
     sonic_vector : array_like
-        The PCM samples to be written as a WAV sound file.
-        The samples are always normalized by __n(sonic_vector)
-        to have samples between -1 and 1.
+        The PCM samples to be written as a WAV sound file. The samples are
+        always normalized by normalize_mono(sonic_vector) to have samples
+        between -1 and 1.
     filename : string
         The filename to use for the file to be written.
     sample_rate : scalar
         The sample frequency.
     fades : interable
-        An iterable with two values for the milliseconds you
-        want for the fade in and out (to avoid clicks).
+        An iterable with two values for the milliseconds you want for the fade
+        in and out (to avoid clicks).
     bit_depth : integer
         The number of bits in each sample of the final file.
     remove_bias : boolean
@@ -63,10 +63,10 @@ def write_wav_mono(sonic_vector=SONIC_VECTOR_MONO, filename="asound.wav",
 
     See Also
     --------
-    __n : Normalizes an array to [-1,1]
-    W_ : Writes an array with the same arguments
-    and order of them as scipy.io.wavfile.
-    WS ; Write a stereo file.
+    normalize_mono : Normalizes an array to [-1,1]
+    write_wav_mono : Writes an array with the same arguments and order of them
+                     as scipy.io.wavfile.
+    write_wav_stereo : Write a stereo file.
 
     """
     result = normalize_mono(sonic_vector, remove_bias) * \
@@ -90,30 +90,29 @@ def write_wav_stereo(sonic_vector=SONIC_VECTOR_STEREO, filename="asound.wav",
     Parameters
     ----------
     sonic_vector : array_like
-        The PCM samples to be written as a WAV sound file.
-        The samples are always normalized by __n(sonic_vector)
-        to have samples between -1 and 1 and remove the offset.
+        The PCM samples to be written as a WAV sound file. The samples are
+        always normalized by normalize_stereo(sonic_vector) to have samples
+        between -1 and 1 and remove the offset.
         Use array of shape (nchannels, nsamples).
     filename : string
         The filename to use for the file to be written.
     sample_rate : scalar
         The sample frequency.
     fades : interable
-        An iterable with two values for the milliseconds you
-        want for the fade in and out (to avoid clicks).
+        An iterable with two values for the milliseconds you want for the fade
+        in and out (to avoid clicks).
     bit_depth : integer
         The number of bits in each sample of the final file.
     remove_bias : boolean
         Whether to remove or not the bias (or offset)
     normalize_separately : boolean
-        Set to True if each channel should be normalized
-        separately. If False (default), the arrays will be
-        rescaled in the same proportion.
+        Set to True if each channel should be normalized separately.
+        If False (default), the arrays will be rescaled in the same proportion.
 
     See Also
     --------
-    __ns : Normalizes a stereo array to [-1,1]
-    W ; Write a mono file.
+    normalize_stereo : Normalizes a stereo array to [-1,1]
+    write_wav_mono : Write a mono file.
 
     """
     result = normalize_stereo(sonic_vector, remove_bias,

@@ -1,42 +1,17 @@
-# This file is a copy of mass/src/aux/functions.py
-# imported
-# in music/utils.py
-# as
-# from .functions import *
-# but it should be integrated into music package more
-# properly.
-#
-import numpy as n
+""" This file holds minimal implementations to avoid repetitions in the
+    musical pieces of the MASS framework: https://github.com/ttm/mass
 
-__doc__ = """
-This file holds minimal implementations
-to avoid repetitions in the
-musical pieces of the MASS framework:
-    https://github.com/ttm/mass
+    Sounds are represented as arrays of PCM samples. Stereo files are
+    represented by arrays of shape (2, nsamples).
 
-Sounds are represented as arrays of
-PCM samples.
-Stereo files are represented
-by arrays of shape (2, nsamples).
+    See the file HRTF.py, in this same directory, for the functions that use
+    impulse responses of Head Related Transfer Functions (HRTFs).
 
-See the music Python Package:
-    https://github.com/ttm/music
-for a usage of these implementations
-within a package and derived routines.
-
-See the file HRTF.py, in this same directory,
-for the functions that use impulse responses of
-Head Related Transfer Functions (HRTFs).
-
-This file is a copy of mass/src/aux/functions.py
-imported
-in music/utils.py
-as
-from .functions import *
-but it should be integrated into music package more
-properly.
-
+    This file is a copy of mass/src/aux/functions.py imported in
+    music/utils.py as `from .functions import *` but it should be integrated
+    into music package more properly.
 """
+import numpy as np
 
 
 def normalize_mono(sonic_vector, remove_bias=True):
@@ -60,8 +35,8 @@ def normalize_mono(sonic_vector, remove_bias=True):
         Whether to remove or not the bias (or offset)
 
     """
-    t = n.array(sonic_vector)
-    if n.all(t == 0):
+    t = np.array(sonic_vector)
+    if np.all(t == 0):
         return t
     else:
         if remove_bias:
@@ -86,9 +61,8 @@ def normalize_stereo(sonic_vector, remove_bias=True, normalize_sep=False):
     remove_bias : boolean
         Whether to remove or not the bias (or offset)
     normalize_sep : boolean
-        Set to True if each channel should be normalized
-        separately. If False (default), the arrays will be
-        rescaled in the same proportion
+        Set to True if each channel should be normalized separately.
+        If False (default), the arrays will be rescaled in the same proportion
         (preserves loudness proportion).
 
     Returns
@@ -97,8 +71,8 @@ def normalize_stereo(sonic_vector, remove_bias=True, normalize_sep=False):
         A numpy array with values between -1 and 1.
 
     """
-    sv_copy = n.array(sonic_vector)
-    if n.all(sv_copy == 0):
+    sv_copy = np.array(sonic_vector)
+    if np.all(sv_copy == 0):
         return sv_copy
 
     if remove_bias:

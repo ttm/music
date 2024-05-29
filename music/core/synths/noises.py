@@ -12,16 +12,15 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
     Parameters
     ----------
     noise_type : string or scalar
-        Specifies the decibels gain or attenuation per octave.
-        It can be specified numerically
-        (e.g. ntype=3.5 is 3.5 decibels gain per octave)
+        Specifies the decibels gain or attenuation per octave. It can be
+        specified numerically (e.g. ntype=3.5 is 3.5 decibels gain per octave)
         or by strings:
-          "brown" is -6dB/octave
-          "pink" is -3dB/octave
-          "white" is 0dB/octave
-          "blue" is 3dB/octave
-          "violet" is 6dB/octave
-          "black" is -12/dB/octave but, in theory, is any < -6dB/octave
+        - "brown" is -6dB/octave
+        - "pink" is -3dB/octave
+        - "white" is 0dB/octave
+        - "blue" is 3dB/octave
+        - "violet" is 6dB/octave
+        - "black" is -12/dB/octave but, in theory, is any < -6dB/octave
         See [1] for more information.
     duration : scalar
         The duration of the noise in seconds.
@@ -33,22 +32,20 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
     number_of_samples : integer
         The number of samples of the resulting sonic vector.
     sample_rate : integer
-        _description_
+        The sample rate to use, by default 44100.
 
     Notes
     -----
-    The noise is synthesized with components with random phases,
-    with the moduli that are related to the decibels/octave,
-    and with a frequency resolution of
-      fs/nsamples = fs/(fs*d) = 1/d Hz
+    The noise is synthesized with components with random phases, with the
+    moduli that are related to the decibels/octave, and with a frequency
+    resolution of fs / nsamples = fs / (fs*d) = 1/d Hz
 
     Cite the following article whenever you use this function.
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the
-    discrete-time representation of sound."
-    arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     if number_of_samples:
@@ -156,7 +153,7 @@ def silence(duration=1.0, sample_rate=44100):
     duration : int, optional
         How many seconds will silence last, by default 1
     sample_rate : int, optional
-        The sample rate to use, by default 44100t 44100
+        The sample rate to use, by default 44100
 
     Returns
     -------

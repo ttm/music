@@ -1,24 +1,24 @@
 """Provides primary tables for waveform lookup.
 
-This module contains the `Basic` class, which allows the creation of sine,
-triangle, square, and saw wave periods with a given number of samples. It also
-provides a method to visualize these waveform tables.
+This module contains the `PrimaryTables` class, which allows the creation of
+sine, triangle, square, and saw wave periods with a given number of samples.
+It also provides a method to visualize these waveform tables.
 
 Example:
     To create and visualize waveform tables:
 
-    >>> from musisc import Basic
-    >>> basic = Basic()
-    >>> basic.draw_tables()
+    >>> from musisc import PrimaryTables
+    >>> primary_tables = PrimaryTables()
+    >>> primary_tables.draw_tables()
 
 Classes:
-    - Basic: Provides primary tables for waveform lookup.
+    - PrimaryTables: Provides primary tables for waveform lookup.
 """
 import numpy as np
 import pylab as p
 
 
-class Basic:
+class PrimaryTables:
     """Provides primary tables for waveform lookup.
 
     This class creates sine, triangle, square, and saw wave periods
@@ -44,11 +44,11 @@ class Basic:
 
     Examples
     --------
-    >>> basic = Basic()
-    >>> basic.draw_tables()  # Draw the waveform tables
+    >>> primary_tables = PrimaryTables()
+    >>> primary_tables.draw_tables()  # Draw the waveform tables
     """
     def __init__(self, size=2048):
-        """Initialize the Basic class.
+        """Initialize the PrimaryTables class.
 
         Parameters
         ----------

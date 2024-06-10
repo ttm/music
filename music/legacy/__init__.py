@@ -1,6 +1,5 @@
-# from . import pieces
-from . import CanonicalSynth
-from . import IteratorSynth
+from .CanonicalSynth import CanonicalSynth
+from .IteratorSynth import IteratorSynth
 from .classes import Being
 
 __all__ = [

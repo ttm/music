@@ -1,3 +1,6 @@
+""" Module for the synthesis of notes and notes with some
+    effects applied to them.
+"""
 import numpy as np
 from ...utils import WAVEFORM_SINE, WAVEFORM_TRIANGULAR
 from ..filters import adsr
@@ -40,18 +43,19 @@ def note(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
 
     Notes
     -----
-    In the MASS framework implementation,
-    for a sound with a vibrato (or FM) to be synthesized using LUT,
-    the vibrato pattern is considered when performing the lookup calculations.
+    In the MASS framework implementation, for a sound with a vibrato (or FM)
+    to be synthesized using LUT, the vibrato pattern is considered when
+    performing the lookup calculations.
 
-    The tremolo and AM patterns are implemented as separate amplitude envelopes.
+    The tremolo and AM patterns are implemented as separate amplitude
+    envelopes.
 
     Cite the following article whenever you use this function.
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the
-    discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     waveform_table = np.array(waveform_table)
@@ -60,16 +64,18 @@ def note(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     samples = np.arange(number_of_samples)
     waveform_table_length = len(waveform_table)
 
-    gamma = (samples * freq * waveform_table_length / sample_rate).astype(np.int64)
+    gamma = (samples * freq * waveform_table_length /
+             sample_rate).astype(np.int64)
     result = waveform_table[gamma % waveform_table_length]
     return result
 
 
 def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
-                      x=[-10, 10], y=[1, 1], stereo=True, zeta=0.215, air_temp=20,
-                      number_of_samples=0, sample_rate=44100):
+                      x=[-10, 10], y=[1, 1], stereo=True, zeta=0.215,
+                      air_temp=20, number_of_samples=0, sample_rate=44100):
     """
-    A simple note with a transition of localization and resulting Doppler effect.
+    A simple note with a transition of localization and resulting Doppler
+    effect.
 
     Parameters
     ----------
@@ -105,9 +111,10 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
 
     See Also
     --------
-    D_ : a note with arbitrary vibratos, transitions of pitch
-    and transitions of localization.
-    PV_ : a note with an arbitrary sequence of pitch transition and a meta-vibrato.
+    D_ : a note with arbitrary vibratos, transitions of pitch and transitions
+         of localization.
+    PV_ : a note with an arbitrary sequence of pitch transition and a
+          meta-vibrato.
 
     Examples
     --------
@@ -121,19 +128,21 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the
-    discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     waveform_table = np.array(waveform_table)
     if not number_of_samples:
         number_of_samples = int(duration * sample_rate)
-    # samples = np.arange(number_of_samples)
+    #  samples = np.arange(number_of_samples)
     length = len(waveform_table)
     speed = 331.3 + .606 * air_temp
 
-    x = x[0] + (x[1] - x[0]) * np.arange(number_of_samples + 1) / number_of_samples
-    y = y[0] + (y[1] - y[0]) * np.arange(number_of_samples + 1) / number_of_samples
+    x = x[0] + (x[1] - x[0]) * np.arange(number_of_samples + 1) / \
+        number_of_samples
+    y = y[0] + (y[1] - y[0]) * np.arange(number_of_samples + 1) / \
+        number_of_samples
     if stereo:
         dl = np.sqrt((x + zeta / 2) ** 2 + y ** 2)
         dr = np.sqrt((x - zeta / 2) ** 2 + y ** 2)
@@ -165,7 +174,8 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
         duration = np.sqrt(x ** 2 + y ** 2)
         iid = 1 / duration
 
-        vs = sample_rate * (duration[1:] - duration[:-1])  # velocities at each point
+        # velocities at each point
+        vs = sample_rate * (duration[1:] - duration[:-1])
         f_ = freq * speed / (speed + vs)
 
         gamma = np.cumsum(f_ * length / sample_rate).astype(np.int64)
@@ -174,7 +184,8 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
 
 
 def note_with_fm(freq=220, duration=2, fm=100, max_fm_deviation=2,
-                 waveform_table=WAVEFORM_TRIANGULAR, fm_waveform_table=WAVEFORM_SINE,
+                 waveform_table=WAVEFORM_TRIANGULAR,
+                 fm_waveform_table=WAVEFORM_SINE,
                  number_of_samples=0, sample_rate=44100):
     """
     Synthesize a musical note with FM synthesis.
@@ -217,7 +228,8 @@ def note_with_fm(freq=220, duration=2, fm=100, max_fm_deviation=2,
     Examples
     --------
     >>> write_wav_mono(note_with_fm())  # writes a WAV file of a note
-    >>> sonic_vector = H([note_with_fm(i, j) for i, j in zip([200, 500, 100], [2, 1, 2])])
+    >>> sonic_vector = H([note_with_fm(i, j) for i, j in zip([200, 500, 100],
+                                                             [2, 1, 2])])
     >>> s2 = note_with_fm(440, 1.5, 600, 10)
 
     Notes
@@ -227,14 +239,15 @@ def note_with_fm(freq=220, duration=2, fm=100, max_fm_deviation=2,
     the vibrato (or FM)
     pattern is considered when performing the lookup calculations.
 
-    The tremolo and AM patterns are implemented as separate amplitude envelopes.
+    The tremolo and AM patterns are implemented as separate amplitude
+    envelopes.
 
     Cite the following article whenever you use this function.
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the
-    discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     waveform_table = np.array(waveform_table)
@@ -246,16 +259,19 @@ def note_with_fm(freq=220, duration=2, fm=100, max_fm_deviation=2,
     samples = np.arange(lambda_fm)
 
     fm_waveform_table_length = len(fm_waveform_table)
-    gamma_m = (samples * fm * fm_waveform_table_length / sample_rate).astype(np.int64)  # LUT indexes
+    gamma_m = (samples * fm * fm_waveform_table_length /
+               sample_rate).astype(np.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample
     t_m = fm_waveform_table[gamma_m % fm_waveform_table_length]
 
     # frequency in Hz at each sample
     f = freq + t_m * max_fm_deviation
     waveform_table_length = len(waveform_table)
-    d_gamma = f * (waveform_table_length / sample_rate)  # shift in table between each sample
+    # shift in table between each sample
+    d_gamma = f * (waveform_table_length / sample_rate)
     gamma = np.cumsum(d_gamma).astype(np.int64)  # total shift at each sample
-    result = waveform_table[gamma % waveform_table_length]  # final sample lookup
+    # final sample lookup
+    result = waveform_table[gamma % waveform_table_length]
     return result
 
 
@@ -265,10 +281,8 @@ def note_with_phase(freq=220, duration=2, phase=0,
     """
     Synthesize a basic musical note with a phase.
 
-    Is useful in more complex synthesis routines.
-    For synthesizing a musical note directly,
-    you probably want to use N() and disconsider
-    the phase.
+    It's useful in more complex synthesis routines. For synthesizing a musical
+    note directly, you probably want to use note() and disconsider the phase.
 
     Parameters
     ----------
@@ -300,23 +314,25 @@ def note_with_phase(freq=220, duration=2, phase=0,
     Examples
     --------
     >>> write_wav_mono(synth_note_with_phase())  # writes a WAV file of a note
-    >>> s = H( [synth_note_with_phase(i, j) for i, j in zip([200, 500, 100], [2, 1, 2])] )
+    >>> s = H([synth_note_with_phase(i, j) for i, j in zip([200, 500, 100],
+                                                           [2, 1, 2])])
     >>> s2 = synth_note_with_phase(440, 1.5, waveform_table=Sa)
 
     Notes
     -----
-    In the MASS framework implementation,
-    for a sound with a vibrato (or FM) to be synthesized using LUT,
-    the vibrato pattern is considered when performing the lookup calculations.
+    In the MASS framework implementation, for a sound with a vibrato (or FM)
+    to be synthesized using LUT, the vibrato pattern is considered when
+    performing the lookup calculations.
 
-    The tremolo and AM patterns are implemented as separate amplitude envelopes.
+    The tremolo and AM patterns are implemented as separate amplitude
+    envelopes.
 
     Cite the following article whenever you use this function.
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the
-    discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     waveform_table = np.array(waveform_table)
@@ -325,14 +341,15 @@ def note_with_phase(freq=220, duration=2, phase=0,
     samples = np.arange(number_of_samples)
     waveform_table_length = len(waveform_table)
     i0 = phase * waveform_table_length / (2 * np.pi)
-    gamma = (i0 + samples * freq * waveform_table_length / sample_rate).astype(np.int64)
+    gamma = (i0 + samples * freq * waveform_table_length /
+             sample_rate).astype(np.int64)
     result = waveform_table[gamma % waveform_table_length]
     return result
 
 
 def note_with_glissando(start_freq=220, end_freq=440, duration=2, alpha=1,
-                    waveform_table=WAVEFORM_SINE, method="exp",
-                    number_of_samples=0, sample_rate=44100):
+                        waveform_table=WAVEFORM_SINE, method="exp",
+                        number_of_samples=0, sample_rate=44100):
     """
     A note with a pitch transition: a glissando.
 
@@ -375,7 +392,8 @@ def note_with_glissando(start_freq=220, end_freq=440, duration=2, alpha=1,
     Examples
     --------
     >>> write_wav_mono(note_with_pitch())  # writes file with a glissando
-    >>> s = H( [note_with_pitch(i, j) for i, j in zip([220, 440, 4000], [440, 220, 220])] )
+    >>> s = H([note_with_pitch(i, j) for i, j in zip([220, 440, 4000],
+                                                     [440, 220, 220])])
     >>> write_wav_mono(s)  # writes a file with glissandi
 
     """
@@ -387,9 +405,11 @@ def note_with_glissando(start_freq=220, end_freq=440, duration=2, alpha=1,
     samples = np.arange(lambda_p)
     if method == "exp":
         if alpha != 1:
-            f = start_freq * (end_freq / start_freq) ** ((samples / (lambda_p - 1)) ** alpha)
+            f = start_freq * (end_freq / start_freq) ** \
+                ((samples / (lambda_p - 1)) ** alpha)
         else:
-            f = start_freq * (end_freq / start_freq) ** (samples / (lambda_p - 1))
+            f = start_freq * (end_freq / start_freq) ** \
+                (samples / (lambda_p - 1))
     else:
         f = start_freq + (end_freq - start_freq) * samples / (lambda_p - 1)
     waveform_table_length = len(waveform_table)
@@ -399,9 +419,10 @@ def note_with_glissando(start_freq=220, end_freq=440, duration=2, alpha=1,
 
 
 def note_with_glissando_vibrato(start_freq=220, end_freq=440, duration=2,
-                            vibrato_freq=4, max_pitch_dev=2, alpha=1, alpha_vibrato=1,
-                            waveform_table=WAVEFORM_SINE, vibrato_waveform_table=WAVEFORM_SINE,
-                            number_of_samples=0, sample_rate=44100):
+                                vibrato_freq=4, max_pitch_dev=2, alpha=1,
+                                alpha_vibrato=1, waveform_table=WAVEFORM_SINE,
+                                vibrato_waveform_table=WAVEFORM_SINE,
+                                number_of_samples=0, sample_rate=44100):
     """
     A note with a pitch transition (a glissando) and a vibrato.
 
@@ -448,8 +469,9 @@ def note_with_glissando_vibrato(start_freq=220, end_freq=440, duration=2,
 
     Examples
     --------
-    >>> W(note_with_pitch_vibrato())  # writes file with a glissando and vibrato
-    >>> s = H( [AD(sonic_vector=note_with_pitch_vibrato(i, j)) for i, j in zip([220, 440, 4000], [440, 220, 220])] )
+    >>> W(note_with_pitch_vibrato())  # writes file with glissando and vibrato
+    >>> s = H([AD(sonic_vector=note_with_pitch_vibrato(i, j)) \
+            for i, j in zip([220, 440, 4000], [440, 220, 220])])
     >>> W(s)  # writes a file with glissandi and vibratos
 
     """
@@ -462,16 +484,19 @@ def note_with_glissando_vibrato(start_freq=220, end_freq=440, duration=2,
     samples = np.arange(lambda_pv)
 
     lv = len(vibrato_waveform_table)
-    gammav = (samples * vibrato_freq * lv / sample_rate).astype(np.int64)  # LUT indexes
+    # LUT indexes
+    gammav = (samples * vibrato_freq * lv / sample_rate).astype(np.int64)
     # values of the oscillatory pattern at each sample
     tv = vibrato_waveform_table[gammav % lv]
 
     if alpha != 1 or alpha_vibrato != 1:
-        f = start_freq * (end_freq / start_freq) ** ((samples / (lambda_pv - 1)) ** alpha) * 2. ** (
-                (tv * max_pitch_dev / 12) ** alpha_vibrato)
+        f = start_freq * (end_freq / start_freq) ** \
+            ((samples / (lambda_pv - 1)) ** alpha) * 2. ** \
+            ((tv * max_pitch_dev / 12) ** alpha_vibrato)
     else:
-        f = start_freq * (end_freq / start_freq) ** (samples / (lambda_pv - 1)) * 2. ** (
-                (tv * max_pitch_dev / 12) ** alpha)
+        f = start_freq * (end_freq / start_freq) ** \
+            (samples / (lambda_pv - 1)) * 2. ** \
+            ((tv * max_pitch_dev / 12) ** alpha)
     length = len(waveform_table)
     gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
     s = waveform_table[gamma % length]
@@ -479,19 +504,32 @@ def note_with_glissando_vibrato(start_freq=220, end_freq=440, duration=2,
 
 
 # FIXME: Unused param (`number_of_samples`)
-def note_with_vibrato_sequence_and_localization(freqs=[220, 440, 330],
-                                          durations=[[2, 3], [2, 5, 3], [2, 5, 6, 1, .4], [4, 6, 1]],
-                                          vibratos_freqs=[[2, 6, 1], [.5, 15, 2, 6, 3]],
-                                          max_pitch_devs=[[2, 1, 5], [4, 3, 7, 10, 3]],
-                                          alpha=[[1, 1], [1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1]],
-                                          x=[-10, 10, 5, 3], y=[1, 1, .1, .1], method=['lin', 'exp', 'lin'],
-                                          waveform_tables=[[WAVEFORM_TRIANGULAR, WAVEFORM_TRIANGULAR],
-                                                           [WAVEFORM_SINE, WAVEFORM_TRIANGULAR, WAVEFORM_SINE],
-                                                           [WAVEFORM_SINE, WAVEFORM_SINE, WAVEFORM_SINE, WAVEFORM_SINE,
-                                                            WAVEFORM_SINE]],
-                                          stereo=True, zeta=0.215, air_temp=20, number_of_samples=0, sample_rate=44100):
+def note_with_vibrato_seq_localization(freqs=[220, 440, 330],
+                                       durations=[[2, 3], [2, 5, 3],
+                                                  [2, 5, 6, 1, .4],
+                                                  [4, 6, 1]],
+                                       vibratos_freqs=[[2, 6, 1],
+                                                       [.5, 15, 2, 6, 3]],
+                                       max_pitch_devs=[[2, 1, 5],
+                                                       [4, 3, 7, 10, 3]],
+                                       alpha=[[1, 1], [1, 1, 1],
+                                              [1, 1, 1, 1, 1], [1, 1, 1]],
+                                       x=[-10, 10, 5, 3], y=[1, 1, .1, .1],
+                                       method=['lin', 'exp', 'lin'],
+                                       waveform_tables=[
+                                           [WAVEFORM_TRIANGULAR,
+                                            WAVEFORM_TRIANGULAR],
+                                           [WAVEFORM_SINE,
+                                            WAVEFORM_TRIANGULAR,
+                                            WAVEFORM_SINE],
+                                           [WAVEFORM_SINE, WAVEFORM_SINE,
+                                            WAVEFORM_SINE, WAVEFORM_SINE,
+                                            WAVEFORM_SINE]],
+                                       stereo=True, zeta=0.215, air_temp=20,
+                                       number_of_samples=0, sample_rate=44100):
     """
-    A sound with arbitrary meta-vibratos, transitions of frequency and localization.
+    A sound with arbitrary meta-vibratos, transitions of frequency and
+    localization.
 
     Parameters
     ----------
@@ -552,19 +590,19 @@ def note_with_vibrato_sequence_and_localization(freqs=[220, 440, 330],
 
     Examples
     --------
-    >>> write_wav_mono(note_with_pitch_vibratos_localization())  # writes file with glissandi and vibratos
+    >>> write_wav_mono(note_with_pitch_vibratos_localization())
 
     Notes
     -----
-    Check the functions above for more information about
-    how each feature of this function is implemented.
+    Check the functions above for more information about how each feature of
+    this function is implemented.
 
     Cite the following article whenever you use this function.
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the
-    discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     # pitch transition contributions
@@ -587,7 +625,8 @@ def note_with_vibrato_sequence_and_localization(freqs=[220, 440, 330],
         for j, dur in enumerate(vib):
             samples = np.arange(dur * sample_rate)
             lv = len(waveform_tables[i + 1][j])
-            gammav = (samples * vibratos_freqs[i][j] * lv / sample_rate).astype(np.int64)  # LUT indexes
+            gammav = (samples * vibratos_freqs[i][j] * lv /
+                      sample_rate).astype(np.int64)  # LUT indexes
             # values of the oscillatory pattern at each sample
             tv = waveform_tables[i + 1][j][gammav % lv]
             if alpha[i + 1][j] != 0:
@@ -603,9 +642,9 @@ def note_with_vibrato_sequence_and_localization(freqs=[220, 440, 330],
 
     # Doppler/location localization contributions
     speed = 331.3 + .606 * air_temp
-    # dl_ = []
-    # dr_ = []
-    # d_ = []
+    # dl_ = []
+    # dr_ = []
+    # d_ = []
     f_ = []
     iid_a = []
     if stereo:
@@ -621,8 +660,10 @@ def note_with_vibrato_sequence_and_localization(freqs=[220, 440, 330],
                 xi = x[i] * (x[i + 1] / x[i]) ** foo
                 yi = y[i] * (y[i + 1] / y[i]) ** foo
             else:
-                xi = x[i] + (x[i + 1] - x[i]) * np.arange(lambda_d + 1) / lambda_d
-                yi = y[i] + (y[i + 1] - y[i]) * np.arange(lambda_d + 1) / lambda_d
+                xi = x[i] + (x[i + 1] - x[i]) * np.arange(lambda_d + 1) / \
+                    lambda_d
+                yi = y[i] + (y[i + 1] - y[i]) * np.arange(lambda_d + 1) / \
+                    lambda_d
             dl = np.sqrt((xi + zeta / 2) ** 2 + yi ** 2)
             dr = np.sqrt((xi - zeta / 2) ** 2 + yi ** 2)
             if len(f_) == 0:
@@ -651,12 +692,15 @@ def note_with_vibrato_sequence_and_localization(freqs=[220, 440, 330],
                 xi = x[i] * (x[i + 1] / x[i]) ** foo
                 yi = y[i] * (y[i + 1] / y[i]) ** foo
             else:
-                xi = x[i] + (x[i + 1] - x[i]) * np.arange(lambda_d + 1) / lambda_d
-                yi = y[i] + (y[i + 1] - y[i]) * np.arange(lambda_d + 1) / lambda_d
+                xi = x[i] + (x[i + 1] - x[i]) * np.arange(lambda_d + 1) / \
+                    lambda_d
+                yi = y[i] + (y[i + 1] - y[i]) * np.arange(lambda_d + 1) / \
+                    lambda_d
             durations = np.sqrt(xi ** 2 + yi ** 2)
             iid = 1 / durations
 
-            vs = sample_rate * (durations[1:] - durations[:-1])  # velocities at each point
+            # velocities at each point
+            vs = sample_rate * (durations[1:] - durations[:-1])
             f_ = speed / (speed + vs)
 
             f_.append(f_)
@@ -736,14 +780,17 @@ def note_with_vibrato_sequence_and_localization(freqs=[220, 440, 330],
     return s
 
 
-def note_with_two_vibratos_and_glissando(start_freq=220, end_freq=440, duration=2,
-                             vibrato_freq=2, secondary_vibrato_freq=6,
-                             max_pitch_dev=2, secondary_max_pitch_dev=.5,
-                             alpha=1, alphav1=1, alphav2=1,
-                             waveform_table=WAVEFORM_TRIANGULAR, tabv1=WAVEFORM_SINE, tabv2=WAVEFORM_SINE,
-                             number_of_samples=0, sample_rate=44100):
+def note_with_two_vibratos_glissando(start_freq=220, end_freq=440, duration=2,
+                                     vibrato_freq=2, secondary_vibrato_freq=6,
+                                     max_pitch_dev=2,
+                                     secondary_max_pitch_dev=.5,
+                                     alpha=1, alphav1=1, alphav2=1,
+                                     waveform_table=WAVEFORM_TRIANGULAR,
+                                     tabv1=WAVEFORM_SINE, tabv2=WAVEFORM_SINE,
+                                     number_of_samples=0, sample_rate=44100):
     """
-    A note with a glissando and a vibrato that also has a secondary oscillatory pattern.
+    A note with a glissando and a vibrato that also has a secondary
+    oscillatory pattern.
 
     Parameters
     ----------
@@ -801,9 +848,11 @@ def note_with_two_vibratos_and_glissando(start_freq=220, end_freq=440, duration=
 
     Examples
     --------
-    >>> W(note_with_pitch_vibratos())  # writes file with a two simultaneous vibratos and a glissando
-    >>> s = H( [AD(sonic_vector=note_with_pitch_vibratos(secondary_vibrato_freq=i, max_pitch_dev=j)) for i, j in zip([330, 440, 100], [8, 2, 15])] )
-    >>> W(s)  # writes a file with two vibratos and a glissando
+    >>> W(note_with_pitch_vibratos())
+    >>> s = H([AD(note_with_pitch_vibratos(secondary_vibrato_freq=i,
+                                           max_pitch_dev=j)) \
+                    for i, j in zip([330, 440, 100], [8, 2, 15])])
+    >>> W(s)
 
     """
     waveform_table = np.array(waveform_table)
@@ -816,36 +865,53 @@ def note_with_two_vibratos_and_glissando(start_freq=220, end_freq=440, duration=
     samples = np.arange(lambda_pvv)
 
     lv1 = len(tabv1)
-    gammav1 = (samples * vibrato_freq * lv1 / sample_rate).astype(np.int64)  # LUT indexes
+    # LUT indexes
+    gammav1 = (samples * vibrato_freq * lv1 / sample_rate).astype(np.int64)
     # values of the oscillatory pattern at each sample
     tv1 = tabv1[gammav1 % lv1]
 
     lv2 = len(tabv2)
-    gammav2 = (samples * secondary_vibrato_freq * lv2 / sample_rate).astype(np.int64)  # LUT indexes
+    # LUT indexes
+    gammav2 = (samples * secondary_vibrato_freq * lv2 /
+               sample_rate).astype(np.int64)
     # values of the oscillatory pattern at each sample
     tv2 = tabv1[gammav2 % lv2]
 
     if alpha != 1 or alphav1 != 1 or alphav2 != 1:
-        f = start_freq * (end_freq / start_freq) ** ((samples / (lambda_pvv - 1)) ** alpha) * 2. ** (
-                (tv1 * max_pitch_dev / 12) ** alphav1) * 2. ** ((tv2 * secondary_max_pitch_dev / 12) ** alphav2)
+        f = start_freq * (end_freq / start_freq) ** \
+            ((samples / (lambda_pvv - 1)) ** alpha) * 2. ** \
+            ((tv1 * max_pitch_dev / 12) ** alphav1) * 2. ** \
+            ((tv2 * secondary_max_pitch_dev / 12) ** alphav2)
     else:
-        f = start_freq * (end_freq / start_freq) ** (samples / (lambda_pvv - 1)) * 2. ** (
-            (tv1 * max_pitch_dev / 12)) * 2. ** (tv2 * secondary_max_pitch_dev / 12)
+        f = start_freq * (end_freq / start_freq) ** \
+            (samples / (lambda_pvv - 1)) * 2. ** \
+            ((tv1 * max_pitch_dev / 12)) * 2. ** \
+            (tv2 * secondary_max_pitch_dev / 12)
     length = len(waveform_table)
     gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
     s = waveform_table[gamma % length]
     return s
 
 
-def note_with_vibratos_and_glissandos(freqs=[220, 440, 330], durations=[[2, 3], [2, 5, 3], [2, 5, 6, 1, .4]],
-                               vibratos_freqs=[[2, 6, 1], [.5, 15, 2, 6, 3]],
-                               vibratos_max_pitch_devs=[[2, 1, 5], [4, 3, 7, 10, 3]],
-                               alpha=[[1, 1], [1, 1, 1], [1, 1, 1, 1, 1]],
-                               waveform_tables=[[WAVEFORM_TRIANGULAR, WAVEFORM_TRIANGULAR],
-                                                [WAVEFORM_SINE, WAVEFORM_TRIANGULAR, WAVEFORM_SINE],
-                                                [WAVEFORM_SINE, WAVEFORM_SINE, WAVEFORM_SINE, WAVEFORM_SINE,
-                                                 WAVEFORM_SINE]],
-                               number_of_samples=0, sample_rate=44100):
+def note_with_vibratos_glissandos(freqs=[220, 440, 330],
+                                  durations=[[2, 3], [2, 5, 3],
+                                             [2, 5, 6, 1, .4]],
+                                  vibratos_freqs=[[2, 6, 1],
+                                                  [.5, 15, 2, 6, 3]],
+                                  vibratos_max_pitch_devs=[[2, 1, 5],
+                                                           [4, 3, 7, 10, 3]],
+                                  alpha=[[1, 1], [1, 1, 1], [1, 1, 1, 1, 1]],
+                                  waveform_tables=[[WAVEFORM_TRIANGULAR,
+                                                    WAVEFORM_TRIANGULAR],
+                                                   [WAVEFORM_SINE,
+                                                    WAVEFORM_TRIANGULAR,
+                                                    WAVEFORM_SINE],
+                                                   [WAVEFORM_SINE,
+                                                    WAVEFORM_SINE,
+                                                    WAVEFORM_SINE,
+                                                    WAVEFORM_SINE,
+                                                    WAVEFORM_SINE]],
+                                  number_of_samples=0, sample_rate=44100):
     """
     A note with an arbitrary sequence of pitch transition and a meta-vibrato.
 
@@ -893,7 +959,7 @@ def note_with_vibratos_and_glissandos(freqs=[220, 440, 330], durations=[[2, 3], 
 
     Examples
     --------
-    >>> W(note_with_pitches_vibratos())  # writes file with glissandi and vibratos
+    >>> W(note_with_pitches_vibratos())
 
     """
     # pitch transition contributions
@@ -916,11 +982,13 @@ def note_with_vibratos_and_glissandos(freqs=[220, 440, 330], durations=[[2, 3], 
         for j, dur in enumerate(vib):
             samples = np.arange(dur * sample_rate)
             lv = len(waveform_tables[i + 1][j])
-            gammav = (samples * vibratos_freqs[i][j] * lv / sample_rate).astype(np.int64)  # LUT indexes
+            gammav = (samples * vibratos_freqs[i][j] * lv /
+                      sample_rate).astype(np.int64)  # LUT indexes
             # values of the oscillatory pattern at each sample
             tv = waveform_tables[i + 1][j][gammav % lv]
             if alpha[i + 1][j] != 0:
-                f = 2. ** ((tv * vibratos_max_pitch_devs[i][j] / 12) ** alpha[i + 1][j])
+                f = 2. ** ((tv * vibratos_max_pitch_devs[i][j] / 12) **
+                           alpha[i + 1][j])
             else:
                 f = 2. ** (tv * vibratos_max_pitch_devs[i][j] / 12)
             v_.append(f)
@@ -1001,7 +1069,8 @@ def note_with_vibrato(freq=220, duration=2, vibrato_freq=4,
     Examples
     --------
     >>> write_wav_mono(note_with_vibrato())  # writes a WAV file of a note
-    >>> s = H([note_with_vibrato(i, j) for i, j in zip([200, 500, 100], [2, 1, 2])])
+    >>> s = H([note_with_vibrato(i, j) for i, j in zip([200, 500, 100],
+                                                       [2, 1, 2])])
     >>> s2 = note_with_vibrato(440, 1.5, 6, 1)
 
     Notes
@@ -1010,14 +1079,15 @@ def note_with_vibrato(freq=220, duration=2, vibrato_freq=4,
     for a sound with a vibrato (or FM) to be synthesized using LUT,
     the vibrato pattern is considered when performing the lookup calculations.
 
-    The tremolo and AM patterns are implemented as separate amplitude envelopes.
+    The tremolo and AM patterns are implemented as separate amplitude
+    envelopes.
 
     Cite the following article whenever you use this function.
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the
-    discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     waveform_table = np.array(waveform_table)
@@ -1029,7 +1099,8 @@ def note_with_vibrato(freq=220, duration=2, vibrato_freq=4,
     samples = np.arange(lambda_v)
 
     vibrato_waveform_table_length = len(vibrato_waveform_table)
-    gamma_v = (samples * vibrato_freq * vibrato_waveform_table_length / sample_rate).astype(
+    gamma_v = (samples * vibrato_freq * vibrato_waveform_table_length /
+               sample_rate).astype(
         np.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample
     t_v = vibrato_waveform_table[gamma_v % vibrato_waveform_table_length]
@@ -1040,15 +1111,20 @@ def note_with_vibrato(freq=220, duration=2, vibrato_freq=4,
     else:
         f = freq * 2. ** ((t_v * max_pitch_dev / 12) ** alpha)
     waveform_table_length = len(waveform_table)
-    d_gamma = f * (waveform_table_length / sample_rate)  # shift in table between each sample
+    # shift in table between each sample
+    d_gamma = f * (waveform_table_length / sample_rate)
     gamma = np.cumsum(d_gamma).astype(np.int64)  # total shift at each sample
-    result = waveform_table[gamma % waveform_table_length]  # final sample lookup
+    # final sample lookup
+    result = waveform_table[gamma % waveform_table_length]
     return result
 
 
-def note_with_two_vibratos(freq=220, duration=2, vibrato_freq=2, secondary_vibrato_freq=6, nu1=2, nu2=4, alphav1=1,
-                       alphav2=1, waveform_table=WAVEFORM_TRIANGULAR, vibrato_waveform_table=WAVEFORM_SINE,
-                       secondary_vibrato_waveform_table=WAVEFORM_SINE, number_of_samples=0, sample_rate=44100):
+def note_with_two_vibratos(freq=220, duration=2, vibrato_freq=2,
+                           secondary_vibrato_freq=6, nu1=2, nu2=4, alphav1=1,
+                           alphav2=1, waveform_table=WAVEFORM_TRIANGULAR,
+                           vibrato_waveform_table=WAVEFORM_SINE,
+                           sec_vibrato_waveform_table=WAVEFORM_SINE,
+                           number_of_samples=0, sample_rate=44100):
     """
     A note with a vibrato that also has a secondary oscillatory pattern.
 
@@ -1103,13 +1179,14 @@ def note_with_two_vibratos(freq=220, duration=2, vibrato_freq=2, secondary_vibra
     Examples
     --------
     >>> W(note_with_vibratos())  # writes file with a two simultaneous vibratos
-    >>> s = H( [AD(sonic_vector=note_with_vibratos(vibrato_freq=i, secondary_vibrato_freq=j)) for i, j in zip([2, 6, 4], [8, 10, 15])] )
+    >>> s = H([AD(note_with_vibratos(vibrato_freq=i, secondary_vibrato_freq=j))
+              for i, j in zip([2, 6, 4], [8, 10, 15])])
     >>> W(s)  # writes a file with two vibratos
 
     """
     waveform_table = np.array(waveform_table)
     vibrato_waveform_table = np.array(vibrato_waveform_table)
-    secondary_vibrato_waveform_table = np.array(secondary_vibrato_waveform_table)
+    sec_vibrato_waveform_table = np.array(sec_vibrato_waveform_table)
     if number_of_samples:
         lambda_vv = number_of_samples
     else:
@@ -1117,17 +1194,20 @@ def note_with_two_vibratos(freq=220, duration=2, vibrato_freq=2, secondary_vibra
     samples = np.arange(lambda_vv)
 
     lv1 = len(vibrato_waveform_table)
-    gammav1 = (samples * vibrato_freq * lv1 / sample_rate).astype(np.int64)  # LUT indexes
+    # LUT indexes
+    gammav1 = (samples * vibrato_freq * lv1 / sample_rate).astype(np.int64)
     # values of the oscillatory pattern at each sample
     tv1 = vibrato_waveform_table[gammav1 % lv1]
 
-    lv2 = len(secondary_vibrato_waveform_table)
-    gammav2 = (samples * secondary_vibrato_freq * lv2 / sample_rate).astype(np.int64)  # LUT indexes
+    lv2 = len(sec_vibrato_waveform_table)
+    gammav2 = (samples * secondary_vibrato_freq * lv2 /
+               sample_rate).astype(np.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample
     tv2 = vibrato_waveform_table[gammav2 % lv2]
 
     if alphav1 != 1 or alphav2 != 1:
-        f = freq * 2. ** ((tv1 * nu1 / 12) ** alphav1) * 2. ** ((tv2 * nu2 / 12) ** alphav2)
+        f = freq * 2. ** ((tv1 * nu1 / 12) ** alphav1) * 2. ** \
+            ((tv2 * nu2 / 12) ** alphav2)
     else:
         f = freq * 2. ** (tv1 * nu1 / 12) * 2. ** (tv2 * nu2 / 12)
     length = len(waveform_table)
@@ -1136,7 +1216,8 @@ def note_with_two_vibratos(freq=220, duration=2, vibrato_freq=2, secondary_vibra
     return s
 
 
-def trill(freqs=[440, 440 * 2 ** (2 / 12)], notes_per_second=17, duration=5, sample_rate=44100):
+def trill(freqs=[440, 440 * 2 ** (2 / 12)], notes_per_second=17, duration=5,
+          sample_rate=44100):
     """
     Makes a trill.
 
@@ -1160,7 +1241,8 @@ def trill(freqs=[440, 440 * 2 ** (2 / 12)], notes_per_second=17, duration=5, sam
     See Also
     --------
     V : A note with vibrato.
-    PV_ : a note with an arbitrary sequence of pitch transition and a meta-vibrato.
+    PV_ : a note with an arbitrary sequence of pitch transition and
+          a meta-vibrato.
     T : A tremolo envelope.
 
     Returns
@@ -1178,8 +1260,8 @@ def trill(freqs=[440, 440 * 2 ** (2 / 12)], notes_per_second=17, duration=5, sam
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the
-    discrete-time representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     number_of_samples = 44100 / notes_per_second
@@ -1189,7 +1271,8 @@ def trill(freqs=[440, 440 * 2 ** (2 / 12)], notes_per_second=17, duration=5, sam
     while pointer + number_of_samples < duration * 44100:
         ns = int(number_of_samples * (i + 1) - pointer)
         note_ = note(freqs[i % len(freqs)], number_of_samples=ns,
-                     waveform_table=WAVEFORM_TRIANGULAR, sample_rate=sample_rate)
+                     waveform_table=WAVEFORM_TRIANGULAR,
+                     sample_rate=sample_rate)
         s.append(adsr(sonic_vector=note_, release_duration=10))
         pointer += ns
         i += 1

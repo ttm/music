@@ -19,79 +19,70 @@ def localize(sonic_vector=note(), theta=0, distance=0, x=.1, y=.01,
     y : scalar
         The frontal component of the position in meters.
     theta : scalar
-        The azimuthal angle of the position in degrees.
-        If theta is supplied, x and y are ignored
-        and dist must also be supplied
-        for the sound localization to have effect.
+        The azimuthal angle of the position in degrees. If theta is supplied,
+        x and y are ignored and dist must also be supplied for the sound
+        localization to have effect.
     distance : scalar
-        The distance of the source from the listener
-        in meters.
+        The distance of the source from the listener in meters.
     zeta : scalar
         The distance between the ears in meters.
     air_temp : scalar
-        The temperature in Celsius used for calculating
-        the speed of sound.
+        The temperature in Celsius used for calculating the speed of sound.
     sample_rate : integer
         The sample rate.
 
     Returns
     -------
     s : ndarray
-        A (2, nsamples) shaped array with the PCM
-        samples of the stereo sound.
+        A (2, nsamples) shaped array with the PCM samples of the stereo sound.
 
     See Also
     --------
-    R : A reverberator.
-    loc_ : a less naive implementation of localization
-    by ITD and IID.
-    hrtf : performs localization by means of a
-    Head Related Transfer Function.
+    reverb : A reverberator.
+    localize2 : a less naive implementation of localization by ITD and IID.
+    # FIXME: hrtf?
+    hrtf : performs localization by means of a Head Related Transfer Function.
 
     Examples
     --------
-    >>> WS(localize())  # write a soundfile that is localized
-    >>> WS(H([localize(V(d=1), x=i, y=j) for i, j in
-    ...   zip([.1, .7, np.pi - .1, np.pi - .7], [.1, .1, .1, .1])]))
+    >>> write_wav_stereo(localize())
+    >>> write_wav_stereo(horizontal_stack([
+    ...     localize(note_with_vibrato(duration=1), x=i, y=j)
+    ...     for i, j in zip([.1, .7, np.pi - .1, np.pi - .7],
+    ...                     [.1, .1, .1, .1])]))
+
 
     Notes
     -----
-    Uses the most naive ITD and IID calculations as described in [1].
-    A less naive method is implemented in loc_().
-    Nonetheless, if dist is small enough (e.g. <.3),
-    the perception of theta occurs and might be used.
+    Uses the most naive ITD and IID calculations as described in [1]. A less
+    naive method is implemented in localize2(). Nonetheless, if dist is small
+    enough (e.g. <.3), the perception of theta occurs and might be used.
     The advantages of this method are:
       - It is fast.
       - It is simple.
-      - It is true to sound propagation phenomenon
-      (although it does not consider the human body
-      beyond the localization of the ears).
-      - It can be used easily for tweaks
-      (such as for a moving source resulting
-      in a Doppler Effect).
+      - It is true to sound propagation phenomenon (although it does not
+        consider the human body beyond the localization of the ears).
+      - It can be used easily for tweaks (such as for a moving source
+        resulting in a Doppler Effect).
 
-    When az = tan^{-1}(y/x) lies in the 'cone of confusion',
-    many values of x and y have the same ITD and IID [1].
-    Furthermore, lateral sources have the low frequencies
-    diffracted and reach the opposite ear with a delay
-    of ~0.7s [1].
-    The height of a source and if it is in front or
-    behind a listener are cues given by the HRTF [1].
-    These issues are not taken into account in this
-    function.
+    When az = tan^{-1}(y/x) lies in the 'cone of confusion', many values of x
+    and y have the same ITD and IID [1]. Furthermore, lateral sources have the
+    low frequencies diffracted and reach the opposite ear with a delay of
+    ~0.7s [1]. The height of a source and if it is in front or behind a
+    listener are cues given by the HRTF [1]. These issues are not taken into
+    account in this function.
 
     The value of zeta is ~0.215 for adult humans [1].
 
-    This implementation assumes that the speed
-    of sound (in air) is s = 331.2 + 0.606 * temp.
+    This implementation assumes that the speed of sound (in air) is
+    s = 331.2 + 0.606 * temp.
 
     Cite the following article whenever you use this function.
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the
-    discrete-time representation of sound."
-    arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     if theta:
@@ -164,10 +155,9 @@ def localize2(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
     """
     Make a mono sound stereo and localize it by experimental methods.
 
-    See bellow for implementation notes.
-    These implementations are not standard and are only
-    to illustrate the method of using ITD and IID
-    that are frequency dependent.
+    See bellow for implementation notes. These implementations are not
+    standard and are only to illustrate the method of using ITD and IID that
+    are frequency dependent.
 
     Parameters
     ----------
@@ -178,58 +168,55 @@ def localize2(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
     y : scalar
         The frontal component of the position in meters.
     theta : scalar
-        The azimuthal angle of the position in degrees.
-        If theta is supplied, x and y are ignored
-        and dist must also be supplied
-        for the sound localization to have effect.
+        The azimuthal angle of the position in degrees.  If theta is supplied,
+        x and y are ignored and dist must also be supplied for the sound
+        localization to have effect.
     zeta : scalar
         The distance between the ears in meters.
     air_temp : scalar
         The temperature in Celsius used for calculating
         the speed of sound.
     method : string
-        Set to "ifft" for a working method that changes the
-        fourier spectral coefficients.
-        Set to "brute" for using an implementation that
-        sinthesizes each sinusoid in the fourier spectrum
-        separately (currently not giving good results for
-        all sounds).
+        Set to "ifft" for a working method that changes the fourier spectral
+        coefficients. Set to "brute" for using an implementation that
+        sinthesizes each sinusoid in the fourier spectrum separately
+        (currently not giving good results for all sounds).
     sample_rate : integer
         The sample rate.
 
     Returns
     -------
     s : ndarray
-        A (2, nsamples) shaped array with the PCM
-        samples of the stereo sound.
+        A (2, nsamples) shaped array with the PCM samples of the stereo sound.
 
     See Also
     --------
-    R : A reverberator.
-    localize : a more naive and fast implementation of localization
-    by ITD and IID.
-    hrtf : performs localization by means of a
-    Head Related Transfer Function.
+    reverb : A reverberator.
+    localize : a more naive and fast implementation of localization by ITD and
+               IID.
+    # FIXME: hrtf?
+    hrtf : performs localization by means of a Head Related Transfer Function.
 
     Examples
     --------
-    >>> WS(loc_())  # write a soundfile that is localized
-    >>> WS(H([loc_(V(d=1), x=i, y=j) for i, j in
-    ...   zip([.1,.7,np.pi-.1,np.pi-.7], [.1,.1,.1,.1])]))
+    >>> write_wav_stereo(localized2())
+    >>> write_wav_stereo(horizontal_stack([
+    ...     localized2(note_with_vibrato(duration=1), x=i, y=j)
+    ...     for i, j in zip([.1, .7, np.pi - .1, np.pi - .7],
+    ...                     [.1, .1, .1, .1])]))
 
     Notes
     -----
     Uses a less naive ITD and IID calculations as described in [1].
 
-    See loc() for further notes.
+    See localize() for further notes.
 
     Cite the following article whenever you use this function.
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the
-    discrete-time representation of sound."
-    arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     if method not in ("ifft", "brute"):

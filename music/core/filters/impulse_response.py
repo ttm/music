@@ -8,31 +8,26 @@ def fir(samples, sonic_vector, freq=True, max_freq=True):
     Parameters
     ----------
     samples : array_like
-        A sequence of absolute values for the frequencies
-        (if freq=True) or samples of an impulse response.
+        A sequence of absolute values for the frequencies (if freq=True) or
+        samples of an impulse response.
     sonic_vector : array_like
-        An one-dimensional array with the PCM samples of
-        the signal (e.g. sound) for the FIR filter
-        to be applied to.
+        An one-dimensional array with the PCM samples of the signal (e.g.
+        sound) for the FIR filter to be applied to.
     freq : boolean
-        Set to True if samples holds frequency amplitude absolute values
-        or False if samples is an impulse response.
-        If max_freq=True, the separations between the frequencies
-        are: fs / (2 * N - 2).
-        If max_freq=False, the separation between the frequencies
-        are fs / (2 * N - 1).
-        Where N is the length of the provided samples.
+        Set to True if samples holds frequency amplitude absolute values or
+        False if samples is an impulse response. If max_freq=True, the
+        separations between the frequencies are: fs / (2 * N - 2).
+        If max_freq=False, the separation between the frequencies are
+        fs / (2 * N - 1). Where N is the length of the provided samples.
     max_freq : boolean
-        Set to True if the last item in the samples is related
-        to the Nyquist frequency fs / 2.
-        Ignored if freq=False.
+        Set to True if the last item in the samples is related to the Nyquist
+        frequency fs / 2. Ignored if freq=False.
 
     Notes
     -----
-    If freq=True, the samples are the absolute values of
-    the frequency components.
-    The phases are set to zero to maintain the phases
-    of the components of the original signal.
+    If freq=True, the samples are the absolute values of the frequency
+    components. The phases are set to zero to maintain the phases of the
+    components of the original signal.
 
     """
     if not freq:
@@ -51,8 +46,8 @@ def iir(sonic_vector, a, b):
     Parameters
     ----------
     sonic_vector : array_like
-        An one-dimensional array representing the signal
-        (potentially a sound) for the filter to by applied to.
+        An one-dimensional array representing the signal (potentially a sound)
+        for the filter to by applied to.
     a : iterable of scalars
         The feedforward coefficients.
     b : iterable of scalars

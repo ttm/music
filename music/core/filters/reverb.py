@@ -12,46 +12,40 @@ def reverb(duration=1.9, first_phase_duration=0.15, decay=-50,
     duration : scalar
         The total duration of the reverberation in seconds.
     first_phase_duration : scalar
-        The duration of the first phase of the reverberation
-        in seconds.
+        The duration of the first phase of the reverberation in seconds.
     decay : scalar
         The total decay of the last incidence in decibels.
     noise_type : string or scalar
-        A string or scalar specifying the noise.
-        Passed to noises(ntype=scalar).
+        A string or scalar specifying the noise. Passed to
+        noises(ntype=scalar).
     sonic_vector : array_like
-        An optional one dimensional array for the reverberation to
-        be applied.
+        An optional one dimensional array for the reverberation to be applied.
     sample_rate : scalar
         The sampling frequency.
 
     Returns
     -------
     result : numpy.ndarray
-        An array with the impulse response of the reverberation.
-        If sonic_vector is specified:
-        the reverberation applied to sonic_vector.
+        An array with the impulse response of the reverberation. If
+        sonic_vector is specified, the reverberation applied to sonic_vector.
 
     Notes
     -----
-    This is a simple artificial reverberation with a progressive
-    loudness decay of the reincidences of the sound and with
-    two periods: the first consists of scattered reincidences,
-    the second period reincidences is modeled by a noise.
+    This is a simple artificial reverberation with a progressive loudness
+    decay of the reincidences of the sound and with two periods: the first
+    consists of scattered reincidences, the second period reincidences is
+    modeled by a noise.
 
-    Comparing with the description in [1], the frequency bands
-    are ignored.
+    Comparing with the description in [1], the frequency bands are ignored.
 
-    One might want to run this function twice to obtain
-    a stereo reverberation.
+    One might want to run this function twice to obtain a stereo reverberation.
 
     Cite the following article whenever you use this function.
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the
-    discrete-time representation of sound."
-    arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     lambda_r = int(duration * sample_rate)

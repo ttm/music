@@ -11,13 +11,42 @@ T = tables.Basic()
 n_ = n
 
 
-def V_(st=0, freq=220, duration=2., vibrato_freq=2., max_pitch_dev=2., waveform_table=WAVEFORM_TRIANGULAR, vibrato_waveform_table=WAVEFORM_SINE):
-    """A shorthand for using V() with semitones"""
+def V_(st=0, freq=220, duration=2., vibrato_freq=2., max_pitch_dev=2.,
+       waveform_table=WAVEFORM_TRIANGULAR,
+       vibrato_waveform_table=WAVEFORM_SINE):
+    """A shorthand for generating a note with vibrato.
+
+    Args:
+        st (float): Semitones relative to the base frequency.
+        freq (float): Base frequency of the note.
+        duration (float): Duration of the note in seconds.
+        vibrato_freq (float): Frequency of the vibrato.
+        max_pitch_dev (float): Maximum pitch deviation.
+        waveform_table (array): Table representing the waveform of the note.
+        vibrato_waveform_table (array): Table representing the waveform of the
+                                        vibrato.
+
+    Returns:
+        array: A note with vibrato.
+    """
     f_ = freq * 2 ** (st / 12)
-    return note_with_vibrato(freq=f_, duration=2., vibrato_freq=2., max_pitch_dev=2., waveform_table=WAVEFORM_TRIANGULAR, vibrato_waveform_table=WAVEFORM_SINE)
+    return note_with_vibrato(freq=f_, duration=2., vibrato_freq=2.,
+                             max_pitch_dev=2.,
+                             waveform_table=WAVEFORM_TRIANGULAR,
+                             vibrato_waveform_table=WAVEFORM_SINE)
 
 
 def ADV(note_dict={}, adsr_dict={}):
+    """Apply ADSR envelope to a note with vibrato.
+
+    Args:
+        note_dict (dict): Dictionary containing parameters for the note.
+        adsr_dict (dict): Dictionary containing parameters for the ADSR
+                          envelope.
+
+    Returns:
+        array: Note with applied ADSR envelope.
+    """
     return adsr(sonic_vector=V_(**note_dict), **adsr_dict)
 
 
@@ -38,59 +67,106 @@ class Being:
         neg_spec = [f/i for i in range(2, 300)]
 
         freq_sym = [[f*2**((i*j)/12) for i in range(j)] for j in [2, 3, 4, 6]]
-        freq_sym_ = [[f*2**((i*j)/12) for i in range(300)] for j in [2, 3, 4, 6]]
+        freq_sym_ = [[f*2**((i*j)/12) for i in range(300)]
+                     for j in [2, 3, 4, 6]]
 
         dia = [2, 2, 1, 2, 2, 2, 1]
         notes_diatonic = [[dia[(j+i) % 7] for i in range(7)] for j in range(7)]
         notes_diatonic_ = [sum(notes_diatonic[i]) for i in range(7)]
-        freq_diatonic = [[f*2**((12 * i + notes_diatonic_[j])/12) for i in range(30)] for j in range(7)]
+        freq_diatonic = [[f*2**((12 * i + notes_diatonic_[j])/12)
+                          for i in range(30)] for j in range(7)]
 
-        intensity_octaves = [[10**((i*10)/(j*20)) for i in range(300)] for j in range(1, 20)]  # steps of 10db - 1/2 dB
+        intensity_octaves = [[10**((i*10)/(j*20)) for i in range(300)]
+                             for j in range(1, 20)]  # steps of 10db - 1/2 dB
         db0 = 10**(-120/20)
         intensity_spec = [[db0*i for i in j] for j in intensity_octaves]
 
-        # diatonic noise, noises derived from the symmetric scales etc: one sinusoid or other basic waveform in each note.
+        # diatonic noise, noises derived from the symmetric scales etc: one
+        # sinusoid or other basic waveform in each note.
         # Synth on the freq domain to optimize and simplify the process
 
-        # make music of the spheres using ellipses and relations recalling gravity
+        # make music of the spheres using ellipses and relations recalling
+        # gravity
         self.resources = locals()
         self.startBeing()
 
     def walk(self, n, method='straight'):
-        # walk np steps up (np<0 => walk |np| steps down, np==0 => don't move, return []
+        """Walk a certain number of steps.
+
+        Args:
+            n (int): Number of steps.
+            method (str): Method of walking.
+
+        Returns:
+            array: Sequence of steps.
+        """
         if method == 'straight':
             # ** TTM
             sequence = [self.grid[self.pointer + i] for i in range(n)]
             self.pointer += n
         elif method == 'low-high':
-            sequence = [self.grid[self.pointer + i % (self.seqsize + 1) + i // self.seqsize] for i in range(n*self.seqsize)]
+            sequence = [self.grid[self.pointer + i % (self.seqsize + 1) + i //
+                                  self.seqsize] for i in range(n*self.seqsize)]
         elif method == 'perm-walk':
             # restore walk from 02peal
             pass
         self.addSeq(sequence)
 
     def setPar(self, par='f'):
-        # set parameter to be developed in walks and stays
+        """Set parameter to be developed in walks and stays.
+
+        Args:
+            par (str): Parameter to be set.
+
+        Returns:
+            None
+        """
         if par == 'f':
             self.grid = self.fgrid
             self.pointer = self.fpointer
 
     def setSize(self, ss):
+        """Set the size.
+
+        Args:
+            ss (int): Size to set.
+
+        Returns:
+            None
+        """
         self.seqsize = ss
 
     def setPerms(self, perms):
+        """Set permutations.
+
+        Args:
+            perms (list): List of permutations.
+
+        Returns:
+            None
+        """
         self.perms = perms
 
     def stay(self, n, method='perm'):
-        # stay somewhere for np notes (np<0 => stay for np cycles or np permutations)
+        """Stay for a certain number of notes.
+
+        Args:
+            n (int): Number of notes.
+            method (str): Method of staying.
+
+        Returns:
+            array: Sequence of stayed notes.
+        """
         if method == 'straight':
-            sequence = [self.grid[(self.pointer + i) % self.seqsize] for i in range(n)]
+            sequence = [self.grid[(self.pointer + i) % self.seqsize]
+                        for i in range(n)]
         elif method == 'perm':
             # ** TTM
             sequence = []
-            if type(self.domain) != n_.ndarray:
+            if not isinstance(self.domain, n_.ndarray):
                 if not self.domain:
-                    domain = self.grid[self.pointer: self.pointer + self.seqsize]
+                    domain = self.grid[self.pointer: self.pointer +
+                                       self.seqsize]
                 else:
                     domain = n_.array(self.domain)
                     print("Implemented OK?? TTM")
@@ -108,14 +184,30 @@ class Being:
         self.total_notes += n
 
     def addSeq(self, sequence):
-        if type(self.__dict__[self.curseq]) == list:
+        """Add sequence to the Being.
+
+        Args:
+            sequence (array): Sequence to add.
+
+        Returns:
+            None
+        """
+        if isinstance(self.__dict__[self.curseq], list):
             self.__dict__[self.curseq].extend(sequence)
         else:
-            self.__dict__[self.curseq] = horizontal_stack(self.__dict__[self.curseq], sequence)
+            self.__dict__[self.curseq] = \
+                horizontal_stack(self.__dict__[self.curseq], sequence)
 
     def render(self, nn, fn=False):
-        # Render nn notes of the Being!
-        # Render with legatto, with V__ or whatever it is called
+        """Render notes of the Being.
+
+        Args:
+            nn (int): Number of notes to render.
+            fn (str or bool): File name to save the rendered notes.
+
+        Returns:
+            array or None: Rendered notes.
+        """
         self.mkArray()
         ii = n.arange(nn)
         duration = self.d_[ii % len(self.d_)]*self.dscale
@@ -127,9 +219,15 @@ class Being:
         D = self.D_[ii % len(self.D_)]
         S = self.S_[ii % len(self.S_)]
         R = self.R_[ii % len(self.R_)]
-        notes = [ADV({'freq': ff, 'duration': dd, 'vibrato_freq': fvv, 'max_pitch_dev': nuu, 'waveform_table': tabb}, {'attack_duration': AA, 'decay_duration': DD, 'sustain_level': SS, 'release_duration': RR}) for ff, dd, fvv, nuu, tabb, AA, DD, SS, RR in zip(freq, duration, vibrato_freq, max_pitch_dev, waveform_table, A, D, S, R)]
+        notes = [ADV({'freq': ff, 'duration': dd, 'vibrato_freq': fvv,
+                      'max_pitch_dev': nuu, 'waveform_table': tabb},
+                     {'attack_duration': AA, 'decay_duration': DD,
+                      'sustain_level': SS, 'release_duration': RR})
+                 for ff, dd, fvv, nuu, tabb, AA, DD, SS, RR
+                 in zip(freq, duration, vibrato_freq, max_pitch_dev,
+                        waveform_table, A, D, S, R)]
         if fn:
-            if type(fn) != str:
+            if not isinstance(fn, str):
                 fn = 'abeing.wav'
             if fn[-4:] != '.wav':
                 fn += '.wav'
@@ -138,6 +236,14 @@ class Being:
             return horizontal_stack(*notes)
 
     def startBeing(self):
+        """Start the Being.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         self.dscale = 1
         self.d_ = [1]
         self.f_ = [220]
@@ -152,6 +258,14 @@ class Being:
         self.total_notes = 0
 
     def mkArray(self):
+        """Make array.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         self.d_ = n.array(self.d_)
         self.f_ = n.array(self.f_)
         self.fv_ = n.array(self.fv_)
@@ -163,11 +277,23 @@ class Being:
         self.R_ = n.array(self.R_)
 
     def howl(self):
-        # some sound ressembing a toki pona mu, a grown or any other animal noise.
+        """Produce a howling sound.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         pass
 
     def freeze(self):
-        # a long sound/note with the parameters set into the being
+        """Freeze the Being.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         pass
-    # use sequences of parameters to be iterated though with or without permutations.
-    # use the fact that sequences of different sizes might yield longer cycles

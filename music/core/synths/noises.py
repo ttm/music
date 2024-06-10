@@ -1,5 +1,7 @@
-import numpy as np
+""" Module for the synthesis of noises and silences. """
 from numbers import Number
+import numpy as np
+import music
 
 
 def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
@@ -10,16 +12,15 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
     Parameters
     ----------
     noise_type : string or scalar
-        Specifies the decibels gain or attenuation per octave.
-        It can be specified numerically 
-        (e.g. ntype=3.5 is 3.5 decibels gain per octave)
+        Specifies the decibels gain or attenuation per octave. It can be
+        specified numerically (e.g. ntype=3.5 is 3.5 decibels gain per octave)
         or by strings:
-          "brown" is -6dB/octave
-          "pink" is -3dB/octave
-          "white" is 0dB/octave
-          "blue" is 3dB/octave
-          "violet" is 6dB/octave
-          "black" is -12/dB/octave but, in theory, is any < -6dB/octave
+        - "brown" is -6dB/octave
+        - "pink" is -3dB/octave
+        - "white" is 0dB/octave
+        - "blue" is 3dB/octave
+        - "violet" is 6dB/octave
+        - "black" is -12/dB/octave but, in theory, is any < -6dB/octave
         See [1] for more information.
     duration : scalar
         The duration of the noise in seconds.
@@ -31,28 +32,26 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
     number_of_samples : integer
         The number of samples of the resulting sonic vector.
     sample_rate : integer
-        _description_
+        The sample rate to use, by default 44100.
 
     Notes
     -----
-    The noise is synthesized with components with random phases,
-    with the moduli that are related to the decibels/octave,
-    and with a frequency resolution of
-      fs/nsamples = fs/(fs*d) = 1/d Hz
+    The noise is synthesized with components with random phases, with the
+    moduli that are related to the decibels/octave, and with a frequency
+    resolution of fs / nsamples = fs / (fs*d) = 1/d Hz
 
     Cite the following article whenever you use this function.
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the 
-    discrete-time representation of sound."
-    arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     if number_of_samples:
-        lambda_noise = number_of_samples
+        length = number_of_samples
     else:
-        lambda_noise = int(duration * sample_rate)
+        length = int(duration * sample_rate)
     if noise_type == "white":
         prog = 0
     elif noise_type == "pink":
@@ -72,75 +71,94 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
                 'white', 'pink', 'brown', 'blue', 'violet', 'black'.\
                 Check docstring for more information.")
         return
-    # random phases
-    coefs = np.zeros(lambda_noise)
-    coefs[:lambda_noise // 2] = np.exp(1j * np.random.uniform(0, 2 * np.pi, lambda_noise // 2))
-    if lambda_noise % 2 == 0:
-        coefs[lambda_noise / 2] = 1.  # max freq is only real (as explained in Sec. 2.5)
 
-    df = sample_rate / lambda_noise
-    i0 = np.floor(min_freq / df)  # first coefficient to be considered
-    il = np.floor(max_freq / df)  # last coefficient to be considered
-    coefs[:i0] = 0
-    coefs[il:] = 0
+    coeffs = np.zeros(length)
+    coeffs[:length // 2] = np.exp(1j *
+                                  np.random.uniform(0, 2 * np.pi, length // 2))
+    if length % 2 == 0:
+        coeffs[length // 2] = 1.
+
+    freq_res = sample_rate / length
+    first_coeff = int(np.floor(min_freq / freq_res))
+    last_coeff = int(np.floor(max_freq / freq_res))
+    coeffs[:first_coeff] = 0
+    coeffs[last_coeff:] = 0
 
     factor = 10. ** (prog / 20.)
-    fi = np.arange(coefs.shape[0]) * df  # frequencies related to the coefficients
-    alphai = factor ** (np.log2(fi[i0:il] / min_freq))
-    coefs[i0:il] *= alphai
+    freq_i = np.arange(coeffs.shape[0]) * freq_res
+    attenuation_factors = factor ** (np.log2(freq_i[first_coeff:last_coeff] /
+                                             min_freq))
+    coeffs[first_coeff:last_coeff] *= attenuation_factors
 
-    # coefficients have real part even and imaginary part odd
-    if lambda_noise % 2 == 0:
-        coefs[lambda_noise // 2 + 1:] = np.conj(coefs[1:-1][::-1])
+    if length % 2 == 0:
+        high_freq_conj_coeffs = np.conj(coeffs[1:length // 2][::-1])
+        coeffs[length // 2 + 1:] = high_freq_conj_coeffs
     else:
-        coefs[lambda_noise // 2 + 1:] = np.conj(coefs[1:][::-1])
+        high_freq_conj_coeffs = np.conj(coeffs[1:length // 2][::-1])
+        coeffs[length // 2 + 1:-1] = high_freq_conj_coeffs
 
-    # Achievement of the temporal samples of the noise
-    noise = np.fft.ifft(coefs).real
-    return noise
+    noise_vector = np.fft.ifft(coeffs).real
+    return music.core.normalize_mono(noise_vector)
 
 
-def make_gaussian_noise(mean, std, duration=2, sample_rate=44100):
-    """
-    Make gaussian noises.
+def gaussian_noise(mean=1, std=0.5, duration=2, sample_rate=44100):
+    """Synth gaussian noise
 
     Parameters
     ----------
-    mean: scalar
-    std: scalar
-    duration: scalar
-        The duration of the noise in seconds
+    mean : int, optional
+        _description_, by default 1
+    std : float, optional
+        _description_, by default 0.5
+    duration : int, optional
+        How long in seconds will the noise be, by default 2
+    sample_rate : int, optional
+        The sample rate to use, by default 44100
 
     Returns
     -------
-
+    array
+        An array for the gaussian noise
     """
-    # FIXME: unresolved samples_beat and samplerate, substituted for sample_rate for now
-    lambda_noise = duration * samples_rate  # Lambda sempre par
-    df = sample_rate / float(lambda_noise)
-    coefs = np.exp(1j * np.random.uniform(0, 2 * np.pi, lambda_noise))
-    # real par, imaginaria impar
-    coefs[lambda_noise / 2 + 1:] = np.real(coefs[1:lambda_noise / 2])[::-1] - 1j * \
-        np.imag(coefs[1:lambda_noise / 2])[::-1]
-    coefs[0] = 0.  # sem bias
-    if lambda_noise % 2 == 0:
-        coefs[lambda_noise / 2] = 0.  # freq max eh real simplesmente
 
-    # as frequências relativas a cada coeficiente
-    # acima de Lambda/2 nao vale
-    # fi = np.arange(coefs.shape[0]) * df
-    # f0 = 15.  # iniciamos o ruido em 15 Hz
+    length = duration * sample_rate
+    freq_res = sample_rate / float(length)
+    coeffs = np.exp(1j * np.random.uniform(0, 2 * np.pi, length))
+    coeffs[length // 2 + 1:] = np.real(coeffs[1:length // 2])[::-1] - 1j * \
+        np.imag(coeffs[1:length // 2])[::-1]
+    coeffs[0] = 0.  # sem bias
+    if length % 2 == 0:
+        coeffs[length // 2] = 0.
     f1 = (mean - std / 2) * 3000
     f2 = (mean + std / 2) * 3000
-    i1 = np.floor(f1 / df)  # primeiro coef a valer
-    i2 = np.floor(f2 / df)  # ultimo coef a valer
-    coefs[:i1] = np.zeros(i1)
-    coefs[i2:] = np.zeros(len(coefs[i2:]))
+    first_coeff = int(np.floor(f1 / freq_res))
+    last_coeff = int(np.floor(f2 / freq_res))
+    coeffs[:first_coeff] = np.zeros(first_coeff)
+    coeffs[last_coeff:] = np.zeros(len(coeffs[last_coeff:]))
 
     # obtenção do ruído em suas amostras temporais
-    ruido = np.fft.ifft(coefs)
-    r = np.real(ruido)
-    r = ((r - r.min()) / (r.max() - r.min())) * 2 - 1
+    noise_vector = np.real(np.fft.ifft(coeffs))
+    noise_vector = ((noise_vector - noise_vector.min()) /
+                    (noise_vector.max() - noise_vector.min())) * 2 - 1
 
     # fazer tre_freq variar conforme measures2
-    return r
+    return music.core.normalize_mono(noise_vector)
+
+
+def silence(duration=1.0, sample_rate=44100):
+    """Generate a silence of specified length.
+
+    Parameters
+    ----------
+    duration : int, optional
+        How many seconds will silence last, by default 1
+    sample_rate : int, optional
+        The sample rate to use, by default 44100
+
+    Returns
+    -------
+    array
+        An array with no sound
+    """
+
+    return np.zeros(int(duration * sample_rate))

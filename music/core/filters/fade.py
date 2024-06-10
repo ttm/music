@@ -8,8 +8,8 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
     """
     A fade in or out.
 
-    Implements the loudness transition and asserts that it reaches
-    zero amplitude.
+    Implements the loudness transition and asserts that it reaches zero
+    amplitude.
 
     Parameters
     ----------
@@ -21,46 +21,47 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
         "exp" for an exponential transition of amplitude (linear loudness).
         "linear" for a linear transition of amplitude.
     db : scalar
-        The decibels from which to reach before using
-        the linear transition to reach zero.
-        Not used if method="linear".
+        The decibels from which to reach before using the linear transition to
+        reach zero. Not used if method="linear".
     alpha : scalar
-        An index to make the exponential fade slower or faster [1].
-        Ignored it transitions="linear".
+        An index to make the exponential fade slower or faster [1]. Ignored if
+        transitions="linear".
     perc : scalar
         The percentage of the fade that is linear to ensure it reaches zero.
-        Has no effect if method="linear".
+        It has no effect if method="linear".
     number_of_samples : integer
         The number of samples of the fade. If supplied, d is ignored.
     sonic_vector : array_like
-        Samples for the fade to be applied to.
-        If supplied, d and nsamples are ignored.
+        Samples for the fade to be applied to. If supplied, d and nsamples are
+        ignored.
     sample_rate : integer
-        The sample rate.
-        Only used if number_of_samples and sonic_vector are not supplied.
+        The sample rate. Only used if number_of_samples and sonic_vector are
+        not supplied.
 
     Returns
     -------
-    T : ndarray
-        Each value is a value of the envelope for the PCM samples.
-        If sonic_vector is input,
-        T is the sonic vector with the fade applied to it.
+    ai : ndarray
+        Each value is a value of the envelope for the PCM samples. If
+        sonic_vector is input, ai is the sonic vector with the fade applied to
+        it.
 
     See Also
     --------
-    AD : An ADSR envelope.
-    L : A transition of loudness.
-    L_ : An envelope with an arbitrary number or loudness transitions.
-    T : An oscillation of loudness.
+    adsr : An ADSR envelope.
+    loud : A transition of loudness.
+    louds : An envelope with an arbitrary number or loudness transitions.
+    tremolo : An oscillation of loudness.
 
     Examples
     --------
-    >>> W(V()*fade())  # writes a WAV file with a fade in
-    >>> s = H( [V()*fade(fade_out=i, method=j) for i, j in zip([1, 0, 1],
-                         ["exp", "exp", "linear"])] )  # OR
-    >>> s = H( [fade(fade_out=i, method=j, sonic_vector=V()) for i, j in
-              zip([1, 0, 1], ["exp", "exp", "linear"])] )
-    >>> envelope = fade(duration=10, fade_out=0, perc=0.1)  # a lengthy fade in
+    >>> write_wav_mono(note_with_vibrato() * fade())
+    >>> s = horizontal_stack([note_with_vibrato() * fade(fade_out=i, method=j)
+    ...                       for i, j in zip([1, 0, 1],
+    ...                                       ["exp", "exp", "linear"])])
+    >>> s = horizontal_stack([fade(fade_out=i, method=j, sonic_vector=V())
+    ...                       for i, j in zip([1, 0, 1],
+    ...                                       ["exp", "exp", "linear"])])
+    >>> envelope = fade(duration=10, fade_out=0, perc=0.1)
 
     Notes
     -----
@@ -68,9 +69,8 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al.
-           "Musical elements in the discrete-time representation of sound."
-           arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     if type(sonic_vector) in (np.ndarray, list):

@@ -1,38 +1,47 @@
 class GenericPeal:
-    """_summary_
+    """Represents a generic peal.
+
+    Attributes:
+        nelements (int): The number of elements in the domain.
+        peals (dict): A dictionary containing the peals and their
+                      corresponding actions.
+        acted_peals (dict): A dictionary containing the acted peals and their
+                            results.
+        domain (list): The domain on which the peals are acted.
+
+    Methods:
+        - act: Acts a specific peal on the specified domain.
+        - act_all: Acts all peals on the specified domain.
     """
+
     def __init__(self):
+        """Initializes a GenericPeal object."""
         self.nelements = None
         self.peals = None
         self.acted_peals = None
         self.domain = None
 
     def act(self, peal, domain=None):
-        """_summary_
+        """Acts a specific peal on the specified domain.
 
-        Parameters
-        ----------
-        peal : _type_
-            _description_
-        domain : _type_, optional
-            _description_, by default None
+        Parameters:
+            peal (str): The name of the peal to act.
+            domain (list, optional): The domain on which to act the peal.
+                                     Defaults to None.
 
-        Returns
-        -------
-        _type_
-            _description_
+        Returns:
+            list: The result of acting the peal on the specified domain.
         """
         if domain is None:
             domain = list(range(self.nelements))
         return [i(domain) for i in self.peals[peal]]
 
     def act_all(self, domain=None):
-        """_summary_
+        """Acts all peals on the specified domain.
 
-        Parameters
-        ----------
-        domain : _type_, optional
-            _description_, by default None
+        Parameters:
+            domain (list, optional): The domain on which to act the peals.
+                                     Defaults to None.
         """
         if domain is None:
             domain = list(range(self.nelements))

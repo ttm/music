@@ -6,20 +6,19 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
     """
     An envelope for a linear or exponential transition of amplitude.
 
-    An exponential transition of loudness yields a linean
-    transition of loudness (theoretically).
+    An exponential transition of loudness yields a linear transition of
+    loudness (theoretically).
 
     Parameters
     ----------
     duration : scalar
         The duration of the envelope in seconds.
     trans_dev : scalar
-        The deviation of the transition.
-        If method="exp" the deviation is in decibels.
-        If method="linear" the deviation is an amplitude proportion.
+        The deviation of the transition. If method="exp", the deviation is in
+        decibels. If method="linear", the deviation is an amplitude proportion.
     alpha : scalar
         An index to make the transition slower or faster [1].
-        Ignored it method="linear".
+        Ignored if method="linear".
     to : boolean
         If True, the transition ends at the deviation.
         If False, the transition starts at the deviation.
@@ -39,27 +38,28 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
     Returns
     -------
     e : ndarray
-        A numpy array where each value is a value of the envelope
-        for the PCM samples.
-        If sonic_vector is supplied,
-        e is the sonic vector with the envelope applied to it.
+        A numpy array where each value is a value of the envelope for the PCM
+        samples. If sonic_vector is supplied, e is the sonic vector with the
+        envelope applied to it.
 
     See Also
     --------
-    L_ : An envelope with an arbitrary number of transitions.
-    F : Fade in and out.
-    AD : An ADSR envelope.
-    T : An oscillation of loudness.
+    louds : An envelope with an arbitrary number of transitions.
+    fade : Fade in and out.
+    adsr : An ADSR envelope.
+    tremolo : An oscillation of loudness.
 
     Examples
     --------
-    >>> W(V()*loud())  # writes a WAV file of a loudness transition
-    >>> s = H( [V()*loud(trans_dev=i, method=j) for i, j in zip(
-                [6, -50, 2.3], ["exp", "exp", "linear"])] )  # OR
-    >>> s = H( [loud(trans_dev=i, method=j, sonic_vector=V()) for i, j in zip(
-    [6, -50, 2.3], ["exp", "exp", "linear"])] )
+    >>> write_wav_mono(note_with_vibrato() * loud())
+    >>> s = horizontal_stack([note_with_vibrato() *
+    ...                       loud(trans_dev=i, method=j)
+    ...                       for i, j in zip([6, -50, 2.3],
+    ...                                       ["exp", "exp", "linear"])])
+    >>> s = horizontal_stack([
+    ...     loud(trans_dev=i, method=j, sonic_vector=note_with_vibrato())
+    ...     for i, j in zip([6, -50, 2.3], ["exp", "exp", "linear"])])
     >>> envelope = loud(duration=10, trans_dev=-80, to=False, alpha=2)
-    # envelope is a lengthy fadein
 
     Notes
     -----
@@ -67,9 +67,8 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al.
-    "Musical elements in the discrete-time representation of sound."
-    arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     if type(sonic_vector) in (np.ndarray, list):
@@ -134,12 +133,11 @@ def louds(durations=[2, 4, 2], trans_devs=[5, -10, 20], alpha=[1, .5, 20],
         If supplied, durations is ignored.
     sonic_vector : array_like
         Samples for the envelope to be applied to.
-        If supplied, durations or number_of_samples is given, the final
-        sound has the greatest duration of sonic_vector
-        and durations (or number_of_samples) and missing samples are
-        replaced with silence (if sonic_vector is shorter)
-        or with a constant value (if durations or number_of_samples
-        yield shorter sequences).
+        If supplied, durations or number_of_samples is given, the final sound
+        has the greatest duration of sonic_vector and durations
+        (or number_of_samples) and missing samples are replaced with silence
+        (if sonic_vector is shorter) or with a constant value (if durations or
+        number_of_samples yield shorter sequences).
     sample_rate : integer
         The sample rate.
         Only used if nsamples and sonic_vector are not supplied.
@@ -147,21 +145,20 @@ def louds(durations=[2, 4, 2], trans_devs=[5, -10, 20], alpha=[1, .5, 20],
     Returns
     -------
     e : ndarray
-        A numpy array where each value is a value of the envelope
-        for the PCM samples.
-        If sonic_vector is supplied,
-        e is the sonic vector with the envelope applied to it.
+        A numpy array where each value is a value of the envelope for the PCM
+        samples. If sonic_vector is supplied, e is the sonic vector with the
+        envelope applied to it.
 
     See Also
     --------
-    L : An envelope for a loudness transition.
-    F : Fade in and out.
-    AD : An ADSR envelope.
-    T : An oscillation of loudness.
+    loud : An envelope for a loudness transition.
+    fade : Fade in and out.
+    adsr : An ADSR envelope.
+    tremolo : An oscillation of loudness.
 
     Examples
     --------
-    >>> W(V(d=8)*louds())  # writes a WAV file with a loudness transitions
+    >>> write_wav_mono(note_with_vibrato(duraton=8) * louds())
 
     Notes
     -----
@@ -169,9 +166,8 @@ def louds(durations=[2, 4, 2], trans_devs=[5, -10, 20], alpha=[1, .5, 20],
 
     References
     ----------
-    .. [1] Fabbri, Renato, et al.
-    "Musical elements in the discrete-time representation of sound."
-    arXiv preprint arXiv:abs/1412.6853 (2017)
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     if type(sonic_vector) in (np.ndarray, list):

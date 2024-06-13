@@ -37,6 +37,7 @@ class PlainChanges:
             sympy.combinatorics.Permutation(i, i + 1, size=nelements)
             for i in range(nelements - 1)]
         self.domains = []
+        self.perform_peal(nelements, dict(hunts))
         self.hunts = hunts
         self.nelements = nelements
 

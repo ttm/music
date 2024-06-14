@@ -13,7 +13,6 @@ The precision of Music makes it the perfect choice for many scientific uses. At 
 
 * **Sample-based synth**, meaning that the state is updated at each sample.  For example, when we have a note with a vibrato, each sample is associated to a different frequency. By doing this the synthesized sound is the closest it can be to the mathematical model that describes it.
 * **Musical structures** with emphasis in symmetry and discourse.
-* **Speech and singing interfaces** available to synthesize voices.
 
 Music can be used alone or with other packages, and it's ideal for audiovisualization of data. For example, it can be used with [Percolation](https://github.com/ttm/percolation) and [Participation](https://github.com/ttm/participation) for harnessing open linked social data, or with [audiovisual analytics vocabulary and ontology (AAVO)](https://github.com/ttm/aavo).
 
@@ -38,35 +37,16 @@ This install method is especially useful when reloading the modified module in s
 
 Every dependency is installed by default by `pip`, but you can take a look at [requirements.txt](https://github.com/ttm/music/blob/master/requirements.txt).
 
-To use the singing interface you'll also nead eSpeak, SoX, and abcMIDI, while MIDI.pm and FFT.pm are needed by eCantorix to synthesize singing sequences.
-
-#### Linux
-
-On Ubuntu everything can be installed with:
-
-```console
-sudo apt install espeak sox abcmidi
-sudo cpan install MIDI
-sudo cpan install Math::FFT
-```
-
-<!-- TODO: add instructions for other distros -->
-
-#### macOS
-
-On macOS you can first install [Homebrew](https://brew.sh/), and then:
-
-```console
-brew install espeak sox abcmidi perl
-cpan install MIDI
-cpan install Math::FFT
-```
-
-<!-- TODO: add instructions for Windows -->
-
 ## Examples
 
 Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) you can find some scripts that use the main features of Music.
+
+* [chromatic_scale](https://github.com/ttm/music/tree/master/examples/chromatic_scale.py): writes twelve notes into a WAV file from a sequence of frequencies.
+* [penta_effects](https://github.com/ttm/music/tree/master/examples/chromatic_scale.py): writes a pentatonic scale repeated once clean, once with pitch, one with vibrato, one with Doppler, and one with FM, into a WAV stereo file.
+* [noisy](https://github.com/ttm/music/tree/master/examples/noisy.py): writes into a WAV file a sequence of different noises.
+* [thirty_notes](https://github.com/ttm/music/tree/master/examples/thirty_notes.py) and [thirty_numpy_notes](https://github.com/ttm/music/tree/master/examples/thirty_numpy_notes.py) generate a sequence of sounds by using a synth class (in this case the class [`Being`](https://github.com/ttm/music/tree/master/music/legacy/classes.py)).
+* [campanology](https://github.com/ttm/music/tree/master/examples/campanology.py) and [geometric_music](https://github.com/ttm/music/tree/master/examples/geometric_music.py) both use `Being` as their synth, but this time with permutations.
+* [isynth](https://github.com/ttm/music/tree/master/examples/isynth.py) also uses a synth class, but of a different kind, [`IteratorSynth`](https://github.com/ttm/music/tree/master/music/legacy/classes.py), that iterates through arbitrary lists of variables.
 
 ## Package structure
 
@@ -78,10 +58,6 @@ The modules are:
   * **io** for reading and writing WAV files, both mono and stereo.
   * **functions** for normalization.
 * **structures** for higher level musical structures such as permutations (and related to algebraic groups and change ringing peals), scales, chords, counterpoint, tunings, etc.
-* **singing** for singing with eCantorix. While it's not properly documented, and it might need some tweaks, it's working. Speech is currently achieved through espeak in the most obvious way, using os.system as in:
-  * [Penalva](https://github.com/ttm/penalva/blob/master/penalva.py)
-  * [Lunhani](https://github.com/ttm/lunhani/blob/master/lunhani.py)
-  * [Soares](https://github.com/ttm/soares/blob/master/soares.py)
 * **legacy** for musical pieces that are rendered with the Music package and might be used as material to make more music.
 * **tables** for the generation of lookup tables for some basic waveform.
 * **utils** for various functions regarding conversions, mix, etc.

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import re
-from scipy.io import wavfile
+import soundfile as sf
 from music.core import normalize_mono
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -44,9 +44,10 @@ def sing(text="Mar-ry had a litt-le lamb",
     os.system('cp {}/Makefile {}/Makefile'.format(ECANTORIXDIR,
                                                   ECANTORIXCACHE))
     os.system('make -C {}'.format(ECANTORIXCACHE))
-    wread = wavfile.read(ECANTORIXCACHE + '/achant.wav')
-    assert wread[0] == 44100
-    return normalize_mono(wread[1])
+    # Read generated chant as int16 PCM
+    data, sr = sf.read(ECANTORIXCACHE + '/achant.wav', dtype='int16')
+    assert sr == 44100
+    return normalize_mono(data)
     # return wread[1]
 
 

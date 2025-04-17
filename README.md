@@ -24,29 +24,28 @@ To install music you can either install it directly with `pip`:
 pip3 install music
 ```
 
-or you can clone this repository and install it from there:
+To install the Music package in editable mode from source:
 
 ```console
 git clone https://github.com/ttm/music.git
-pip3 install -e <path_to_repo>
+cd music
+uv sync
 ```
-
-This install method is especially useful when reloading the modified module in subsequent runs of music, and for greater control of customization, hacking and debugging.
 
 ### Dependencies
 
-Every dependency is installed by default by `pip`, but you can take a look at [requirements.txt](https://github.com/ttm/music/blob/master/requirements.txt).
+Dependencies are managed via UV and locked in [uv.lock](uv.lock).
 
 ## Examples
 
-Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) you can find some scripts that use the main features of Music.
+Inside [the examples folder](https://github.com/ttm/music/tree/master/music/examples) you can find some scripts that use the main features of Music.
 
-* [chromatic_scale](https://github.com/ttm/music/tree/master/examples/chromatic_scale.py): writes twelve notes into a WAV file from a sequence of frequencies.
-* [penta_effects](https://github.com/ttm/music/tree/master/examples/chromatic_scale.py): writes a pentatonic scale repeated once clean, once with pitch, one with vibrato, one with Doppler, and one with FM, into a WAV stereo file.
-* [noisy](https://github.com/ttm/music/tree/master/examples/noisy.py): writes into a WAV file a sequence of different noises.
-* [thirty_notes](https://github.com/ttm/music/tree/master/examples/thirty_notes.py) and [thirty_numpy_notes](https://github.com/ttm/music/tree/master/examples/thirty_numpy_notes.py) generate a sequence of sounds by using a synth class (in this case the class [`Being`](https://github.com/ttm/music/tree/master/music/legacy/classes.py)).
-* [campanology](https://github.com/ttm/music/tree/master/examples/campanology.py) and [geometric_music](https://github.com/ttm/music/tree/master/examples/geometric_music.py) both use `Being` as their synth, but this time with permutations.
-* [isynth](https://github.com/ttm/music/tree/master/examples/isynth.py) also uses a synth class, but of a different kind, [`IteratorSynth`](https://github.com/ttm/music/tree/master/music/legacy/classes.py), that iterates through arbitrary lists of variables.
+* [chromatic_scale](https://github.com/ttm/music/tree/master/music/examples/chromatic_scale.py): writes twelve notes into a WAV file from a sequence of frequencies.
+* [penta_effects](https://github.com/ttm/music/tree/master/music/examples/chromatic_scale.py): writes a pentatonic scale repeated once clean, once with pitch, one with vibrato, one with Doppler, and one with FM, into a WAV stereo file.
+* [noisy](https://github.com/ttm/music/tree/master/music/examples/noisy.py): writes into a WAV file a sequence of different noises.
+* [thirty_notes](https://github.com/ttm/music/tree/master/music/examples/thirty_notes.py) and [thirty_numpy_notes](https://github.com/ttm/music/tree/master/music/examples/thirty_numpy_notes.py) generate a sequence of sounds by using a synth class (in this case the class [`Being`](https://github.com/ttm/music/tree/master/music/legacy/classes.py)).
+* [campanology](https://github.com/ttm/music/tree/master/music/examples/campanology.py) and [geometric_music](https://github.com/ttm/music/tree/master/music/examples/geometric_music.py) both use `Being` as their synth, but this time with permutations.
+* [isynth](https://github.com/ttm/music/tree/master/music/examples/isynth.py) also uses a synth class, but of a different kind, [`IteratorSynth`](https://github.com/ttm/music/tree/master/music/legacy/classes.py), that iterates through arbitrary lists of variables.
 
 ## Package structure
 

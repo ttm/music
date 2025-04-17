@@ -3,7 +3,7 @@ This module contains method to write sonic vectors into WAV files.
 """
 
 import numpy as np
-from scipy.io import wavfile
+import soundfile as sf
 from .functions import normalize_mono, normalize_stereo
 from .filters import adsr, adsr_stereo
 
@@ -25,14 +25,17 @@ def read_wav(filename: str):
     NDArray
         Values of the WAV file
     """
-    s = wavfile.read(filename)
-    print(type(s[1] / 2 ** 15))
-    if s[1].dtype != 'int16':
+    # Read integer PCM data (dtype=int16)
+    data, sr = sf.read(filename, dtype='int16')
+    print(type(data / 2 ** 15))
+    if data.dtype != 'int16':
         print('implement non 16bit samples!')
         return np.array(None)
-    if len(s[1].shape) == 2:
-        return np.array(s[1].transpose() / 2 ** 15)
-    return s[1] / 2 ** 15
+    # data: shape (nsamples,) or (nsamples, channels)
+    if data.ndim == 2:
+        # convert to (channels, nsamples)
+        return np.array(data.T / 2 ** 15)
+    return data / 2 ** 15
 
 
 def write_wav_mono(sonic_vector=SONIC_VECTOR_MONO, filename="asound.wav",
@@ -79,7 +82,8 @@ def write_wav_mono(sonic_vector=SONIC_VECTOR_MONO, filename="asound.wav",
         print(f"File {filename} not written")
     nn = eval("np.int" + str(bit_depth))
     result = nn(result)
-    wavfile.write(filename, sample_rate, result)
+    # Write to WAV using SoundFile
+    sf.write(filename, result, sample_rate)
 
 
 def write_wav_stereo(sonic_vector=SONIC_VECTOR_STEREO, filename="asound.wav",
@@ -126,4 +130,5 @@ def write_wav_stereo(sonic_vector=SONIC_VECTOR_STEREO, filename="asound.wav",
         print(f"File {filename} not written")
     nn = eval("np.int" + str(bit_depth))
     result = nn(result)
-    wavfile.write(filename, sample_rate, result.T)
+    # Write to WAV using SoundFile
+    sf.write(filename, result.T, sample_rate)

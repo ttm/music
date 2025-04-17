@@ -11,3 +11,4 @@ ipython_log.py
 dist/
 tests/
 music/singing/ecantorix/
+.vscode/

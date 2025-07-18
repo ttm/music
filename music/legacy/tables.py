@@ -1,7 +1,4 @@
-"""
-Provide primary tables for lookup, including sine, triangle, square, and saw
-wave periods.
-"""
+"""Legacy lookup tables for common waveforms."""
 
 import numpy as np
 import pylab as plt

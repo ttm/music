@@ -1,3 +1,5 @@
+"""Amplitude fade filters for smooth transitions."""
+
 import numpy as np
 from .loud import loud
 from ...utils import resolve_stereo, mix_with_offset

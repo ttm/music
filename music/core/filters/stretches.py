@@ -1,3 +1,5 @@
+"""Time-stretching utilities for manipulating audio segments."""
+
 import numpy as np
 from music.utils import horizontal_stack
 

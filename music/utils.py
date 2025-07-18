@@ -1,7 +1,4 @@
-"""
-This module is home of some basic functions used throughout the `music` package
-which are not strictly related to the field of computational music.
-"""
+"""Utility functions shared across the package."""
 
 import numpy as np
 

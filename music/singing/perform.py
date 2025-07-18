@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Utilities to synthesize singing from text using eCantorix."""
+
 import os
 import re
 from scipy.io import wavfile

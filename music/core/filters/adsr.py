@@ -1,3 +1,5 @@
+"""Amplitude envelope filters including ADSR-related helpers."""
+
 import numpy as np
 from .fade import fade
 from .loud import loud

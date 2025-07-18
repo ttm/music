@@ -1,3 +1,5 @@
+"""Demonstration song used to exercise the legacy synthesizer."""
+
 import music as M
 import numpy as np
 synth = M.legacy.CanonicalSynth

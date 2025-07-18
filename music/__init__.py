@@ -1,3 +1,5 @@
+"""Top-level package for basic audio synthesis utilities."""
+
 from .utils import (
     amp_to_db,
     convert_to_stereo,

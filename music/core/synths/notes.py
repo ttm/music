@@ -1,6 +1,4 @@
-""" Module for the synthesis of notes and notes with some
-    effects applied to them.
-"""
+"""Utilities for synthesizing notes and note effects."""
 import numpy as np
 from ...utils import WAVEFORM_SINE, WAVEFORM_TRIANGULAR
 from ..filters import adsr

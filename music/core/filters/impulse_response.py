@@ -1,3 +1,5 @@
+"""Finite impulse response and related filters."""
+
 import numpy as np
 
 

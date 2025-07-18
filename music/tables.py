@@ -7,7 +7,9 @@ It also provides a method to visualize these waveform tables.
 Example:
     To create and visualize waveform tables:
 
-    >>> from musisc import PrimaryTables
+    >>> from music import PrimaryTables
+    >>> PrimaryTables.__module__  # confirm correct package name
+    'music.tables'
     >>> primary_tables = PrimaryTables()
     >>> primary_tables.draw_tables()
 

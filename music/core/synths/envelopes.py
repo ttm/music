@@ -1,3 +1,5 @@
+"""Synthesis envelopes such as AM and tremolo."""
+
 import numpy as np
 from music.utils import WAVEFORM_SINE, WAVEFORM_TRIANGULAR
 

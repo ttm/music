@@ -1,3 +1,5 @@
+"""Utility classes supporting the legacy synthesizer API."""
+
 import numpy as n
 
 from music.legacy import tables

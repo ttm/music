@@ -1,3 +1,5 @@
+"""Synthesizer variant that iterates over configurable parameters."""
+
 from .CanonicalSynth import CanonicalSynth
 
 

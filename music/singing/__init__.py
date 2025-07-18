@@ -1,3 +1,5 @@
+"""Simple utilities for text-to-speech demo generation."""
+
 from .bootstrap import get_engine, make_test_song
 
 __all__ = [

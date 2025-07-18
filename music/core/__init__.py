@@ -1,3 +1,5 @@
+"""Core audio signal processing module."""
+
 from ..utils import (
     amp_to_db,
     convert_to_stereo,

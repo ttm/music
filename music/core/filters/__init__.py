@@ -1,3 +1,5 @@
+"""Collection of audio filters used by the synthesis core."""
+
 from .adsr import adsr, adsr_stereo, adsr_vibrato
 from .fade import cross_fade, fade
 from .impulse_response import fir, iir

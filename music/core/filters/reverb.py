@@ -1,3 +1,5 @@
+"""Simple reverberation filters and impulse response generation."""
+
 import numpy as np
 from ..synths import noise
 

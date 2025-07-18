@@ -1,6 +1,4 @@
-"""
-This module contains method to write sonic vectors into WAV files.
-"""
+"""Utilities for reading and writing WAV files."""
 
 import numpy as np
 from scipy.io import wavfile

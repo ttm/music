@@ -1,3 +1,5 @@
+"""Stereo localization filters and related helpers."""
+
 import numpy as np
 from music.core.synths.notes import note, note_with_phase
 from music.utils import WAVEFORM_SINE

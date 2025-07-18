@@ -1,3 +1,5 @@
+"""Download and configure the eCantorix engine."""
+
 import os
 from .perform import sing
 

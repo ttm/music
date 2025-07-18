@@ -1,16 +1,4 @@
-""" This file holds minimal implementations to avoid repetitions in the
-    musical pieces of the MASS framework: https://github.com/ttm/mass
-
-    Sounds are represented as arrays of PCM samples. Stereo files are
-    represented by arrays of shape (2, nsamples).
-
-    See the file HRTF.py, in this same directory, for the functions that use
-    impulse responses of Head Related Transfer Functions (HRTFs).
-
-    This file is a copy of mass/src/aux/functions.py imported in
-    music/utils.py as `from .functions import *` but it should be integrated
-    into music package more properly.
-"""
+"""Core audio processing utilities reused across the package."""
 import numpy as np
 
 

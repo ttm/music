@@ -1,3 +1,5 @@
+"""Reference synthesizer demonstrating basic techniques."""
+
 import numpy as n
 import music as M
 

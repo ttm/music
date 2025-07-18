@@ -1,4 +1,4 @@
-""" Module for the synthesis of noises and silences. """
+"""Module for the synthesis of noises and silences."""
 from numbers import Number
 import numpy as np
 import music

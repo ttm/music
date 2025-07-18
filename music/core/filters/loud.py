@@ -1,3 +1,5 @@
+"""Loudness envelope filters and helpers."""
+
 import numpy as np
 
 

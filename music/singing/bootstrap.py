@@ -1,6 +1,7 @@
 """Download and configure the eCantorix engine."""
 
 import os
+import subprocess
 from .perform import sing
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -15,7 +16,14 @@ def get_engine(method="http"):
         repo_url = 'git@github.com:ttm/ecantorix.git'
     else:
         raise ValueError('method not understood')
-    os.system('git clone ' + repo_url + ' ' + ECANTORIXDIR)
+
+    if os.path.exists(ECANTORIXDIR):
+        return
+
+    try:
+        subprocess.run(['git', 'clone', repo_url, ECANTORIXDIR], check=True)
+    except Exception as exc:
+        raise RuntimeError(f'Failed to clone repository: {exc}') from exc
     return
 
 

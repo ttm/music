@@ -97,6 +97,5 @@ def normalize_stereo(sonic_vector, remove_bias=True, normalize_sep=False):
         else:
             amplitude = max(amplitude_ch_1, amplitude_ch_2)
             sv_copy = (sv_copy - sv_copy.min()) / amplitude
-            sv_copy = (sv_copy - sv_copy.min()) / amplitude
             sv_normalized = sv_copy * 2 - 1
     return sv_normalized

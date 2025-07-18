@@ -75,8 +75,9 @@ def write_wav_mono(sonic_vector=SONIC_VECTOR_MONO, filename="asound.wav",
         result = adsr(attack_duration=fades[0], sustain_level=0,
                       release_duration=fades[1], sonic_vector=result)
     if bit_depth not in (8, 16, 32, 64):
-        print("bit_depth values allowed are only 8, 16, 32 and 64")
-        print(f"File {filename} not written")
+        raise ValueError(
+            "bit_depth values allowed are only 8, 16, 32 and 64"
+        )
     nn = eval("np.int" + str(bit_depth))
     result = nn(result)
     wavfile.write(filename, sample_rate, result)
@@ -122,8 +123,9 @@ def write_wav_stereo(sonic_vector=SONIC_VECTOR_STEREO, filename="asound.wav",
         result = adsr_stereo(attack_duration=fades[0], sustain_level=0,
                              release_duration=fades[1], sonic_vector=result)
     if bit_depth not in (8, 16, 32, 64):
-        print("bit_depth values allowed are only 8, 16, 32 and 64")
-        print(f"File {filename} not written")
+        raise ValueError(
+            "bit_depth values allowed are only 8, 16, 32 and 64"
+        )
     nn = eval("np.int" + str(bit_depth))
     result = nn(result)
     wavfile.write(filename, sample_rate, result.T)

@@ -10,3 +10,4 @@ ipython_log.py
 .DS_Store
 dist/
 music/singing/ecantorix/
+.vscode/

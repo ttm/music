@@ -9,5 +9,4 @@ ipython_log.py
 *.egg-info/
 .DS_Store
 dist/
-tests/
 music/singing/ecantorix/

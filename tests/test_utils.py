@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
 import numpy as np
+import pytest
+import warnings
 
 HERE = Path(__file__).resolve().parents[1]
 
@@ -70,3 +72,9 @@ def test_mix2_offset_and_end():
 
     out_offset = utils.mix2([a, b], offset=[0, 1], sample_rate=1)
     assert np.allclose(out_offset, np.array([1, 2, 1, 1]))
+
+
+def test_hz_to_midi_no_warnings():
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        utils.hz_to_midi(np.array([0.0, 440.0]))

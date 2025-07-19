@@ -1,6 +1,8 @@
 import numpy as np
 import sys
 from pathlib import Path
+import pytest
+import warnings
 
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE))
@@ -45,6 +47,12 @@ def test_noise_and_silence_generation():
     gauss = music.gaussian_noise(duration=1)
     assert len(gauss) == 44100
     assert gauss.max() <= 1 and gauss.min() >= -1
+
+
+def test_noise_no_warnings():
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        music.noise('white', duration=0.005)
 
 
 def test_note_with_doppler_stereo_shape():

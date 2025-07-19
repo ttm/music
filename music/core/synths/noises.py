@@ -72,7 +72,7 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
             "'white', 'pink', 'brown', 'blue', 'violet', 'black'. "
             "Check docstring for more information.")
 
-    coeffs = np.zeros(length)
+    coeffs = np.zeros(length, dtype=complex)
     coeffs[:length // 2] = np.exp(1j *
                                   np.random.uniform(0, 2 * np.pi, length // 2))
     if length % 2 == 0:
@@ -80,14 +80,16 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
 
     freq_res = sample_rate / length
     first_coeff = int(np.floor(min_freq / freq_res))
+    first_coeff = max(1, first_coeff)
     last_coeff = int(np.floor(max_freq / freq_res))
     coeffs[:first_coeff] = 0
     coeffs[last_coeff:] = 0
 
     factor = 10. ** (prog / 20.)
     freq_i = np.arange(coeffs.shape[0]) * freq_res
-    attenuation_factors = factor ** (np.log2(freq_i[first_coeff:last_coeff] /
-                                             min_freq))
+    denom = max(min_freq, freq_res)
+    freqs = np.clip(freq_i[first_coeff:last_coeff], freq_res, None)
+    attenuation_factors = factor ** (np.log2(freqs / denom))
     coeffs[first_coeff:last_coeff] *= attenuation_factors
 
     if length % 2 == 0:

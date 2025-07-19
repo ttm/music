@@ -1,6 +1,7 @@
 """Utility classes supporting the legacy synthesizer API."""
 
 import numpy as n
+import logging
 
 from music.legacy import tables
 from music.utils import horizontal_stack
@@ -171,7 +172,7 @@ class Being:
                                        self.seqsize]
                 else:
                     domain = n_.array(self.domain)
-                    print("Implemented OK?? TTM")
+                    logging.debug("Implemented OK?? TTM")
             else:
                 domain = self.domain
             # nel = self.perms[0].size  # should match self.seqsize ?

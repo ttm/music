@@ -67,10 +67,10 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
     elif isinstance(noise_type, Number):
         prog = noise_type
     else:
-        print("Set ntype to a number or one of the following strings:\
-                'white', 'pink', 'brown', 'blue', 'violet', 'black'.\
-                Check docstring for more information.")
-        return
+        raise ValueError(
+            "Set ntype to a number or one of the following strings: "
+            "'white', 'pink', 'brown', 'blue', 'violet', 'black'. "
+            "Check docstring for more information.")
 
     coeffs = np.zeros(length)
     coeffs[:length // 2] = np.exp(1j *

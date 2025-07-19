@@ -3,6 +3,8 @@
 
 import os
 import re
+import warnings
+import logging
 from scipy.io import wavfile
 from music.core import normalize_mono
 
@@ -15,7 +17,7 @@ if not os.path.isdir(ECANTORIXCACHE):
                   ECANTORIXDIR)
         os.mkdir(ECANTORIXCACHE)
     except IOError:
-        print('install git if you want singing facilities')
+        warnings.warn('install git if you want singing facilities')
 
 
 # def sing(text="ba-na-nin-ha pra vo-cê",
@@ -106,4 +108,4 @@ converter = Notes()
 
 if __name__ == '__main__':
     narray = sing()
-    print("finished")
+    logging.info("finished")

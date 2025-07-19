@@ -1,6 +1,8 @@
 """Utility functions shared across the package."""
 
 import numpy as np
+import warnings
+import logging
 
 LAMBDA_TILDE = 1024 * 16
 WAVEFORM_SINE = np.sin(np.linspace(0, 2 * np.pi, LAMBDA_TILDE, endpoint=False))
@@ -413,8 +415,9 @@ def convert_to_stereo(sound_vector):
     elif sound_array.shape[0] > 2:
         # If the input vector has more than two channels, keep only the first
         # two (left and right) and sum the rest to both left and right channels
-        print('Keeping first two channels in left and right. '
-              'The rest will be added to both left and right.')
+        warnings.warn(
+            'Keeping first two channels in left and right. '
+            'The rest will be added to both left and right.')
         stereo_sound = np.array((sound_array[0], sound_array[1]))
         for channel in sound_array[2:]:
             stereo_sound += channel
@@ -476,8 +479,13 @@ def mix_with_offset(first_sonic_vector, second_sonic_vector,
 
     s = np.zeros(int(nst))
     s[:len(first_sonic_vector)] += first_sonic_vector
-    print('s.shape', 's1.shape', 's2.shape', 'ns', 'nst', s.shape,
-          first_sonic_vector.shape, second_sonic_vector.shape, ns, nst)
+    logging.debug(
+        's.shape %s s1.shape %s s2.shape %s ns %s nst %s',
+        s.shape,
+        first_sonic_vector.shape,
+        second_sonic_vector.shape,
+        ns,
+        nst)
     if ns >= 0:
         s[ns: ns + len(second_sonic_vector)] += second_sonic_vector
         # s[-len(s2):] += s2
@@ -528,11 +536,9 @@ def mix_with_offset_(*args):
     while i < len(args):
         a = args[i]  # new array
         if type(a) not in (np.ndarray, list):
-            print("Something odd happened,")
-            print("skipping a value that should have been\
-                  a sequence of numbers:", a)
-            i += 1
-            continue
+            raise ValueError(
+                "Skipping a value that should have been a sequence of numbers:" 
+                f" {a}")
         if len(args) > i + 1:
             offset = args[i + 1]  # potentialy duration
             if np.isscalar(offset):

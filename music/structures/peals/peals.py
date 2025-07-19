@@ -50,9 +50,8 @@ class Peals(InterestingPermutations):
         """
         InterestingPermutations.__init__(self)
         self.peals = []
-        self.transpositions_peal(self.peals["rotation_peal"][1])
-        self.twenty_all_over()  # TODO
-        self.an_eight_and_forty()  # TODO
+        # Base peals can be created here when implementations become available
+        # self.transpositions_peal(self.peals["rotation_peal"][1])
 
     def transpositions_peal(self, permutation, peal_name="transposition_peal"):
         """Generates a peal from transpositions of a permutation.
@@ -67,13 +66,9 @@ class Peals(InterestingPermutations):
                                  for i in permutation.transpositions()]
 
     def twenty_all_over(self):
-        """
-        TODO
-        """
-        pass
+        """Placeholder for a 20 all over peal implementation."""
+        raise NotImplementedError("twenty_all_over is not yet implemented")
 
     def an_eight_and_forty(self):
-        """
-        TODO
-        """
-        pass
+        """Placeholder for an eight and forty peal implementation."""
+        raise NotImplementedError("an_eight_and_forty is not yet implemented")

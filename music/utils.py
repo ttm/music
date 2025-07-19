@@ -645,9 +645,8 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
         return t
 
 
-# FIXME: malfunction
 def mix2(sonic_vectors, end=False, offset=0, sample_rate=44100):
-    """Mix sonic vectors. MALFUNCTION! TTM TODO
+    """Mix sonic vectors of arbitrary lengths.
 
     The operation consists in summing sample by sample [1].
     This function helps when the sonic_vectors are not
@@ -687,24 +686,27 @@ def mix2(sonic_vectors, end=False, offset=0, sample_rate=44100):
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
-    if offset:
-        for i, o in enumerate(offset):
-            sonic_vectors[i] = horizontal_stack(np.zeros(o * sample_rate),
-                                                sonic_vectors[i])
+    sonic_vectors = [np.asarray(s) for s in sonic_vectors]
 
-    amax = 0
+    if offset:
+        for i, off in enumerate(offset):
+            if off:
+                pad = np.zeros(int(off * sample_rate))
+                sonic_vectors[i] = np.hstack((pad, sonic_vectors[i]))
+
+    max_len = max(len(s) for s in sonic_vectors)
+    aligned = []
     for s in sonic_vectors:
-        amax = max(amax, len(s))
-    for i in range(len(sonic_vectors)):
-        if len(sonic_vectors[i]) < amax:
+        pad_len = max_len - len(s)
+        if pad_len:
+            pad = np.zeros(pad_len)
             if end:
-                sonic_vectors[i] = np.hstack(
-                    (np.zeros(amax - len(sonic_vectors[i])), sonic_vectors[i]))
+                s = np.hstack((pad, s))
             else:
-                sonic_vectors[i] = horizontal_stack(
-                    sonic_vectors[i], np.zeros(amax - len(sonic_vectors[i])))
-    s = mix_with_offset_(*sonic_vectors)
-    return s
+                s = np.hstack((s, pad))
+        aligned.append(s)
+
+    return np.sum(aligned, axis=0)
 
 
 def profile(adict):

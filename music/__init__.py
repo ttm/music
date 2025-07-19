@@ -68,7 +68,7 @@ from .structures import (
     print_peal,
     transpose_permutation
 )
-from .singing import get_engine, make_test_song
+from .singing import get_engine, make_test_song, setup_engine
 from .legacy import Being, CanonicalSynth, IteratorSynth
 
 __all__ = [
@@ -88,6 +88,7 @@ __all__ = [
     'gaussian_noise',
     'GenericPeal',
     'get_engine',
+    'setup_engine',
     'horizontal_stack',
     'hz_to_midi',
     'iir',

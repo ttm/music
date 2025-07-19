@@ -52,6 +52,16 @@ You can then run the tests using `pytest`:
 pytest
 ```
 
+### Type checking
+
+Install the development dependencies and run `mypy` to perform static type
+analysis:
+
+```console
+pip install -e '.[dev]'
+mypy music
+```
+
 ## Examples
 
 Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) you can find some scripts that use the main features of Music.

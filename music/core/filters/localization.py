@@ -1,6 +1,7 @@
 """Stereo localization filters and related helpers."""
 
 import numpy as np
+import warnings
 from music.core.synths.notes import note, note_with_phase
 from music.utils import WAVEFORM_SINE
 
@@ -222,7 +223,7 @@ def localize2(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
 
     """
     if method not in ("ifft", "brute"):
-        print("The only methods implemented are ifft and brute")
+        raise ValueError("The only methods implemented are ifft and brute")
     if not theta:
         theta_ = np.arctan2(-x, y)
     else:
@@ -296,7 +297,7 @@ def localize2(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
                 normsr[i] *= iid
 
     elif method == "brute":
-        print("This can take a long time...")
+        warnings.warn("This can take a long time...")
         for i in range(ncoeffs):
             if i == 0:
                 continue

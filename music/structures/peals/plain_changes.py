@@ -6,6 +6,7 @@ Reference:
 """
 
 import sympy
+import warnings
 
 
 class PlainChanges:
@@ -64,8 +65,9 @@ class PlainChanges:
         if nhunts > nelements:
             raise ValueError("There cannot be more hunts than elements")
         elif nhunts > nelements - 3:
-            print("peals are the same if there are", nhunts - (nelements - 3),
-                  "hunts less")
+            warnings.warn(
+                f"peals are the same if there are {nhunts - (nelements - 3)} "
+                "hunts less")
         hunts_dict = {}
         for hunt in range(nhunts):
             if hunt == nhunts - 1:

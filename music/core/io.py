@@ -1,6 +1,7 @@
 """Utilities for reading and writing WAV files."""
 
 import numpy as np
+import logging
 from scipy.io import wavfile
 from .functions import normalize_mono, normalize_stereo
 from .filters import adsr, adsr_stereo
@@ -24,10 +25,9 @@ def read_wav(filename: str):
         Values of the WAV file
     """
     s = wavfile.read(filename)
-    print(type(s[1] / 2 ** 15))
+    logging.debug(type(s[1] / 2 ** 15))
     if s[1].dtype != 'int16':
-        print('implement non 16bit samples!')
-        return np.array(None)
+        raise ValueError('non 16-bit samples are not supported')
     if len(s[1].shape) == 2:
         return np.array(s[1].transpose() / 2 ** 15)
     return s[1] / 2 ** 15

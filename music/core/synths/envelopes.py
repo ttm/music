@@ -188,13 +188,13 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
         return t
 
 
-def tremolos(durations=[[3, 4, 5], [2, 3, 7, 4]],
-             tremolo_freqs=[[2, 6, 20], [5, 6.2, 21, 5]],
-             max_db_devs=[[10, 20, 1], [5, 7, 9, 2]],
-             alpha=[[1, 1, 1], [1, 1, 1, 9]],
-             waveform_tables=[[WAVEFORM_SINE, WAVEFORM_SINE, WAVEFORM_SINE],
-                              [WAVEFORM_TRIANGULAR, WAVEFORM_TRIANGULAR,
-                               WAVEFORM_TRIANGULAR, WAVEFORM_SINE]],
+def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
+             tremolo_freqs=((2, 6, 20), (5, 6.2, 21, 5)),
+             max_db_devs=((10, 20, 1), (5, 7, 9, 2)),
+             alpha=((1, 1, 1), (1, 1, 1, 9)),
+             waveform_tables=((WAVEFORM_SINE, WAVEFORM_SINE, WAVEFORM_SINE),
+                              (WAVEFORM_TRIANGULAR, WAVEFORM_TRIANGULAR,
+                               WAVEFORM_TRIANGULAR, WAVEFORM_SINE)),
              number_of_samples=0, sonic_vector=0, sample_rate=44100):
     """
     An envelope with multiple tremolos.
@@ -252,9 +252,10 @@ def tremolos(durations=[[3, 4, 5], [2, 3, 7, 4]],
 
 
     """
-    for i in range(len(waveform_tables)):
-        for j in range(i):
-            waveform_tables[i][j] = np.array(waveform_tables[i][j])
+    waveform_tables = [
+        [np.array(wt) for wt in row]
+        for row in waveform_tables
+    ]
     t_ = []
     if number_of_samples:
         for i, ns in enumerate(number_of_samples):

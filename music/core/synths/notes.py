@@ -69,7 +69,7 @@ def note(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
 
 
 def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
-                      x=[-10, 10], y=[1, 1], stereo=True, zeta=0.215,
+                      x=(-10, 10), y=(1, 1), stereo=True, zeta=0.215,
                       air_temp=20, number_of_samples=0, sample_rate=44100):
     """
     A simple note with a transition of localization and resulting Doppler
@@ -502,27 +502,27 @@ def note_with_glissando_vibrato(start_freq=220, end_freq=440, duration=2,
 
 
 # FIXME: Unused param (`number_of_samples`)
-def note_with_vibrato_seq_localization(freqs=[220, 440, 330],
-                                       durations=[[2, 3], [2, 5, 3],
-                                                  [2, 5, 6, 1, .4],
-                                                  [4, 6, 1]],
-                                       vibratos_freqs=[[2, 6, 1],
-                                                       [.5, 15, 2, 6, 3]],
-                                       max_pitch_devs=[[2, 1, 5],
-                                                       [4, 3, 7, 10, 3]],
-                                       alpha=[[1, 1], [1, 1, 1],
-                                              [1, 1, 1, 1, 1], [1, 1, 1]],
-                                       x=[-10, 10, 5, 3], y=[1, 1, .1, .1],
-                                       method=['lin', 'exp', 'lin'],
-                                       waveform_tables=[
-                                           [WAVEFORM_TRIANGULAR,
-                                            WAVEFORM_TRIANGULAR],
-                                           [WAVEFORM_SINE,
+def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
+                                       durations=((2, 3), (2, 5, 3),
+                                                  (2, 5, 6, 1, .4),
+                                                  (4, 6, 1)),
+                                       vibratos_freqs=((2, 6, 1),
+                                                       (.5, 15, 2, 6, 3)),
+                                       max_pitch_devs=((2, 1, 5),
+                                                       (4, 3, 7, 10, 3)),
+                                       alpha=((1, 1), (1, 1, 1),
+                                              (1, 1, 1, 1, 1), (1, 1, 1)),
+                                       x=(-10, 10, 5, 3), y=(1, 1, .1, .1),
+                                       method=('lin', 'exp', 'lin'),
+                                       waveform_tables=(
+                                           (WAVEFORM_TRIANGULAR,
+                                            WAVEFORM_TRIANGULAR),
+                                           (WAVEFORM_SINE,
                                             WAVEFORM_TRIANGULAR,
-                                            WAVEFORM_SINE],
-                                           [WAVEFORM_SINE, WAVEFORM_SINE,
+                                            WAVEFORM_SINE),
+                                           (WAVEFORM_SINE, WAVEFORM_SINE,
                                             WAVEFORM_SINE, WAVEFORM_SINE,
-                                            WAVEFORM_SINE]],
+                                            WAVEFORM_SINE)),
                                        stereo=True, zeta=0.215, air_temp=20,
                                        number_of_samples=0, sample_rate=44100):
     """
@@ -891,24 +891,24 @@ def note_with_two_vibratos_glissando(start_freq=220, end_freq=440, duration=2,
     return s
 
 
-def note_with_vibratos_glissandos(freqs=[220, 440, 330],
-                                  durations=[[2, 3], [2, 5, 3],
-                                             [2, 5, 6, 1, .4]],
-                                  vibratos_freqs=[[2, 6, 1],
-                                                  [.5, 15, 2, 6, 3]],
-                                  vibratos_max_pitch_devs=[[2, 1, 5],
-                                                           [4, 3, 7, 10, 3]],
-                                  alpha=[[1, 1], [1, 1, 1], [1, 1, 1, 1, 1]],
-                                  waveform_tables=[[WAVEFORM_TRIANGULAR,
-                                                    WAVEFORM_TRIANGULAR],
-                                                   [WAVEFORM_SINE,
+def note_with_vibratos_glissandos(freqs=(220, 440, 330),
+                                  durations=((2, 3), (2, 5, 3),
+                                             (2, 5, 6, 1, .4)),
+                                  vibratos_freqs=((2, 6, 1),
+                                                  (.5, 15, 2, 6, 3)),
+                                  vibratos_max_pitch_devs=((2, 1, 5),
+                                                           (4, 3, 7, 10, 3)),
+                                  alpha=((1, 1), (1, 1, 1), (1, 1, 1, 1, 1)),
+                                  waveform_tables=((WAVEFORM_TRIANGULAR,
+                                                    WAVEFORM_TRIANGULAR),
+                                                   (WAVEFORM_SINE,
                                                     WAVEFORM_TRIANGULAR,
-                                                    WAVEFORM_SINE],
-                                                   [WAVEFORM_SINE,
+                                                    WAVEFORM_SINE),
+                                                   (WAVEFORM_SINE,
                                                     WAVEFORM_SINE,
                                                     WAVEFORM_SINE,
                                                     WAVEFORM_SINE,
-                                                    WAVEFORM_SINE]],
+                                                    WAVEFORM_SINE)),
                                   number_of_samples=0, sample_rate=44100):
     """
     A note with an arbitrary sequence of pitch transition and a meta-vibrato.
@@ -1214,7 +1214,7 @@ def note_with_two_vibratos(freq=220, duration=2, vibrato_freq=2,
     return s
 
 
-def trill(freqs=[440, 440 * 2 ** (2 / 12)], notes_per_second=17, duration=5,
+def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
           sample_rate=44100):
     """
     Makes a trill.

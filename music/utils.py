@@ -205,7 +205,7 @@ def midi_to_hz_interval(midi_interval: float) -> float:
 
 
 def pitch_to_freq(start_freq: float = 220.,
-                  semitones: list = [0, 7, 7, 4, 7, 0]) -> list:
+                  semitones: tuple = (0, 7, 7, 4, 7, 0)) -> list:
     """Generates a list of frequencies based on a list of semitones and a
     starting frequency.
 
@@ -278,7 +278,7 @@ def mix(first_sonic_vector: np.ndarray,
 
 
 def mix_stereo(first_sonic_vector: np.ndarray,
-               second_sonic_vector: np.ndarray = [],
+               second_sonic_vector: np.ndarray = (),
                end: bool = False) -> np.ndarray:
     """Mixes two stereo sonic vectors.
 
@@ -341,7 +341,7 @@ def mix_stereo(first_sonic_vector: np.ndarray,
     return l1_ + l2_
 
 
-def resolve_stereo(afunction, argdict, stereo_vars=['sonic_vector']):
+def resolve_stereo(afunction, argdict, stereo_vars=('sonic_vector',)):
     """Resolve stereo arguments for a function.
 
     Parameters
@@ -553,8 +553,8 @@ def mix_with_offset_(*args):
     return s
 
 
-def pan_transitions(p=[(1, 1), (1, 0), (0, 1), (1, 1)], d=[2, 2, 2],
-                    method=['lin', 'circ', 'exp'], sample_rate=44100,
+def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
+                    method=('lin', 'circ', 'exp'), sample_rate=44100,
                     sonic_vector=None):
     """Applies pan transitions to a sonic vector.
 
@@ -761,7 +761,7 @@ def profile(adict):
     #         print('unrecognized type, implement dealing with it')
 
 
-def rhythm_to_durations(durations=[4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4],
+def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
                         freqs=None, duration=.25, bpm=None,
                         total_duration=None):
     """Returns durations from rhythmic patterns.

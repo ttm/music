@@ -8,8 +8,20 @@ here = os.path.abspath(os.path.dirname(__file__))
 ECANTORIXDIR = here + '/ecantorix'
 
 
-def get_engine(method="http"):
-    """pull ecantorix repo for local usage"""
+def get_engine():
+    """Return path to the local eCantorix engine."""
+    if not os.path.exists(ECANTORIXDIR):
+        raise RuntimeError(
+            "eCantorix engine not found. Run 'setup_engine()' to install it."
+        )
+    return ECANTORIXDIR
+
+
+def setup_engine(method="http"):
+    """Clone the eCantorix repository for local usage."""
+    if os.path.exists(ECANTORIXDIR):
+        return
+
     if method == "http":
         repo_url = 'https://github.com/ttm/ecantorix'
     elif method == "ssh":
@@ -17,14 +29,11 @@ def get_engine(method="http"):
     else:
         raise ValueError('method not understood')
 
-    if os.path.exists(ECANTORIXDIR):
-        return
-
     try:
         subprocess.run(['git', 'clone', repo_url, ECANTORIXDIR], check=True)
     except Exception as exc:
         raise RuntimeError(f'Failed to clone repository: {exc}') from exc
-    return
+    return ECANTORIXDIR
 
 
 def make_test_song():

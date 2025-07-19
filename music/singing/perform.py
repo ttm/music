@@ -11,13 +11,6 @@ from music.core import normalize_mono
 here = os.path.abspath(os.path.dirname(__file__))
 ECANTORIXDIR = here + '/ecantorix'
 ECANTORIXCACHE = ECANTORIXDIR + '/cache'
-if not os.path.isdir(ECANTORIXCACHE):
-    try:
-        os.system('git clone https://github.com/divVerent/ecantorix ' +
-                  ECANTORIXDIR)
-        os.mkdir(ECANTORIXCACHE)
-    except IOError:
-        warnings.warn('install git if you want singing facilities')
 
 
 # def sing(text="ba-na-nin-ha pra vo-cê",

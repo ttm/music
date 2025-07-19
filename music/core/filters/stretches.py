@@ -4,7 +4,7 @@ import numpy as np
 from music.utils import horizontal_stack
 
 
-def stretches(x, durations=[1, 4, 8, 12], sample_rate=44100):
+def stretches(x, durations=(1, 4, 8, 12), sample_rate=44100):
     """
     Makes a sequence of squeezes of the fragment in x.
 

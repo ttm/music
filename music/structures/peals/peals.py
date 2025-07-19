@@ -10,7 +10,7 @@ from ..permutations import InterestingPermutations
 init()
 
 
-def print_peal(peal, hunts=[0, 1]):
+def print_peal(peal, hunts=(0, 1)):
     """
     Prints a peal with colored numbers. Hunts have also colored background.
 

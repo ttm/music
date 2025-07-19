@@ -107,8 +107,8 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
         return e
 
 
-def louds(durations=[2, 4, 2], trans_devs=[5, -10, 20], alpha=[1, .5, 20],
-          method=["exp", "exp", "exp"], number_of_samples=0, sonic_vector=0,
+def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
+          method=("exp", "exp", "exp"), number_of_samples=0, sonic_vector=0,
           sample_rate=44100):
     """
     An envelope with linear or exponential transitions of amplitude.

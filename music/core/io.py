@@ -24,13 +24,26 @@ def read_wav(filename: str):
     NDArray
         Values of the WAV file
     """
-    s = wavfile.read(filename)
-    logging.debug(type(s[1] / 2 ** 15))
-    if s[1].dtype != 'int16':
-        raise ValueError('non 16-bit samples are not supported')
-    if len(s[1].shape) == 2:
-        return np.array(s[1].transpose() / 2 ** 15)
-    return s[1] / 2 ** 15
+    sample_rate, data = wavfile.read(filename)
+    logging.debug("read_wav dtype %s", data.dtype)
+
+    if np.issubdtype(data.dtype, np.integer):
+        bits = np.iinfo(data.dtype).bits
+        if bits not in (8, 16, 32):
+            raise ValueError(
+                f"unsupported integer WAV bit depth: {bits}"
+            )
+        norm = float(2 ** (bits - 1))
+    elif np.issubdtype(data.dtype, np.floating):
+        norm = float(np.max(np.abs(data)))
+        if norm == 0:
+            norm = 1.0
+    else:
+        raise ValueError(f"unsupported WAV data type: {data.dtype}")
+
+    if data.ndim == 2:
+        return data.astype(np.float64).T / norm
+    return data.astype(np.float64) / norm
 
 
 def write_wav_mono(sonic_vector=SONIC_VECTOR_MONO, filename="asound.wav",

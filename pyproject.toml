@@ -17,6 +17,7 @@ dependencies = [
     'sympy >= 1.12',
     'termcolor >= 2.4.0',
 ]
+optional-dependencies = { dev = ['pytest >= 8.2'] }
 classifiers = [
     'Programming Language :: Python :: 3',
     'License :: OSI Approved :: MIT License',

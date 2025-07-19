@@ -178,9 +178,6 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
         n = sum(number_of_samples)
     else:
         n = int(sample_rate * sum(durations))
-    samples = np.arange(n)  # TODO: eliminate?
-    obj = object
-    obj.foo = samples
     s = []
     fact = 1
     if number_of_samples:

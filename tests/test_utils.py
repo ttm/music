@@ -53,3 +53,20 @@ def test_mix_and_normalize():
     assert np.allclose(mixed, expected)
     norm = functions.normalize_mono(mixed)
     assert np.max(norm) <= 1 and np.min(norm) >= -1
+
+
+def test_mix2_basic():
+    a = np.array([1, 1, 1])
+    b = np.array([1, 2])
+    mixed = utils.mix2([a, b])
+    assert np.allclose(mixed, np.array([2, 3, 1]))
+
+
+def test_mix2_offset_and_end():
+    a = np.array([1, 1])
+    b = np.array([1, 1, 1])
+    out = utils.mix2([a, b], end=True)
+    assert np.allclose(out, np.array([1, 2, 2]))
+
+    out_offset = utils.mix2([a, b], offset=[0, 1], sample_rate=1)
+    assert np.allclose(out_offset, np.array([1, 2, 1, 1]))

@@ -92,7 +92,8 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
         a stereo sound. Else it returns a simple array
         for a mono sound.
     zeta : float
-        TODO:
+        The distance between the listener's ears in meters. It is used to
+        compute interaural differences when generating stereo output.
     air_temp : scalar
         The air temperature in Celsius.
         (Used to calculate the acoustic velocity.)

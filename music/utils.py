@@ -146,7 +146,8 @@ def hz_to_midi(hertz_value: float) -> np.float64:
     >>> hz_to_midi(880)
     81.0
     """
-    return 69 + 12 * np.log2(hertz_value / 440)
+    safe_hz = np.clip(hertz_value, np.finfo(float).eps, None)
+    return 69 + 12 * np.log2(safe_hz / 440)
 
 
 def midi_to_hz(midi_value: float) -> float:

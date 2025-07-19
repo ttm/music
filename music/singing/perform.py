@@ -5,6 +5,7 @@ import os
 import re
 import warnings
 import logging
+import subprocess
 from scipy.io import wavfile
 from music.core import normalize_mono
 
@@ -38,9 +39,18 @@ def sing(text="Mar-ry had a litt-le lamb",
     with open(ECANTORIXCACHE + '/achant.conf', 'w') as f:
         f.write(conf_text)
     # write conf file
-    os.system('cp {}/Makefile {}/Makefile'.format(ECANTORIXDIR,
-                                                  ECANTORIXCACHE))
-    os.system('make -C {}'.format(ECANTORIXCACHE))
+    try:
+        subprocess.run(
+            [
+                'cp',
+                f'{ECANTORIXDIR}/Makefile',
+                f'{ECANTORIXCACHE}/Makefile'
+            ],
+            check=True,
+        )
+        subprocess.run(['make', '-C', ECANTORIXCACHE], check=True)
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f'Failed to build singing cache: {exc}') from exc
     wread = wavfile.read(ECANTORIXCACHE + '/achant.wav')
     assert wread[0] == 44100
     return normalize_mono(wread[1])

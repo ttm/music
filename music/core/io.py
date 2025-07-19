@@ -1,7 +1,10 @@
 """Utilities for reading and writing WAV files."""
 
-import numpy as np
 import logging
+from typing import Sequence
+
+import numpy as np
+from numpy.typing import ArrayLike, NDArray
 from scipy.io import wavfile
 from .functions import normalize_mono, normalize_stereo
 from .filters import adsr, adsr_stereo
@@ -11,7 +14,7 @@ SONIC_VECTOR_STEREO = np.vstack((np.random.uniform(size=100000),
                                  np.random.uniform(size=100000)))
 
 
-def read_wav(filename: str):
+def read_wav(filename: str) -> NDArray[np.float64]:
     """Reads a WAV file and return an array of its values.
 
     Parameters
@@ -46,8 +49,14 @@ def read_wav(filename: str):
     return data.astype(np.float64) / norm
 
 
-def write_wav_mono(sonic_vector=SONIC_VECTOR_MONO, filename="asound.wav",
-                   sample_rate=44100, fades=0, bit_depth=16, remove_bias=True):
+def write_wav_mono(
+    sonic_vector: ArrayLike = SONIC_VECTOR_MONO,
+    filename: str = "asound.wav",
+    sample_rate: int = 44100,
+    fades: Sequence[int] | int = 0,
+    bit_depth: int = 16,
+    remove_bias: bool = True,
+) -> None:
     """Writes a mono WAV file for a numpy array.
 
     One can also use, for example:
@@ -83,8 +92,9 @@ def write_wav_mono(sonic_vector=SONIC_VECTOR_MONO, filename="asound.wav",
     result = normalize_mono(sonic_vector, remove_bias) * \
         (2 ** (bit_depth - 1) - 1)
     if fades:
-        result = adsr(attack_duration=fades[0], sustain_level=0,
-                      release_duration=fades[1], sonic_vector=result)
+        f0, f1 = (fades[0], fades[1]) if isinstance(fades, Sequence) else (0, 0)
+        result = adsr(attack_duration=f0, sustain_level=0,
+                      release_duration=f1, sonic_vector=result)
     if bit_depth not in (8, 16, 32, 64):
         raise ValueError(
             "bit_depth values allowed are only 8, 16, 32 and 64"
@@ -94,9 +104,15 @@ def write_wav_mono(sonic_vector=SONIC_VECTOR_MONO, filename="asound.wav",
     wavfile.write(filename, sample_rate, result)
 
 
-def write_wav_stereo(sonic_vector=SONIC_VECTOR_STEREO, filename="asound.wav",
-                     sample_rate=44100, fades=0, bit_depth=16,
-                     remove_bias=True, normalize_separately=False):
+def write_wav_stereo(
+    sonic_vector: ArrayLike = SONIC_VECTOR_STEREO,
+    filename: str = "asound.wav",
+    sample_rate: int = 44100,
+    fades: Sequence[int] | int = 0,
+    bit_depth: int = 16,
+    remove_bias: bool = True,
+    normalize_separately: bool = False,
+) -> None:
     """Write a stereo WAV files for a numpy array.
 
     Parameters
@@ -131,8 +147,9 @@ def write_wav_stereo(sonic_vector=SONIC_VECTOR_STEREO, filename="asound.wav",
                               normalize_separately) * (2 **
                                                        (bit_depth - 1) - 1)
     if fades:
-        result = adsr_stereo(attack_duration=fades[0], sustain_level=0,
-                             release_duration=fades[1], sonic_vector=result)
+        f0, f1 = (fades[0], fades[1]) if isinstance(fades, Sequence) else (0, 0)
+        result = adsr_stereo(attack_duration=f0, sustain_level=0,
+                             release_duration=f1, sonic_vector=result)
     if bit_depth not in (8, 16, 32, 64):
         raise ValueError(
             "bit_depth values allowed are only 8, 16, 32 and 64"

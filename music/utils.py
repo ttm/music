@@ -1,8 +1,11 @@
 """Utility functions shared across the package."""
 
-import numpy as np
-import warnings
 import logging
+import warnings
+from typing import Any, cast
+
+import numpy as np
+from numpy.typing import ArrayLike, NDArray
 
 LAMBDA_TILDE = 1024 * 16
 WAVEFORM_SINE = np.sin(np.linspace(0, 2 * np.pi, LAMBDA_TILDE, endpoint=False))
@@ -13,7 +16,7 @@ triangular_tmp = np.linspace(-1, 1, LAMBDA_TILDE // 2, endpoint=False)
 WAVEFORM_TRIANGULAR = np.hstack((triangular_tmp, triangular_tmp[::-1]))
 
 
-def horizontal_stack(*arrays):
+def horizontal_stack(*arrays: ArrayLike) -> NDArray[np.float64]:
     """Creates a horizontal stack of arrays while preserving bidimensional
        data.
 
@@ -47,10 +50,10 @@ def horizontal_stack(*arrays):
     stereo_present = False
 
     # Convert input arrays to numpy arrays
-    arrays = [np.array(arr) for arr in arrays]
+    arrays_np: list[np.ndarray] = [np.array(arr) for arr in arrays]
 
     # Check if any of the input arrays are bidimensional (stereo)
-    for arr in arrays:
+    for arr in arrays_np:
         if len(arr.shape) == 2:
             stereo_present = True
             break
@@ -58,12 +61,12 @@ def horizontal_stack(*arrays):
     # If stereo data is present, ensure that mono channels are duplicated to
     # both left and right channels
     if stereo_present:
-        for i, arr in enumerate(arrays):
+        for i, arr in enumerate(arrays_np):
             if len(arr.shape) == 1:
-                arrays[i] = np.array((arr, arr))
+                arrays_np[i] = np.array((arr, arr))
 
     # Return the horizontal stack of arrays
-    return np.hstack(arrays)
+    return np.hstack(arrays_np)
 
 
 H = horizontal_stack
@@ -205,8 +208,10 @@ def midi_to_hz_interval(midi_interval: float) -> float:
     return 2 ** (midi_interval / 12)
 
 
-def pitch_to_freq(start_freq: float = 220.,
-                  semitones: tuple = (0, 7, 7, 4, 7, 0)) -> list:
+def pitch_to_freq(
+    start_freq: float = 220.0,
+    semitones: tuple[int, ...] = (0, 7, 7, 4, 7, 0),
+) -> list[float]:
     """Generates a list of frequencies based on a list of semitones and a
     starting frequency.
 
@@ -278,9 +283,11 @@ def mix(first_sonic_vector: np.ndarray,
     return sound
 
 
-def mix_stereo(first_sonic_vector: np.ndarray,
-               second_sonic_vector: np.ndarray = (),
-               end: bool = False) -> np.ndarray:
+def mix_stereo(
+    first_sonic_vector: np.ndarray,
+    second_sonic_vector: np.ndarray | None = None,
+    end: bool = False,
+) -> np.ndarray:
     """Mixes two stereo sonic vectors.
 
     This function mixes two stereo sonic vectors. If only one sonic vector is
@@ -375,7 +382,7 @@ def resolve_stereo(afunction, argdict, stereo_vars=('sonic_vector',)):
     return s
 
 
-def convert_to_stereo(sound_vector):
+def convert_to_stereo(sound_vector: ArrayLike) -> NDArray[np.float64]:
     """Converts a sound vector to stereo format.
 
     Converts a mono or multi-channel sound vector into stereo format. If the
@@ -430,8 +437,13 @@ def convert_to_stereo(sound_vector):
     return stereo_sound
 
 
-def mix_with_offset(first_sonic_vector, second_sonic_vector,
-                    duration=0, number_of_samples=0, sample_rate=44100):
+def mix_with_offset(
+    first_sonic_vector: ArrayLike,
+    second_sonic_vector: ArrayLike,
+    duration: float = 0,
+    number_of_samples: int = 0,
+    sample_rate: int = 44100,
+) -> NDArray[np.float64]:
     """Mix two sonic vector by placing the beginning of the second one
     a specified number of seconds after the first one.
 
@@ -487,17 +499,18 @@ def mix_with_offset(first_sonic_vector, second_sonic_vector,
         second_sonic_vector.shape,
         ns,
         nst)
+    ns_int = int(ns)
     if ns >= 0:
-        s[ns: ns + len(second_sonic_vector)] += second_sonic_vector
+        s[ns_int: ns_int + len(second_sonic_vector)] += second_sonic_vector
         # s[-len(s2):] += s2
     else:
-        s[int(len(first_sonic_vector) + ns):
-          int(len(first_sonic_vector) + ns +
-              len(second_sonic_vector))] += second_sonic_vector
+        start = int(len(first_sonic_vector) + ns)
+        end = int(len(first_sonic_vector) + ns + len(second_sonic_vector))
+        s[start:end] += second_sonic_vector
     return s
 
 
-def mix_with_offset_(*args):
+def mix_with_offset_(*args: ArrayLike) -> NDArray[np.float64]:
     """Mix sonic vectors with offsets.
 
     Parameters
@@ -533,22 +546,23 @@ def mix_with_offset_(*args):
     # return np.zeros(args[0].shape[-1])
     # return mix2(sounds, False, offsets, 44100)
     i = 0  # DEPRECATED
-    s = []
+    s: NDArray[np.float64] = np.array([])
     while i < len(args):
         a = args[i]  # new array
         if type(a) not in (np.ndarray, list):
             raise ValueError(
-                "Skipping a value that should have been a sequence of numbers:" 
-                f" {a}")
+                "Skipping a value that should have been a sequence of numbers:"
+                f" {a!r}")
         if len(args) > i + 1:
-            offset = args[i + 1]  # potentialy duration
-            if np.isscalar(offset):
+            off: Any = args[i + 1]
+            if np.isscalar(off):
+                offset = float(cast(float, off))
                 i += 2
             else:
-                offset = 0
+                offset = 0.0
                 i += 1
         else:
-            offset = 0
+            offset = 0.0
             i += 1
         s = mix_with_offset(s, a, duration=offset)
     return s

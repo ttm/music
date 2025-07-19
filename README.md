@@ -37,6 +37,21 @@ This install method is especially useful when reloading the modified module in s
 
 Every dependency is installed by default by `pip`, but you can take a look at [requirements.txt](https://github.com/ttm/music/blob/master/requirements.txt).
 
+### Testing
+
+The packages required to run the test suite are available via the `dev`
+extras defined in `pyproject.toml`.  Install them with:
+
+```console
+pip install -e '.[dev]'
+```
+
+You can then run the tests using `pytest`:
+
+```console
+pytest
+```
+
 ## Examples
 
 Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) you can find some scripts that use the main features of Music.

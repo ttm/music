@@ -70,6 +70,7 @@ from .structures import (
 )
 from .singing import get_engine, make_test_song, setup_engine
 from .legacy import Being, CanonicalSynth, IteratorSynth
+from .sequencer import Sequencer
 
 __all__ = [
     'adsr_stereo',
@@ -139,5 +140,6 @@ __all__ = [
     'tremolos',
     'trill',
     'write_wav_mono',
-    'write_wav_stereo'
+    'write_wav_stereo',
+    'Sequencer'
 ]

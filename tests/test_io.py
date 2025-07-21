@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 from pathlib import Path
+from unittest.mock import patch
 import pytest
 from scipy.io import wavfile
 
@@ -34,3 +35,14 @@ def test_read_wav_32bit(tmp_path):
     wavfile.write(path, 8000, data)
     out = music.read_wav(str(path))
     assert np.allclose(out, data.astype(np.float64) / (2 ** 31))
+
+
+def test_play_audio_invocation():
+    import types
+    from unittest.mock import MagicMock
+
+    sd = types.SimpleNamespace(play=MagicMock(), wait=MagicMock())
+    with patch.dict(sys.modules, {"sounddevice": sd}):
+        music.play_audio(np.zeros(4), sample_rate=8000)
+    sd.play.assert_called_once()
+    sd.wait.assert_called_once()

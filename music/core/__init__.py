@@ -36,7 +36,7 @@ from .filters import (
     stretches
 )
 from .functions import normalize_mono, normalize_stereo
-from .io import read_wav, write_wav_mono, write_wav_stereo
+from .io import read_wav, write_wav_mono, write_wav_stereo, play_audio
 from .synths import (
     am,
     gaussian_noise,
@@ -112,5 +112,6 @@ __all__ = [
     'tremolos',
     'trill',
     'write_wav_mono',
-    'write_wav_stereo'
+    'write_wav_stereo',
+    'play_audio'
 ]

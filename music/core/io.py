@@ -157,3 +157,48 @@ def write_wav_stereo(
     nn = eval("np.int" + str(bit_depth))
     result = nn(result)
     wavfile.write(filename, sample_rate, result.T)
+
+
+def play_audio(
+    sonic_vector: ArrayLike,
+    sample_rate: int = 44100,
+    normalize: bool = True,
+) -> None:
+    """Play a sonic vector using the :mod:`sounddevice` library.
+
+    Parameters
+    ----------
+    sonic_vector : array_like
+        Samples to be played.  Mono arrays should have shape ``(n,)`` and
+        stereo arrays ``(2, n)``.
+    sample_rate : int, optional
+        Playback sample rate.  Defaults to ``44100``.
+    normalize : bool, optional
+        If ``True`` (default), normalize ``sonic_vector`` before playback using
+        :func:`normalize_mono` or :func:`normalize_stereo`.
+
+    Notes
+    -----
+    If the ``sounddevice`` module is not installed, this function logs a
+    warning and returns without playing anything.
+    """
+
+    try:
+        import sounddevice as sd  # type: ignore
+    except Exception:  # pragma: no cover - fallback when sounddevice missing
+        logging.warning("sounddevice module not available; cannot play audio")
+        return
+
+    data = np.array(sonic_vector, dtype=np.float64)
+
+    if normalize:
+        if data.ndim == 1:
+            data = normalize_mono(data)
+        else:
+            data = normalize_stereo(data)
+
+    if data.ndim == 2:
+        data = data.T
+
+    sd.play(data, samplerate=sample_rate)
+    sd.wait()

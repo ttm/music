@@ -57,6 +57,7 @@ from .core import (
     trill,
     write_wav_mono,
     write_wav_stereo,
+    play_audio,
 )
 from .tables import PrimaryTables
 from .structures import (
@@ -141,5 +142,6 @@ __all__ = [
     'trill',
     'write_wav_mono',
     'write_wav_stereo',
+    'play_audio',
     'Sequencer'
 ]

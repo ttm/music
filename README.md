@@ -14,6 +14,7 @@ The precision of Music makes it the perfect choice for many scientific uses. At 
 * **Sample-based synth**, meaning that the state is updated at each sample.  For example, when we have a note with a vibrato, each sample is associated to a different frequency. By doing this the synthesized sound is the closest it can be to the mathematical model that describes it.
 * **Musical structures** with emphasis in symmetry and discourse.
 
+* **play_audio** utility to listen to generated sounds without saving files.
 Music can be used alone or with other packages, and it's ideal for audiovisualization of data. For example, it can be used with [Percolation](https://github.com/ttm/percolation) and [Participation](https://github.com/ttm/participation) for harnessing open linked social data, or with [audiovisual analytics vocabulary and ontology (AAVO)](https://github.com/ttm/aavo).
 
 ## How to install
@@ -83,12 +84,13 @@ The modules are:
 * **core**:
   * **synths** for synthesization of notes (including vibratos, glissandos, etc.), noises and envelopes.
   * **filters** for the application of filters such as ADSR envelopes, fades, IIR and FIR, reverb, loudness, and localization.
-  * **io** for reading and writing WAV files, both mono and stereo.
+  * **io** for reading, writing and playing audio, both mono and stereo.
   * **functions** for normalization.
 * **structures** for higher level musical structures such as permutations (and related to algebraic groups and change ringing peals), scales, chords, counterpoint, tunings, etc.
 * **legacy** for musical pieces that are rendered with the Music package and might be used as material to make more music.
 * **tables** for the generation of lookup tables for some basic waveform.
 * **utils** for various functions regarding conversions, mix, etc.
+* **sequencer** for scheduling notes into a timeline and exporting audio.
 
 ## Roadmap
 

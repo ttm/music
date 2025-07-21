@@ -73,6 +73,7 @@ Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) 
 * [campanology](https://github.com/ttm/music/tree/master/examples/campanology.py) and [geometric_music](https://github.com/ttm/music/tree/master/examples/geometric_music.py) both use `Being` as their synth, but this time with permutations.
 * [isynth](https://github.com/ttm/music/tree/master/examples/isynth.py) also uses a synth class, but of a different kind, [`IteratorSynth`](https://github.com/ttm/music/tree/master/music/legacy/classes.py), that iterates through arbitrary lists of variables.
 * [singing_demo](https://github.com/ttm/music/tree/master/examples/singing_demo.py): demonstrates `music.singing.setup_engine()` and `music.singing.make_test_song()` to render a short sung phrase.
+* [binaural_beats](https://github.com/ttm/music/tree/master/examples/binaural_beats.py): generates binaural beats using two pure tones with tremolo for relaxation or focus.
 * The `music.singing` module provides basic text-to-speech utilities. Run `music.singing.setup_engine()` once to clone the eCantorix engine before using these features.
 
 ## Package structure

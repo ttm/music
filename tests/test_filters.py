@@ -5,7 +5,14 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE))
 
-from music.core.filters import adsr, fade, cross_fade, reverb
+from music.core.filters import (
+    adsr,
+    fade,
+    cross_fade,
+    reverb,
+    loud,
+    louds,
+)
 from music.core.filters.localization import localize
 
 
@@ -69,4 +76,34 @@ def test_localize_basic():
     assert out.shape[0] == 2
     assert out.shape[1] >= 5
     assert not np.allclose(out[0], out[1])
+
+
+def test_loud_ramp_start_end():
+    sr = 100
+    # Exponential ramp up by 6 dB
+    env = loud(duration=0.1, trans_dev=6, method="exp", sample_rate=sr)
+    assert len(env) == int(0.1 * sr)
+    assert np.isclose(env[0], 1.0, atol=1e-6)
+    assert np.isclose(env[-1], 10 ** (6 / 20), atol=1e-6)
+
+    # Linear ramp down to zero
+    lin_env = loud(duration=0.05, trans_dev=0, method="linear", sample_rate=sr)
+    assert lin_env[0] == 1.0
+    assert np.isclose(lin_env[-1], 0.0, atol=1e-6)
+
+
+def test_louds_concatenation_and_continuity():
+    sr = 100
+    durations = (0.1, 0.2)
+    devs = (6, -6)
+    env = louds(durations=durations, trans_devs=devs, alpha=(1, 1), method=("exp", "exp"), sample_rate=sr)
+    expected_len = int(sum(durations) * sr)
+    assert len(env) == expected_len
+
+    n1 = int(durations[0] * sr)
+    assert np.isclose(env[n1 - 1], env[n1], atol=1e-6)
+    assert np.isclose(env[0], 1.0, atol=1e-6)
+    mid_amp = 10 ** (devs[0] / 20)
+    assert np.isclose(env[n1 - 1], mid_amp, atol=1e-6)
+    assert np.isclose(env[-1], 1.0, atol=1e-6)
 

@@ -1,7 +1,7 @@
 """Simple reverberation filters and impulse response generation."""
 
 import numpy as np
-from ..synths import noise
+from ..synths.noises import noise
 
 
 def reverb(duration=1.9, first_phase_duration=0.15, decay=-50,

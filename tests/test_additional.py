@@ -32,7 +32,8 @@ def test_rhythm_to_durations_equivalence():
     result_freq = utils.rhythm_to_durations(freqs=freqs, duration=4)
     assert np.allclose(result_time, result_freq)
 
-    nested = utils.rhythm_to_durations(durations=[4, [2, 1, 1], 2], duration=0.5)
+    nested = utils.rhythm_to_durations(durations=[4, [2, 1, 1], 2],
+                                       duration=0.5)
     assert np.allclose(nested, [2.0, 0.5, 0.5, 1.0])
 
 

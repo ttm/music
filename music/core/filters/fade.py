@@ -121,7 +121,8 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
     """
     ns = int(duration * sample_rate / 1000)
     if len(sonic_vector_1.shape) != len(sonic_vector_2.shape):
-        raise ValueError('sonic_vector_1 and sonic_vector_2 must have the same shape')
+        raise ValueError('sonic_vector_1 and sonic_vector_2 must have '
+                         'the same shape')
     if len(sonic_vector_1.shape) == 2:
         s1_ = cross_fade(sonic_vector_1[0], sonic_vector_2[0], duration,
                          method, sample_rate)

@@ -1,17 +1,50 @@
 """Utilities for reading and writing WAV files."""
 
 import logging
-from typing import Sequence
+from typing import Any, Sequence
 
 import numpy as np
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import ArrayLike, DTypeLike, NDArray
 from scipy.io import wavfile
 from .functions import normalize_mono, normalize_stereo
-from .filters import adsr, adsr_stereo
+from .filters.adsr import adsr, adsr_stereo
 
-SONIC_VECTOR_MONO = np.random.uniform(size=100000)
-SONIC_VECTOR_STEREO = np.vstack((np.random.uniform(size=100000),
-                                 np.random.uniform(size=100000)))
+#: Integer dtype used to store samples at each supported bit depth.
+#: 8-bit WAV is unsigned with a midpoint offset; 16- and 32-bit are signed.
+#: These are the depths scipy.io.wavfile can write and read_wav can read back.
+BIT_DEPTHS: dict[int, DTypeLike] = {8: np.uint8, 16: np.int16, 32: np.int32}
+
+
+def _wav_dtype(bit_depth: int) -> DTypeLike:
+    """Return the numpy dtype for ``bit_depth``, or raise ValueError."""
+    try:
+        return BIT_DEPTHS[bit_depth]
+    except KeyError:
+        allowed = ", ".join(str(b) for b in BIT_DEPTHS)
+        raise ValueError(
+            f"bit_depth values allowed are only {allowed}; got {bit_depth}"
+        ) from None
+
+
+def _fade_pair(fades: Sequence[int] | int) -> tuple[int, int]:
+    """Resolve ``fades`` to (fade in, fade out) durations in milliseconds.
+
+    A scalar applies the same duration to both ends.
+    """
+    if isinstance(fades, (int, float)):
+        return int(fades), int(fades)
+    return int(fades[0]), int(fades[1])
+
+
+def _quantize(samples: NDArray[np.float64], bit_depth: int) -> NDArray[Any]:
+    """Quantize samples in [-1, 1] to the integer encoding of a WAV file."""
+    dtype = _wav_dtype(bit_depth)
+    peak = 2 ** (bit_depth - 1) - 1
+    scaled = np.clip(np.round(np.asarray(samples) * peak), -peak - 1, peak)
+    if bit_depth == 8:
+        # 8-bit WAV samples are unsigned, centred on 128 (RIFF spec).
+        scaled = scaled + 2 ** (bit_depth - 1)
+    return scaled.astype(dtype)
 
 
 def read_wav(filename: str) -> NDArray[np.float64]:
@@ -32,11 +65,14 @@ def read_wav(filename: str) -> NDArray[np.float64]:
 
     if np.issubdtype(data.dtype, np.integer):
         bits = np.iinfo(data.dtype).bits
-        if bits not in (8, 16, 32):
+        if bits not in BIT_DEPTHS:
             raise ValueError(
                 f"unsupported integer WAV bit depth: {bits}"
             )
         norm = float(2 ** (bits - 1))
+        if not np.issubdtype(data.dtype, np.signedinteger):
+            # 8-bit WAV is stored unsigned around a midpoint; recentre it.
+            data = data.astype(np.float64) - 2 ** (bits - 1)
     elif np.issubdtype(data.dtype, np.floating):
         norm = float(np.max(np.abs(data)))
         if norm == 0:
@@ -50,7 +86,7 @@ def read_wav(filename: str) -> NDArray[np.float64]:
 
 
 def write_wav_mono(
-    sonic_vector: ArrayLike = SONIC_VECTOR_MONO,
+    sonic_vector: ArrayLike | None = None,
     filename: str = "asound.wav",
     sample_rate: int = 44100,
     fades: Sequence[int] | int = 0,
@@ -65,19 +101,20 @@ def write_wav_mono(
 
     Parameters
     ----------
-    sonic_vector : array_like
+    sonic_vector : array_like, optional
         The PCM samples to be written as a WAV sound file. The samples are
         always normalized by normalize_mono(sonic_vector) to have samples
-        between -1 and 1.
+        between -1 and 1. Defaults to a second or so of uniform noise.
     filename : string
         The filename to use for the file to be written.
     sample_rate : scalar
         The sample frequency.
-    fades : interable
-        An iterable with two values for the milliseconds you want for the fade
-        in and out (to avoid clicks).
+    fades : iterable or scalar
+        Milliseconds of fade in and fade out (to avoid clicks), either as a
+        pair or as a single value applied to both ends.
     bit_depth : integer
-        The number of bits in each sample of the final file.
+        The number of bits in each sample of the final file: 8, 16 or 32.
+        Any other value raises ValueError.
     remove_bias : boolean
         Whether to remove or not the bias (or offset)
 
@@ -89,23 +126,19 @@ def write_wav_mono(
     write_wav_stereo : Write a stereo file.
 
     """
-    result = normalize_mono(sonic_vector, remove_bias) * \
-        (2 ** (bit_depth - 1) - 1)
+    _wav_dtype(bit_depth)  # reject an unsupported depth before doing work
+    if sonic_vector is None:
+        sonic_vector = np.random.uniform(-1, 1, size=100000)
+    result = normalize_mono(sonic_vector, remove_bias)
     if fades:
-        f0, f1 = (fades[0], fades[1]) if isinstance(fades, Sequence) else (0, 0)
+        f0, f1 = _fade_pair(fades)
         result = adsr(attack_duration=f0, sustain_level=0,
                       release_duration=f1, sonic_vector=result)
-    if bit_depth not in (8, 16, 32, 64):
-        raise ValueError(
-            "bit_depth values allowed are only 8, 16, 32 and 64"
-        )
-    nn = eval("np.int" + str(bit_depth))
-    result = nn(result)
-    wavfile.write(filename, sample_rate, result)
+    wavfile.write(filename, sample_rate, _quantize(result, bit_depth))
 
 
 def write_wav_stereo(
-    sonic_vector: ArrayLike = SONIC_VECTOR_STEREO,
+    sonic_vector: ArrayLike | None = None,
     filename: str = "asound.wav",
     sample_rate: int = 44100,
     fades: Sequence[int] | int = 0,
@@ -117,20 +150,22 @@ def write_wav_stereo(
 
     Parameters
     ----------
-    sonic_vector : array_like
+    sonic_vector : array_like, optional
         The PCM samples to be written as a WAV sound file. The samples are
         always normalized by normalize_stereo(sonic_vector) to have samples
         between -1 and 1 and remove the offset.
         Use array of shape (nchannels, nsamples).
+        Defaults to a second or so of uniform noise.
     filename : string
         The filename to use for the file to be written.
     sample_rate : scalar
         The sample frequency.
-    fades : interable
-        An iterable with two values for the milliseconds you want for the fade
-        in and out (to avoid clicks).
+    fades : iterable or scalar
+        Milliseconds of fade in and fade out (to avoid clicks), either as a
+        pair or as a single value applied to both ends.
     bit_depth : integer
-        The number of bits in each sample of the final file.
+        The number of bits in each sample of the final file: 8, 16 or 32.
+        Any other value raises ValueError.
     remove_bias : boolean
         Whether to remove or not the bias (or offset)
     normalize_separately : boolean
@@ -143,20 +178,16 @@ def write_wav_stereo(
     write_wav_mono : Write a mono file.
 
     """
+    _wav_dtype(bit_depth)  # reject an unsupported depth before doing work
+    if sonic_vector is None:
+        sonic_vector = np.random.uniform(-1, 1, size=(2, 100000))
     result = normalize_stereo(sonic_vector, remove_bias,
-                              normalize_separately) * (2 **
-                                                       (bit_depth - 1) - 1)
+                              normalize_separately)
     if fades:
-        f0, f1 = (fades[0], fades[1]) if isinstance(fades, Sequence) else (0, 0)
+        f0, f1 = _fade_pair(fades)
         result = adsr_stereo(attack_duration=f0, sustain_level=0,
                              release_duration=f1, sonic_vector=result)
-    if bit_depth not in (8, 16, 32, 64):
-        raise ValueError(
-            "bit_depth values allowed are only 8, 16, 32 and 64"
-        )
-    nn = eval("np.int" + str(bit_depth))
-    result = nn(result)
-    wavfile.write(filename, sample_rate, result.T)
+    wavfile.write(filename, sample_rate, _quantize(result, bit_depth).T)
 
 
 def play_audio(

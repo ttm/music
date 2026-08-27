@@ -1,8 +1,3 @@
-import sys
-from pathlib import Path
-
-HERE = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(HERE))
 
 import music
 
@@ -13,7 +8,8 @@ def test_sequencer_basic_mono():
     seq.add_note(freq=440, start=0.02, duration=0.01)
     data = seq.render()
     assert data.ndim == 1
-    # length should accommodate last note at 0.02 sec plus duration 0.01 => 30 samples
+    # length should accommodate the last note at 0.02 sec plus its
+    # duration of 0.01 => 30 samples
     assert len(data) >= 30
 
 

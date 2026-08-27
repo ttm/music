@@ -1,7 +1,7 @@
 """Utilities for synthesizing notes and note effects."""
 import numpy as np
 from ...utils import WAVEFORM_SINE, WAVEFORM_TRIANGULAR
-from ..filters import adsr
+from ..filters.adsr import adsr
 
 
 def note(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,

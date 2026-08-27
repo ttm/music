@@ -38,6 +38,11 @@
   exactly representable levels survive a round trip unchanged.
 
 ### Changed
+- `requirements.txt` now installs from `pyproject.toml` rather than repeating
+  it. The two had drifted: it pinned `setuptools==69.0.2` (a build tool, not a
+  runtime dependency, and the source of three open Dependabot alerts — two
+  high) and `percolation==0.2.dev0`, which the package does not import, and
+  its `==` pins contradicted pyproject's `>=` ranges.
 - `localize_linear()` was never finished — its own body notes the missing
   return statement — and now raises `NotImplementedError` instead of crashing.
   It is no longer re-exported from `music`. Use `localize()` or

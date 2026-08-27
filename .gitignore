@@ -14,3 +14,4 @@ musicPacDir/
 .coverage
 htmlcov/
 .ruff_cache/
+build/

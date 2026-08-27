@@ -36,7 +36,7 @@ This install method is especially useful when reloading the modified module in s
 
 ### Dependencies
 
-Every dependency is installed by default by `pip`, but you can take a look at [requirements.txt](https://github.com/ttm/music/blob/master/requirements.txt).
+Every dependency is installed by default by `pip`. They are declared in [pyproject.toml](https://github.com/ttm/music/blob/master/pyproject.toml), which is the single source of truth; [requirements.txt](https://github.com/ttm/music/blob/master/requirements.txt) installs from it.
 
 ### Testing
 

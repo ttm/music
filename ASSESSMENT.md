@@ -6,13 +6,25 @@ This document grades the repository honestly, section by section, and ends with 
 prioritised plan. Every claim below was verified by running the code — no judgement
 here is stylistic guesswork.
 
-> **Status.** Phases 1 and 2 of the plan below are done, on the branch
-> `fix/broken-exports` (see `CHANGELOG.md`). All six defects in the register are
-> fixed and covered by regression tests, the filters import cycle is broken, CI
-> runs ruff + mypy + pytest across Python 3.10–3.13, and coverage rose from
-> **43 % to 59 %**. The grades below describe the repository *as assessed at the
-> commit named above*, so the "Terrible" section now reads as a record of what
-> was fixed rather than of what ships. Phases 3–5 remain open.
+> **Status.** Phases 1–3 and most of Phase 4 are done, on the branch
+> `fix/broken-exports` (see `CHANGELOG.md`). The grades below describe the
+> repository *as assessed at the commit named above*, so the "Terrible" section
+> now reads as a record of what was fixed rather than of what ships.
+>
+> | | Then | Now |
+> |---|---|---|
+> | Tests | 38 | **125** |
+> | Coverage | 43 % | **61 %** |
+> | Broken exports | 3 | **0** |
+> | CI | none | ruff + mypy + pytest on 3.10–3.13 |
+> | `type(x) in (...)` sites | 16 | **0** |
+> | Fidelity tests | none | **31** |
+>
+> Nine further defects surfaced while fixing the original six — including a
+> NaN leak in `adsr`, and a systematic 1-LSB gain error on every WAV the
+> package had ever written. Still open: the `legacy/` type errors, the three
+> duplicate waveform tables, `setup_engine()` writing into `site-packages`,
+> and published API docs.
 
 ## How this was measured
 

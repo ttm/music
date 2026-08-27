@@ -18,6 +18,11 @@ extensions = [
     # docstrings in music.structures and music.legacy, and with
     # napoleon_numpy_docstring off it leaves the numpydoc-style ones for
     # numpydoc to render.
+    #
+    # This is a workaround for the package documenting itself in two styles.
+    # Converting those 56 sections to numpydoc would let napoleon be dropped
+    # entirely -- tracked in ASSESSMENT.md, "Tracked follow-up: one docstring
+    # style". Remove this extension once the last Google-style section is gone.
     "sphinx.ext.napoleon",
     "numpydoc",
 ]

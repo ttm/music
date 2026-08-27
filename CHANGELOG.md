@@ -88,6 +88,11 @@ deliberate, both are tracked, and neither should reach a release unreviewed.
   reference groups all 69 exports by role rather than alphabetically, and CI
   builds it with `-W`, so a malformed docstring fails rather than rendering
   wrong. Fixing the docstrings this surfaced is listed under Fixed below.
+  `sphinx.ext.napoleon` is enabled alongside `numpydoc` because
+  `music.structures` and `music.legacy` document themselves in Google style —
+  56 sections across seven files. That is a workaround; converting them to
+  numpydoc would let napoleon be dropped, and is tracked in `ASSESSMENT.md`
+  under "Tracked follow-up: one docstring style".
 - `tests/test_fidelity.py`, checking that the synthesized *samples* match the
   equations the docstrings cite, not merely that they have the right shape:
   `note` and `note_with_vibrato` against their closed forms sample for

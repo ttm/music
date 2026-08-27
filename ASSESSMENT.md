@@ -306,16 +306,58 @@ Ordered by return on effort. Phase 1 is roughly a day and removes every "Terribl
 18. **Rework `setup_engine()`** to clone into a user cache dir (`platformdirs.user_cache_dir`),
     never `site-packages`; document the `git`/`make`/`perl`/`espeak` system dependencies and
     check for them with a clear error.
+19. **Convert the Google-style docstrings in `structures/` and `legacy/` to numpydoc.**
+    The package documents itself in two incompatible styles: 56 `Attributes:` / `Parameters:`
+    / `Returns:` / `Methods:` sections across seven files use Google style, while everything
+    else uses numpydoc. Publishing the API reference papered over this by enabling
+    `sphinx.ext.napoleon` alongside `numpydoc` — each extension renders the style it handles
+    best — but that is a workaround, not a fix. See the box below.
 
 ### Phase 5 — Surface the strengths
 
-19. **Publish the API docs.** Sphinx + `numpydoc` + `autodoc` on GitHub Pages. The docstrings
+20. **Publish the API docs.** Sphinx + `numpydoc` + `autodoc` on GitHub Pages. The docstrings
     are already exceptional; rendering them costs an afternoon and is the single biggest
-    increase in *perceived* quality available here.
-20. **Mark the README Roadmap as aspirational**, fix the trailing `:::`, and correct the
+    increase in *perceived* quality available here. *(Done — see below.)*
+21. **Mark the README Roadmap as aspirational**, fix the trailing `:::`, and correct the
     `noisy.py` docstring (it says "pentatonic scale"; it writes noises).
-21. **Add `CONTRIBUTING.md`**, a `legacy/` deprecation note, and backfill the changelog.
-22. **Delete stale `dist/` artifacts.**
+22. **Add `CONTRIBUTING.md`**, a `legacy/` deprecation note, and backfill the changelog.
+23. **Delete stale `dist/` artifacts.**
+
+---
+
+## Tracked follow-up: one docstring style
+
+**The package documents itself in two incompatible styles.** Most of it is numpydoc —
+`Parameters` / `Returns` / `See Also` / `Examples` / `Notes` / `References` under dashed
+underlines, with the equation and the MASS citation. But `music.structures` and
+`music.legacy` use Google style — `Attributes:`, `Parameters:`, `Returns:`, `Methods:` with
+a trailing colon — across **56 sections in seven files**:
+
+```
+music/structures/permutations.py        music/legacy/classes.py
+music/structures/peals/plain_changes.py music/legacy/tables.py
+music/structures/peals/peals.py         music/legacy/IteratorSynth.py
+music/structures/peals/base.py
+```
+
+numpydoc cannot parse Google style, so those entries rendered as mangled definition lists
+and block quotes. Publishing the API reference resolved that by enabling
+`sphinx.ext.napoleon` ahead of `numpydoc` with `napoleon_numpy_docstring = False`, so each
+extension handles the style it renders best. That cleared every `structures/` and `peals/`
+warning at once.
+
+**That is a workaround, not a fix.** It leaves the project with two documentation dialects,
+a second Sphinx extension carried purely for the older one, and a trap for anyone adding a
+docstring — there is no single correct style to copy. Converting the 56 sections to numpydoc
+would remove the `napoleon` dependency and the ambiguity together.
+
+It is deliberately not bundled with the docs work: it touches seven files, is mechanical but
+not automatic, and would have buried the four genuinely broken docstrings that publishing
+uncovered. Doing it separately keeps both diffs reviewable.
+
+Two things make it safer than it looks. `sphinx-build -W` now fails CI on a malformed
+docstring, so a botched conversion cannot land quietly. And the conversion can proceed one
+file at a time, dropping `napoleon` only once the last Google-style section is gone.
 
 ---
 

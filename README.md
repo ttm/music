@@ -145,7 +145,9 @@ music.core.io.write_wav_mono(music_)
 
 ## Coding conventions
 
-The code follows [PEP 8 conventions](https://peps.python.org/pep-0008/).
+The code follows [PEP 8 conventions](https://peps.python.org/pep-0008/), checked by `ruff` at 79 columns.
+
+Docstrings should be written in [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) style. Note that `music.structures` and `music.legacy` currently use Google style instead — converting them is a tracked follow-up, so please don't copy that pattern into new code.
 
 For a better understanding of each function, the math behind it and see examples of their use, you can read their docstring — or the rendered [API reference](https://ttm.github.io/music/api.html).
 

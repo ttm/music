@@ -319,6 +319,61 @@ Ordered by return on effort. Phase 1 is roughly a day and removes every "Terribl
 
 ---
 
+## Open decisions
+
+Two changes on `fix/broken-exports` alter behaviour a caller could depend on.
+Neither is a bug fix that speaks for itself, so both are recorded here and in
+the changelog's "Needs a decision before release" section rather than being
+allowed to land silently.
+
+### 1. `localize_linear()` — finish it, or leave it removed?
+
+It is no longer re-exported from `music`, and raises `NotImplementedError`.
+
+It never worked: it crashed on its own documented defaults, and its body
+carries the comment *"FIXME: here we have missing the correct use of the
+variables calculated and also the return statement"*. So nothing can regress
+— but it is still an API removal, and the alternative is to finish it.
+
+The missing piece is a design decision, not an implementation detail. The
+function computes the per-sample interaural distances correctly; what was
+never settled is how the resulting **time-varying** interaural time difference
+should be realised:
+
+| Option | Approach | Trade-off |
+|---|---|---|
+| **A** | Whole-sample index warping, as `note_with_doppler` already does | Consistent with existing code; quantises the delay to whole samples |
+| **B** | Fractional-delay interpolation | Smoother, truer to the model; new machinery, and needs its own tests |
+| **C** | Leave removed | Zero risk; the capability stays absent |
+
+`localize()` covers a static position and `note_with_doppler()` a moving
+source, so C loses less than it appears to. **Recommendation: C for this
+release, then A or B deliberately.** Whichever is chosen, the fidelity tests
+give a template for asserting the delay against the ear geometry.
+
+### 2. The WAV quantiser's scale changed
+
+Writing previously scaled by `2 ** (bit_depth - 1) - 1` while `read_wav`
+divided by `2 ** (bit_depth - 1)`. A write/read round trip therefore lost
+about 1.5 quantisation steps rather than the half step quantising actually
+costs — a systematic one-LSB gain error on every WAV the package had ever
+written.
+
+The writer now uses the reader's scale, so `-1.0`, `-0.5`, `0.0` and `0.5`
+survive a round trip exactly; only `+1.0` clips by one step, two's complement
+having one fewer positive value than negative.
+
+**The consequence to weigh:** files written from now on differ from files
+written before by one LSB of gain — about 0.0003 dB, inaudible, but the bytes
+differ. Anyone byte-comparing against previously rendered WAVs will see a
+diff. `tests/test_fidelity.py` now pins the unity-gain property, so this
+cannot silently revert.
+
+**Recommendation: keep it.** An extreme-fidelity package should not lose gain
+on a round trip, and the error was systematic rather than incidental.
+
+---
+
 ## Summary
 
 The distance between this package's **documentation quality** and its **execution quality** is

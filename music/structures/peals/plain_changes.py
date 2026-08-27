@@ -1,8 +1,10 @@
 """
 Present plain changes as swaps and act in domains to make peals.
 
-Reference:
-- http://www.gutenberg.org/files/18567/18567-h/18567-h.htm
+References
+----------
+.. [1] Stedman's *Campanalogia*, and the change-ringing survey at
+       http://www.gutenberg.org/files/18567/18567-h/18567-h.htm
 """
 
 import sympy
@@ -18,13 +20,20 @@ class PlainChanges:
         """
         Initializes a PlainChanges object.
 
-        Parameters:
-            nelements (int, optional): The number of elements. Defaults to 4.
-            nhunts (int, optional): The number of hunts. Defaults to None.
-            hunts (dict, optional): The hunts dictionary. Defaults to None.
+        Parameters
+        ----------
+        nelements : int, optional
+            The number of elements. Defaults to 4.
+        nhunts : int, optional
+            The number of hunts. Defaults to None.
+        hunts : dict, optional
+            The hunts dictionary. Defaults to None.
 
-        Raises:
-            ValueError: If the number of hunts is invalid.
+        Raises
+        ------
+        ValueError
+            If the number of hunts is invalid.
+
         """
         self.peal_direct = None
         self.peal_sequence = None
@@ -53,11 +62,16 @@ class PlainChanges:
         rows and ``PlainChanges(8)`` produced 224 of 40320. Above it nothing
         is gained, which is what the warning in initialize_hunts reports.
 
-        Parameters:
-            nelements (int): The number of elements.
+        Parameters
+        ----------
+        nelements : int
+            The number of elements.
 
-        Returns:
-            int: The saturating number of hunts.
+        Returns
+        -------
+        int
+            The saturating number of hunts.
+
         """
         return max(1, nelements - 3)
 
@@ -65,18 +79,26 @@ class PlainChanges:
         """
         Initializes the hunts dictionary.
 
-        Parameters:
-            nelements (int, optional): The number of elements. Defaults to 4.
-            nhunts (int, optional): The number of hunts. Defaults to the
-                value of saturating_hunts(nelements), which is the number
-                that makes the peal traverse every permutation exactly once.
-                Pass a smaller value deliberately for a shorter peal.
+        Parameters
+        ----------
+        nelements : int, optional
+            The number of elements. Defaults to 4.
+        nhunts : int, optional
+            The number of hunts. Defaults to the
+            value of saturating_hunts(nelements), which is the number
+            that makes the peal traverse every permutation exactly once.
+            Pass a smaller value deliberately for a shorter peal.
 
-        Returns:
-            dict: The hunts dictionary.
+        Returns
+        -------
+        dict
+            The hunts dictionary.
 
-        Raises:
-            ValueError: If the number of hunts is invalid.
+        Raises
+        ------
+        ValueError
+            If the number of hunts is invalid.
+
         """
         saturating = self.saturating_hunts(nelements)
         if not nhunts:
@@ -103,12 +125,18 @@ class PlainChanges:
         """
         Performs a peal.
 
-        Parameters:
-            nelements (int): The number of elements.
-            hunts (dict, optional): The hunts dictionary. Defaults to None.
+        Parameters
+        ----------
+        nelements : int
+            The number of elements.
+        hunts : dict, optional
+            The hunts dictionary. Defaults to None.
 
-        Returns:
-            dict: The updated hunts dictionary.
+        Returns
+        -------
+        dict
+            The updated hunts dictionary.
+
         """
         if hunts is None:
             hunts = self.initialize_hunts(nelements)
@@ -129,14 +157,22 @@ class PlainChanges:
         """
         Performs a change procedure.
 
-        Parameters:
-            nelements (int): The number of elements.
-            hunts (dict): The hunts dictionary.
-            hunt (str, optional): The current hunt. Defaults to None.
+        Parameters
+        ----------
+        nelements : int
+            The number of elements.
+        hunts : dict
+            The hunts dictionary.
+        hunt : str, optional
+            The current hunt. Defaults to None.
 
-        Returns:
-            Permutation: The permutation of the change.
-            dict: The updated hunts dictionary.
+        Returns
+        -------
+        Permutation
+            The permutation of the change.
+        dict
+            The updated hunts dictionary.
+
         """
         if hunt is None:
             hunt = "hunt0"
@@ -176,12 +212,18 @@ class PlainChanges:
         """
         Acts in a domain using a peal.
 
-        Parameters:
-            domain (list, optional): The domain. Defaults to None.
-            peal (list, optional): The peal. Defaults to None.
+        Parameters
+        ----------
+        domain : list, optional
+            The domain. Defaults to None.
+        peal : list, optional
+            The peal. Defaults to None.
 
-        Returns:
-            list: The acted domain.
+        Returns
+        -------
+        list
+            The acted domain.
+
         """
         if domain is None:
             domain = list(range(self.nelements))
@@ -193,8 +235,11 @@ class PlainChanges:
         """
         Acts in all peals using a domain.
 
-        Parameters:
-            domain (list, optional): The domain. Defaults to None.
+        Parameters
+        ----------
+        domain : list, optional
+            The domain. Defaults to None.
+
         """
         if domain is None:
             domain = list(range(self.nelements))

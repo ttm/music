@@ -14,10 +14,14 @@ def print_peal(peal, hunts=(0, 1)):
     """
     Prints a peal with colored numbers. Hunts have also colored background.
 
-    Parameters:
-        peal (list): The peal to print.
-        hunts (list, optional): The indices of hunted elements. Defaults to
-                                [0, 1].
+    Parameters
+    ----------
+    peal : list
+        The peal to print.
+    hunts : list, optional
+        The indices of hunted elements. Defaults to
+        [0, 1].
+
     """
     colors = 'yellow', 'magenta', 'green', 'red', 'blue', 'white', 'grey', \
         'cyan'
@@ -36,12 +40,14 @@ class Peals(InterestingPermutations):
     """
     Uses permutations to make peals and represents peals as permutations.
 
-    Notes:
-        Core reference:
-        - http://www.gutenberg.org/files/18567/18567-h/18567-h.htm
+    Notes
+    -----
+    Core reference:
+    - http://www.gutenberg.org/files/18567/18567-h/18567-h.htm
 
-        Also check peal rules, such as conditions for trueness.
-        - Wikipedia seemed ok last time.
+    Also check peal rules, such as conditions for trueness.
+    - Wikipedia seemed ok last time.
+
     """
 
     def __init__(self):
@@ -58,21 +64,28 @@ class Peals(InterestingPermutations):
     def transpositions_peal(self, permutation, peal_name="transposition_peal"):
         """Generates a peal from transpositions of a permutation.
 
-        Parameters:
-            permutation (Permutation): The permutation to generate
-                                       transpositions from.
-            peal_name (str, optional): The name of the peal. Defaults to
-                                       "transposition_peal".
+        Parameters
+        ----------
+        permutation : Permutation
+            The permutation to generate
+            transpositions from.
+        peal_name : str, optional
+            The name of the peal. Defaults to
+            "transposition_peal".
 
-        Returns:
-            list: The transpositions, as permutations over the same domain.
+        Returns
+        -------
+        list
+            The transpositions, as permutations over the same domain.
 
-        Notes:
-            sympy's transpositions() yields index pairs, which are cycle
-            notation rather than array form: Permutation((0, 1)) is the
-            identity and Permutation((0, 2)) raises. The pairs are expanded
-            with the original size, so composing them in reverse rebuilds
-            the permutation they came from.
+        Notes
+        -----
+        sympy's transpositions() yields index pairs, which are cycle
+        notation rather than array form: Permutation((0, 1)) is the
+        identity and Permutation((0, 2)) raises. The pairs are expanded
+        with the original size, so composing them in reverse rebuilds
+        the permutation they came from.
+
         """
         self.peals[peal_name] = [
             Permutation(*pair, size=permutation.size)

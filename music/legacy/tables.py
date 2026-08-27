@@ -14,8 +14,11 @@ class Basic:
         """
         Initializes a Basic object.
 
-        Parameters:
-            size (int, optional): The size of the tables. Defaults to 2048.
+        Parameters
+        ----------
+        size : int, optional
+            The size of the tables. Defaults to 2048.
+
         """
         self.size = size
         self.make_tables(size)
@@ -24,8 +27,11 @@ class Basic:
         """
         Creates sine, triangle, square, and saw wave periods.
 
-        Parameters:
-            size (int): The size of the tables.
+        Parameters
+        ----------
+        size : int
+            The size of the tables.
+
         """
         self.sine = np.sin(np.linspace(0, 2 * np.pi, size, endpoint=False))
         self.saw = np.linspace(-1, 1, size)

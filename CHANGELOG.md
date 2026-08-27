@@ -107,6 +107,13 @@ deliberate, all are tracked, and none should reach a release unreviewed.
   exactly representable levels survive a round trip unchanged.
 
 ### Changed
+- Every docstring is numpydoc now. `music.structures`, `music.legacy` and
+  `music.tables` used Google style -- `Attributes:`, `Parameters:`, `Returns:`
+  with a trailing colon -- across 60 sections in eight files, which numpydoc
+  cannot parse; publishing the API reference had worked around it by enabling
+  `sphinx.ext.napoleon`. That extension is now removed, and the strict
+  (`-W`) documentation build passing without it is the proof the conversion is
+  complete: numpydoc alone would otherwise mangle any section left behind.
 - `requirements.txt` now installs from `pyproject.toml` rather than repeating
   it. The two had drifted: it pinned `setuptools==69.0.2` (a build tool, not a
   runtime dependency, and the source of three open Dependabot alerts — two
@@ -129,11 +136,7 @@ deliberate, all are tracked, and none should reach a release unreviewed.
   reference groups all 69 exports by role rather than alphabetically, and CI
   builds it with `-W`, so a malformed docstring fails rather than rendering
   wrong. Fixing the docstrings this surfaced is listed under Fixed below.
-  `sphinx.ext.napoleon` is enabled alongside `numpydoc` because
-  `music.structures` and `music.legacy` document themselves in Google style —
-  56 sections across seven files. That is a workaround; converting them to
-  numpydoc would let napoleon be dropped, and is tracked in `ASSESSMENT.md`
-  under "Tracked follow-up: one docstring style".
+  The package now uses one docstring style throughout.
 - `music/singing/paths.py`, a single source of truth for where the engine
   lives and what it needs. The path was previously computed twice, in
   `bootstrap.py` and in `perform.py`, both at import time.

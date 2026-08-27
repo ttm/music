@@ -4,17 +4,19 @@ This module contains the `PrimaryTables` class, which allows the creation of
 sine, triangle, square, and saw wave periods with a given number of samples.
 It also provides a method to visualize these waveform tables.
 
-Example:
-    To create and visualize waveform tables:
+Examples
+--------
+To create and visualize waveform tables:
 
-    >>> from music import PrimaryTables
-    >>> PrimaryTables.__module__  # confirm correct package name
-    'music.tables'
-    >>> primary_tables = PrimaryTables()
-    >>> primary_tables.draw_tables()
+>>> from music import PrimaryTables
+>>> PrimaryTables.__module__  # confirm correct package name
+'music.tables'
+>>> primary_tables = PrimaryTables()
+>>> primary_tables.draw_tables()
 
-Classes:
-    - PrimaryTables: Provides primary tables for waveform lookup.
+Classes in this module:
+
+* ``PrimaryTables`` -- provides primary tables for waveform lookup.
 """
 import numpy as np
 import pylab as p

@@ -42,13 +42,35 @@ class PlainChanges:
         self.hunts = hunts
         self.nelements = nelements
 
+    @staticmethod
+    def saturating_hunts(nelements):
+        """
+        Number of hunts that yields a peal over the whole symmetric group.
+
+        For ``nelements`` bells this is ``nelements - 3``, floored at one.
+        Below it the peal is a proper subset of the permutations: with the
+        old default of two hunts, ``PlainChanges(6)`` produced 120 of the 720
+        rows and ``PlainChanges(8)`` produced 224 of 40320. Above it nothing
+        is gained, which is what the warning in initialize_hunts reports.
+
+        Parameters:
+            nelements (int): The number of elements.
+
+        Returns:
+            int: The saturating number of hunts.
+        """
+        return max(1, nelements - 3)
+
     def initialize_hunts(self, nelements=4, nhunts=None):
         """
         Initializes the hunts dictionary.
 
         Parameters:
             nelements (int, optional): The number of elements. Defaults to 4.
-            nhunts (int, optional): The number of hunts. Defaults to None.
+            nhunts (int, optional): The number of hunts. Defaults to the
+                value of saturating_hunts(nelements), which is the number
+                that makes the peal traverse every permutation exactly once.
+                Pass a smaller value deliberately for a shorter peal.
 
         Returns:
             dict: The hunts dictionary.
@@ -56,17 +78,15 @@ class PlainChanges:
         Raises:
             ValueError: If the number of hunts is invalid.
         """
+        saturating = self.saturating_hunts(nelements)
         if not nhunts:
-            if nelements > 4:
-                nhunts = 2
-            else:
-                nhunts = 1
+            nhunts = saturating
         assert nelements > 0
         if nhunts > nelements:
             raise ValueError("There cannot be more hunts than elements")
-        elif nhunts > nelements - 3:
+        elif nhunts > saturating:
             warnings.warn(
-                f"peals are the same if there are {nhunts - (nelements - 3)} "
+                f"peals are the same if there are {nhunts - saturating} "
                 "hunts less")
         hunts_dict = {}
         for hunt in range(nhunts):

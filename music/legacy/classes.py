@@ -1,5 +1,7 @@
 """Utility classes supporting the legacy synthesizer API."""
 
+from typing import Any
+
 import numpy as n
 import logging
 
@@ -71,6 +73,38 @@ def ADV(note_dict={}, adsr_dict={}):
 
 
 class Being:
+    """A configurable sequence walker that renders notes.
+
+    Attributes are assigned from outside as well as within: the examples set
+    ``perms``, ``domain``, ``curseq`` and the parameter sequences directly
+    before calling ``walk`` or ``render``. They are declared here so that
+    surface is discoverable rather than implicit.
+    """
+
+    # startBeing seeds these as lists; mkArray replaces them with arrays.
+    dscale: Any
+    d_: Any
+    f_: Any
+    fv_: Any
+    nu_: Any
+    tab_: Any
+    A_: Any
+    D_: Any
+    S_: Any
+    R_: Any
+    total_notes: int
+    resources: dict
+
+    # Set by the caller, or by walk/stay, before rendering.
+    grid: Any
+    fgrid: Any
+    pointer: int
+    fpointer: int
+    seqsize: int
+    domain: Any
+    curseq: str
+    perms: Any
+
     def __init__(self):
         rhythm = [1.]  # repetition of one second
         rhythm2 = [1/2, 1/2]  # repetition of one second

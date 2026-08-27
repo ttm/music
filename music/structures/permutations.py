@@ -50,18 +50,22 @@ class InterestingPermutations:
         Generates permutations with full symmetry.
 
     """
+    # Populated by the get_* methods that __init__ calls. vertex_mirrors and
+    # edge_mirrors stay None for an odd number of elements, which have
+    # neither, so those keep their placeholder.
+    permutations_by_sizes: list
+    permutations: list
+    neighbor_swaps: list
+    swaps_by_stepsizes: list
+    swaps_as_comes: list
+    swaps: list
+    rotations: list
+    mirrors: list
+    dihedral: list
+
     def __init__(self, nelements=4, method="dimino"):
-        self.permutations_by_sizes = None
-        self.permutations = None
-        self.neighbor_swaps = None
-        self.swaps_by_stepsizes = None
-        self.swaps_as_comes = None
         self.vertex_mirrors = None
         self.edge_mirrors = None
-        self.swaps = None
-        self.rotations = None
-        self.mirrors = None
-        self.dihedral = None
         self.alternations_by_sizes = None
         self.alternations_complement = None
         self.alternations = None

@@ -68,7 +68,7 @@ def iir(sonic_vector, a, b):
 
     """
     signal = sonic_vector
-    signal_ = []
+    signal_: list = []
     for i in range(len(signal)):
         samples_a = signal[i::-1][:len(a)]
         a_coeffs = a[:i + 1]

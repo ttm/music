@@ -1,5 +1,5 @@
 """Module for the synthesis of noises and silences."""
-from numbers import Number
+from numbers import Real
 import numpy as np
 import music
 
@@ -52,6 +52,7 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
         length = number_of_samples
     else:
         length = int(duration * sample_rate)
+    prog: float
     if noise_type == "white":
         prog = 0
     elif noise_type == "pink":
@@ -64,8 +65,10 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
         prog = 6
     elif noise_type == "black":
         prog = -12
-    elif isinstance(noise_type, Number):
-        prog = noise_type
+    elif isinstance(noise_type, Real):
+        # Real rather than Number: a complex gain per octave is meaningless,
+        # and float() would reject it anyway.
+        prog = float(noise_type)
     else:
         raise ValueError(
             "Set ntype to a number or one of the following strings: "

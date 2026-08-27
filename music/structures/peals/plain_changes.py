@@ -243,6 +243,7 @@ class PlainChanges:
         """
         if domain is None:
             domain = list(range(self.nelements))
+        assert self.peals is not None
         acted_peals = {}
         for peal in self.peals:
             acted_peals[peal + "_acted"] = [i(domain)

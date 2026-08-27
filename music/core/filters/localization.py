@@ -273,7 +273,6 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
         anglesr = np.copy(angles)
     else:
         # limit the number of coeffs considered
-        s = []
         energy = np.cumsum(norms[:max_coef] ** 2)
         p = 0.01
         cutoff = energy.max() * (1 - p)
@@ -283,9 +282,16 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
             foo = .3
         else:
             foo = .2
-        maxsize = len(sonic_vector) + sample_rate * foo * np.sin(
-                abs(theta_)) / speed
-        s = np.zeros((2, maxsize))
+        # A sample count, so a whole number of them: it sizes the buffers
+        # below, all of which np.zeros refuses to build from a float.
+        maxsize = int(np.ceil(
+            len(sonic_vector)
+            + sample_rate * foo * np.sin(abs(theta_)) / speed
+        ))
+        # Annotated without a shape: it is rebuilt by np.vstack further
+        # down, and numpy's stubs narrow np.zeros((2, n)) to a 2-tuple shape
+        # that the vstack result does not match.
+        s: np.ndarray = np.zeros((2, maxsize))
 
     if method == "ifft":
         # ITD implies a phase change

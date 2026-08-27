@@ -257,7 +257,7 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
         [np.array(wt) for wt in row]
         for row in waveform_tables
     ]
-    t_ = []
+    t_: list = []
     if number_of_samples:
         for i, ns in enumerate(number_of_samples):
             t_.append([])

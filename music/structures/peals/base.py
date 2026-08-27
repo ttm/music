@@ -56,6 +56,11 @@ class GenericPeal:
                 f"no peal named {peal!r}; defined: {sorted(self.peals)}"
             )
         if domain is None:
+            if self.nelements is None:
+                raise ValueError(
+                    "nelements has not been set, so no default domain can "
+                    "be built; pass domain explicitly"
+                )
             domain = list(range(self.nelements))
         return [i(domain) for i in self.peals[peal]]
 
@@ -74,6 +79,11 @@ class GenericPeal:
                 "no peals have been defined on this object yet"
             )
         if domain is None:
+            if self.nelements is None:
+                raise ValueError(
+                    "nelements has not been set, so no default domain can "
+                    "be built; pass domain explicitly"
+                )
             domain = list(range(self.nelements))
         acted_peals = {}
         for peal in self.peals:

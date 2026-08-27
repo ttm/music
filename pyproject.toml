@@ -99,3 +99,7 @@ select = ['E', 'W', 'F']
 # fail to parse numpy's own stubs when run on 3.12+.
 files = ['music']
 ignore_missing_imports = true
+# Most of this package is unannotated, and without this mypy skips those
+# function bodies entirely -- it was reporting success while inspecting
+# about a sixth of the code.
+check_untyped_defs = true

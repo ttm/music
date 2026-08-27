@@ -206,3 +206,56 @@ def test_absent_sonic_vector_still_yields_a_bare_envelope(name):
     omitted = np.asarray(function())
     assert np.asarray(function(sonic_vector=0)).shape == omitted.shape
     assert np.asarray(function(sonic_vector=None)).shape == omitted.shape
+
+
+# --------------------------------------------------------------------------
+# Non-default branches
+# --------------------------------------------------------------------------
+
+# The sweep above calls each export with its documented defaults, which left
+# whole branches untested: the mono path of a function that defaults to
+# stereo, and the alternative of a `method` parameter. Each of the cases
+# below was broken.
+
+@pytest.mark.parametrize("stereo", [True, False])
+def test_note_with_vibrato_seq_localization_renders_both_channel_modes(
+        stereo):
+    """Regression: the mono branch raised AttributeError, having assigned a
+    per-segment value over the accumulator it then appended to. Two further
+    faults sat behind it -- the `durations` parameter clobbered by a local,
+    and `extend` where the stereo branch appends."""
+    out = music.note_with_vibrato_seq_localization(stereo=stereo)
+    assert out.ndim == (2 if stereo else 1)
+    assert np.isfinite(out).all()
+    assert out.size > 0
+
+
+@pytest.mark.parametrize("method", ["ifft", "brute"])
+def test_localize2_supports_both_documented_methods(method):
+    """Regression: 'brute' computed its buffer size as a float and np.zeros
+    refused it."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        out = music.localize2(method=method)
+    assert out.shape[0] == 2
+    assert np.isfinite(out).all()
+
+
+def test_localize2_rejects_an_unknown_method():
+    with pytest.raises(ValueError, match="only methods implemented"):
+        music.localize2(method="telepathy")
+
+
+@pytest.mark.parametrize("stereo", [True, False])
+def test_note_with_doppler_renders_both_channel_modes(stereo):
+    out = music.note_with_doppler(stereo=stereo, number_of_samples=2000)
+    assert out.ndim == (2 if stereo else 1)
+    assert np.isfinite(out).all()
+
+
+def test_noise_accepts_a_numeric_gain_per_octave():
+    """The docstring documents ntype=3.5 as 3.5 dB per octave."""
+    np.random.seed(0)
+    out = music.noise(3.5, duration=0.5)
+    assert out.size > 0
+    assert np.isfinite(out).all()

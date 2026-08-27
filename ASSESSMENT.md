@@ -298,8 +298,10 @@ Ordered by return on effort. Phase 1 is roughly a day and removes every "Terribl
 14. **Replace all 16 `type(x) in (np.ndarray, list)` checks** with
     `sonic_vector is not None` plus `np.asarray()`, and change the sentinel defaults from `0`
     to `None`. This eliminates a whole class of silent-wrong-answer bugs.
-15. **Collapse the three waveform-table implementations to one** (`utils.WAVEFORM_*` is the
-    canonical set); have `PrimaryTables` and `legacy/tables.py` delegate to it.
+15. **Collapse the three waveform-table implementations to one.** *(Done — though not as
+    sketched here. `utils.WAVEFORM_*` turned out to be the *wrong* set: measured against the
+    continuous waveforms, its triangle and the sawtooth in all three copies were the drifted
+    ones. All three now delegate to `music.utils.waveform_table`, which is exact.)*
 16. **Move the module-level RNG defaults into the function bodies** (`if sonic_vector is None:
     ...`) and drop 2.4 MB and the import cost.
 17. **Remove `exec` from `CanonicalSynth`** — explicit attribute assignment restores ~40 type

@@ -16,7 +16,11 @@ import pytest
 
 import music
 from music.core.functions import normalize_mono
-from music.utils import WAVEFORM_SINE, WAVEFORM_TRIANGULAR
+from music.legacy.tables import Basic
+from music.tables import PrimaryTables
+from music.utils import (WAVEFORMS, WAVEFORM_SAWTOOTH, WAVEFORM_SINE,
+                         WAVEFORM_SQUARE, WAVEFORM_TRIANGULAR,
+                         waveform_table)
 
 SAMPLE_RATE = 44100
 
@@ -237,3 +241,81 @@ def test_stereo_wav_round_trip_preserves_channel_balance(tmp_path):
 
     ratio = np.abs(restored[0]).max() / np.abs(restored[1]).max()
     assert ratio == pytest.approx(2.0, rel=0.01)
+
+
+# --------------------------------------------------------------------------
+# Waveform lookup tables
+# --------------------------------------------------------------------------
+
+def _ideal(kind, size):
+    """The continuous waveform sampled at phase k / size."""
+    phase = np.arange(size) / size
+    return {
+        "sine": np.sin(2 * np.pi * phase),
+        "sawtooth": 2 * phase - 1,
+        "square": np.where(phase < .5, -1.0, 1.0),
+        "triangle": np.where(phase <= .5, -1 + 4 * phase, 3 - 4 * phase),
+    }[kind]
+
+
+@pytest.mark.parametrize("kind", WAVEFORMS)
+@pytest.mark.parametrize("size", [4, 16, 15, 2048, 2049, 16384])
+def test_waveform_table_is_exact_at_any_size(kind, size):
+    """Each table must equal the continuous waveform sampled at its phase.
+
+    Regression: the tables were built by halves. That made the sawtooth
+    step 2/(size-1) instead of 2/size, gave the triangle a flat two-sample
+    top that never reached full amplitude, and returned one sample fewer
+    than asked for at odd sizes.
+    """
+    table = waveform_table(kind, size)
+
+    assert len(table) == size
+    assert np.allclose(table, _ideal(kind, size), atol=1e-15)
+    assert table.min() >= -1.0 and table.max() <= 1.0
+
+
+@pytest.mark.parametrize("kind", WAVEFORMS)
+def test_waveform_table_starts_at_the_bottom_of_its_period(kind):
+    """Every table opens at phase zero, which is -1 for all but the sine."""
+    table = waveform_table(kind, 1024)
+    expected = 0.0 if kind == "sine" else -1.0
+    assert table[0] == pytest.approx(expected, abs=1e-15)
+
+
+def test_triangle_reaches_full_amplitude_at_its_midpoint():
+    """Regression: the old triangle peaked at 1 - 2/size, never at 1."""
+    size = 1024
+    table = waveform_table("triangle", size)
+    assert table[size // 2] == pytest.approx(1.0, abs=1e-15)
+    assert table.max() == pytest.approx(1.0, abs=1e-15)
+
+
+def test_sawtooth_ramps_by_exactly_one_period_per_table():
+    """Consecutive samples rise by 2/size, so one period spans the table."""
+    size = 1024
+    table = waveform_table("sawtooth", size)
+    assert np.allclose(np.diff(table), 2 / size)
+
+
+def test_every_table_source_agrees():
+    """Regression: three separate implementations of the same four tables
+    had drifted apart at the triangle's peak sample."""
+    size = len(WAVEFORM_TRIANGULAR)
+    tables = PrimaryTables(size=size)
+    legacy = Basic(size=size)
+
+    assert np.array_equal(tables.sine, WAVEFORM_SINE)
+    assert np.array_equal(tables.saw, WAVEFORM_SAWTOOTH)
+    assert np.array_equal(tables.square, WAVEFORM_SQUARE)
+    assert np.array_equal(tables.triangle, WAVEFORM_TRIANGULAR)
+
+    for name in ("sine", "saw", "square", "triangle"):
+        assert np.array_equal(getattr(legacy, name), getattr(tables, name))
+
+
+def test_waveform_table_rejects_nonsense():
+    with pytest.raises(ValueError, match="unknown waveform"):
+        waveform_table("ocarina")
+    with pytest.raises(ValueError, match="size must be positive"):
+        waveform_table("sine", 0)

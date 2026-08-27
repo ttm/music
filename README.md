@@ -100,7 +100,7 @@ Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) 
 * [isynth](https://github.com/ttm/music/tree/master/examples/isynth.py) also uses a synth class, but of a different kind, [`IteratorSynth`](https://github.com/ttm/music/tree/master/music/legacy/classes.py), that iterates through arbitrary lists of variables.
 * [singing_demo](https://github.com/ttm/music/tree/master/examples/singing_demo.py): demonstrates `music.singing.setup_engine()` and `music.singing.make_test_song()` to render a short sung phrase.
 * [binaural_beats](https://github.com/ttm/music/tree/master/examples/binaural_beats.py): generates binaural beats using two pure tones with tremolo for relaxation or focus.
-* The `music.singing` module provides basic text-to-speech utilities. Run `music.singing.setup_engine()` once to clone the eCantorix engine before using these features.
+* The `music.singing` module provides basic text-to-speech utilities. Run `music.singing.setup_engine()` once to clone the [eCantorix](https://github.com/ttm/ecantorix) engine before using these features. It is cloned into your user cache directory; set `MUSIC_ECANTORIX_DIR` to put it elsewhere. Because eCantorix is a Perl program driving espeak through a Makefile, it also needs `git`, `make`, `perl` and `espeak` installed on the system — `setup_engine()` will tell you which are missing.
 
 ## Package structure
 

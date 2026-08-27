@@ -149,3 +149,100 @@ def test_interesting_permutations_are_permutations_of_the_domain():
     for family in families:
         for permutation in family:
             assert max(permutation.array_form or [0]) < 4
+
+
+# --------------------------------------------------------------------------
+# Peals: acting permutations on a domain
+# --------------------------------------------------------------------------
+
+def test_transpositions_peal_decomposes_into_real_transpositions():
+    """Regression: this built each transposition with `Permutation(pair)`,
+    reading a cycle as an array form. `Permutation((0, 1))` is the identity
+    and `Permutation((0, 2))` raises outright, so the method could not
+    produce a correct peal for any permutation."""
+    from functools import reduce
+
+    peals = music.Peals()
+    permutation = Permutation([2, 0, 1, 4, 3])
+    built = peals.transpositions_peal(permutation)
+
+    assert built, "expected at least one transposition"
+    for transposition in built:
+        assert transposition.size == permutation.size
+        assert len(transposition.support()) == 2, "not a transposition"
+
+    # sympy composes transpositions right to left.
+    product = reduce(lambda a, b: a * b, reversed(built),
+                     Permutation(size=permutation.size))
+    assert product == permutation
+
+
+def test_transpositions_peal_is_stored_under_its_name():
+    """Regression: `peals` was initialised to a list, so assigning by name
+    raised TypeError. Everything else treats it as a mapping."""
+    peals = music.Peals()
+    assert isinstance(peals.peals, dict)
+
+    peals.transpositions_peal(Permutation([1, 0, 2]), peal_name="mine")
+    assert "mine" in peals.peals
+
+
+def _generic_peal_with(peals_by_name, nelements):
+    """A GenericPeal populated by hand.
+
+    Nothing in the package inherits GenericPeal — PlainChanges defines its
+    own act() — so it is exercised directly.
+    """
+    holder = music.GenericPeal()
+    holder.peals = peals_by_name
+    holder.nelements = nelements
+    return holder
+
+
+def test_acting_a_peal_permutes_the_domain():
+    """A peal acted on a domain yields one arrangement of it per row."""
+    permutation = Permutation([2, 0, 1])
+    source = music.Peals()
+    source.transpositions_peal(permutation, peal_name="p")
+    holder = _generic_peal_with(source.peals, permutation.size)
+
+    rows = holder.act("p")
+    assert len(rows) == len(source.peals["p"])
+    for row in rows:
+        assert sorted(row) == list(range(permutation.size))
+
+
+def test_act_all_records_every_peal():
+    source = music.Peals()
+    source.transpositions_peal(Permutation([2, 0, 1]), peal_name="one")
+    source.transpositions_peal(Permutation([1, 0, 2]), peal_name="two")
+    holder = _generic_peal_with(source.peals, 3)
+
+    holder.act_all()
+    assert set(holder.acted_peals) == {"one_acted", "two_acted"}
+    assert holder.domain == [0, 1, 2]
+
+
+def test_acting_before_any_peal_exists_says_so():
+    """Regression: this surfaced as `'NoneType' object cannot be interpreted
+    as an integer`, which says nothing about what went wrong."""
+    empty = music.GenericPeal()
+    with pytest.raises(ValueError, match="no peals have been defined"):
+        empty.act("anything")
+    with pytest.raises(ValueError, match="no peals have been defined"):
+        empty.act_all()
+
+
+def test_acting_an_unknown_peal_lists_the_known_ones():
+    source = music.Peals()
+    source.transpositions_peal(Permutation([2, 0, 1]), peal_name="known")
+    holder = _generic_peal_with(source.peals, 3)
+    with pytest.raises(KeyError, match="known"):
+        holder.act("unknown")
+
+
+@pytest.mark.parametrize("method", ["twenty_all_over", "an_eight_and_forty"])
+def test_unimplemented_peals_say_so(method):
+    """These are honest placeholders; keep them honest."""
+    with pytest.raises(NotImplementedError):
+        getattr(music.Peals(), method)()

@@ -43,8 +43,6 @@ def localize(sonic_vector=None, theta=0, distance=0, x=.1, y=.01,
     --------
     reverb : A reverberator.
     localize2 : a less naive implementation of localization by ITD and IID.
-    # FIXME: hrtf?
-    hrtf : performs localization by means of a Head Related Transfer Function.
 
     Examples
     --------
@@ -57,10 +55,14 @@ def localize(sonic_vector=None, theta=0, distance=0, x=.1, y=.01,
 
     Notes
     -----
+    A Head Related Transfer Function would localize more convincingly than
+    either this or localize2; none is implemented yet.
+
     Uses the most naive ITD and IID calculations as described in [1]. A less
     naive method is implemented in localize2(). Nonetheless, if dist is small
     enough (e.g. <.3), the perception of theta occurs and might be used.
     The advantages of this method are:
+
       - It is fast.
       - It is simple.
       - It is true to sound propagation phenomenon (although it does not
@@ -217,8 +219,6 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
     reverb : A reverberator.
     localize : a more naive and fast implementation of localization by ITD and
                IID.
-    # FIXME: hrtf?
-    hrtf : performs localization by means of a Head Related Transfer Function.
 
     Examples
     --------

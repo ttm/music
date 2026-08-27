@@ -22,6 +22,10 @@ optional-dependencies = { dev = [
     'pytest-cov >= 5.0',
     'mypy >= 1.8',
     'ruff >= 0.6',
+], docs = [
+    'sphinx >= 7.0',
+    'numpydoc >= 1.6',
+    'furo >= 2024.1.29',
 ] }
 classifiers = [
     'Programming Language :: Python :: 3',

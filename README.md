@@ -63,6 +63,19 @@ pip install -e '.[dev]'
 mypy music
 ```
 
+### Documentation
+
+The API reference is published at
+[ttm.github.io/music](https://ttm.github.io/music/). To build it locally:
+
+```console
+pip install -e '.[docs]'
+sphinx-build -b html -W docs docs/_build/html
+```
+
+`-W` turns Sphinx warnings into errors, which is how CI builds it: a malformed
+docstring fails the build rather than quietly rendering wrong.
+
 ### Linting
 
 The code is checked with [ruff](https://docs.astral.sh/ruff/) at PEP 8's 79
@@ -132,9 +145,11 @@ music.core.io.write_wav_mono(music_)
 
 ## Coding conventions
 
-The code follows [PEP 8 conventions](https://peps.python.org/pep-0008/).
+The code follows [PEP 8 conventions](https://peps.python.org/pep-0008/), checked by `ruff` at 79 columns.
 
-For a better understanding of each function, the math behind it and see examples of their use, you can read their docstring.
+Docstrings should be written in [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) style. Note that `music.structures` and `music.legacy` currently use Google style instead — converting them is a tracked follow-up, so please don't copy that pattern into new code.
+
+For a better understanding of each function, the math behind it and see examples of their use, you can read their docstring — or the rendered [API reference](https://ttm.github.io/music/api.html).
 
 ## Further information
 

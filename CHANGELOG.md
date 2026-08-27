@@ -37,6 +37,15 @@ deliberate, both are tracked, and neither should reach a release unreviewed.
   proportionally. Zero-length stages no longer divide by zero or stretch the
   envelope, and single-sample transitions no longer leak NaN.
 - `requires-python` corrected from `>=3.0` to `>=3.10`.
+- Docstring markup that broke the API reference. `localize`, `localize2`,
+  `mix_with_offset` and `mix_with_offset_` failed to render at all: the first
+  two had a `# FIXME: hrtf?` comment inside a `See Also` section and a
+  reference to an `hrtf` function that does not exist, the other two pointed
+  at `(.functions).mix2`, which is not a resolvable target. A further dozen
+  docstrings had malformed reStructuredText -- bullet continuations indented
+  under nothing, pseudo-code blocks without a literal marker, `|d|` read as a
+  substitution reference, `J_` as a link target, an unindented citation
+  continuation in `iir`, and a doctest continuation line missing its `...`.
 - Passing a tuple or an ndarray subclass as `sonic_vector` was silently
   ignored by `adsr`, `fade`, `loud`, `louds`, `tremolo`, `tremolos`, `am`,
   `reverb` and `adsr_stereo`: they detected a supplied vector with
@@ -75,6 +84,10 @@ deliberate, both are tracked, and neither should reach a release unreviewed.
   [-1, 1]), and removed a stray duplicate entry from the Returns section.
 
 ### Added
+- Sphinx documentation, published to GitHub Pages from `master`. The
+  reference groups all 69 exports by role rather than alphabetically, and CI
+  builds it with `-W`, so a malformed docstring fails rather than rendering
+  wrong. Fixing the docstrings this surfaced is listed under Fixed below.
 - `tests/test_fidelity.py`, checking that the synthesized *samples* match the
   equations the docstrings cite, not merely that they have the right shape:
   `note` and `note_with_vibrato` against their closed forms sample for

@@ -495,19 +495,20 @@ def mix_with_offset(
     duration : numeric
         The offset of the second sound, i.e. the displacement that
         the start of the second sound. (First sound has offset 0).
-        Might be negative, denoting to start sound2 |d| seconds before s1 ends.
+        Might be negative, denoting to start sound2 ``|d|`` seconds before
+    s1 ends.
     number_of_samples : int
     sample_rate : int
 
     Notes
     -----
-    if d<0, it should satisfy -d*fs < s1.shape[-1]
+    If ``d < 0``, it should satisfy ``-d*fs < s1.shape[-1]``.
 
-    TODO: enhance/recycle J_ and mix2 or delete them. TTM
+    TODO: enhance/recycle ``J_`` and mix2 or delete them. TTM
 
     See Also
     --------
-    (.functions).mix2 : a better mixer
+    mix2 : a better mixer
 
     """
     first_sonic_vector = np.array(first_sonic_vector)
@@ -554,14 +555,14 @@ def mix_with_offset_(*args: ArrayLike) -> NDArray[np.float64]:
 
     Parameters
     ----------
-    J_ receives a sequence of sonic vectors,
+    ``J_`` receives a sequence of sonic vectors,
     each a sequence of PCM samples.
     Or a sequence alternating the sonic vectors
     and their offsets.
 
     See Also
     --------
-    (.functions).mix2 : a better mixer
+    mix2 : a better mixer
 
     """
     # i = 0 # DEPRECATED
@@ -637,7 +638,7 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
     of channel c in p[i][c] and p[i+1][c].
 
     Consider only one of such fades
-    to understand the pan transition methods:
+    to understand the pan transition methods::
 
         'lin' fades linearly in and out:
             x*k_i+y*(1-k_i)
@@ -658,15 +659,19 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
     One immediate possibility is to maintain the expected
     tessiture of the sample amplitudes.
     Say p = [.5,1,0,.5] ~ [(1,1),(1,0),(0,1),(1,1)].
-    Then pi,pj = .5,1 might be performed as:
-    s1 = s1*.5 -> 0
-    s2 = s1*.5 -> (s1+s2)*.5
+    Then pi,pj = .5,1 might be performed as::
+
+        s1 = s1*.5 -> 0
+        s2 = s1*.5 -> (s1+s2)*.5
+
     Or through sinusoids and expotentials
 
     Make fast and slow fades and parameter transitions
     using weber-fechner and steven's laws.
-    E.g. pitch_trans = [pitch0*X**(i/Y) for i in range(12)]
-         pitch_trans = [pitch0 + X*i**Y for i in range(12)]
+    E.g.::
+
+        pitch_trans = [pitch0*X**(i/Y) for i in range(12)]
+        pitch_trans = [pitch0 + X*i**Y for i in range(12)]
 
     Examples
     --------
@@ -781,31 +786,32 @@ def profile(adict):
       The overal RMS mean of a scale is a hint of whether the variable
       is meant to be used (or usable as) PCM samples or parametrization.
       E.g.
+
         * Large arrays, i.e. with many elements, are usable as PCM samples.
-        If the mean is zero, and they are bound to [-1,1] or to some power
-        of 2, specially [-2**15, 2**15-1], it is probably PCM samples
-        synthesized or sampled or derivatives.
-        If it has more than one or two dimensions where the many samples are,
-        it might be a collection of audio samples with the sample size
+          If the mean is zero, and they are bound to [-1,1] or to some power
+          of 2, specially [-2**15, 2**15-1], it is probably PCM samples
+          synthesized or sampled or derivatives.
+          If it has more than one or two dimensions where the many samples
+          are, it might be a collection of audio samples with the sample size
 
         * Arrays with an offset (abs(mean) << 0) and small number of elements
-        are good candidates for parametrization.
-        They might be used for repetition, yielding a clear rhythm.
-        They might also be used to derive more ellaborate patterns,
-        such as by using the values of more then one arrays,
-        and using them simultaneously, often creating patterns
-        because of the different sizes of each array.
+          are good candidates for parametrization.
+          They might be used for repetition, yielding a clear rhythm.
+          They might also be used to derive more ellaborate patterns,
+          such as by using the values of more then one arrays,
+          and using them simultaneously, often creating patterns
+          because of the different sizes of each array.
 
         * Values in the order of hundreds and thousands are
-        candidates for frequency.
-        Values within zero and 150 are candidates for decibels,
-        and for absolute pitch or pitch interval through MIDI notes
-        and semitones count, respectively.
-        If the values are integers of very close to them,
-        or have many consecutive values deviating less then
-        10, it is more likely to be related to pitches.
-        If the consecutive values deviate by tens to about a hundred,
-        it is kin to decibels notation.
+          candidates for frequency.
+          Values within zero and 150 are candidates for decibels,
+          and for absolute pitch or pitch interval through MIDI notes
+          and semitones count, respectively.
+          If the values are integers of very close to them,
+          or have many consecutive values deviating less then
+          10, it is more likely to be related to pitches.
+          If the consecutive values deviate by tens to about a hundred,
+          it is kin to decibels notation.
 
     """
     # for key in adict:
@@ -858,14 +864,16 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
     The durations parameter is considered to be in a temporal notation
     for durations/rhythm: each entry is a relative duration to
     be multiplied by the base duration given through duration,
-    BPM or total_duration.
-    >>> durs = [i*duration for i in durations]
+    BPM or total_duration::
+
+        durs = [i*duration for i in durations]
 
     The frequencies parameter is considered to be in a
     frequential notation: each entry is the number of the
     entry that fits a same duration (also given through duration,
-    BPM or total_duration).
-    >>> durs = [duration/i for i in freqs]
+    BPM or total_duration)::
+
+        durs = [duration/i for i in freqs]
 
     The examples above yield (two by two) the same sequences of durations
     by using duration=0.25 when in temporal notation or
@@ -873,7 +881,8 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
 
     To facilitate the description of rhythms (e.g. for tuplets),
     some set of durations might be an iterable inside durations
-    or frequencies. In this case:
+    or frequencies. In this case::
+
         ### if mode is temporal:
             total_dur = cell[0]*duration
             # durations are proportional to remaining values:
@@ -889,7 +898,8 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
     temporal or frequential notation and with cells for tuplets
     is the last two sequences of the examples.
 
-    It might be a good idea to incorporate also this notation:
+    It might be a good idea to incorporate also this notation::
+
         d2 = [1, 4, 1, 4]  # [quarter note + 4 sixteenth notes] x 2
 
     Cite the following article whenever you use this function.

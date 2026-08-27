@@ -288,7 +288,10 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
             len(sonic_vector)
             + sample_rate * foo * np.sin(abs(theta_)) / speed
         ))
-        s = np.zeros((2, maxsize))
+        # Annotated without a shape: it is rebuilt by np.vstack further
+        # down, and numpy's stubs narrow np.zeros((2, n)) to a 2-tuple shape
+        # that the vstack result does not match.
+        s: np.ndarray = np.zeros((2, maxsize))
 
     if method == "ifft":
         # ITD implies a phase change

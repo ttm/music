@@ -104,8 +104,9 @@ class Notes:
                                                        notes_all)])
 
     def convert(self, notes, reference):
-        if 'notes_dict' not in dir(self):
+        if self.notes_dict is None:
             self.make_dict()
+        assert self.notes_dict is not None  # make_dict always assigns it
         notes_ = [reference + note for note in notes]
         notes__ = [self.notes_dict[note] for note in notes_]
         return notes__

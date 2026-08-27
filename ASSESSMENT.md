@@ -270,10 +270,11 @@ Ordered by return on effort. Phase 1 is roughly a day and removes every "Terribl
 
 5. **Add GitHub Actions**: `pytest` + `ruff` + `mypy` on 3.10/3.11/3.12/3.13, on every push
    and PR. Nothing else in this list holds without it.
-6. **Turn on `check_untyped_defs = true`** in `[tool.mypy]`, then work the 184 errors down
-   module by module. **156 of the 184 errors (85 %) are in `legacy/`**, so excluding that
-   package initially leaves 28 errors across the rest of the codebase — a single sitting.
-   Ratchet, don't bulk-fix.
+6. **Turn on `check_untyped_defs = true`** in `[tool.mypy]`, then work the errors down
+   module by module. *(Done — all 177 fixed and the flag enforced in CI. The errors were
+   not merely noise: they pointed at an exported function whose mono branch had never run,
+   a documented `localize2` method that always crashed, and a demonstration piece that
+   bound a class where it meant an instance.)*
 7. **Add `ruff` with a committed config**; auto-fix the 79 mechanical findings, triage the rest.
 8. **Add `music/py.typed`** and a `__version__` single-sourced from package metadata.
 9. **Set a coverage floor at the current 43 %** and raise it as you go, so it cannot regress.
@@ -302,7 +303,7 @@ Ordered by return on effort. Phase 1 is roughly a day and removes every "Terribl
 16. **Move the module-level RNG defaults into the function bodies** (`if sonic_vector is None:
     ...`) and drop 2.4 MB and the import cost.
 17. **Remove `exec` from `CanonicalSynth`** — explicit attribute assignment restores ~40 type
-    errors' worth of visibility.
+    errors' worth of visibility. *(Done, along with the other two `exec` sites.)*
 18. **Rework `setup_engine()`** to clone into a user cache dir (`platformdirs.user_cache_dir`),
     never `site-packages`; document the `git`/`make`/`perl`/`espeak` system dependencies and
     check for them with a clear error.

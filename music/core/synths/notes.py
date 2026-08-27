@@ -605,7 +605,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
 
     """
     # pitch transition contributions
-    f_ = []
+    pitch_parts = []
     for i, dur in enumerate(durations[0]):
         lambda_ = int(sample_rate * dur)
         samples = np.arange(lambda_)
@@ -614,11 +614,11 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
             f = f1 * (f2 / f1) ** ((samples / (lambda_ - 1)) ** alpha[0][i])
         else:
             f = f1 * (f2 / f1) ** (samples / (lambda_ - 1))
-        f_.append(f)
-    ft = np.hstack(f_)
+        pitch_parts.append(f)
+    ft = np.hstack(pitch_parts)
 
     # vibrato contributions
-    v_ = []
+    v_: list = []
     for i, vib in enumerate(durations[1:-1]):
         v_ = []
         for j, dur in enumerate(vib):
@@ -644,8 +644,8 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     # dl_ = []
     # dr_ = []
     # d_ = []
-    f_ = []
-    iid_a = []
+    f_parts: list = []
+    iid_parts: list = []
     if stereo:
         for i in range(len(method)):
             m = method[i]
@@ -665,7 +665,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
                     lambda_d
             dl = np.sqrt((xi + zeta / 2) ** 2 + yi ** 2)
             dr = np.sqrt((xi - zeta / 2) ** 2 + yi ** 2)
-            if len(f_) == 0:
+            if len(f_parts) == 0:
                 itd0 = (dl[0] - dr[0]) / speed
                 lambda_itd = itd0 * sample_rate
             iid_al = 1 / dl
@@ -676,8 +676,8 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
             fl = speed / (speed + vsl)
             fr = speed / (speed + vsr)
 
-            f_.append(np.vstack((fl, fr)))
-            iid_a.append(np.vstack((iid_al[:-1], iid_ar[:-1])))
+            f_parts.append(np.vstack((fl, fr)))
+            iid_parts.append(np.vstack((iid_al[:-1], iid_ar[:-1])))
     else:
         for i in range(len(method)):
             m = method[i]
@@ -695,17 +695,22 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
                     lambda_d
                 yi = y[i] + (y[i + 1] - y[i]) * np.arange(lambda_d + 1) / \
                     lambda_d
-            durations = np.sqrt(xi ** 2 + yi ** 2)
-            iid = 1 / durations
+            # The distance to the listener, as dl and dr are in the stereo
+            # branch above. Naming it `durations` clobbered the parameter
+            # that the next iteration reads lambda_d from.
+            dm = np.sqrt(xi ** 2 + yi ** 2)
+            iid = 1 / dm
 
             # velocities at each point
-            vs = sample_rate * (durations[1:] - durations[:-1])
-            f_ = speed / (speed + vs)
+            vs = sample_rate * (dm[1:] - dm[:-1])
+            # A per-segment value, as fl and fr are above; assigning it
+            # to the accumulator overwrote what the next line appends to.
+            fm = speed / (speed + vs)
 
-            f_.append(f_)
-            iid_a.append(iid[:-1])
-    f_ = np.hstack(f_)
-    iid_a = np.hstack(iid_a)
+            f_parts.append(fm)
+            iid_parts.append(iid[:-1])
+    f_ = np.hstack(f_parts)
+    iid_a = np.hstack(iid_parts)
 
     # find maximum size, fill others with ones
     amax = max([len(i) if len(i.shape) == 1 else len(i[0]) for i in v_ + [f_]])
@@ -719,8 +724,10 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
 
     length = len(waveform_tables[0][0])
     if not stereo:
-        v_.extend(f_)
-        f = np.prod(v_, axis=0)
+        # One more contribution, as `v_ + [f_[0]]` does per channel in the
+        # stereo branch below; extend() spread f_ into its 600k scalars and
+        # left v_ inhomogeneous for np.prod.
+        f = np.prod(v_ + [f_], axis=0)
         gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
         s_ = []
         pointer = 0
@@ -975,7 +982,7 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
     ft = np.hstack(f_)
 
     # vibrato contributions
-    v_ = []
+    v_: list = []
     for i, vib in enumerate(durations[1:]):
         v_ = []
         for j, dur in enumerate(vib):

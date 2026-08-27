@@ -28,6 +28,21 @@ deliberate, all are tracked, and none should reach a release unreviewed.
    byte-comparing against previously rendered WAVs will see a diff.
 
 ### Fixed
+- The mono branch of `note_with_vibrato_seq_localization()` had never run.
+  Three faults, one behind the other: a per-segment value was assigned over
+  the accumulator that the next line appended to, raising `AttributeError`;
+  the `durations` parameter was clobbered by a local of the same name, so the
+  next iteration indexed into an array; and `extend` was used where the
+  stereo branch appends, leaving an inhomogeneous list for `np.prod`. Each
+  fix is modelled on the working stereo branch beside it.
+- `localize2(method="brute")` computed its buffer size as a float, which
+  `np.zeros` refuses. The documented alternative to "ifft" had never worked.
+- `music.legacy.pieces.testSong2` bound the *class* `CanonicalSynth` rather
+  than an instance, so every call in the module was an unbound method missing
+  `self`. The piece could not run at all; it now does.
+- `CanonicalSynth.adsrApply()` gave the sustain stage a negative length on
+  notes shorter than the attack, decay and release combined -- the same fault
+  fixed earlier in `music.adsr`. The stages are compressed proportionally.
 - `setup_engine()` cloned the eCantorix engine into the installed package
   directory, which fails on a read-only install, in a container, and for any
   second user of a shared `site-packages`, and which a `pip` upgrade discards.
@@ -107,6 +122,15 @@ deliberate, all are tracked, and none should reach a release unreviewed.
   exactly representable levels survive a round trip unchanged.
 
 ### Changed
+- `check_untyped_defs` is on. Most of this package is unannotated, and mypy
+  skips the bodies of unannotated functions by default, so it had been
+  reporting success while inspecting about a sixth of the code. Turning the
+  flag on surfaced 177 errors; all are fixed, and CI now enforces it.
+- `CanonicalSynth`, `Being` and `TestSong2` build their attributes by copying
+  local variables onto the instance. Three `exec("self.{}={}")` calls did
+  that; they are now plain `vars(self).update(...)`, and the attributes each
+  class ends up with are declared at class level, so the surface is
+  discoverable rather than implicit. `tests/test_legacy.py` pins it.
 - Every docstring is numpydoc now. `music.structures`, `music.legacy` and
   `music.tables` used Google style -- `Attributes:`, `Parameters:`, `Returns:`
   with a trailing colon -- across 60 sections in eight files, which numpydoc
@@ -140,6 +164,12 @@ deliberate, all are tracked, and none should reach a release unreviewed.
 - `music/singing/paths.py`, a single source of truth for where the engine
   lives and what it needs. The path was previously computed twice, in
   `bootstrap.py` and in `perform.py`, both at import time.
+- `tests/test_legacy.py`, covering the legacy synthesizers, which were the
+  least-tested modules in the package. `CanonicalSynth` went from 11% to 97%,
+  `IteratorSynth` from 25% to 100% and `testSong2` from 0% to 100%.
+- The public API sweep now exercises non-default branches -- both channel
+  modes and both localisation methods -- which is where the faults above
+  were hiding.
 - `tests/test_singing.py`, covering path resolution, the dependency check and
   the failure modes, none of which need the engine itself. It replaces
   `test_bootstrap.py` and `test_perform_failures.py`, which patched module

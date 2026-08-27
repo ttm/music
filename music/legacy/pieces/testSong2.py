@@ -2,7 +2,9 @@
 
 import music as M
 import numpy as np
-synth = M.legacy.CanonicalSynth
+# An instance, not the class: every call below is an instance method, so
+# binding the class here made the whole module unrunnable.
+synth = M.legacy.CanonicalSynth()
 
 
 class TestSong2:
@@ -15,6 +17,9 @@ class TestSong2:
     >>> test_song = TestSong2()
     # TODO: Add more examples
     """
+
+    # __init__ copies its locals onto the instance; render() reads this one.
+    notes_: list
     def __init__(self):
         """
         Initializes the TestSong2 instance and generates various sounds using
@@ -232,8 +237,7 @@ class TestSong2:
         # vibrosong=H(notes_+notes)
         locals_ = locals().copy()
         del locals_["self"]
-        for i in locals_:
-            exec("self.{}={}".format(i, i))
+        vars(self).update(locals_)
 
     def render(self):
         A = synth.adsrApply

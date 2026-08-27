@@ -1,7 +1,17 @@
 """Reference synthesizer demonstrating basic techniques."""
 
+from typing import Any
+
 import numpy as n
 import music as M
+
+
+def _fit(stage, count):
+    """Resample an envelope stage to `count` samples, keeping its shape."""
+    if count <= 0:
+        return stage[:0]
+    indexes = n.linspace(0, len(stage) - 1, count).round().astype(n.int64)
+    return stage[indexes]
 
 
 class CanonicalSynth:
@@ -34,6 +44,38 @@ class CanonicalSynth:
     >>> cs =  CanonicalSynth()
     # TODO: develop example
     """
+
+    # Assigned by synthSetup and adsrSetup, which copy their locals onto the
+    # instance. Declared here so they are discoverable rather than implicit;
+    # absorbState can add further attributes beyond these.
+    tables: Any
+    samplerate: int
+    table: n.ndarray
+    vibrato_table: n.ndarray
+    tremolo_table: n.ndarray
+    vibrato_depth: float
+    vibrato_frequency: float
+    tremolo_depth: float
+    tremolo_frequency: float
+    duration: float
+    fundamental_frequency: float
+    vibrato: bool
+    tremolo: bool
+    A: float
+    S: float
+    D: n.ndarray
+    R: n.ndarray
+    A_: n.ndarray
+    A_i: n.ndarray
+    D_i: n.ndarray
+    R_i: n.ndarray
+    ii: n.ndarray
+    Lambda_A: int
+    Lambda_D: int
+    Lambda_R: int
+    a_S: float
+    render_note: bool
+    adsr_method: str
 
     def __init__(s, **statevars):
         """
@@ -98,8 +140,7 @@ class CanonicalSynth:
             tremolo = False
         locals_ = locals().copy()
         del locals_["self"]
-        for i in locals_:
-            exec("self.{}={}".format(i, i))
+        vars(self).update(locals_)
 
     def adsrSetup(self, A=100., D=40, S=-5., R=50, render_note=False,
                   adsr_method="absolute"):
@@ -137,8 +178,7 @@ class CanonicalSynth:
         R_i = n.copy(R)
         locals_ = locals().copy()
         del locals_["self"]
-        for i in locals_:
-            exec("self.{}={}".format(i, i))
+        vars(self).update(locals_)
 
     def adsrApply(self, audio_vec):
         """
@@ -155,9 +195,22 @@ class CanonicalSynth:
             Audio vector with applied ADSR envelope.
         """
         Lambda = len(audio_vec)
-        S = n.ones(Lambda - self.Lambda_R - (self.Lambda_A + self.Lambda_D),
-                   dtype=n.float64) * self.a_S
-        envelope = n.hstack((self.A_i, self.D_i, S, self.R_i))
+        attack, decay, release = self.A_i, self.D_i, self.R_i
+
+        # The attack, decay and release stages cannot outlast the note they
+        # shape: compress them proportionally when it is too short, rather
+        # than leaving the sustain stage with a negative length.
+        stages = len(attack) + len(decay) + len(release)
+        if stages > Lambda:
+            ratio = Lambda / stages
+            attack = _fit(attack, int(len(attack) * ratio))
+            decay = _fit(decay, int(len(decay) * ratio))
+            release = _fit(release, int(len(release) * ratio))
+
+        sustain = n.ones(
+            Lambda - len(attack) - len(decay) - len(release), dtype=n.float64
+        ) * self.a_S
+        envelope = n.hstack((attack, decay, sustain, release))
         return envelope * audio_vec
 
     def render(self, **statevars):

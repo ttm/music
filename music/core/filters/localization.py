@@ -119,14 +119,17 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
     A linear variation of the localize function.
 
     .. warning::
-       Unimplemented. The body below computes the per-sample interaural
-       distances but never applies them, and the intended handling of the
-       time-varying interaural time difference was never settled. Calling
-       this raises NotImplementedError rather than returning a misleading
-       tuple of intermediates.
+       Unimplemented, and awaiting a design decision -- see "Needs a decision
+       before release" in CHANGELOG.md. The body below computes the per-sample
+       interaural distances but never applies them, and the intended handling
+       of the time-varying interaural time difference was never settled.
+       Calling this raises NotImplementedError rather than returning a
+       misleading tuple of intermediates.
 
-       For working spatialisation use :func:`localize` (static position) or
-       :func:`music.note_with_doppler` (moving source, with Doppler shift).
+       To finish it, decide how the per-sample delay should be realised: whole
+       -sample index warping as :func:`music.note_with_doppler` does, or
+       fractional-delay interpolation. Until then, use :func:`localize` for a
+       static position or :func:`music.note_with_doppler` for a moving source.
 
     See localize.
 

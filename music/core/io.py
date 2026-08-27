@@ -49,6 +49,13 @@ def _quantize(samples: NDArray[np.float64], bit_depth: int) -> NDArray[Any]:
     # Scale by 2 ** (bit_depth - 1), matching the divisor read_wav uses, so
     # that writing and reading back is unity gain. Only a sample at exactly
     # +1.0 needs the clip, the positive range being one value shorter.
+    #
+    # This previously scaled by 2 ** (bit_depth - 1) - 1 while read_wav
+    # divided by 2 ** (bit_depth - 1), costing a round trip ~1.5 quantisation
+    # steps instead of the half step quantising costs. Fixing the mismatch
+    # means files written now differ from older ones by one LSB of gain; see
+    # "Needs a decision before release" in CHANGELOG.md. The unity-gain
+    # property is pinned by tests/test_fidelity.py.
     full_scale = 2 ** (bit_depth - 1)
     scaled = np.clip(np.round(samples * full_scale), -full_scale,
                      full_scale - 1)

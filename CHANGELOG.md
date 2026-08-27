@@ -1,4 +1,23 @@
 ## [Unreleased]
+
+### Needs a decision before release
+Two entries below change behaviour that callers may depend on. Both are
+deliberate, both are tracked, and neither should reach a release unreviewed.
+
+1. **`localize_linear()` is no longer exported** and raises
+   `NotImplementedError`. It never worked — it crashed on its own defaults and
+   its body records that the return statement was never written — so nothing
+   can regress, but it is an API removal. The open question is whether to
+   finish it instead: the missing piece is how the *time-varying* interaural
+   time difference should be applied per sample. `localize()` handles a static
+   position and `note_with_doppler()` a moving source, so the semantics wanted
+   here are a design decision for the author, not something to infer.
+2. **The WAV quantiser's scale changed**, so files written from now on differ
+   from files written before by one LSB of gain (about 0.0003 dB — inaudible,
+   but the bytes differ). This is what makes a write/read round trip unity
+   gain, and `tests/test_fidelity.py` now pins that property. Anyone
+   byte-comparing against previously rendered WAVs will see a diff.
+
 ### Fixed
 - `stretches()` raised `AttributeError` on abandoned scratch code and could
   index one sample past the fragment it was resampling.

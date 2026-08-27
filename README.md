@@ -63,6 +63,18 @@ pip install -e '.[dev]'
 mypy music
 ```
 
+### Linting
+
+The code is checked with [ruff](https://docs.astral.sh/ruff/) at PEP 8's 79
+columns:
+
+```console
+ruff check music tests examples conftest.py
+```
+
+All three checks — `pytest`, `mypy` and `ruff` — run in CI on Python 3.10
+through 3.13 for every push and pull request.
+
 ## Examples
 
 Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) you can find some scripts that use the main features of Music.
@@ -96,7 +108,9 @@ The modules are:
 
 Music is stable but still very young. We didn't have the opportunity yet to make Music all we want it to be.
 
-Here is one example of what we're aiming at:
+Here is one example of what we're aiming at. **None of the names below exist
+yet** — this is a sketch of the API we would like, not documentation of the
+current one:
 
 ```python
 import music
@@ -127,5 +141,3 @@ For a better understanding of each function, the math behind it and see examples
 Music is primarily intended for artistic use, but was also designed to run psychophysics experiments and data sonification.
 
 You can find an example in [Versinus](https://github.com/ttm/versinus), an animated visualization method for evolving networks that uses Music to render the musical track that represents networks structures.
-
-:::

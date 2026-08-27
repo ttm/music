@@ -363,10 +363,10 @@ file at a time, dropping `napoleon` only once the last Google-style section is g
 
 ## Open decisions
 
-Two changes on `fix/broken-exports` alter behaviour a caller could depend on.
-Neither is a bug fix that speaks for itself, so both are recorded here and in
-the changelog's "Needs a decision before release" section rather than being
-allowed to land silently.
+Three changes alter behaviour a caller could depend on. None is a bug fix
+that speaks for itself, so all are recorded here and in the changelog's
+"Needs a decision before release" section rather than being allowed to land
+silently.
 
 ### 1. `localize_linear()` — finish it, or leave it removed?
 
@@ -393,7 +393,35 @@ source, so C loses less than it appears to. **Recommendation: C for this
 release, then A or B deliberately.** Whichever is chosen, the fidelity tests
 give a template for asserting the delay against the ear geometry.
 
-### 2. The WAV quantiser's scale changed
+### 2. `PlainChanges` now returns a complete peal
+
+The default hunt count was hardcoded to two above four bells. A plain-changes
+peal needs `n - 3` hunts to traverse the whole symmetric group, so the default
+produced a fraction of it above five bells — **silently**:
+
+| bells | rows returned | `n!` | coverage |
+|---|---|---|---|
+| 3–5 | complete | | 100 % |
+| 6 | 120 | 720 | **16.7 %** |
+| 7 | 168 | 5,040 | **3.3 %** |
+| 8 | 224 | 40,320 | **0.6 %** |
+
+Two things say the complete peal was the intent. The code's own warning —
+*"peals are the same if there are N hunts less"* when `nhunts > nelements - 3`
+— already identifies `n - 3` as the saturation point; the default simply
+didn't use it. And `examples/geometric_music.py` asserts it in a comment:
+`# len(being.perms) == factorial(nel)`, true at four bells and silently false
+from six up.
+
+**The consequence to weigh:** anyone rendering from `peal_direct` at six bells
+or more now gets at least six times the material. A shorter peal is a valid
+method in campanology, so this is a change in default, not a bug fix in the
+algorithm — `nhunts=2` still gives the old behaviour.
+
+**Recommendation: keep it.** A structure named for traversing the permutations
+should traverse them, and nothing signalled that it wasn't.
+
+### 3. The WAV quantiser's scale changed
 
 Writing previously scaled by `2 ** (bit_depth - 1) - 1` while `read_wav`
 divided by `2 ** (bit_depth - 1)`. A write/read round trip therefore lost

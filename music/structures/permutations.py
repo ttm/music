@@ -209,6 +209,11 @@ def dist(swap):
     of the permutation, the distance is calculated as the size of the
     permutation minus the difference.
 
+    This measures the two lowest displaced positions, so it is meaningful for
+    a transposition. For a permutation with a larger support the remaining
+    displaced positions are ignored. The identity displaces nothing and gives
+    zero.
+
     Examples
     --------
     >>> from sympy.combinatorics import Permutation
@@ -218,12 +223,19 @@ def dist(swap):
     >>> perm = Permutation([2, 0, 1])
     >>> dist(perm)
     1
+    >>> dist(Permutation([0, 1, 2]))  # the identity displaces nothing
+    0
     """
+    support = swap.support()
+    if len(support) < 2:
+        # The identity moves nothing, so there is no pair to measure
+        # between. Any other permutation displaces at least two elements.
+        return 0
     if swap.size % 2 == 0:
         half = swap.size / 2
     else:
         half = swap.size // 2 + 1
-    diff = abs(swap.support()[1] - swap.support()[0])
+    diff = abs(support[1] - support[0])
     if diff >= half:
         diff = swap.size - diff
     return diff

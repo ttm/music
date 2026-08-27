@@ -1,8 +1,8 @@
 ## [Unreleased]
 
 ### Needs a decision before release
-Two entries below change behaviour that callers may depend on. Both are
-deliberate, both are tracked, and neither should reach a release unreviewed.
+Three entries below change behaviour that callers may depend on. All are
+deliberate, all are tracked, and none should reach a release unreviewed.
 
 1. **`localize_linear()` is no longer exported** and raises
    `NotImplementedError`. It never worked — it crashed on its own defaults and
@@ -12,13 +12,27 @@ deliberate, both are tracked, and neither should reach a release unreviewed.
    time difference should be applied per sample. `localize()` handles a static
    position and `note_with_doppler()` a moving source, so the semantics wanted
    here are a design decision for the author, not something to infer.
-2. **The WAV quantiser's scale changed**, so files written from now on differ
+2. **`PlainChanges(n)` now returns a complete peal for every `n`.** The
+   default hunt count was hardcoded to two for more than four bells, so the
+   peal covered a fraction of the symmetric group above five: 120 of 720 rows
+   at six bells, 224 of 40320 at eight — silently. The default is now
+   `PlainChanges.saturating_hunts(n)`, i.e. `max(1, n - 3)`, which the code's
+   own warning already identified as the point past which extra hunts add
+   nothing. Anyone who was relying on the shorter peal can ask for it with
+   `nhunts=2`; anyone rendering from `peal_direct` at six bells or more will
+   get six times the material or more.
+3. **The WAV quantiser's scale changed**, so files written from now on differ
    from files written before by one LSB of gain (about 0.0003 dB — inaudible,
    but the bytes differ). This is what makes a write/read round trip unity
    gain, and `tests/test_fidelity.py` now pins that property. Anyone
    byte-comparing against previously rendered WAVs will see a diff.
 
 ### Fixed
+- `dist()` raised `IndexError` on the identity permutation, which has an empty
+  support. It now returns zero, there being no displaced pair to measure.
+- `PlainChanges(2)` and `PlainChanges(3)` warned that "peals are the same if
+  there are 2 hunts less", advising the removal of more hunts than existed:
+  the threshold was `nelements - 3`, which goes negative below four bells.
 - `stretches()` raised `AttributeError` on abandoned scratch code and could
   index one sample past the fragment it was resampling.
 - `trill()` raised `TypeError: 'module' object is not callable`. Submodules of
@@ -93,6 +107,14 @@ deliberate, both are tracked, and neither should reach a release unreviewed.
   56 sections across seven files. That is a workaround; converting them to
   numpydoc would let napoleon be dropped, and is tracked in `ASSESSMENT.md`
   under "Tracked follow-up: one docstring style".
+- `tests/test_structures.py`, asserting what campanology and group theory
+  actually guarantee about a plain-changes peal: that it visits each of the
+  `n!` permutations exactly once, that consecutive rows differ by a single
+  *adjacent* transposition — the constraint that makes a peal ringable — and
+  that it opens on rounds. Coverage of `structures/peals/plain_changes.py`
+  went from 10% to 86%, and of `structures/permutations.py` from 26% to 84%.
+- `PlainChanges.saturating_hunts(nelements)`, naming the rule that was
+  previously implicit in a warning message.
 - `tests/test_fidelity.py`, checking that the synthesized *samples* match the
   equations the docstrings cite, not merely that they have the right shape:
   `note` and `note_with_vibrato` against their closed forms sample for

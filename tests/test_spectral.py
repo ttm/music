@@ -1,9 +1,4 @@
 import numpy as np
-import sys
-from pathlib import Path
-
-HERE = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(HERE))
 
 import music
 
@@ -27,6 +22,7 @@ def test_note_with_fm_peak_frequency():
 
 
 def test_note_with_glissando_peak_frequency():
-    note = music.note_with_glissando(start_freq=430, end_freq=450, duration=0.1)
+    note = music.note_with_glissando(start_freq=430, end_freq=450,
+                                     duration=0.1)
     peak = _dominant_freq(note)
     assert abs(peak - 440) <= 5

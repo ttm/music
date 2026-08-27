@@ -13,14 +13,23 @@ def normalize_mono(sonic_vector, remove_bias=True):
     sonic_vector : array_like
         A (nsamples,) shaped array.
     remove_bias : boolean
-        Whether to remove or not the bias (or offset)
+        If True (default), subtract the mean and divide by the larger of the
+        two peaks, which preserves the waveform's shape. If False, map
+        [min, max] onto [-1, 1] affinely, which fills the range but stretches
+        an asymmetric waveform. Either way the result is normalized; this
+        chooses how.
 
     Returns
     -------
     s : ndarray
         A numpy array with values between -1 and 1.
-    remove_bias : boolean
-        Whether to remove or not the bias (or offset)
+
+    Examples
+    --------
+    >>> normalize_mono([-1., -.5, 0., .5, 1.])  # already normalized
+    array([-1. , -0.5,  0. ,  0.5,  1. ])
+    >>> normalize_mono([0., 1., 2.])  # centred, then scaled
+    array([-1.,  0.,  1.])
 
     """
     t = np.array(sonic_vector)

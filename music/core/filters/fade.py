@@ -2,7 +2,8 @@
 
 import numpy as np
 from .loud import loud
-from ...utils import resolve_stereo, mix_with_offset
+from ...utils import (resolve_stereo, mix_with_offset,
+                      as_sonic_vector)
 
 
 def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
@@ -75,7 +76,8 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
-    if type(sonic_vector) in (np.ndarray, list):
+    sonic_vector = as_sonic_vector(sonic_vector)
+    if sonic_vector is not None:
         if len(sonic_vector.shape) == 2:
             return resolve_stereo(fade, locals())
         n = len(sonic_vector)
@@ -107,10 +109,9 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
             else:
                 ai0 = []
             ai = np.hstack((ai0, ai1))
-    if type(sonic_vector) in (np.ndarray, list):
+    if sonic_vector is not None:
         return ai*sonic_vector
-    else:
-        return ai
+    return ai
 
 
 def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
@@ -121,7 +122,8 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
     """
     ns = int(duration * sample_rate / 1000)
     if len(sonic_vector_1.shape) != len(sonic_vector_2.shape):
-        raise ValueError('sonic_vector_1 and sonic_vector_2 must have the same shape')
+        raise ValueError('sonic_vector_1 and sonic_vector_2 must have '
+                         'the same shape')
     if len(sonic_vector_1.shape) == 2:
         s1_ = cross_fade(sonic_vector_1[0], sonic_vector_2[0], duration,
                          method, sample_rate)

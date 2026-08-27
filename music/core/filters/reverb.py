@@ -1,7 +1,8 @@
 """Simple reverberation filters and impulse response generation."""
 
 import numpy as np
-from ..synths import noise
+from ..synths.noises import noise
+from ...utils import as_sonic_vector
 
 
 def reverb(duration=1.9, first_phase_duration=0.15, decay=-50,
@@ -69,7 +70,7 @@ def reverb(duration=1.9, first_phase_duration=0.15, decay=-50,
     # Eq. 78 Impulse response of the reverberation
     result = np.hstack((r1, r2))
     result[0] = 1.
-    if type(sonic_vector) in (np.ndarray, list):
+    sonic_vector = as_sonic_vector(sonic_vector)
+    if sonic_vector is not None:
         return np.convolve(sonic_vector, result)
-    else:
-        return result
+    return result

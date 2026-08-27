@@ -1,9 +1,4 @@
 import numpy as np
-import sys
-from pathlib import Path
-
-HERE = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(HERE))
 
 from music.core.filters import (
     adsr,
@@ -96,7 +91,8 @@ def test_louds_concatenation_and_continuity():
     sr = 100
     durations = (0.1, 0.2)
     devs = (6, -6)
-    env = louds(durations=durations, trans_devs=devs, alpha=(1, 1), method=("exp", "exp"), sample_rate=sr)
+    env = louds(durations=durations, trans_devs=devs, alpha=(1, 1),
+                method=("exp", "exp"), sample_rate=sr)
     expected_len = int(sum(durations) * sr)
     assert len(env) == expected_len
 

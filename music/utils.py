@@ -16,6 +16,45 @@ triangular_tmp = np.linspace(-1, 1, LAMBDA_TILDE // 2, endpoint=False)
 WAVEFORM_TRIANGULAR = np.hstack((triangular_tmp, triangular_tmp[::-1]))
 
 
+def as_sonic_vector(sonic_vector: Any) -> NDArray[np.float64] | None:
+    """Normalize a ``sonic_vector`` argument to an array, or None.
+
+    Many routines in this package take an optional ``sonic_vector`` and fall
+    back to synthesizing a bare envelope when none is given.  They used to
+    detect that with ``type(sonic_vector) in (np.ndarray, list)``, which
+    silently ignored tuples and ndarray subclasses: the input was discarded
+    and the caller got an envelope of the default duration instead of an
+    error.
+
+    Parameters
+    ----------
+    sonic_vector : any
+        Samples to use, or a scalar sentinel (historically ``0``) or None
+        meaning that no samples were supplied.
+
+    Returns
+    -------
+    ndarray or None
+        The samples as an array, or None when none were supplied.
+
+    Examples
+    --------
+    >>> as_sonic_vector(0) is None
+    True
+    >>> as_sonic_vector(None) is None
+    True
+    >>> as_sonic_vector((0.1, 0.2)).shape
+    (2,)
+    """
+    if sonic_vector is None:
+        return None
+    array = np.asarray(sonic_vector, dtype=np.float64)
+    if array.ndim == 0:
+        # The legacy scalar sentinel: no samples were supplied.
+        return None
+    return array
+
+
 def horizontal_stack(*arrays: ArrayLike) -> NDArray[np.float64]:
     """Creates a horizontal stack of arrays while preserving bidimensional
        data.

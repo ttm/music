@@ -1,5 +1,12 @@
 """Top-level package for basic audio synthesis utilities."""
 
+from importlib.metadata import PackageNotFoundError, version as _version
+
+try:
+    __version__ = _version("music")
+except PackageNotFoundError:  # pragma: no cover - running from a checkout
+    __version__ = "0.0.0.dev0"
+
 from .utils import (
     amp_to_db,
     convert_to_stereo,
@@ -29,7 +36,6 @@ from .core import (
     fir,
     gaussian_noise,
     iir,
-    localize_linear,
     localize,
     localize2,
     loud,
@@ -74,6 +80,7 @@ from .legacy import Being, CanonicalSynth, IteratorSynth
 from .sequencer import Sequencer
 
 __all__ = [
+    '__version__',
     'adsr_stereo',
     'adsr_vibrato',
     'adsr',
@@ -96,7 +103,6 @@ __all__ = [
     'iir',
     'InterestingPermutations',
     'IteratorSynth',
-    'localize_linear',
     'localize',
     'localize2',
     'loud',

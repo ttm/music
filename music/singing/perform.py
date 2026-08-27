@@ -3,7 +3,6 @@
 
 import os
 import re
-import warnings
 import logging
 import subprocess
 from scipy.io import wavfile

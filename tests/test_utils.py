@@ -1,21 +1,9 @@
-import importlib.util
-from pathlib import Path
-import numpy as np
-import pytest
 import warnings
 
-HERE = Path(__file__).resolve().parents[1]
+import numpy as np
 
-
-def load_module(name, relative_path):
-    path = HERE / relative_path
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-utils = load_module('utils', 'music/utils.py')
-functions = load_module('functions', 'music/core/functions.py')
+from music import utils
+from music.core import functions
 
 def test_db_amp_conversion():
     values = np.array([-12, -6, 0, 6, 12])

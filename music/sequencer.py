@@ -7,7 +7,7 @@ from typing import List, Optional, Dict, Any
 import numpy as np
 
 from .core import synths
-from .core.filters import adsr
+from .core.filters.adsr import adsr
 from .core.filters.localization import localize
 from .utils import convert_to_stereo
 from .core.io import write_wav_mono, write_wav_stereo
@@ -33,7 +33,8 @@ class Sequencer:
     sample_rate: int = 44100
     events: List[NoteEvent] = field(default_factory=list)
 
-    def _mix_with_offset(self, base: np.ndarray, new: np.ndarray, start: float) -> np.ndarray:
+    def _mix_with_offset(self, base: np.ndarray, new: np.ndarray,
+                         start: float) -> np.ndarray:
         """Mix two sonic vectors with an offset in seconds."""
         offset = int(round(start * self.sample_rate))
         if base.ndim != new.ndim:
@@ -42,6 +43,7 @@ class Sequencer:
             else:
                 new = convert_to_stereo(new)
 
+        out: np.ndarray  # 1-D or (2, n) depending on the branch below
         if base.ndim == 1:
             final_len = max(len(base), offset + len(new))
             out = np.zeros(final_len)
@@ -101,7 +103,8 @@ class Sequencer:
             )
         if event.spatial:
             note = localize(
-                sonic_vector=note, sample_rate=self.sample_rate, **event.spatial
+                sonic_vector=note, sample_rate=self.sample_rate,
+                **event.spatial,
             )
         return note
 
@@ -121,10 +124,14 @@ class Sequencer:
         """Write the rendered audio to a WAV file."""
         data = self.render()
         if data.ndim == 1:
-            write_wav_mono(data, filename=filename, sample_rate=self.sample_rate, bit_depth=bit_depth)
+            write_wav_mono(
+                data, filename=filename, sample_rate=self.sample_rate,
+                bit_depth=bit_depth,
+            )
         else:
             write_wav_stereo(
-                data, filename=filename, sample_rate=self.sample_rate, bit_depth=bit_depth
+                data, filename=filename, sample_rate=self.sample_rate,
+                bit_depth=bit_depth,
             )
 
 

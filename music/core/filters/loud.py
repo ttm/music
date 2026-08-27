@@ -2,6 +2,8 @@
 
 import numpy as np
 
+from ...utils import as_sonic_vector
+
 
 def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
          number_of_samples=0, sonic_vector=0, sample_rate=44100):
@@ -73,14 +75,17 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
-    if type(sonic_vector) in (np.ndarray, list):
+    sonic_vector = as_sonic_vector(sonic_vector)
+    if sonic_vector is not None:
         n = len(sonic_vector)
     elif number_of_samples:
         n = number_of_samples
     else:
         n = int(sample_rate * duration)
     samples = np.arange(n)
-    n_ = n - 1
+    # A single-sample transition has no span to interpolate across; keeping
+    # the divisor at 1 yields its start value instead of 0/0 -> NaN.
+    n_ = max(n - 1, 1)
     if 'lin' in method:
         if to:
             a0 = 1
@@ -101,10 +106,9 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
             else:
                 samples_ = ((n_ - samples) / n_)
         e = 10 ** (samples_ * trans_dev / 20)
-    if type(sonic_vector) in (np.ndarray, list):
+    if sonic_vector is not None:
         return e * sonic_vector
-    else:
-        return e
+    return e
 
 
 def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
@@ -172,12 +176,7 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
-    if type(sonic_vector) in (np.ndarray, list):
-        n = len(sonic_vector)
-    elif number_of_samples:
-        n = sum(number_of_samples)
-    else:
-        n = int(sample_rate * sum(durations))
+    sonic_vector = as_sonic_vector(sonic_vector)
     s = []
     fact = 1
     if number_of_samples:
@@ -194,12 +193,11 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
             fact = s_[-1]
     e = np.hstack(s)
 
-    if type(sonic_vector) in (np.ndarray, list):
+    if sonic_vector is not None:
         if len(e) < len(sonic_vector):
-            s = np.hstack((e, np.ones(len(sonic_vector) - len(e)) * e[-1]))
+            e = np.hstack((e, np.ones(len(sonic_vector) - len(e)) * e[-1]))
         if len(e) > len(sonic_vector):
             sonic_vector = np.hstack((sonic_vector, np.ones(
                 len(e) - len(sonic_vector)) * e[-1]))
         return sonic_vector * e
-    else:
-        return e
+    return e

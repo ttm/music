@@ -3,7 +3,7 @@
 import numpy as np
 from .fade import fade
 from .loud import loud
-from ..synths.notes import note_with_vibrato
+from ...utils import as_sonic_vector
 
 
 def adsr(envelope_duration=2, attack_duration=20,
@@ -88,7 +88,8 @@ def adsr(envelope_duration=2, attack_duration=20,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
-    if type(sonic_vector) in (np.ndarray, list):
+    sonic_vector = as_sonic_vector(sonic_vector)
+    if sonic_vector is not None:
         lambda_adsr = len(sonic_vector)
     elif number_of_samples:
         lambda_adsr = number_of_samples
@@ -98,27 +99,46 @@ def adsr(envelope_duration=2, attack_duration=20,
     lambda_d = int(decay_duration * sample_rate * 0.001)
     lambda_r = int(release_duration * sample_rate * 0.001)
 
-    perc = to_zero / attack_duration
-    attack_duration = fade(fade_out=0, method=transition, alpha=alpha,
-                           db=db_dev, perc=perc, number_of_samples=lambda_a)
+    # The attack, decay and release stages cannot outlast the envelope they
+    # belong to: compress them proportionally when the sound is too short,
+    # rather than leaving the sustain stage with a negative length.
+    stages = lambda_a + lambda_d + lambda_r
+    if stages > lambda_adsr:
+        ratio = lambda_adsr / stages
+        lambda_a = int(lambda_a * ratio)
+        lambda_d = int(lambda_d * ratio)
+        lambda_r = int(lambda_r * ratio)
 
-    decay_duration = loud(trans_dev=sustain_level, method=transition,
-                          alpha=alpha, number_of_samples=lambda_d)
+    # A stage of zero length is built explicitly: fade() and loud() treat
+    # number_of_samples=0 as "unset" and fall back to their own default
+    # duration, which would stretch the envelope past the sound.
+    if lambda_a:
+        attack = fade(fade_out=0, method=transition, alpha=alpha, db=db_dev,
+                      perc=to_zero / attack_duration,
+                      number_of_samples=lambda_a)
+    else:
+        attack = np.array([])
+
+    if lambda_d:
+        decay = loud(trans_dev=sustain_level, method=transition,
+                     alpha=alpha, number_of_samples=lambda_d)
+    else:
+        decay = np.array([])
 
     a_s = 10 ** (sustain_level / 20.)
-    sustain_level = np.ones(lambda_adsr -
-                            (lambda_a + lambda_r + lambda_d)) * a_s
+    sustain = np.ones(lambda_adsr - (lambda_a + lambda_r + lambda_d)) * a_s
 
-    perc = to_zero / release_duration
-    release_duration = fade(method=transition, alpha=alpha, db=db_dev,
-                            perc=perc, number_of_samples=lambda_r) * a_s
-
-    ad = np.hstack((attack_duration, decay_duration, sustain_level,
-                    release_duration))
-    if type(sonic_vector) in (np.ndarray, list):
-        return sonic_vector * ad
+    if lambda_r:
+        release = fade(method=transition, alpha=alpha, db=db_dev,
+                       perc=to_zero / release_duration,
+                       number_of_samples=lambda_r) * a_s
     else:
-        return ad
+        release = np.array([])
+
+    ad = np.hstack((attack, decay, sustain, release))
+    if sonic_vector is not None:
+        return sonic_vector * ad
+    return ad
 
 
 def adsr_vibrato(note_dict={}, adsr_dict={}):
@@ -128,6 +148,10 @@ def adsr_vibrato(note_dict={}, adsr_dict={}):
     Check the adsr and the note_with_vibrato functions.
 
     """
+    # imported here rather than at module scope: music.core.synths.notes
+    # imports this module back, and a top-level import would make the
+    # filters <-> synths cycle bind names during partial initialisation.
+    from ..synths.notes import note_with_vibrato
     return adsr(sonic_vector=note_with_vibrato(**note_dict), **adsr_dict)
 
 
@@ -141,7 +165,8 @@ def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
     See adsr() for more information.
 
     """
-    if type(sonic_vector) in (np.ndarray, list):
+    sonic_vector = as_sonic_vector(sonic_vector)
+    if sonic_vector is not None:
         sonic_vector1 = sonic_vector[0]
         sonic_vector2 = sonic_vector[1]
     else:

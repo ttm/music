@@ -11,3 +11,7 @@ ipython_log.py
 dist/
 music/singing/ecantorix/
 musicPacDir/
+.coverage
+htmlcov/
+.ruff_cache/
+build/

@@ -35,10 +35,9 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=44100):
 
     """
     x = np.array(x)
+    if any(duration <= 0 for duration in durations):
+        raise ValueError("every duration in durations must be positive")
 
-    s_ = durations * sample_rate
-    obj = object()
-    obj.foo = s_
     if len(x.shape) == 1:
         length = x.shape[0]
         stereo = False
@@ -46,18 +45,14 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=44100):
         length = x.shape[1]
         stereo = True
     ns = length / sample_rate
-    ns_ = [ns / i for i in durations]
-    obj.bar = ns_
     # x[::ns] (mono) or x[:, ::ns] stereo is the sound in one second
     # for any duration s[i], use ns_ = ns//s[i]
     # x[np.arange(0, len(x), ns_[i])]
     sound = []
     for ss in durations:
-        if ns/ss >= 1:
-            indexes = np.arange(0, length, ns / ss).round().astype(np.int64)
-        else:
-            indexes = np.arange(0, length - 1, ns / ss).round().astype(
-                    np.int64)
+        indexes = np.arange(0, length, ns / ss).round().astype(np.int64)
+        # rounding can push the final index one past the end of the fragment
+        indexes = indexes[indexes < length]
         if stereo:
             segment = x[:, indexes]
         else:

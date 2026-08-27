@@ -6,7 +6,7 @@ from music.core.synths.notes import note, note_with_phase
 from music.utils import WAVEFORM_SINE
 
 
-def localize(sonic_vector=note(), theta=0, distance=0, x=.1, y=.01,
+def localize(sonic_vector=None, theta=0, distance=0, x=.1, y=.01,
              zeta=0.215, air_temp=20, sample_rate=44100):
     """
     Make a mono sound stereo and localize it by a very naive method.
@@ -88,6 +88,8 @@ def localize(sonic_vector=note(), theta=0, distance=0, x=.1, y=.01,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    if sonic_vector is None:
+        sonic_vector = note()
     if theta:
         theta = 2 * np.pi * theta / 360
         x = np.cos(theta) * distance
@@ -111,14 +113,32 @@ def localize(sonic_vector=note(), theta=0, distance=0, x=.1, y=.01,
     return s
 
 
-def localize_linear(sonic_vector=note(), theta1=90, theta2=0, dist=.1,
+def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
                     zeta=0.215, air_temp=20, sample_rate=44100):
     """
     A linear variation of the localize function.
 
+    .. warning::
+       Unimplemented, and awaiting a design decision -- see "Needs a decision
+       before release" in CHANGELOG.md. The body below computes the per-sample
+       interaural distances but never applies them, and the intended handling
+       of the time-varying interaural time difference was never settled.
+       Calling this raises NotImplementedError rather than returning a
+       misleading tuple of intermediates.
+
+       To finish it, decide how the per-sample delay should be realised: whole
+       -sample index warping as :func:`music.note_with_doppler` does, or
+       fractional-delay interpolation. Until then, use :func:`localize` for a
+       static position or :func:`music.note_with_doppler` for a moving source.
+
     See localize.
 
     """
+    raise NotImplementedError(
+        "localize_linear is unimplemented: the time-varying interaural time "
+        "difference is computed but never applied. Use localize() for a "
+        "static position, or note_with_doppler() for a moving source."
+    )
     theta1 = 2 * np.pi * theta1 / 360
     x1 = np.cos(theta1) * dist
     y1 = np.sin(theta1) * dist
@@ -153,7 +173,7 @@ def localize_linear(sonic_vector=note(), theta1=90, theta2=0, dist=.1,
     return iid_a, tl, tr, d__, d2__
 
 
-def localize2(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
+def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
               air_temp=20, method="ifft", sample_rate=44100):
     """
     Make a mono sound stereo and localize it by experimental methods.
@@ -224,6 +244,8 @@ def localize2(sonic_vector=note(), theta=-70, x=.1, y=.01, zeta=0.215,
     """
     if method not in ("ifft", "brute"):
         raise ValueError("The only methods implemented are ifft and brute")
+    if sonic_vector is None:
+        sonic_vector = note()
     if not theta:
         theta_ = np.arctan2(-x, y)
     else:

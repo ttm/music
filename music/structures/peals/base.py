@@ -32,6 +32,14 @@ class GenericPeal:
         Returns:
             list: The result of acting the peal on the specified domain.
         """
+        if not self.peals:
+            raise ValueError(
+                "no peals have been defined on this object yet"
+            )
+        if peal not in self.peals:
+            raise KeyError(
+                f"no peal named {peal!r}; defined: {sorted(self.peals)}"
+            )
         if domain is None:
             domain = list(range(self.nelements))
         return [i(domain) for i in self.peals[peal]]
@@ -43,6 +51,10 @@ class GenericPeal:
             domain (list, optional): The domain on which to act the peals.
                                      Defaults to None.
         """
+        if not self.peals:
+            raise ValueError(
+                "no peals have been defined on this object yet"
+            )
         if domain is None:
             domain = list(range(self.nelements))
         acted_peals = {}

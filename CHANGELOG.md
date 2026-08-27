@@ -28,6 +28,33 @@ deliberate, all are tracked, and none should reach a release unreviewed.
    byte-comparing against previously rendered WAVs will see a diff.
 
 ### Fixed
+- `setup_engine()` cloned the eCantorix engine into the installed package
+  directory, which fails on a read-only install, in a container, and for any
+  second user of a shared `site-packages`, and which a `pip` upgrade discards.
+  It now clones into the user's cache directory, overridable with
+  `$MUSIC_ECANTORIX_DIR`. An existing in-package clone is still used, so
+  installations set up by an older version keep working.
+- The singing module's external dependencies -- `git`, `make`, `perl` and
+  `espeak` -- were documented nowhere and checked nowhere. A missing one
+  surfaced as a `CalledProcessError` about a path the caller had never seen.
+  They are now checked up front, with an error naming what to install.
+- `sing()` wrote its `.abc` file before checking anything, so a missing
+  engine failed partway through. It now validates and creates the cache
+  directory before writing.
+- `Peals.transpositions_peal()` built each transposition with
+  `Permutation(pair)`, which reads a cycle as an array form:
+  `Permutation((0, 1))` is the identity and `Permutation((0, 2))` raises. The
+  method could not produce a correct peal for any permutation. Pairs are now
+  expanded as cycles over the original domain.
+- `Peals.peals` was initialised to a list, but every other use indexes it by
+  name, so `transpositions_peal` raised `TypeError`. It is a dict.
+- `GenericPeal.act()` and `act_all()` raised `'NoneType' object cannot be
+  interpreted as an integer` when no peal had been defined, and gave no hint
+  about an unknown peal name. Both now say what is wrong.
+- `setup_engine()` returned None when the engine was already present, so its
+  return value could not be relied on; it now always returns the path.
+- `make_test_song()` had eight notes for seven syllables, and `zip` silently
+  dropped the surplus.
 - `dist()` raised `IndexError` on the identity permutation, which has an empty
   support. It now returns zero, there being no displaced pair to measure.
 - `PlainChanges(2)` and `PlainChanges(3)` warned that "peals are the same if
@@ -107,6 +134,15 @@ deliberate, all are tracked, and none should reach a release unreviewed.
   56 sections across seven files. That is a workaround; converting them to
   numpydoc would let napoleon be dropped, and is tracked in `ASSESSMENT.md`
   under "Tracked follow-up: one docstring style".
+- `music/singing/paths.py`, a single source of truth for where the engine
+  lives and what it needs. The path was previously computed twice, in
+  `bootstrap.py` and in `perform.py`, both at import time.
+- `tests/test_singing.py`, covering path resolution, the dependency check and
+  the failure modes, none of which need the engine itself. It replaces
+  `test_bootstrap.py` and `test_perform_failures.py`, which patched module
+  internals that no longer exist -- and which had become vacuous: the latter
+  passed because a mocked `open` broke `shutil.copy`, not for the reason it
+  claimed.
 - `tests/test_structures.py`, asserting what campanology and group theory
   actually guarantee about a plain-changes peal: that it visits each of the
   `n!` permutations exactly once, that consecutive rows differ by a single

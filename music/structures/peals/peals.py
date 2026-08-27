@@ -49,7 +49,9 @@ class Peals(InterestingPermutations):
         Initializes a Peals object.
         """
         InterestingPermutations.__init__(self)
-        self.peals = []
+        # A mapping of name -> list of permutations, which is what
+        # GenericPeal.act and act_all index into.
+        self.peals = {}
         # Base peals can be created here when implementations become available
         # self.transpositions_peal(self.peals["rotation_peal"][1])
 
@@ -61,9 +63,22 @@ class Peals(InterestingPermutations):
                                        transpositions from.
             peal_name (str, optional): The name of the peal. Defaults to
                                        "transposition_peal".
+
+        Returns:
+            list: The transpositions, as permutations over the same domain.
+
+        Notes:
+            sympy's transpositions() yields index pairs, which are cycle
+            notation rather than array form: Permutation((0, 1)) is the
+            identity and Permutation((0, 2)) raises. The pairs are expanded
+            with the original size, so composing them in reverse rebuilds
+            the permutation they came from.
         """
-        self.peals[peal_name] = [Permutation(i)
-                                 for i in permutation.transpositions()]
+        self.peals[peal_name] = [
+            Permutation(*pair, size=permutation.size)
+            for pair in permutation.transpositions()
+        ]
+        return self.peals[peal_name]
 
     def twenty_all_over(self):
         """Placeholder for a 20 all over peal implementation."""

@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
 """Utilities to synthesize singing from text using eCantorix."""
 
-import os
 import re
 import logging
+import shutil
 import subprocess
 from scipy.io import wavfile
 from music.core import normalize_mono
-
-here = os.path.abspath(os.path.dirname(__file__))
-ECANTORIXDIR = here + '/ecantorix'
-ECANTORIXCACHE = ECANTORIXDIR + '/cache'
+from .paths import (ENGINE_MARKER, cache_dir, engine_dir, is_engine,
+                    require_system_dependencies)
 
 
 # def sing(text="ba-na-nin-ha pra vo-cê",
@@ -19,11 +17,20 @@ def sing(text="Mar-ry had a litt-le lamb",
          M='4/4', L='1/4', Q=120, K='C', reference=60,
          lang='en', transpose=-36, effect=None):
     #         lang='pt', transpose=-36, effect=None):
-    # write abc file
-    # write make file
-    # convert file to midi
-    # sing it out
+    # write abc file, write make file, convert to midi, sing it out
     # reference -= 24
+    engine = engine_dir()
+    cache = cache_dir()
+    if not is_engine(engine):
+        detail = (f"the directory exists but has no {ENGINE_MARKER}"
+                  if engine.is_dir() else "nothing is there")
+        raise RuntimeError(
+            f"no usable eCantorix engine at {engine}: {detail}. "
+            "Run music.singing.setup_engine() to install it."
+        )
+    require_system_dependencies()
+    cache.mkdir(parents=True, exist_ok=True)
+
     write_abc(text, notes, durs, M=M, L=L, Q=Q, K=K, reference=reference)
     conf_text = '$ESPEAK_VOICE = "{}";\n'.format(lang)
     conf_text += '$ESPEAK_TRANSPOSE = {};'.format(transpose)
@@ -35,25 +42,23 @@ def sing(text="Mar-ry had a litt-le lamb",
         conf_text += "\ndo 'extravoices/melt.inc';"
     elif effect:
         raise ValueError('effect not understood')
-    with open(ECANTORIXCACHE + '/achant.conf', 'w') as f:
+    with open(cache / 'achant.conf', 'w') as f:
         f.write(conf_text)
-    # write conf file
     try:
-        subprocess.run(
-            [
-                'cp',
-                f'{ECANTORIXDIR}/Makefile',
-                f'{ECANTORIXCACHE}/Makefile'
-            ],
-            check=True,
-        )
-        subprocess.run(['make', '-C', ECANTORIXCACHE], check=True)
+        shutil.copy(engine / 'Makefile', cache / 'Makefile')
+    except OSError as exc:
+        raise RuntimeError(f'Failed to prepare singing cache: {exc}') from exc
+    try:
+        subprocess.run(['make', '-C', str(cache)], check=True)
     except subprocess.CalledProcessError as exc:
         raise RuntimeError(f'Failed to build singing cache: {exc}') from exc
-    wread = wavfile.read(ECANTORIXCACHE + '/achant.wav')
-    assert wread[0] == 44100
-    return normalize_mono(wread[1])
-    # return wread[1]
+
+    sample_rate, samples = wavfile.read(cache / 'achant.wav')
+    if sample_rate != 44100:
+        raise RuntimeError(
+            f'expected the engine to render at 44100 Hz, got {sample_rate}'
+        )
+    return normalize_mono(samples)
 
 
 def write_abc(text, notes, durs, M='4/4', L='1/4', Q=120, K='C', reference=60):
@@ -66,7 +71,7 @@ def write_abc(text, notes, durs, M='4/4', L='1/4', Q=120, K='C', reference=60):
     text_ += 'K:{}\n'.format(K)
     notes = translate_to_abc(notes, durs, reference)
     text_ += notes + "\nw: " + text
-    fname = ECANTORIXCACHE + "/achant.abc"
+    fname = cache_dir() / "achant.abc"
     with open(fname, 'w') as f:
         f.write(text_)
 

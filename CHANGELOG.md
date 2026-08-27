@@ -1,7 +1,7 @@
 ## [Unreleased]
 
 ### Needs a decision before release
-Four entries below change behaviour that callers may depend on. All are
+Five entries below change behaviour that callers may depend on. All are
 deliberate, all are tracked, and none should reach a release unreviewed.
 
 1. **`localize_linear()` is no longer exported** and raises
@@ -31,13 +31,30 @@ deliberate, all are tracked, and none should reach a release unreviewed.
    now zero. A 440 Hz note changes by at most 2.4e-4 (-72 dBFS, inaudible)
    but half its samples differ, so byte comparisons against earlier renders
    will not match.
-4. **The WAV quantiser's scale changed**, so files written from now on differ
+4. **`fir()` now applies the magnitude response it is given**, which changes
+   its output substantially for anyone using the default `freq=True`. The old
+   behaviour was a boxcar average scaled by the response rather than the
+   response itself; there is no sense in which it was the intended filter, so
+   this is listed for visibility rather than as a judgement call.
+5. **The WAV quantiser's scale changed**, so files written from now on differ
    from files written before by one LSB of gain (about 0.0003 dB — inaudible,
    but the bytes differ). This is what makes a write/read round trip unity
    gain, and `tests/test_fidelity.py` now pins that property. Anyone
    byte-comparing against previously rendered WAVs will see a diff.
 
 ### Fixed
+- `fir()` applied a magnitude response by convolving with the magnitudes
+  themselves rather than with their inverse transform, so it was not really
+  applying the response at all. The decisive case: a *flat* response, meaning
+  "pass every frequency unchanged", convolved the signal with a run of ones --
+  a boxcar moving average. It now transforms the zero-phase spectrum into an
+  impulse response first, so a flat response is the identity and a low-pass
+  is about a hundred times more selective than before. This is the default
+  path: `freq` defaults to True.
+- `iir()` raised `TypeError: can't multiply sequence by non-int` when given
+  the "iterable of scalars" its parameters are documented as taking. Only
+  numpy arrays worked. Its arithmetic was correct -- a one-pole matches its
+  closed form exactly -- so only the input handling changed.
 - The waveform lookup tables were three separate implementations of the same
   four definitions -- in `utils`, in `tables.PrimaryTables` and in
   `legacy.tables.Basic` -- and they had drifted: the first built its triangle
@@ -183,6 +200,11 @@ deliberate, all are tracked, and none should reach a release unreviewed.
 - `music/singing/paths.py`, a single source of truth for where the engine
   lives and what it needs. The path was previously computed twice, in
   `bootstrap.py` and in `perform.py`, both at import time.
+- `tests/test_filters_response.py`, testing what the FIR and IIR filters do
+  to a signal rather than that they return an array: a flat response is the
+  identity, a low-pass removes the high band, an impulse response convolves
+  as given, a one-pole matches `pole ** n`, and both filters are linear.
+  Coverage of `impulse_response.py` went from 14% to 100%.
 - `music.utils.waveform_table(kind, size)`, the single generator the tables
   now come from. Each waveform is written directly as a function of phase,
   which is exact at any size, and `tests/test_fidelity.py` asserts that

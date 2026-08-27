@@ -35,6 +35,8 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=44100):
 
     """
     x = np.array(x)
+    if any(duration <= 0 for duration in durations):
+        raise ValueError("every duration in durations must be positive")
 
     if len(x.shape) == 1:
         length = x.shape[0]

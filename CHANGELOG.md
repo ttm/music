@@ -18,6 +18,19 @@
   proportionally. Zero-length stages no longer divide by zero or stretch the
   envelope, and single-sample transitions no longer leak NaN.
 - `requires-python` corrected from `>=3.0` to `>=3.10`.
+- Passing a tuple or an ndarray subclass as `sonic_vector` was silently
+  ignored by `adsr`, `fade`, `loud`, `louds`, `tremolo`, `tremolos`, `am`,
+  `reverb` and `adsr_stereo`: they detected a supplied vector with
+  `type(x) in (np.ndarray, list)` and returned a default-duration envelope
+  instead of the caller's audio. All sixteen sites now go through
+  `music.utils.as_sonic_vector`. The historical scalar `0` sentinel still
+  means "not supplied", so existing callers are unaffected.
+- The WAV writers rejected a numpy integer scalar as `fades` with an
+  `IndexError`, because `np.int64` does not subclass `int`.
+- Writing a sonic vector containing NaN or infinity cast it to arbitrary
+  integers and wrote them as audio; it now raises `ValueError`.
+- `stretches()` raised `ZeroDivisionError` deep in its resample loop when a
+  duration was zero; it now rejects non-positive durations up front.
 
 ### Changed
 - `localize_linear()` was never finished — its own body notes the missing

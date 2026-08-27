@@ -3,6 +3,7 @@
 import numpy as np
 from .fade import fade
 from .loud import loud
+from ...utils import as_sonic_vector
 
 
 def adsr(envelope_duration=2, attack_duration=20,
@@ -87,7 +88,8 @@ def adsr(envelope_duration=2, attack_duration=20,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
-    if type(sonic_vector) in (np.ndarray, list):
+    sonic_vector = as_sonic_vector(sonic_vector)
+    if sonic_vector is not None:
         lambda_adsr = len(sonic_vector)
     elif number_of_samples:
         lambda_adsr = number_of_samples
@@ -134,10 +136,9 @@ def adsr(envelope_duration=2, attack_duration=20,
         release = np.array([])
 
     ad = np.hstack((attack, decay, sustain, release))
-    if type(sonic_vector) in (np.ndarray, list):
+    if sonic_vector is not None:
         return sonic_vector * ad
-    else:
-        return ad
+    return ad
 
 
 def adsr_vibrato(note_dict={}, adsr_dict={}):
@@ -164,7 +165,8 @@ def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
     See adsr() for more information.
 
     """
-    if type(sonic_vector) in (np.ndarray, list):
+    sonic_vector = as_sonic_vector(sonic_vector)
+    if sonic_vector is not None:
         sonic_vector1 = sonic_vector[0]
         sonic_vector2 = sonic_vector[1]
     else:

@@ -29,18 +29,25 @@ def _wav_dtype(bit_depth: int) -> DTypeLike:
 def _fade_pair(fades: Sequence[int] | int) -> tuple[int, int]:
     """Resolve ``fades`` to (fade in, fade out) durations in milliseconds.
 
-    A scalar applies the same duration to both ends.
+    A scalar applies the same duration to both ends.  np.ndim is used rather
+    than isinstance because numpy integer scalars do not subclass int.
     """
-    if isinstance(fades, (int, float)):
-        return int(fades), int(fades)
-    return int(fades[0]), int(fades[1])
+    if np.ndim(fades) == 0:
+        return int(fades), int(fades)  # type: ignore[arg-type]
+    return int(fades[0]), int(fades[1])  # type: ignore[index]
 
 
 def _quantize(samples: NDArray[np.float64], bit_depth: int) -> NDArray[Any]:
     """Quantize samples in [-1, 1] to the integer encoding of a WAV file."""
     dtype = _wav_dtype(bit_depth)
+    samples = np.asarray(samples, dtype=np.float64)
+    if not np.isfinite(samples).all():
+        raise ValueError(
+            "sonic_vector contains NaN or infinity, which cannot be written "
+            "as PCM samples"
+        )
     peak = 2 ** (bit_depth - 1) - 1
-    scaled = np.clip(np.round(np.asarray(samples) * peak), -peak - 1, peak)
+    scaled = np.clip(np.round(samples * peak), -peak - 1, peak)
     if bit_depth == 8:
         # 8-bit WAV samples are unsigned, centred on 128 (RIFF spec).
         scaled = scaled + 2 ** (bit_depth - 1)
@@ -104,7 +111,7 @@ def write_wav_mono(
     sonic_vector : array_like, optional
         The PCM samples to be written as a WAV sound file. The samples are
         always normalized by normalize_mono(sonic_vector) to have samples
-        between -1 and 1. Defaults to a second or so of uniform noise.
+        between -1 and 1. Defaults to about two seconds of uniform noise.
     filename : string
         The filename to use for the file to be written.
     sample_rate : scalar
@@ -155,7 +162,7 @@ def write_wav_stereo(
         always normalized by normalize_stereo(sonic_vector) to have samples
         between -1 and 1 and remove the offset.
         Use array of shape (nchannels, nsamples).
-        Defaults to a second or so of uniform noise.
+        Defaults to about two seconds of uniform noise.
     filename : string
         The filename to use for the file to be written.
     sample_rate : scalar

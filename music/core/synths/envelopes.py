@@ -1,7 +1,8 @@
 """Synthesis envelopes such as AM and tremolo."""
 
 import numpy as np
-from music.utils import WAVEFORM_SINE, WAVEFORM_TRIANGULAR
+from music.utils import (WAVEFORM_SINE, WAVEFORM_TRIANGULAR,
+                         as_sonic_vector)
 
 
 def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
@@ -74,7 +75,8 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     """
 
     waveform_table = np.array(waveform_table)
-    if type(sonic_vector) in (np.ndarray, list):
+    sonic_vector = as_sonic_vector(sonic_vector)
+    if sonic_vector is not None:
         lambda_am = len(sonic_vector)
     elif number_of_samples:
         lambda_am = number_of_samples
@@ -88,10 +90,9 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     # amplitude variation at each sample
     t_am = waveform_table[gamma_am % length]
     t = 1 + t_am * max_amplitude
-    if type(sonic_vector) in (np.ndarray, list):
+    if sonic_vector is not None:
         return t * sonic_vector
-    else:
-        return t
+    return t
 
 
 def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
@@ -164,7 +165,8 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     """
 
     waveform_table = np.array(waveform_table)
-    if type(sonic_vector) in (np.ndarray, list):
+    sonic_vector = as_sonic_vector(sonic_vector)
+    if sonic_vector is not None:
         lambda_tremolo = len(sonic_vector)
     elif number_of_samples:
         lambda_tremolo = number_of_samples
@@ -182,10 +184,9 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
         t = 10. ** ((table_amp * max_db_dev / 20) ** alpha)
     else:
         t = 10. ** (table_amp * max_db_dev / 20)
-    if type(sonic_vector) in (np.ndarray, list):
+    if sonic_vector is not None:
         return t * sonic_vector
-    else:
-        return t
+    return t
 
 
 def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
@@ -274,8 +275,9 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
                             alpha[i][j], waveform_table=waveform_tables[i][j],
                             sample_rate=sample_rate)
                 t_[-1].append(s)
+    sonic_vector = as_sonic_vector(sonic_vector)
     amax = 0
-    if type(sonic_vector) in (np.ndarray, list):
+    if sonic_vector is not None:
         amax = len(sonic_vector)
     for i in range(len(t_)):
         t_[i] = np.hstack(t_[i])
@@ -283,7 +285,7 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
     for i in range(len(t_)):
         if len(t_[i]) < amax:
             t_[i] = np.hstack((t_[i], np.ones(amax - len(t_[i])) * t_[i][-1]))
-    if type(sonic_vector) in (np.ndarray, list):
+    if sonic_vector is not None:
         if len(sonic_vector) < amax:
             sonic_vector = np.hstack((sonic_vector,
                                       np.zeros(amax - len(sonic_vector))))

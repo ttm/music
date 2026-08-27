@@ -164,3 +164,45 @@ def test_adsr_accepts_a_zero_length_stage(stage):
     envelope = music.adsr(**{stage: 0})
     assert envelope.shape[0] == music.adsr().shape[0]
     assert np.isfinite(envelope).all()
+
+
+class _SubArray(np.ndarray):
+    """An ndarray subclass, of the kind a units or masked-array library
+    hands back."""
+
+
+@pytest.mark.parametrize(
+    "name", ["adsr", "fade", "loud", "tremolo", "am", "reverb"],
+)
+def test_sonic_vector_accepts_any_array_like(name):
+    """Regression: these routines detected a supplied sonic vector with
+    ``type(x) in (np.ndarray, list)``, so a tuple or an ndarray subclass was
+    silently discarded and the caller got a default-duration envelope back
+    instead of their own audio.
+    """
+    function = getattr(music, name)
+    samples = np.ones(4410)
+
+    results = []
+    for variant in (samples, list(samples), tuple(samples),
+                    samples.view(_SubArray)):
+        np.random.seed(0)  # reverb convolves with a noise tail
+        results.append(np.asarray(function(sonic_vector=variant)))
+
+    reference = results[0]
+    assert reference.shape[-1] != len(music.adsr()), (
+        f"{name} fell back to a default-length envelope"
+    )
+    for other in results[1:]:
+        assert other.shape == reference.shape
+        assert np.allclose(other, reference)
+
+
+@pytest.mark.parametrize("name", ["adsr", "loud", "tremolo", "am"])
+def test_absent_sonic_vector_still_yields_a_bare_envelope(name):
+    """The historical scalar ``0`` sentinel must keep meaning "not supplied",
+    alongside None and the parameter being omitted entirely."""
+    function = getattr(music, name)
+    omitted = np.asarray(function())
+    assert np.asarray(function(sonic_vector=0)).shape == omitted.shape
+    assert np.asarray(function(sonic_vector=None)).shape == omitted.shape

@@ -31,6 +31,11 @@
   integers and wrote them as audio; it now raises `ValueError`.
 - `stretches()` raised `ZeroDivisionError` deep in its resample loop when a
   duration was zero; it now rejects non-positive durations up front.
+- Writing and reading a WAV back was not unity gain: the writer scaled by
+  `2 ** (bit_depth - 1) - 1` while `read_wav` divided by `2 ** (bit_depth
+  - 1)`, so a round trip lost about 1.5 quantisation steps rather than the
+  half step the quantiser costs. The writer now uses the same scale, and
+  exactly representable levels survive a round trip unchanged.
 
 ### Changed
 - `localize_linear()` was never finished — its own body notes the missing
@@ -41,8 +46,18 @@
   their function bodies, dropping about 2.4 MB and half the import time.
 - Tests import the package the way a user does, via a single root
   `conftest.py`, instead of per-file `sys.path` edits.
+- `normalize_mono` / `normalize_stereo`: documented what `remove_bias`
+  actually selects between (centre-and-scale versus an affine map onto
+  [-1, 1]), and removed a stray duplicate entry from the Returns section.
 
 ### Added
+- `tests/test_fidelity.py`, checking that the synthesized *samples* match the
+  equations the docstrings cite, not merely that they have the right shape:
+  `note` and `note_with_vibrato` against their closed forms sample for
+  sample, the vibrato's semitone span, tremolo and ADSR levels in the
+  decibels their parameters are stated in, every noise colour's dB/octave
+  slope, `localize`'s interaural delay and amplitude ratio against the ear
+  geometry, and WAV round-trip error against the quantiser step.
 - `tests/test_public_api.py`, sweeping every export callable with its
   documented defaults, plus a regression test for each defect above.
 - GitHub Actions running ruff, mypy and pytest on Python 3.10-3.13.

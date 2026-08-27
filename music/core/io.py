@@ -46,11 +46,15 @@ def _quantize(samples: NDArray[np.float64], bit_depth: int) -> NDArray[Any]:
             "sonic_vector contains NaN or infinity, which cannot be written "
             "as PCM samples"
         )
-    peak = 2 ** (bit_depth - 1) - 1
-    scaled = np.clip(np.round(samples * peak), -peak - 1, peak)
+    # Scale by 2 ** (bit_depth - 1), matching the divisor read_wav uses, so
+    # that writing and reading back is unity gain. Only a sample at exactly
+    # +1.0 needs the clip, the positive range being one value shorter.
+    full_scale = 2 ** (bit_depth - 1)
+    scaled = np.clip(np.round(samples * full_scale), -full_scale,
+                     full_scale - 1)
     if bit_depth == 8:
         # 8-bit WAV samples are unsigned, centred on 128 (RIFF spec).
-        scaled = scaled + 2 ** (bit_depth - 1)
+        scaled = scaled + full_scale
     return scaled.astype(dtype)
 
 

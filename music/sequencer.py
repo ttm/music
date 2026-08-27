@@ -43,6 +43,7 @@ class Sequencer:
             else:
                 new = convert_to_stereo(new)
 
+        out: np.ndarray  # 1-D or (2, n) depending on the branch below
         if base.ndim == 1:
             final_len = max(len(base), offset + len(new))
             out = np.zeros(final_len)

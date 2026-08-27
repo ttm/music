@@ -65,7 +65,10 @@
   geometry, and WAV round-trip error against the quantiser step.
 - `tests/test_public_api.py`, sweeping every export callable with its
   documented defaults, plus a regression test for each defect above.
-- GitHub Actions running ruff, mypy and pytest on Python 3.10-3.13.
+- GitHub Actions running ruff, mypy and pytest on Python 3.10-3.13. The
+  `[tool.mypy]` section no longer pins `python_version`, so mypy targets the
+  interpreter it runs under; pinned to 3.11 it could not parse numpy's own
+  stubs when run on 3.12+.
 - `py.typed`, so the package's type annotations reach consumers.
 - `music.__version__`, sourced from package metadata.
 

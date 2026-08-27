@@ -90,6 +90,8 @@ extend-exclude = ['music/singing/ecantorix']
 select = ['E', 'W', 'F']
 
 [tool.mypy]
-python_version = '3.11'
+# Deliberately no python_version: mypy then targets the interpreter it runs
+# under, which is what the CI matrix needs. Pinning it to 3.11 made mypy
+# fail to parse numpy's own stubs when run on 3.12+.
 files = ['music']
 ignore_missing_imports = true

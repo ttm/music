@@ -1,7 +1,7 @@
 ## [Unreleased]
 
 ### Needs a decision before release
-Three entries below change behaviour that callers may depend on. All are
+Four entries below change behaviour that callers may depend on. All are
 deliberate, all are tracked, and none should reach a release unreviewed.
 
 1. **`localize_linear()` is no longer exported** and raises
@@ -21,13 +21,32 @@ deliberate, all are tracked, and none should reach a release unreviewed.
    nothing. Anyone who was relying on the shorter peal can ask for it with
    `nhunts=2`; anyone rendering from `peal_direct` at six bells or more will
    get six times the material or more.
-3. **The WAV quantiser's scale changed**, so files written from now on differ
+3. **The waveform tables are now exact**, so every rendered note changes
+   slightly. Two of the four were built by halves and drifted from the
+   waveform they name: the sawtooth stepped by `2/(size-1)` instead of
+   `2/size`, and `WAVEFORM_TRIANGULAR` -- the default table for every note
+   this package synthesizes -- had a flat two-sample top that peaked at
+   `1 - 2/size` rather than 1. Measured against the continuous waveform
+   sampled at the same phases, the errors were 1.2e-4 and 2.4e-4; both are
+   now zero. A 440 Hz note changes by at most 2.4e-4 (-72 dBFS, inaudible)
+   but half its samples differ, so byte comparisons against earlier renders
+   will not match.
+4. **The WAV quantiser's scale changed**, so files written from now on differ
    from files written before by one LSB of gain (about 0.0003 dB — inaudible,
    but the bytes differ). This is what makes a write/read round trip unity
    gain, and `tests/test_fidelity.py` now pins that property. Anyone
    byte-comparing against previously rendered WAVs will see a diff.
 
 ### Fixed
+- The waveform lookup tables were three separate implementations of the same
+  four definitions -- in `utils`, in `tables.PrimaryTables` and in
+  `legacy.tables.Basic` -- and they had drifted: the first built its triangle
+  as `hstack((t, t[::-1]))` and the other two as `hstack((t, -t))`, which
+  differ at the peak sample. All three now come from
+  `music.utils.waveform_table`, and `legacy.tables.Basic` is
+  `PrimaryTables` under its historical name.
+- Asking `PrimaryTables` for an odd `size` returned tables one sample short,
+  the two built from halves having summed to `size - 1`.
 - The mono branch of `note_with_vibrato_seq_localization()` had never run.
   Three faults, one behind the other: a per-segment value was assigned over
   the accumulator that the next line appended to, raising `AttributeError`;
@@ -164,6 +183,11 @@ deliberate, all are tracked, and none should reach a release unreviewed.
 - `music/singing/paths.py`, a single source of truth for where the engine
   lives and what it needs. The path was previously computed twice, in
   `bootstrap.py` and in `perform.py`, both at import time.
+- `music.utils.waveform_table(kind, size)`, the single generator the tables
+  now come from. Each waveform is written directly as a function of phase,
+  which is exact at any size, and `tests/test_fidelity.py` asserts that
+  against the continuous waveform rather than against whatever the code
+  happens to emit.
 - `tests/test_legacy.py`, covering the legacy synthesizers, which were the
   least-tested modules in the package. `CanonicalSynth` went from 11% to 97%,
   `IteratorSynth` from 25% to 100% and `testSong2` from 0% to 100%.

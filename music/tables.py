@@ -18,8 +18,9 @@ Classes in this module:
 
 * ``PrimaryTables`` -- provides primary tables for waveform lookup.
 """
-import numpy as np
 import pylab as p
+
+from .utils import waveform_table
 
 
 class PrimaryTables:
@@ -74,11 +75,10 @@ class PrimaryTables:
         size : int
             The number of samples for each waveform table.
         """
-        self.sine = np.sin(np.linspace(0, 2 * np.pi, size, endpoint=False))
-        self.saw = np.linspace(-1, 1, size)
-        self.square = np.hstack((np.ones(size // 2) * -1, np.ones(size // 2)))
-        foo = np.linspace(-1, 1, size // 2, endpoint=False)
-        self.triangle = np.hstack((foo, foo * -1))
+        self.sine = waveform_table("sine", size)
+        self.saw = waveform_table("sawtooth", size)
+        self.square = waveform_table("square", size)
+        self.triangle = waveform_table("triangle", size)
 
     def draw_tables(self):
         """Draw waveform tables."""

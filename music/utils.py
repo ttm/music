@@ -8,12 +8,66 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 LAMBDA_TILDE = 1024 * 16
-WAVEFORM_SINE = np.sin(np.linspace(0, 2 * np.pi, LAMBDA_TILDE, endpoint=False))
-WAVEFORM_SAWTOOTH = np.linspace(-1, 1, LAMBDA_TILDE)
-WAVEFORM_SQUARE = np.hstack((np.ones(int(LAMBDA_TILDE / 2)) * -1,
-                             np.ones(int(LAMBDA_TILDE / 2))))
-triangular_tmp = np.linspace(-1, 1, LAMBDA_TILDE // 2, endpoint=False)
-WAVEFORM_TRIANGULAR = np.hstack((triangular_tmp, triangular_tmp[::-1]))
+
+#: The waveforms :func:`waveform_table` knows how to build.
+WAVEFORMS = ("sine", "sawtooth", "square", "triangle")
+
+
+def waveform_table(kind: str,
+                   size: int = LAMBDA_TILDE) -> NDArray[np.float64]:
+    """One period of a primary waveform, as a lookup table.
+
+    Each table is written directly as a function of the phase, so it is
+    exact at any size and holds exactly `size` samples. Building them by
+    halves instead — the way this package used to — costs a sample at odd
+    sizes and puts the sawtooth and triangle slightly out of true.
+
+    Parameters
+    ----------
+    kind : {'sine', 'sawtooth', 'square', 'triangle'}
+        Which waveform to build.
+    size : int, optional
+        The number of samples in the period. Defaults to LAMBDA_TILDE.
+
+    Returns
+    -------
+    ndarray
+        `size` samples spanning one period, in [-1, 1].
+
+    Raises
+    ------
+    ValueError
+        If `kind` is not one of WAVEFORMS, or `size` is not positive.
+
+    Examples
+    --------
+    >>> waveform_table('square', 4)
+    array([-1., -1.,  1.,  1.])
+    >>> waveform_table('triangle', 4)
+    array([-1.,  0.,  1.,  0.])
+    >>> waveform_table('sawtooth', 4)
+    array([-1. , -0.5,  0. ,  0.5])
+    """
+    if size <= 0:
+        raise ValueError(f"size must be positive; got {size}")
+    phase = np.arange(size) / size
+    if kind == "sine":
+        return np.sin(2 * np.pi * phase)
+    if kind == "sawtooth":
+        return 2 * phase - 1
+    if kind == "square":
+        return np.where(phase < .5, -1.0, 1.0)
+    if kind == "triangle":
+        return np.where(phase <= .5, -1 + 4 * phase, 3 - 4 * phase)
+    raise ValueError(
+        f"unknown waveform {kind!r}; expected one of {list(WAVEFORMS)}"
+    )
+
+
+WAVEFORM_SINE = waveform_table("sine")
+WAVEFORM_SAWTOOTH = waveform_table("sawtooth")
+WAVEFORM_SQUARE = waveform_table("square")
+WAVEFORM_TRIANGULAR = waveform_table("triangle")
 
 
 def as_sonic_vector(sonic_vector: Any) -> NDArray[np.float64] | None:

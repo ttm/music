@@ -307,11 +307,9 @@ Ordered by return on effort. Phase 1 is roughly a day and removes every "Terribl
     never `site-packages`; document the `git`/`make`/`perl`/`espeak` system dependencies and
     check for them with a clear error.
 19. **Convert the Google-style docstrings in `structures/` and `legacy/` to numpydoc.**
-    The package documents itself in two incompatible styles: 56 `Attributes:` / `Parameters:`
-    / `Returns:` / `Methods:` sections across seven files use Google style, while everything
-    else uses numpydoc. Publishing the API reference papered over this by enabling
-    `sphinx.ext.napoleon` alongside `numpydoc` — each extension renders the style it handles
-    best — but that is a workaround, not a fix. See the box below.
+    *(Done.)* The package documented itself in two incompatible styles. All 60 sections
+    across eight files are now numpydoc, and `sphinx.ext.napoleon` has been removed. See
+    the box below.
 
 ### Phase 5 — Surface the strengths
 
@@ -325,39 +323,29 @@ Ordered by return on effort. Phase 1 is roughly a day and removes every "Terribl
 
 ---
 
-## Tracked follow-up: one docstring style
+## Resolved: one docstring style
 
-**The package documents itself in two incompatible styles.** Most of it is numpydoc —
-`Parameters` / `Returns` / `See Also` / `Examples` / `Notes` / `References` under dashed
-underlines, with the equation and the MASS citation. But `music.structures` and
-`music.legacy` use Google style — `Attributes:`, `Parameters:`, `Returns:`, `Methods:` with
-a trailing colon — across **56 sections in seven files**:
-
-```
-music/structures/permutations.py        music/legacy/classes.py
-music/structures/peals/plain_changes.py music/legacy/tables.py
-music/structures/peals/peals.py         music/legacy/IteratorSynth.py
-music/structures/peals/base.py
-```
+**The package used to document itself in two incompatible styles.** Most of it was
+numpydoc — `Parameters` / `Returns` / `See Also` / `Examples` / `Notes` / `References`
+under dashed underlines. But `music.structures`, `music.legacy` and `music.tables` used
+Google style — `Attributes:`, `Parameters:`, `Returns:`, `Methods:` with a trailing colon
+— across **60 sections in eight files**.
 
 numpydoc cannot parse Google style, so those entries rendered as mangled definition lists
-and block quotes. Publishing the API reference resolved that by enabling
-`sphinx.ext.napoleon` ahead of `numpydoc` with `napoleon_numpy_docstring = False`, so each
-extension handles the style it renders best. That cleared every `structures/` and `peals/`
-warning at once.
+and block quotes. Publishing the API reference first worked around it by enabling
+`sphinx.ext.napoleon` ahead of `numpydoc`, which cleared the warnings but left the project
+with two dialects, an extension carried only for the older one, and no single correct style
+for a contributor to copy.
 
-**That is a workaround, not a fix.** It leaves the project with two documentation dialects,
-a second Sphinx extension carried purely for the older one, and a trap for anyone adding a
-docstring — there is no single correct style to copy. Converting the 56 sections to numpydoc
-would remove the `napoleon` dependency and the ambiguity together.
+**All 60 sections are now numpydoc, and `sphinx.ext.napoleon` is gone.** The proof is that
+`sphinx-build -W` still succeeds without it: had any section failed to convert, numpydoc
+alone would have produced the mangled rendering that the strict build rejects.
 
-It is deliberately not bundled with the docs work: it touches seven files, is mechanical but
-not automatic, and would have buried the four genuinely broken docstrings that publishing
-uncovered. Doing it separately keeps both diffs reviewable.
-
-Two things make it safer than it looks. `sphinx-build -W` now fails CI on a malformed
-docstring, so a botched conversion cannot land quietly. And the conversion can proceed one
-file at a time, dropping `napoleon` only once the last Google-style section is gone.
+Four sections needed converting by hand — a `Reference:` at column zero in a module
+docstring, an `Example:` separated from its doctest by a blank line, an `Attributes:`
+section whose only content was the prose "No additional attributes", and a `Classes:`
+listing with no numpydoc equivalent (rendered as a bullet list instead). The other 56 were
+mechanical.
 
 ---
 

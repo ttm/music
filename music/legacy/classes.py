@@ -19,18 +19,29 @@ def V_(st=0, freq=220, duration=2., vibrato_freq=2., max_pitch_dev=2.,
        vibrato_waveform_table=WAVEFORM_SINE):
     """A shorthand for generating a note with vibrato.
 
-    Args:
-        st (float): Semitones relative to the base frequency.
-        freq (float): Base frequency of the note.
-        duration (float): Duration of the note in seconds.
-        vibrato_freq (float): Frequency of the vibrato.
-        max_pitch_dev (float): Maximum pitch deviation.
-        waveform_table (array): Table representing the waveform of the note.
-        vibrato_waveform_table (array): Table representing the waveform of the
-                                        vibrato.
+    Parameters
+    ----------
+    st : float
+        Semitones relative to the base frequency.
+    freq : float
+        Base frequency of the note.
+    duration : float
+        Duration of the note in seconds.
+    vibrato_freq : float
+        Frequency of the vibrato.
+    max_pitch_dev : float
+        Maximum pitch deviation.
+    waveform_table : array
+        Table representing the waveform of the note.
+    vibrato_waveform_table : array
+        Table representing the waveform of the
+        vibrato.
 
-    Returns:
-        array: A note with vibrato.
+    Returns
+    -------
+    array
+        A note with vibrato.
+
     """
     f_ = freq * 2 ** (st / 12)
     return note_with_vibrato(freq=f_, duration=2., vibrato_freq=2.,
@@ -42,13 +53,19 @@ def V_(st=0, freq=220, duration=2., vibrato_freq=2., max_pitch_dev=2.,
 def ADV(note_dict={}, adsr_dict={}):
     """Apply ADSR envelope to a note with vibrato.
 
-    Args:
-        note_dict (dict): Dictionary containing parameters for the note.
-        adsr_dict (dict): Dictionary containing parameters for the ADSR
-                          envelope.
+    Parameters
+    ----------
+    note_dict : dict
+        Dictionary containing parameters for the note.
+    adsr_dict : dict
+        Dictionary containing parameters for the ADSR
+        envelope.
 
-    Returns:
-        array: Note with applied ADSR envelope.
+    Returns
+    -------
+    array
+        Note with applied ADSR envelope.
+
     """
     return adsr(sonic_vector=V_(**note_dict), **adsr_dict)
 
@@ -96,12 +113,18 @@ class Being:
     def walk(self, n, method='straight'):
         """Walk a certain number of steps.
 
-        Args:
-            n (int): Number of steps.
-            method (str): Method of walking.
+        Parameters
+        ----------
+        n : int
+            Number of steps.
+        method : str
+            Method of walking.
 
-        Returns:
-            array: Sequence of steps.
+        Returns
+        -------
+        array
+            Sequence of steps.
+
         """
         if method == 'straight':
             # ** TTM
@@ -118,11 +141,15 @@ class Being:
     def setPar(self, par='f'):
         """Set parameter to be developed in walks and stays.
 
-        Args:
-            par (str): Parameter to be set.
+        Parameters
+        ----------
+        par : str
+            Parameter to be set.
 
-        Returns:
-            None
+        Returns
+        -------
+        None
+
         """
         if par == 'f':
             self.grid = self.fgrid
@@ -131,34 +158,48 @@ class Being:
     def setSize(self, ss):
         """Set the size.
 
-        Args:
-            ss (int): Size to set.
+        Parameters
+        ----------
+        ss : int
+            Size to set.
 
-        Returns:
-            None
+        Returns
+        -------
+        None
+
         """
         self.seqsize = ss
 
     def setPerms(self, perms):
         """Set permutations.
 
-        Args:
-            perms (list): List of permutations.
+        Parameters
+        ----------
+        perms : list
+            List of permutations.
 
-        Returns:
-            None
+        Returns
+        -------
+        None
+
         """
         self.perms = perms
 
     def stay(self, n, method='perm'):
         """Stay for a certain number of notes.
 
-        Args:
-            n (int): Number of notes.
-            method (str): Method of staying.
+        Parameters
+        ----------
+        n : int
+            Number of notes.
+        method : str
+            Method of staying.
 
-        Returns:
-            array: Sequence of stayed notes.
+        Returns
+        -------
+        array
+            Sequence of stayed notes.
+
         """
         if method == 'straight':
             sequence = [self.grid[(self.pointer + i) % self.seqsize]
@@ -189,11 +230,15 @@ class Being:
     def addSeq(self, sequence):
         """Add sequence to the Being.
 
-        Args:
-            sequence (array): Sequence to add.
+        Parameters
+        ----------
+        sequence : array
+            Sequence to add.
 
-        Returns:
-            None
+        Returns
+        -------
+        None
+
         """
         if isinstance(self.__dict__[self.curseq], list):
             self.__dict__[self.curseq].extend(sequence)
@@ -204,12 +249,17 @@ class Being:
     def render(self, nn, fn=False):
         """Render notes of the Being.
 
-        Args:
-            nn (int): Number of notes to render.
-            fn (str or bool): File name to save the rendered notes.
+        Parameters
+        ----------
+        nn : int
+            Number of notes to render.
+        fn : str or bool
+            File name to save the rendered notes.
 
-        Returns:
-            array or None: Rendered notes.
+        Returns
+        -------
+        array or None: Rendered notes.
+
         """
         self.mkArray()
         ii = n.arange(nn)
@@ -241,11 +291,14 @@ class Being:
     def startBeing(self):
         """Start the Being.
 
-        Args:
-            None
+        Parameters
+        ----------
+        None
 
-        Returns:
-            None
+        Returns
+        -------
+        None
+
         """
         self.dscale = 1
         self.d_ = [1]
@@ -263,11 +316,14 @@ class Being:
     def mkArray(self):
         """Make array.
 
-        Args:
-            None
+        Parameters
+        ----------
+        None
 
-        Returns:
-            None
+        Returns
+        -------
+        None
+
         """
         self.d_ = n.array(self.d_)
         self.f_ = n.array(self.f_)
@@ -282,21 +338,27 @@ class Being:
     def howl(self):
         """Produce a howling sound.
 
-        Args:
-            None
+        Parameters
+        ----------
+        None
 
-        Returns:
-            None
+        Returns
+        -------
+        None
+
         """
         pass
 
     def freeze(self):
         """Freeze the Being.
 
-        Args:
-            None
+        Parameters
+        ----------
+        None
 
-        Returns:
-            None
+        Returns
+        -------
+        None
+
         """
         pass

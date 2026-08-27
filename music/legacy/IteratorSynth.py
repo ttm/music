@@ -9,11 +9,10 @@ class IteratorSynth(CanonicalSynth):
 
     Inherits from CanonicalSynth.
 
-    Attributes:
-        No additional attributes.
+    It adds no attributes of its own.
 
-    Example:
-
+    Examples
+    --------
     >>> isynth = M.IteratorSynth()
     >>> isynth.fundamental_frequency_sequence = [220, 400, 100, 500]
     >>> isynth.duration_sequence = [2, 1, 1.5]
@@ -29,11 +28,16 @@ class IteratorSynth(CanonicalSynth):
         """
         Renders a sound iteration with the given state variables.
 
-        Parameters:
-            **statevars: Arbitrary keyword arguments for state variables.
+        Parameters
+        ----------
+        **statevars
+            Arbitrary keyword arguments for state variables.
 
-        Returns:
-            list: A list representing the rendered sound.
+        Returns
+        -------
+        list
+            A list representing the rendered sound.
+
         """
         self.absorbState(**statevars)
         self.iterateElements()

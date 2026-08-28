@@ -410,12 +410,17 @@ def mix_stereo(
     If `second_sonic_vector` is not provided, the `end` parameter is ignored.
 
     """
-    if len(first_sonic_vector) != 2:
+    # ndim, not len: a two-sample mono vector also has len() == 2, and was
+    # taken for a stereo pair whose channels were then indexed as scalars.
+    first_sonic_vector = np.asarray(first_sonic_vector, dtype=np.float64)
+    if first_sonic_vector.ndim != 2:
         first_sonic_vector = np.array((first_sonic_vector, first_sonic_vector))
     if second_sonic_vector is None:
         second_sonic_vector = first_sonic_vector
     else:
-        if len(second_sonic_vector) != 2:
+        second_sonic_vector = np.asarray(second_sonic_vector,
+                                         dtype=np.float64)
+        if second_sonic_vector.ndim != 2:
             second_sonic_vector = np.array((second_sonic_vector,
                                             second_sonic_vector))
 
@@ -568,7 +573,10 @@ def mix_with_offset(
     first_sonic_vector = np.array(first_sonic_vector)
     second_sonic_vector = np.array(second_sonic_vector)
     if 2 in [len(first_sonic_vector.shape), len(second_sonic_vector.shape)]:
-        return resolve_stereo(mix_with_offset, locals(), ['s1', 's2'])
+        # The parameters were renamed from s1/s2 at some point but these
+        # names were not, so the stereo path raised KeyError.
+        return resolve_stereo(mix_with_offset, locals(),
+                              ['first_sonic_vector', 'second_sonic_vector'])
     dur = duration
 
     if not number_of_samples:  # sample in s1 where s2[0] is added
@@ -643,10 +651,12 @@ def mix_with_offset_(*args: ArrayLike) -> NDArray[np.float64]:
     s: NDArray[np.float64] = np.array([])
     while i < len(args):
         a = args[i]  # new array
-        if type(a) not in (np.ndarray, list):
+        # np.ndim rather than an exact type check, which rejected tuples and
+        # ndarray subclasses although the parameters are array_like.
+        if np.ndim(a) == 0:
             raise ValueError(
-                "Skipping a value that should have been a sequence of numbers:"
-                f" {a!r}")
+                "expected a sequence of numbers at position "
+                f"{i}, got {a!r}")
         if len(args) > i + 1:
             off: Any = args[i + 1]
             if np.isscalar(off):
@@ -751,11 +761,10 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
     t0__ = horizontal_stack(*t0_)
     t1__ = horizontal_stack(*t1_)
     t = np.array((t0__, t1__))
-    if sonic_vector:
+    if sonic_vector is not None:
         sonic_vector = convert_to_stereo(sonic_vector)
         return mix_with_offset(sonic_vector, t)
-    else:
-        return t
+    return t
 
 
 def mix2(sonic_vectors, end=False, offset=0, sample_rate=44100):

@@ -169,7 +169,15 @@ class Being:
                                   self.seqsize] for i in range(n*self.seqsize)]
         elif method == 'perm-walk':
             # restore walk from 02peal
-            pass
+            raise NotImplementedError(
+                "the 'perm-walk' method was never restored from 02peal; "
+                "use 'straight' or 'low-high', or stay(method='perm')"
+            )
+        else:
+            raise ValueError(
+                f"method not understood: {method!r}; expected 'straight', "
+                "'low-high' or 'perm-walk'"
+            )
         self.addSeq(sequence)
 
     def setPar(self, par='f'):
@@ -178,16 +186,28 @@ class Being:
         Parameters
         ----------
         par : str
-            Parameter to be set.
+            Parameter to be set. Only 'f' is implemented, and it requires
+            `fgrid` and `fpointer` to have been assigned by the caller, as
+            `perms`, `domain` and `curseq` are.
 
         Returns
         -------
         None
 
+        Raises
+        ------
+        ValueError
+            If `par` is anything but 'f'. It used to be a silent no-op.
+
         """
-        if par == 'f':
-            self.grid = self.fgrid
-            self.pointer = self.fpointer
+        if par != 'f':
+            raise ValueError(
+                f"only the 'f' parameter has a grid to switch to; got "
+                f"{par!r}. Set curseq directly to choose which sequence "
+                "walk() and stay() fill."
+            )
+        self.grid = self.fgrid
+        self.pointer = self.fpointer
 
     def setSize(self, ss):
         """Set the size.

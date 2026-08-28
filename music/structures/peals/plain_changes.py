@@ -37,9 +37,10 @@ class PlainChanges:
         """
         self.peal_direct = None
         self.peal_sequence = None
+        # Filled by perform_peal below, which __init__ always calls.
+        self.peals: dict = {}
         self.domain = None
         self.acted_peals = None
-        self.peals = None
         hunts = self.initialize_hunts(nelements, nhunts)
         self.neutral_perm = sympy.combinatorics.Permutation([0],
                                                             size=nelements)
@@ -151,6 +152,10 @@ class PlainChanges:
             peal_sequence += [permutation]
         self.peal_direct = peal_direct
         self.peal_sequence = peal_sequence
+        # act_all() iterates this mapping; it was left as None, so the
+        # method could never run on a PlainChanges.
+        self.peals = {"peal_direct": peal_direct,
+                      "peal_sequence": peal_sequence}
         return hunts
 
     def perform_change(self, nelements, hunts, hunt=None):
@@ -243,7 +248,6 @@ class PlainChanges:
         """
         if domain is None:
             domain = list(range(self.nelements))
-        assert self.peals is not None
         acted_peals = {}
         for peal in self.peals:
             acted_peals[peal + "_acted"] = [i(domain)

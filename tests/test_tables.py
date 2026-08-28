@@ -36,3 +36,21 @@ def test_primary_tables_delegates_to_the_one_generator(kind, attribute):
     """There used to be three copies of these four definitions."""
     pt = PrimaryTables(size=256)
     assert np.array_equal(getattr(pt, attribute), waveform_table(kind, 256))
+
+
+def test_draw_tables_plots_all_four(monkeypatch):
+    """draw_tables is a convenience for looking at the tables; check it
+    reaches the plotting calls rather than opening a window."""
+    import music.tables as tables_module
+
+    plotted, shown = [], []
+    monkeypatch.setattr(tables_module.p, "plot",
+                        lambda data, *a, **k: plotted.append(len(data)))
+    monkeypatch.setattr(tables_module.p, "xlim", lambda *a, **k: None)
+    monkeypatch.setattr(tables_module.p, "ylim", lambda *a, **k: None)
+    monkeypatch.setattr(tables_module.p, "show", lambda: shown.append(True))
+
+    PrimaryTables(size=32).draw_tables()
+
+    assert plotted == [32, 32, 32, 32]
+    assert shown == [True]

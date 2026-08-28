@@ -114,6 +114,6 @@ class Notes:
 
 converter = Notes()
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover - a manual smoke run
     narray = sing()
     logging.info("finished")

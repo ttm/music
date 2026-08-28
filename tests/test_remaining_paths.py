@@ -2,6 +2,7 @@
 
 import sys
 import types
+from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
@@ -81,6 +82,14 @@ def _fake_os(name, environ):
     raises -- including inside pytest's own reporting.
     """
     return types.SimpleNamespace(name=name, environ=environ)
+
+
+def test_cache_root_on_macos(monkeypatch):
+    """Patched rather than left to the host: otherwise this branch is only
+    covered when the tests happen to run on a Mac, and the Linux and
+    Windows ones only when they do not."""
+    monkeypatch.setattr(sys, "platform", "darwin")
+    assert paths._cache_root() == Path.home() / "Library" / "Caches"
 
 
 def test_cache_root_on_linux(monkeypatch):

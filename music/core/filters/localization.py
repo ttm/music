@@ -242,11 +242,10 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
     x2, y2 = np.cos(theta2) * dist, np.sin(theta2) * dist
     speed = 331.3 + .606 * air_temp
 
-    # The position at each sample, moving in a straight line.
-    if lambda_l == 1:
-        progress = np.zeros(1)
-    else:
-        progress = np.arange(lambda_l) / (lambda_l - 1)
+    # The position at each sample, moving in a straight line. The divisor
+    # is guarded so a single-sample input stays at its starting point.
+    span = max(lambda_l - 1, 1)
+    progress = np.arange(lambda_l) / span
     xpos = x1 + (x2 - x1) * progress
     ypos = y1 + (y2 - y1) * progress
 

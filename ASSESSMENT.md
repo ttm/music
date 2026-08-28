@@ -354,35 +354,25 @@ mechanical.
 
 ## Open decisions
 
-Three changes alter behaviour a caller could depend on. None is a bug fix
+Three changes alter behaviour a caller could depend on (a fourth,
+`localize_linear`, has since been resolved and is recorded below). None is a bug fix
 that speaks for itself, so all are recorded here and in the changelog's
 "Needs a decision before release" section rather than being allowed to land
 silently.
 
-### 1. `localize_linear()` — finish it, or leave it removed?
+### 1. `localize_linear()` — *resolved: finished*
 
-It is no longer re-exported from `music`, and raises `NotImplementedError`.
+It was removed and left raising `NotImplementedError` because the missing piece
+was a design decision: how the *time-varying* interaural time difference should
+be applied. That decision has since been made — position the source at every
+sample, derive both cues from that position, apply them — and the function is
+implemented and exported again.
 
-It never worked: it crashed on its own documented defaults, and its body
-carries the comment *"FIXME: here we have missing the correct use of the
-variables calculated and also the return statement"*. So nothing can regress
-— but it is still an API removal, and the alternative is to finish it.
-
-The missing piece is a design decision, not an implementation detail. The
-function computes the per-sample interaural distances correctly; what was
-never settled is how the resulting **time-varying** interaural time difference
-should be realised:
-
-| Option | Approach | Trade-off |
-|---|---|---|
-| **A** | Whole-sample index warping, as `note_with_doppler` already does | Consistent with existing code; quantises the delay to whole samples |
-| **B** | Fractional-delay interpolation | Smoother, truer to the model; new machinery, and needs its own tests |
-| **C** | Leave removed | Zero risk; the capability stays absent |
-
-`localize()` covers a static position and `note_with_doppler()` a moving
-source, so C loses less than it appears to. **Recommendation: C for this
-release, then A or B deliberately.** Whichever is chosen, the fidelity tests
-give a template for asserting the delay against the ear geometry.
+Both cues are measured against the nearer ear, exactly as `localize()` measures
+them against the nearer ear of its single fixed position, so a path that stays
+put reproduces `localize()`'s cues and the output keeps its input's length. The
+per-sample delay is applied by cubic Hermite interpolation rather than by
+rounding to whole samples, which would step audibly.
 
 ### 2. `PlainChanges` now returns a complete peal
 

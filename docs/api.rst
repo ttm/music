@@ -77,6 +77,7 @@ Spectral and spatial
    reverb
    localize
    localize2
+   localize_linear
    stretches
 
 Input and output

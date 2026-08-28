@@ -115,64 +115,159 @@ def localize(sonic_vector=None, theta=0, distance=0, x=.1, y=.01,
     return s
 
 
+def _delayed(signal, delay):
+    """Read `signal` `delay` samples ago, for a delay that need not be whole.
+
+    Cubic Hermite (Catmull-Rom) interpolation between the four samples
+    around each read position. Linear interpolation would do, but it is a
+    lowpass: at a half-sample delay it costs about 1.5 dB at 8 kHz, where
+    this keeps all but 0.3 dB. Rounding to whole samples instead would
+    quantize a smoothly moving source into audible steps.
+
+    Parameters
+    ----------
+    signal : ndarray
+        The samples to read from.
+    delay : ndarray
+        How far back to read at each output sample, in samples. Values
+        beyond either end read the nearest sample.
+
+    Returns
+    -------
+    ndarray
+        The delayed signal, the same length as `signal`.
+    """
+    position = np.arange(len(signal)) - delay
+    index = np.floor(position).astype(np.int64)
+    fraction = position - index
+
+    def tap(offset):
+        return signal[np.clip(index + offset, 0, len(signal) - 1)]
+
+    before, at, after, beyond = tap(-1), tap(0), tap(1), tap(2)
+    return at + .5 * fraction * (
+        after - before + fraction * (
+            2 * before - 5 * at + 4 * after - beyond + fraction * (
+                3 * (at - after) + beyond - before)))
+
+
 def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
                     zeta=0.215, air_temp=20, sample_rate=44100):
     """
-    A linear variation of the localize function.
+    Localize a sound along a straight path between two angles.
 
-    .. warning::
-       Unimplemented, and awaiting a design decision -- see "Needs a decision
-       before release" in CHANGELOG.md. The body below computes the per-sample
-       interaural distances but never applies them, and the intended handling
-       of the time-varying interaural time difference was never settled.
-       Calling this raises NotImplementedError rather than returning a
-       misleading tuple of intermediates.
+    The source moves at a constant rate from `theta1` to `theta2`, both at
+    `dist` from the listener, over the duration of `sonic_vector`. Its
+    position is computed for every sample, and from each position the
+    interaural intensity and time differences for that sample.
 
-       To finish it, decide how the per-sample delay should be realised: whole
-       -sample index warping as :func:`music.note_with_doppler` does, or
-       fractional-delay interpolation. Until then, use :func:`localize` for a
-       static position or :func:`music.note_with_doppler` for a moving source.
+    Parameters
+    ----------
+    sonic_vector : array_like
+        A one-dimensional array with the PCM samples of the sound.
+    theta1 : scalar
+        The azimuthal angle of the starting position in degrees.
+    theta2 : scalar
+        The azimuthal angle of the ending position in degrees.
+    dist : scalar
+        The distance of the source from the listener in meters, held for
+        both endpoints.
+    zeta : scalar
+        The distance between the ears in meters.
+    air_temp : scalar
+        The temperature in Celsius used for calculating the speed of sound.
+    sample_rate : integer
+        The sample rate.
 
-    See localize.
+    Returns
+    -------
+    s : ndarray
+        A (2, nsamples) array with the PCM samples of the stereo sound, the
+        same length as `sonic_vector`.
+
+    See Also
+    --------
+    localize : the same cues for a fixed position.
+    music.note_with_doppler : a moving source, synthesized rather than
+        filtered, so it also shifts pitch.
+
+    Examples
+    --------
+    >>> write_wav_stereo(localize_linear(note(duration=3)))
+    >>> # a pass from the left to the right and back
+    >>> horizontal_stack(localize_linear(note(), theta1=90, theta2=-90),
+    ...                  localize_linear(note(), theta1=-90, theta2=90))
+
+    Notes
+    -----
+    The path is a straight line between the two positions, not an arc, which
+    is what makes it linear.
+
+    Both cues are measured against the nearer ear at each sample, as
+    :func:`localize` measures them against the nearer ear of its one fixed
+    position. The nearer ear is therefore heard undelayed and unattenuated,
+    and the farther ear is delayed by the extra distance the sound travels
+    to reach it, and attenuated by the ratio of the two distances. Only the
+    *difference* between the ears is applied: the propagation delay common
+    to both is not, so the result stays aligned with its input and keeps its
+    length.
+
+    The delay varies by a fraction of a sample from one sample to the next,
+    so it is applied by reading the input at interpolated positions -- see
+    :func:`_delayed`. Rounding to whole samples instead would quantize a
+    smoothly moving source into audible steps.
+
+    This filters an existing sound and so does not model the Doppler shift
+    that a physically moving source would produce; use
+    :func:`music.note_with_doppler` for that.
+
+    Cite the following article whenever you use this function.
+
+    References
+    ----------
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
-    raise NotImplementedError(
-        "localize_linear is unimplemented: the time-varying interaural time "
-        "difference is computed but never applied. Use localize() for a "
-        "static position, or note_with_doppler() for a moving source."
-    )
+    if sonic_vector is None:
+        sonic_vector = note()
+    sonic_vector = np.asarray(sonic_vector, dtype=np.float64)
+    lambda_l = len(sonic_vector)
+    if lambda_l == 0:
+        return np.zeros((2, 0))
+
     theta1 = 2 * np.pi * theta1 / 360
-    x1 = np.cos(theta1) * dist
-    y1 = np.sin(theta1) * dist
     theta2 = 2 * np.pi * theta2 / 360
-    x2 = np.cos(theta2) * dist
-    y2 = np.sin(theta2) * dist
+    x1, y1 = np.cos(theta1) * dist, np.sin(theta1) * dist
+    x2, y2 = np.cos(theta2) * dist, np.sin(theta2) * dist
     speed = 331.3 + .606 * air_temp
 
-    lambda_l = len(sonic_vector)
-    L = lambda_l  # FIXME: assure L is lambda_l
-    l_ = L - 1
-    xpos = x1 + (x2 - x1) * np.arange(lambda_l) / l_
-    ypos = y1 + (y2 - y1) * np.arange(lambda_l) / l_
-    d = np.sqrt((xpos - zeta / 2) ** 2 + ypos ** 2)
-    d2 = np.sqrt((xpos + zeta / 2) ** 2 + ypos ** 2)
-    iid_a = d / d2
-    itd = (d2 - d) / speed
-    lambda_itd = int(itd * sample_rate)
-
-    if x1 > 0:
-        tl = np.zeros(lambda_itd)
-        tr = np.array([])
+    # The position at each sample, moving in a straight line.
+    if lambda_l == 1:
+        progress = np.zeros(1)
     else:
-        tl = np.array([])
-        tr = np.zeros(-lambda_itd)
-    d_ = d[1:] - d[:-1]
-    d2_ = d2[1:] - d2[:-1]
-    d__ = np.cumsum(d_).astype(np.int64)
-    d2__ = np.cumsum(d2_).astype(np.int64)
-    # FIXME: here we have missing the correct use of the variables calculated
-    # and also the return statement
-    return iid_a, tl, tr, d__, d2__
+        progress = np.arange(lambda_l) / (lambda_l - 1)
+    xpos = x1 + (x2 - x1) * progress
+    ypos = y1 + (y2 - y1) * progress
+
+    # The distance from each ear at each sample.
+    dist_l = np.sqrt((xpos + zeta / 2) ** 2 + ypos ** 2)
+    dist_r = np.sqrt((xpos - zeta / 2) ** 2 + ypos ** 2)
+    nearest = np.minimum(dist_l, dist_r)
+
+    # IID: the nearer ear is heard in full, the farther one attenuated by
+    # how much farther it is.
+    iid_l = nearest / dist_l
+    iid_r = nearest / dist_r
+
+    # ITD: likewise, only the extra distance to the farther ear becomes a
+    # delay, so the nearer ear is undelayed and the sound stays in step
+    # with its input.
+    delay_l = (dist_l - nearest) * sample_rate / speed
+    delay_r = (dist_r - nearest) * sample_rate / speed
+
+    return np.vstack((_delayed(sonic_vector, delay_l) * iid_l,
+                      _delayed(sonic_vector, delay_r) * iid_r))
 
 
 def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,

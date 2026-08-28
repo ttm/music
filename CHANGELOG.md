@@ -1,18 +1,10 @@
 ## [Unreleased]
 
 ### Needs a decision before release
-Five entries below change behaviour that callers may depend on. All are
+Four entries below change behaviour that callers may depend on. All are
 deliberate, all are tracked, and none should reach a release unreviewed.
 
-1. **`localize_linear()` is no longer exported** and raises
-   `NotImplementedError`. It never worked — it crashed on its own defaults and
-   its body records that the return statement was never written — so nothing
-   can regress, but it is an API removal. The open question is whether to
-   finish it instead: the missing piece is how the *time-varying* interaural
-   time difference should be applied per sample. `localize()` handles a static
-   position and `note_with_doppler()` a moving source, so the semantics wanted
-   here are a design decision for the author, not something to infer.
-2. **`PlainChanges(n)` now returns a complete peal for every `n`.** The
+1. **`PlainChanges(n)` now returns a complete peal for every `n`.** The
    default hunt count was hardcoded to two for more than four bells, so the
    peal covered a fraction of the symmetric group above five: 120 of 720 rows
    at six bells, 224 of 40320 at eight — silently. The default is now
@@ -21,7 +13,7 @@ deliberate, all are tracked, and none should reach a release unreviewed.
    nothing. Anyone who was relying on the shorter peal can ask for it with
    `nhunts=2`; anyone rendering from `peal_direct` at six bells or more will
    get six times the material or more.
-3. **The waveform tables are now exact**, so every rendered note changes
+2. **The waveform tables are now exact**, so every rendered note changes
    slightly. Two of the four were built by halves and drifted from the
    waveform they name: the sawtooth stepped by `2/(size-1)` instead of
    `2/size`, and `WAVEFORM_TRIANGULAR` -- the default table for every note
@@ -31,12 +23,12 @@ deliberate, all are tracked, and none should reach a release unreviewed.
    now zero. A 440 Hz note changes by at most 2.4e-4 (-72 dBFS, inaudible)
    but half its samples differ, so byte comparisons against earlier renders
    will not match.
-4. **`fir()` now applies the magnitude response it is given**, which changes
+3. **`fir()` now applies the magnitude response it is given**, which changes
    its output substantially for anyone using the default `freq=True`. The old
    behaviour was a boxcar average scaled by the response rather than the
    response itself; there is no sense in which it was the intended filter, so
    this is listed for visibility rather than as a judgement call.
-5. **The WAV quantiser's scale changed**, so files written from now on differ
+4. **The WAV quantiser's scale changed**, so files written from now on differ
    from files written before by one LSB of gain (about 0.0003 dB — inaudible,
    but the bytes differ). This is what makes a write/read round trip unity
    gain, and `tests/test_fidelity.py` now pins that property. Anyone
@@ -188,6 +180,18 @@ deliberate, all are tracked, and none should reach a release unreviewed.
   exactly representable levels survive a round trip unchanged.
 
 ### Changed
+- `localize_linear()` is implemented, and exported again. It positions the
+  source at every sample along a straight path between two angles, derives the
+  interaural intensity and time differences from that position, and applies
+  them -- which is what its body computed but never used. Both cues are
+  measured against the nearer ear, as `localize()` measures them against the
+  nearer ear of its one fixed position, so a path that stays put reproduces
+  `localize()`'s cues exactly and the output keeps its input's length.
+
+  The delay changes by a fraction of a sample between samples, so it is
+  applied by cubic Hermite interpolation: rounding to whole samples would
+  quantize a smoothly moving source into audible steps, and linear
+  interpolation costs about 1.5 dB at 8 kHz where cubic costs 0.3.
 - `check_untyped_defs` is on. Most of this package is unannotated, and mypy
   skips the bodies of unannotated functions by default, so it had been
   reporting success while inspecting about a sixth of the code. Turning the

@@ -133,13 +133,15 @@ def test_louds_pads_the_envelope_to_the_signal():
     ).shape[0] >= short.shape[0]
 
 
-def test_localize_linear_reports_that_it_is_unimplemented():
-    """It used to crash with an opaque TypeError from its own defaults."""
-    from music.core.filters.localization import localize_linear
+def test_localize_linear_is_exported_and_works():
+    """It used to crash on its own defaults, and was withheld from the
+    public namespace while it was unimplemented."""
+    assert "localize_linear" in music.__all__
 
-    assert "localize_linear" not in music.__all__
-    with pytest.raises(NotImplementedError):
-        localize_linear()
+    out = music.localize_linear()
+
+    assert out.shape[0] == 2
+    assert np.isfinite(out).all()
 
 
 @pytest.mark.parametrize("length", [1, 2, 3, 5, 10, 441, 2205])

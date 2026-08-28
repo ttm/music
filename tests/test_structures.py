@@ -162,7 +162,7 @@ def test_transpositions_peal_decomposes_into_real_transpositions():
     produce a correct peal for any permutation."""
     from functools import reduce
 
-    peals = music.Peals()
+    peals = music.Peals(5)
     permutation = Permutation([2, 0, 1, 4, 3])
     built = peals.transpositions_peal(permutation)
 
@@ -180,7 +180,7 @@ def test_transpositions_peal_decomposes_into_real_transpositions():
 def test_transpositions_peal_is_stored_under_its_name():
     """Regression: `peals` was initialised to a list, so assigning by name
     raised TypeError. Everything else treats it as a mapping."""
-    peals = music.Peals()
+    peals = music.Peals(3)
     assert isinstance(peals.peals, dict)
 
     peals.transpositions_peal(Permutation([1, 0, 2]), peal_name="mine")
@@ -188,11 +188,7 @@ def test_transpositions_peal_is_stored_under_its_name():
 
 
 def _generic_peal_with(peals_by_name, nelements):
-    """A GenericPeal populated by hand.
-
-    Nothing in the package inherits GenericPeal — PlainChanges defines its
-    own act() — so it is exercised directly.
-    """
+    """A GenericPeal populated by hand, to exercise the base directly."""
     holder = music.GenericPeal()
     holder.peals = peals_by_name
     holder.nelements = nelements
@@ -202,7 +198,7 @@ def _generic_peal_with(peals_by_name, nelements):
 def test_acting_a_peal_permutes_the_domain():
     """A peal acted on a domain yields one arrangement of it per row."""
     permutation = Permutation([2, 0, 1])
-    source = music.Peals()
+    source = music.Peals(3)
     source.transpositions_peal(permutation, peal_name="p")
     holder = _generic_peal_with(source.peals, permutation.size)
 
@@ -213,7 +209,7 @@ def test_acting_a_peal_permutes_the_domain():
 
 
 def test_act_all_records_every_peal():
-    source = music.Peals()
+    source = music.Peals(3)
     source.transpositions_peal(Permutation([2, 0, 1]), peal_name="one")
     source.transpositions_peal(Permutation([1, 0, 2]), peal_name="two")
     holder = _generic_peal_with(source.peals, 3)
@@ -234,7 +230,7 @@ def test_acting_before_any_peal_exists_says_so():
 
 
 def test_acting_an_unknown_peal_lists_the_known_ones():
-    source = music.Peals()
+    source = music.Peals(3)
     source.transpositions_peal(Permutation([2, 0, 1]), peal_name="known")
     holder = _generic_peal_with(source.peals, 3)
     with pytest.raises(KeyError, match="known"):
@@ -265,3 +261,53 @@ def test_print_peal_writes_a_coloured_row_per_permutation(capsys):
 def test_print_peal_defaults_to_hunting_the_first_two(capsys):
     music.print_peal([[0, 1, 2]])
     assert capsys.readouterr().out.strip()
+
+
+def test_peals_can_act_its_own_named_peals():
+    """Regression: Peals held a dict of named peals -- exactly what
+    GenericPeal.act is for -- but did not inherit it, so it could build
+    peals and then had no way to act them."""
+    peals = music.Peals(3)
+    peals.transpositions_peal(Permutation([2, 0, 1]), peal_name="mine")
+
+    assert isinstance(peals, music.GenericPeal)
+
+    rows = peals.act("mine")
+    assert len(rows) == len(peals.peals["mine"])
+    for row in rows:
+        assert sorted(row) == [0, 1, 2]
+
+    peals.act_all()
+    assert set(peals.acted_peals) == {"mine_acted"}
+
+
+def test_peals_acts_on_a_domain_it_is_given():
+    peals = music.Peals(3)
+    peals.transpositions_peal(Permutation([2, 0, 1]), peal_name="p")
+    for row in peals.act("p", domain=[220, 440, 330]):
+        assert sorted(row) == [220, 330, 440]
+
+
+@pytest.mark.parametrize("nelements", [3, 4, 5])
+def test_peals_can_be_built_for_any_size(nelements):
+    """It used to call InterestingPermutations with no arguments, so it was
+    always four elements and the inherited act() could only ever build a
+    four-element default domain."""
+    assert music.Peals(nelements).nelements == nelements
+
+
+def test_a_peal_must_match_the_size_it_will_be_acted_at():
+    """Otherwise the mismatch surfaces later as a sympy TypeError about
+    lengths, from inside act()."""
+    with pytest.raises(ValueError, match="acts on 3 elements"):
+        music.Peals(4).transpositions_peal(Permutation([2, 0, 1]))
+
+
+def test_plain_changes_keeps_its_own_act():
+    """PlainChanges is built from one peal, not a mapping of them, so its
+    act takes the domain first. The examples call it that way."""
+    import inspect
+
+    parameters = list(inspect.signature(music.PlainChanges.act).parameters)
+    assert parameters[1] == "domain"
+    assert not isinstance(music.PlainChanges(3), music.GenericPeal)

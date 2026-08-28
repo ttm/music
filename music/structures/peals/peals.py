@@ -5,6 +5,7 @@ Provides functions for generating and representing peals using permutations.
 from sympy.combinatorics import Permutation
 from termcolor import colored
 from colorama import init
+from .base import GenericPeal
 from ..permutations import InterestingPermutations
 
 init()
@@ -36,9 +37,14 @@ def print_peal(peal, hunts=(0, 1)):
     print(final_string)
 
 
-class Peals(InterestingPermutations):
+class Peals(InterestingPermutations, GenericPeal):
     """
     Uses permutations to make peals and represents peals as permutations.
+
+    Holds peals by name, which is the model :class:`GenericPeal` provides
+    ``act`` and ``act_all`` for -- ``act("some_peal", domain)``. That is a
+    different operation from :meth:`PlainChanges.act`, which acts the one
+    peal the object was built from and takes the domain first.
 
     Notes
     -----
@@ -50,11 +56,20 @@ class Peals(InterestingPermutations):
 
     """
 
-    def __init__(self):
+    def __init__(self, nelements=4, method="dimino"):
         """
         Initializes a Peals object.
+
+        Parameters
+        ----------
+        nelements : int, optional
+            How many elements the permutations act on, by default 4. This
+            also sizes the default domain that `act` and `act_all` build.
+        method : str, optional
+            The generation method passed to InterestingPermutations.
         """
-        InterestingPermutations.__init__(self)
+        InterestingPermutations.__init__(self, nelements=nelements,
+                                         method=method)
         # A mapping of name -> list of permutations, which is what
         # GenericPeal.act and act_all index into.
         self.peals = {}
@@ -87,6 +102,12 @@ class Peals(InterestingPermutations):
         the permutation they came from.
 
         """
+        if permutation.size != self.nelements:
+            raise ValueError(
+                f"the permutation acts on {permutation.size} elements but "
+                f"this Peals was built for {self.nelements}; the default "
+                "domain act() builds would not fit it"
+            )
         self.peals[peal_name] = [
             Permutation(*pair, size=permutation.size)
             for pair in permutation.transpositions()

@@ -352,10 +352,11 @@ mechanical.
 
 ---
 
-## Open decisions
+## Decisions taken
 
-Three changes alter behaviour a caller could depend on (a fourth,
-`localize_linear`, has since been resolved and is recorded below). None is a bug fix
+All of these have since been reviewed and accepted, and are recorded in
+`CHANGELOG.md` under 1.1.0 as a note for anyone upgrading rather than as open
+questions. They are kept here for the reasoning. None is a bug fix
 that speaks for itself, so all are recorded here and in the changelog's
 "Needs a decision before release" section rather than being allowed to land
 silently.

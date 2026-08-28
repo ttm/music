@@ -338,7 +338,11 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
             # IID > 0 : left ear has amplification
             # ITD > 0 : right ear has a delay
             itd_l = abs(int(sample_rate * itd))
-            if i == lambda_l / 2:
+            # The Nyquist bin is not doubled, having no conjugate partner.
+            # Unreachable as written: the loop runs to ncoeffs - 1, and
+            # ncoeffs <= max_coef == int(lambda_l / 2), so i never reaches
+            # lambda_l / 2. Kept in case that bound is ever widened.
+            if i == lambda_l / 2:  # pragma: no cover
                 amplitude = norms[i] / lambda_l
             else:
                 amplitude = 2 * norms[i] / lambda_l
@@ -368,15 +372,21 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
             s += s_
     if method == "ifft":
         coefsl = normsl * np.e ** (anglesl * 1j)
+        # The conjugate mirror runs to lambda_l - max_coef, not max_coef:
+        # for an odd length those differ and the assignment did not fit.
+        mirror = slice(1, lambda_l - max_coef)
         coefsl[max_coef + 1:] = np.real(
-                coefsl[1:max_coef])[::-1] - 1j * np.imag(
-                        coefsl[1:max_coef])[::-1]
+                coefsl[mirror])[::-1] - 1j * np.imag(
+                        coefsl[mirror])[::-1]
         sl = np.fft.ifft(coefsl).real
 
         coefsr = normsr * np.e ** (anglesr * 1j)
+        # The conjugate mirror runs to lambda_l - max_coef, not max_coef:
+        # for an odd length those differ and the assignment did not fit.
+        mirror = slice(1, lambda_l - max_coef)
         coefsr[max_coef + 1:] = np.real(
-                coefsr[1:max_coef])[::-1] - 1j * np.imag(
-                        coefsr[1:max_coef])[::-1]
+                coefsr[mirror])[::-1] - 1j * np.imag(
+                        coefsr[mirror])[::-1]
         sr = np.fft.ifft(coefsr).real
         s = np.vstack((sl, sr))
     # If in need to force energy to be preserved, try:

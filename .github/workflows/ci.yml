@@ -34,4 +34,4 @@ jobs:
         run: mypy music
 
       - name: Test
-        run: pytest -q --cov=music --cov-report=term-missing --cov-fail-under=80
+        run: pytest -q --cov=music --cov-report=term-missing --cov-fail-under=100

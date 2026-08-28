@@ -43,6 +43,36 @@ deliberate, all are tracked, and none should reach a release unreviewed.
    byte-comparing against previously rendered WAVs will see a diff.
 
 ### Fixed
+- Nine defects that only appeared once every branch was exercised:
+  - `pan_transitions()` and `CanonicalSynth.tremoloEnvelope()` truth-tested
+    their `sonic_vector`, so passing one raised "the truth value of an array
+    with more than one element is ambiguous". Both had a correct
+    `is not None` check elsewhere in the same function.
+  - `mix_with_offset()`'s stereo path passed `['s1', 's2']` to
+    `resolve_stereo`, parameter names that had been renamed, and raised
+    `KeyError`.
+  - `mix_stereo()` tested for stereo with `len(x) != 2`, so a two-sample
+    mono vector was taken for a channel pair and its "channels" indexed as
+    scalars.
+  - `mix_with_offset_()` rejected tuples, via an exact
+    `type(a) not in (np.ndarray, list)` check.
+  - `localize2()` raised for every odd-length input: the conjugate mirror
+    ran to `max_coef`, which only balances when the length is even.
+  - `normalize_mono()` and `normalize_stereo()` returned NaN for any
+    constant signal. Only the all-zero case was guarded, and a constant is
+    silence once its offset is removed.
+  - `PlainChanges.peals` was never populated, so `act_all()` could not run
+    on the class that builds two peals.
+  - `Being.walk()` raised `UnboundLocalError` for an unrecognised method,
+    and `Being.setPar()` was a silent no-op for anything but 'f'.
+  - `CanonicalSynth.synthSetup()` left the vibrato and tremolo tables as
+    None when the effect was switched off, and both are read
+    unconditionally, so turning one off raised `TypeError`. A depth of zero
+    already makes the modulation a no-op.
+- An exponential position transition across the listener produced NaN audio:
+  `start * (end / start) ** curve` has a negative base when the source
+  changes sides, and a fractional power of that is not a real number. It now
+  raises, naming 'lin' as the method for a path that crosses.
 - `fir()` applied a magnitude response by convolving with the magnitudes
   themselves rather than with their inverse transform, so it was not really
   applying the response at all. The decisive case: a *flat* response, meaning
@@ -200,6 +230,12 @@ deliberate, all are tracked, and none should reach a release unreviewed.
 - `music/singing/paths.py`, a single source of truth for where the engine
   lives and what it needs. The path was previously computed twice, in
   `bootstrap.py` and in `perform.py`, both at import time.
+- Coverage is now 100%, enforced in CI. Reaching it is what surfaced the
+  defects listed above: `tests/test_mixing.py`, `test_normalization.py`,
+  `test_abc_notation.py`, `test_io_paths.py`, `test_branches.py` and
+  `test_remaining_paths.py` cover the alternative branches of parametrised
+  routines -- both channel modes, each `method`, each curve -- which is
+  where every one of them was hiding.
 - `tests/test_filters_response.py`, testing what the FIR and IIR filters do
   to a signal rather than that they return an array: a flat response is the
   identity, a low-pass removes the high band, an impulse response convolves

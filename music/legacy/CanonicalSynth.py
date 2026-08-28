@@ -126,18 +126,16 @@ class CanonicalSynth:
         """
         if not table:
             table = self.tables.triangle
-        if vibrato_depth and vibrato_frequency:
-            vibrato = True
-            if not vibrato_table:
-                vibrato_table = self.tables.sine
-        else:
-            vibrato = False
-        if tremolo_depth and tremolo_frequency:
-            tremolo = True
-            if not tremolo_table:
-                tremolo_table = self.tables.sine
-        else:
-            tremolo = False
+        # The tables are filled in either way. rawRender and tremoloEnvelope
+        # read them unconditionally, so leaving them None when the effect is
+        # off made switching it off a TypeError -- and a depth of zero
+        # already makes the modulation a no-op: 2 ** 0 and 10 ** 0 are 1.
+        if not vibrato_table:
+            vibrato_table = self.tables.sine
+        if not tremolo_table:
+            tremolo_table = self.tables.sine
+        vibrato = bool(vibrato_depth and vibrato_frequency)
+        tremolo = bool(tremolo_depth and tremolo_frequency)
         locals_ = locals().copy()
         del locals_["self"]
         vars(self).update(locals_)
@@ -251,7 +249,9 @@ class CanonicalSynth:
             Tremolo envelope.
         """
         self.absorbState(**statevars)
-        if sonic_vector:
+        # `is not None`, as the return below already does: truth-testing an
+        # array raises, so passing one here was a ValueError.
+        if sonic_vector is not None:
             Lambda = len(sonic_vector)
         else:
             Lambda = n.floor(self.samplerate * self.duration)

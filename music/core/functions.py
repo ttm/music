@@ -2,6 +2,18 @@
 import numpy as np
 
 
+def _scaled(values, factor):
+    """Divide by `factor`, or return silence when there is nothing to scale.
+
+    A constant signal has no dynamic range: once its offset is removed it
+    is silence, and the scale factor is zero. Dividing anyway filled the
+    result with NaN.
+    """
+    if factor == 0:
+        return np.zeros_like(values, dtype=np.float64)
+    return values / factor
+
+
 def normalize_mono(sonic_vector, remove_bias=True):
     """
     Normalize a mono sonic vector.
@@ -32,17 +44,14 @@ def normalize_mono(sonic_vector, remove_bias=True):
     array([-1.,  0.,  1.])
 
     """
-    t = np.array(sonic_vector)
-    if np.all(t == 0):
-        return t
-    else:
-        if remove_bias:
-            s = t - t.mean()
-            fact = max(s.max(), -s.min())
-            s = s / fact
-        else:
-            s = ((t - t.min()) / (t.max() - t.min())) * 2. - 1.
-        return s
+    t = np.array(sonic_vector, dtype=np.float64)
+    if t.max() == t.min():
+        # Constant, including all-zero: silence once the offset is gone.
+        return np.zeros_like(t)
+    if remove_bias:
+        s = t - t.mean()
+        return _scaled(s, max(s.max(), -s.min()))
+    return ((t - t.min()) / (t.max() - t.min())) * 2. - 1.
 
 
 def normalize_stereo(sonic_vector, remove_bias=True, normalize_sep=False):
@@ -68,31 +77,37 @@ def normalize_stereo(sonic_vector, remove_bias=True, normalize_sep=False):
         A numpy array with values between -1 and 1.
 
     """
-    sv_copy = np.array(sonic_vector)
-    if np.all(sv_copy == 0):
-        return sv_copy
+    sv_copy = np.array(sonic_vector, dtype=np.float64)
+    if sv_copy.max() == sv_copy.min():
+        # Constant, including all-zero: silence once the offset is gone.
+        return np.zeros_like(sv_copy)
 
     if remove_bias:
         sv_normalized = sv_copy
         sv_normalized[0] = sv_normalized[0] - sv_normalized[0].mean()
         sv_normalized[1] = sv_normalized[1] - sv_normalized[1].mean()
         if normalize_sep:
-            fact = max(sv_normalized[0].max(), -sv_normalized[0].min())
-            sv_normalized[0] = sv_normalized[0] / fact
-            fact = max(sv_normalized[1].max(), -sv_normalized[1].min())
-            sv_normalized[1] = sv_normalized[1] / fact
+            for channel in (0, 1):
+                values = sv_normalized[channel]
+                sv_normalized[channel] = _scaled(
+                    values, max(values.max(), -values.min())
+                )
         else:
-            fact = max(sv_normalized.max(), -sv_normalized.min())
-            sv_normalized = sv_normalized / fact
+            sv_normalized = _scaled(
+                sv_normalized,
+                max(sv_normalized.max(), -sv_normalized.min())
+            )
     else:
         amplitude_ch_1 = sv_copy[0].max() - sv_copy[0].min()
         amplitude_ch_2 = sv_copy[1].max() - sv_copy[1].min()
         if normalize_sep:
-            sv_copy[0] = (sv_copy[0] - sv_copy[0].min()) / amplitude_ch_1
-            sv_copy[1] = (sv_copy[1] - sv_copy[1].min()) / amplitude_ch_2
+            sv_copy[0] = _scaled(sv_copy[0] - sv_copy[0].min(),
+                                 amplitude_ch_1)
+            sv_copy[1] = _scaled(sv_copy[1] - sv_copy[1].min(),
+                                 amplitude_ch_2)
             sv_normalized = sv_copy * 2 - 1
         else:
             amplitude = max(amplitude_ch_1, amplitude_ch_2)
-            sv_copy = (sv_copy - sv_copy.min()) / amplitude
+            sv_copy = _scaled(sv_copy - sv_copy.min(), amplitude)
             sv_normalized = sv_copy * 2 - 1
     return sv_normalized

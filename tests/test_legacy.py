@@ -164,3 +164,155 @@ def test_the_module_level_synth_is_an_instance():
     from music.legacy.pieces import testSong2
 
     assert isinstance(testSong2.synth, CanonicalSynth)
+
+
+# --------------------------------------------------------------------------
+# Being: walking, staying and rendering
+# --------------------------------------------------------------------------
+
+def _being_with_grid(size=8):
+    """A Being with a grid and pointer ready to walk."""
+    being = music.Being()
+    being.grid = list(range(size))
+    being.pointer = 0
+    being.seqsize = size
+    being.curseq = "f_"
+    being.f_ = []
+    return being
+
+
+def test_walk_takes_consecutive_steps_from_the_grid():
+    being = _being_with_grid()
+    being.walk(3)
+    assert list(being.f_) == [0, 1, 2]
+    assert being.pointer == 3
+
+
+def test_walk_low_high_interleaves_across_the_sequence():
+    being = _being_with_grid(size=8)
+    being.seqsize = 4
+    being.walk(2, method="low-high")
+    assert len(being.f_) == 2 * being.seqsize
+
+
+def test_walk_rejects_an_unknown_method():
+    """Regression: `sequence` was only assigned inside the recognised
+    branches, so anything else died on UnboundLocalError."""
+    being = _being_with_grid()
+    with pytest.raises(ValueError, match="method not understood"):
+        being.walk(2, method="sideways")
+
+
+def test_walk_says_perm_walk_was_never_restored():
+    being = _being_with_grid()
+    with pytest.raises(NotImplementedError, match="perm-walk"):
+        being.walk(2, method="perm-walk")
+
+
+def test_stay_permutes_the_domain():
+    """The campanology example's second form: a domain plus permutations,
+    with `curseq` naming which parameter sequence to fill."""
+    being = music.Being()
+    being.domain = [220, 440, 330]
+    being.perms = music.PlainChanges(3).peal_direct
+    being.curseq = "f_"
+    being.f_ = []
+
+    being.stay(6)
+
+    assert len(being.f_) == 6
+    assert set(being.f_) <= {220, 440, 330}
+    assert being.total_notes == 6
+
+
+def test_stay_falls_back_to_the_grid_when_no_domain_is_set():
+    """Without a domain it permutes a slice of the grid, so the slice has
+    to be as wide as the permutations."""
+    being = _being_with_grid(size=8)
+    being.seqsize = 3
+    being.domain = []
+    being.perms = music.PlainChanges(3).peal_direct
+    being.stay(4)
+    assert len(being.f_) == 4
+
+
+def test_stay_accepts_a_numpy_domain():
+    being = music.Being()
+    being.domain = np.array([220.0, 440.0, 330.0])
+    being.perms = music.PlainChanges(3).peal_direct
+    being.curseq = "f_"
+    being.f_ = []
+    being.stay(3)
+    assert len(being.f_) == 3
+
+
+def test_stay_can_walk_straight_instead():
+    being = _being_with_grid()
+    being.stay(3, method="straight")
+    assert list(being.f_) == [0, 1, 2]
+
+
+def test_render_writes_a_wav_file(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    being = music.Being()
+    being.f_ = [220.0, 440.0, 330.0]
+
+    being.render(3, "being.wav")
+
+    assert (tmp_path / "being.wav").is_file()
+
+
+def test_render_returns_the_samples_when_given_no_filename():
+    being = music.Being()
+    being.f_ = [220.0, 440.0]
+    out = being.render(2)
+    assert isinstance(out, np.ndarray)
+    assert out.size > 0
+    assert np.isfinite(out).all()
+
+
+def test_set_par_switches_to_the_frequency_grid():
+    """`setPar('f')` reads fgrid/fpointer, which the caller supplies the
+    way it supplies perms and domain."""
+    being = music.Being()
+    being.fgrid, being.fpointer = [1.0, 2.0, 3.0], 1
+
+    being.setPar("f")
+
+    assert being.grid == [1.0, 2.0, 3.0]
+    assert being.pointer == 1
+
+
+def test_set_par_rejects_a_parameter_it_cannot_switch_to():
+    """Regression: anything but 'f' was a silent no-op."""
+    with pytest.raises(ValueError, match="only the 'f' parameter"):
+        music.Being().setPar("d")
+
+
+def test_set_size_and_set_perms_record_what_they_are_given():
+    being = music.Being()
+    being.setSize(11)
+    assert being.seqsize == 11
+
+    perms = music.PlainChanges(3).peal_direct
+    being.setPerms(perms)
+    assert being.perms is perms
+
+
+def test_add_seq_extends_a_list_and_stacks_an_array():
+    being = music.Being()
+    being.curseq = "f_"
+    being.f_ = [1.0]
+    being.addSeq([2.0, 3.0])
+    assert list(being.f_) == [1.0, 2.0, 3.0]
+
+    being.f_ = np.array([1.0])
+    being.addSeq([2.0])
+    assert len(being.f_) == 2
+
+
+def test_howl_and_freeze_are_callable():
+    """Both are placeholders; keep them from silently disappearing."""
+    being = music.Being()
+    being.howl()
+    being.freeze()

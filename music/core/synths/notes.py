@@ -503,6 +503,26 @@ def note_with_glissando_vibrato(start_freq=220, end_freq=440, duration=2,
 
 
 # FIXME: Unused param (`number_of_samples`)
+def _exponential_positions(start, end, curve):
+    """Interpolate exponentially from `start` to `end` along `curve`.
+
+    Raises
+    ------
+    ValueError
+        If the two ends have opposite signs, or either is zero. The
+        expression is ``start * (end / start) ** curve``, and a negative
+        base raised to a fractional power is not a real number -- it
+        silently produced NaN, which then propagated into the audio.
+    """
+    if start == 0 or end == 0 or (start < 0) != (end < 0):
+        raise ValueError(
+            f"an exponential transition cannot run from {start} to {end}: "
+            "the positions must share a sign and be non-zero. Use 'lin' "
+            "for a path that crosses the listener."
+        )
+    return start * (end / start) ** curve
+
+
 def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
                                        durations=((2, 3), (2, 5, 3),
                                                   (2, 5, 6, 1, .4),
@@ -656,8 +676,8 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
                     foo = np.arange(lambda_d + 1) / lambda_d
                 else:
                     foo = (np.arange(lambda_d + 1) / lambda_d) ** a
-                xi = x[i] * (x[i + 1] / x[i]) ** foo
-                yi = y[i] * (y[i + 1] / y[i]) ** foo
+                xi = _exponential_positions(x[i], x[i + 1], foo)
+                yi = _exponential_positions(y[i], y[i + 1], foo)
             else:
                 xi = x[i] + (x[i + 1] - x[i]) * np.arange(lambda_d + 1) / \
                     lambda_d
@@ -688,8 +708,8 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
                     foo = np.arange(lambda_d + 1) / lambda_d
                 else:
                     foo = (np.arange(lambda_d + 1) / lambda_d) ** a
-                xi = x[i] * (x[i + 1] / x[i]) ** foo
-                yi = y[i] * (y[i + 1] / y[i]) ** foo
+                xi = _exponential_positions(x[i], x[i + 1], foo)
+                yi = _exponential_positions(y[i], y[i + 1], foo)
             else:
                 xi = x[i] + (x[i + 1] - x[i]) * np.arange(lambda_d + 1) / \
                     lambda_d

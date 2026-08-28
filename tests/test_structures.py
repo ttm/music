@@ -246,3 +246,22 @@ def test_unimplemented_peals_say_so(method):
     """These are honest placeholders; keep them honest."""
     with pytest.raises(NotImplementedError):
         getattr(music.Peals(), method)()
+
+
+def test_print_peal_writes_a_coloured_row_per_permutation(capsys):
+    """It colours the hunted positions and prints one line per row."""
+    peal = [[0, 1, 2], [1, 0, 2], [1, 2, 0]]
+
+    music.print_peal(peal, hunts=[0])
+
+    printed = capsys.readouterr().out
+    # one line per row, plus print()'s own trailing newline
+    assert printed.count("\n") == len(peal) + 1
+    for row in peal:
+        for element in row:
+            assert str(element) in printed
+
+
+def test_print_peal_defaults_to_hunting_the_first_two(capsys):
+    music.print_peal([[0, 1, 2]])
+    assert capsys.readouterr().out.strip()

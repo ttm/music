@@ -1,5 +1,14 @@
 class GenericPeal:
-    """Represents a generic peal.
+    """A collection of named peals that can be acted on a domain.
+
+    The base for the *named-peal* model: `peals` maps a name to a list of
+    permutations, and `act` applies one of them by name. :class:`Peals`
+    works that way and inherits this.
+
+    :class:`music.PlainChanges` deliberately does not. It is built from one
+    peal rather than holding several, so its `act` acts that peal and takes
+    the domain first -- ``act(domain)`` rather than ``act(name, domain)``.
+    The two are different operations that happen to share a verb.
 
     Attributes
     ----------
@@ -23,11 +32,17 @@ class GenericPeal:
 
     """
 
+    #: name -> list of permutations. Empty rather than None: a collection
+    #: with nothing in it is what an unpopulated one is, and act() refuses
+    #: to run on either.
+    peals: dict
+    acted_peals: dict
+
     def __init__(self):
         """Initializes a GenericPeal object."""
         self.nelements = None
-        self.peals = None
-        self.acted_peals = None
+        self.peals = {}
+        self.acted_peals = {}
         self.domain = None
 
     def act(self, peal, domain=None):

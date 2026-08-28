@@ -1,38 +1,23 @@
-## [Unreleased]
+## [1.1.0] - 2026-08-29
+### Note for anyone upgrading
+Four of the fixes below change rendered output. All are corrections -- the
+previous behaviour was wrong in each case -- but they mean a render from this
+version will not be byte-identical to one from 1.0.1:
 
-### Needs a decision before release
-Four entries below change behaviour that callers may depend on. All are
-deliberate, all are tracked, and none should reach a release unreviewed.
-
-1. **`PlainChanges(n)` now returns a complete peal for every `n`.** The
-   default hunt count was hardcoded to two for more than four bells, so the
-   peal covered a fraction of the symmetric group above five: 120 of 720 rows
-   at six bells, 224 of 40320 at eight — silently. The default is now
-   `PlainChanges.saturating_hunts(n)`, i.e. `max(1, n - 3)`, which the code's
-   own warning already identified as the point past which extra hunts add
-   nothing. Anyone who was relying on the shorter peal can ask for it with
-   `nhunts=2`; anyone rendering from `peal_direct` at six bells or more will
-   get six times the material or more.
-2. **The waveform tables are now exact**, so every rendered note changes
-   slightly. Two of the four were built by halves and drifted from the
-   waveform they name: the sawtooth stepped by `2/(size-1)` instead of
-   `2/size`, and `WAVEFORM_TRIANGULAR` -- the default table for every note
-   this package synthesizes -- had a flat two-sample top that peaked at
-   `1 - 2/size` rather than 1. Measured against the continuous waveform
-   sampled at the same phases, the errors were 1.2e-4 and 2.4e-4; both are
-   now zero. A 440 Hz note changes by at most 2.4e-4 (-72 dBFS, inaudible)
-   but half its samples differ, so byte comparisons against earlier renders
-   will not match.
-3. **`fir()` now applies the magnitude response it is given**, which changes
-   its output substantially for anyone using the default `freq=True`. The old
-   behaviour was a boxcar average scaled by the response rather than the
-   response itself; there is no sense in which it was the intended filter, so
-   this is listed for visibility rather than as a judgement call.
-4. **The WAV quantiser's scale changed**, so files written from now on differ
-   from files written before by one LSB of gain (about 0.0003 dB — inaudible,
-   but the bytes differ). This is what makes a write/read round trip unity
-   gain, and `tests/test_fidelity.py` now pins that property. Anyone
-   byte-comparing against previously rendered WAVs will see a diff.
+1. **`PlainChanges(n)` returns a complete peal.** Above five bells the default
+   hunt count covered a fraction of the symmetric group: 120 of 720 rows at
+   six, 224 of 40320 at eight. Anyone who wants the shorter peal can still ask
+   for it with `nhunts=2`.
+2. **The waveform tables are exact.** Two of the four had drifted from the
+   waveform they name -- the sawtooth stepped by `2/(size-1)` instead of
+   `2/size`, and the triangle, the default table for every note, never reached
+   full amplitude. A note changes by at most 2.4e-4 (-72 dBFS).
+3. **WAV round trips are unity gain.** The writer scaled by
+   `2 ** (bit_depth - 1) - 1` while the reader divided by `2 ** (bit_depth -
+   1)`, a systematic one-LSB error on every file the package had written.
+4. **`fir()` applies the response it is given.** It convolved with the
+   magnitudes rather than their inverse transform, so a flat response was a
+   boxcar average instead of the identity.
 
 ### Fixed
 - Nine defects that only appeared once every branch was exercised:
@@ -180,6 +165,19 @@ deliberate, all are tracked, and none should reach a release unreviewed.
   exactly representable levels survive a round trip unchanged.
 
 ### Changed
+- `Peals` inherits `GenericPeal`, which is what `GenericPeal` is for. It holds
+  a mapping of named peals -- the model `GenericPeal.act(name, domain)` serves
+  -- but did not inherit it, so it could build peals and then had no way to act
+  them. `GenericPeal` had looked like dead code as a result: nothing inherited
+  it, and `PlainChanges` defines its own `act`. `PlainChanges` still does,
+  deliberately, being built from one peal rather than holding several, so its
+  `act` takes the domain first.
+- `Peals` takes `nelements`, having always passed none through to
+  `InterestingPermutations` and so always been four elements -- which also
+  fixed the size of the default domain the inherited `act` builds.
+  `transpositions_peal` now rejects a permutation of a different size up
+  front, rather than letting it fail later inside `act` as a sympy error
+  about lengths.
 - `localize_linear()` is implemented, and exported again. It positions the
   source at every sample along a straight path between two angles, derives the
   interaural intensity and time differences from that position, and applies

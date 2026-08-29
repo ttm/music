@@ -20,6 +20,12 @@ version will not be byte-identical to one from 1.0.1:
    boxcar average instead of the identity.
 
 ### Fixed
+- `normalize_stereo()` corrupted a mono vector instead of rejecting or
+  promoting it. A one-dimensional array had its first two *samples* read as
+  the two channels, and since the mean of a scalar is itself, both were
+  silently zeroed and the rest scaled by the wrong factor. It now gives a
+  mono vector two identical channels, so `write_wav_stereo(mono)` produces a
+  genuine stereo file rather than a damaged mono one.
 - Nine defects that only appeared once every branch was exercised:
   - `pan_transitions()` and `CanonicalSynth.tremoloEnvelope()` truth-tested
     their `sonic_vector`, so passing one raised "the truth value of an array
@@ -165,6 +171,14 @@ version will not be byte-identical to one from 1.0.1:
   exactly representable levels survive a round trip unchanged.
 
 ### Changed
+- `examples/noisy.py` said it wrote "a pentatonic scale with different
+  effects"; it writes noises. Its separator beep is now shaped by an ADSR
+  envelope, which is what the separator wanted anyway -- a raw note clicks at
+  both ends -- and it writes the same note with and without the envelope so
+  the difference can be heard on its own.
+- `examples/chromatic_scale.py` gains the generated-scale alternative as a
+  comment, starting from the C4 the listed scale starts on rather than from
+  A4.
 - The README is rewritten for the PyPI landing page it becomes. It opened with
   six shell blocks and no Python: the first code a visitor met was the Roadmap
   at line 128, showing an API that does not exist. It now opens with a working

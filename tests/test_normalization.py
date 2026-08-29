@@ -115,3 +115,29 @@ def test_normalizing_never_produces_nan():
         assert np.isfinite(normalize_mono(signal)).all()
         stereo = np.vstack((signal, signal))
         assert np.isfinite(normalize_stereo(stereo)).all()
+
+
+def test_a_mono_vector_given_to_the_stereo_normalizer_is_promoted():
+    """Regression: a 1-D array had its first two *samples* read as the two
+    channels. The mean of a scalar is itself, so those two samples were
+    silently zeroed and the rest scaled wrongly."""
+    signal = np.array([0.5, -0.3, 0.9, -0.7, 0.2])
+
+    out = normalize_stereo(signal)
+
+    assert out.shape == (2, len(signal))
+    assert np.array_equal(out[0], out[1])
+    assert np.allclose(out[0], normalize_mono(signal))
+
+
+def test_the_stereo_writer_accepts_a_mono_vector(tmp_path):
+    """It writes a genuine stereo file rather than a corrupted mono one."""
+    import music
+
+    tone = music.note(440, 0.05)
+    path = tmp_path / "mono_in.wav"
+    music.write_wav_stereo(tone, filename=str(path))
+
+    restored = music.read_wav(str(path))
+    assert restored.shape[0] == 2
+    assert np.allclose(restored[0], restored[1])

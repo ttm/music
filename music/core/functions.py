@@ -63,7 +63,8 @@ def normalize_stereo(sonic_vector, remove_bias=True, normalize_sep=False):
     Parameters
     ----------
     sonic_vector : array_like
-        A (2, nsamples) shaped array.
+        A (2, nsamples) shaped array. A one-dimensional array is taken as
+        mono and given two identical channels.
     remove_bias : boolean
         Whether to remove or not the bias (or offset)
     normalize_sep : boolean
@@ -78,6 +79,12 @@ def normalize_stereo(sonic_vector, remove_bias=True, normalize_sep=False):
 
     """
     sv_copy = np.array(sonic_vector, dtype=np.float64)
+    if sv_copy.ndim == 1:
+        # A mono vector: give it two identical channels. Indexing it as
+        # though it were a channel pair read its first two *samples* as the
+        # channels, and since the mean of a scalar is itself, silently
+        # zeroed them.
+        sv_copy = np.vstack((sv_copy, sv_copy))
     if sv_copy.max() == sv_copy.min():
         # Constant, including all-zero: silence once the offset is gone.
         return np.zeros_like(sv_copy)

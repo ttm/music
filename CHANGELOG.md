@@ -252,6 +252,11 @@ version will not be byte-identical to one from 1.0.1:
   [-1, 1]), and removed a stray duplicate entry from the Returns section.
 
 ### Added
+- A DOI. Every release is archived on Zenodo from now on;
+  [10.5281/zenodo.22151793](https://doi.org/10.5281/zenodo.22151793) resolves
+  to the most recent one, and 1.1.0 specifically is
+  [10.5281/zenodo.22151794](https://doi.org/10.5281/zenodo.22151794). Both are
+  recorded in `CITATION.cff`.
 - A [tutorial](https://ttm.github.io/music/tutorial.html) in the documentation,
   walking from a single note to a short stereo piece: what the arrays are, the
   units each parameter is expressed in, and a measurement showing that a

@@ -5,6 +5,7 @@
 [![CI](https://github.com/ttm/music/actions/workflows/ci.yml/badge.svg)](https://github.com/ttm/music/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/badge/docs-ttm.github.io%2Fmusic-blue.svg)](https://ttm.github.io/music/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/ttm/music/blob/master/LICENSE)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22151793.svg)](https://doi.org/10.5281/zenodo.22151793)
 
 **Extreme-fidelity synthesis of musical elements.**
 
@@ -47,6 +48,12 @@ linked social data, and with the [audiovisual analytics vocabulary and ontology
 To understand the routines further, read
 [Musical elements in the discrete-time representation of sound](https://github.com/ttm/mass/raw/master/doc/article.pdf).
 **If you use this package, please cite that article.**
+
+Every release is archived on Zenodo, so a specific version can be cited too:
+[10.5281/zenodo.22151793](https://doi.org/10.5281/zenodo.22151793) always
+resolves to the newest one. GitHub's *Cite this repository* button reads
+[CITATION.cff](https://github.com/ttm/music/blob/master/CITATION.cff) and
+gives you both, formatted.
 
 ## How to install
 

@@ -8,6 +8,14 @@ version: 1.1.0
 date-released: '2026-08-29'
 license: MIT
 repository-code: https://github.com/ttm/music
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.22151793
+    description: >-
+      Concept DOI, resolving to the most recent release of the software.
+  - type: doi
+    value: 10.5281/zenodo.22151794
+    description: Archived snapshot of version 1.1.0.
 url: https://ttm.github.io/music/
 abstract: >-
   Extreme-fidelity synthesis of musical elements, based on the MASS

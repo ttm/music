@@ -32,6 +32,10 @@ import sys
 import urllib.error
 import urllib.request
 
+# Running this as a script puts tools/ first on sys.path, so its sibling
+# is importable by name. The CA handling belongs in one place.
+from zenodo_sync import ssl_context
+
 ROOT = pathlib.Path(__file__).parent.parent
 
 
@@ -101,7 +105,8 @@ def check_not_on_pypi(version):
     """PyPI never releases a version number back, so ask first."""
     url = f"https://pypi.org/pypi/music/{version}/json"
     try:
-        urllib.request.urlopen(url, timeout=30).read()
+        urllib.request.urlopen(url, timeout=30,
+                               context=ssl_context()).read()
     except urllib.error.HTTPError as error:
         if error.code == 404:
             step(f"PyPI does not have {version} yet")

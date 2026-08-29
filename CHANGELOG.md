@@ -252,6 +252,10 @@ version will not be byte-identical to one from 1.0.1:
   [-1, 1]), and removed a stray duplicate entry from the Returns section.
 
 ### Added
+- `CITATION.cff`, so GitHub renders a "Cite this repository" button and the
+  request the README makes in prose becomes something a tool can act on. It
+  names the package as the software and the MASS article as the preferred
+  citation, which is what the documentation asks people to cite.
 - Sphinx documentation, published to GitHub Pages from `master`. The
   reference groups all 69 exports by role rather than alphabetically, and CI
   builds it with `-W`, so a malformed docstring fails rather than rendering

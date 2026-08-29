@@ -1,0 +1,50 @@
+cff-version: 1.2.0
+title: music
+message: >-
+  If you use this package, please cite the article under
+  preferred-citation, as the documentation asks.
+type: software
+version: 1.1.0
+date-released: '2026-08-29'
+license: MIT
+repository-code: https://github.com/ttm/music
+url: https://ttm.github.io/music/
+abstract: >-
+  Extreme-fidelity synthesis of musical elements, based on the MASS
+  framework: psychophysical descriptions of musical elements in LPCM
+  audio, expressed as equations and corresponding Python routines.
+  State is updated at every sample, so a rendered sound is as close as
+  it can be to the mathematical model that describes it.
+keywords:
+  - audio
+  - synthesis
+  - psychoacoustics
+  - signal processing
+  - sonification
+  - change ringing
+  - MASS
+authors:
+  - family-names: Fabbri
+    given-names: Renato
+    email: renato.fabbri@gmail.com
+  - family-names: Donati
+    given-names: Jacopo
+preferred-citation:
+  type: article
+  title: Musical elements in the discrete-time representation of sound
+  year: '2017'
+  url: https://arxiv.org/abs/1412.6853
+  notes: arXiv preprint arXiv:1412.6853
+  authors:
+    - family-names: Fabbri
+      given-names: Renato
+    - family-names: Vieira da Silva
+      given-names: Vilson
+      name-suffix: Junior
+    - family-names: Pessotti
+      given-names: Antônio Carlos Silvano
+    - family-names: Corrêa
+      given-names: Débora Cristina
+    - family-names: Oliveira
+      given-names: Osvaldo Novais
+      name-suffix: Jr.

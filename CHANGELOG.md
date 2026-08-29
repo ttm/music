@@ -1,3 +1,38 @@
+## [1.1.1] - 2026-08-29
+Documentation and metadata only; no change to any rendered sound. It exists
+because the page PyPI shows can only be refreshed by an upload, and the
+1.1.0 page predates both the tutorial and the DOI.
+
+### Added
+- `.zenodo.json`, so the Zenodo deposit for a release is built from the
+  repository rather than from GitHub's guess at it. The 1.1.0 record had to be
+  corrected by hand: it had listed the maintainers' GitHub display names as
+  authors. This file carries the title, the author, Jacopo Donati as a
+  contributor, the description, the keywords and the links to the article, to
+  PyPI and to the documentation.
+  It also carries the controlled-vocabulary subjects -- the MeSH, GEMET and
+  EuroSciVoc terms -- each identified by its vocabulary's own URI, so the
+  linked subjects survive a release rather than being retyped into the
+  interface each time.
+- `RELEASING.md`, a checklist, including how to verify that those subjects
+  really did come across (Zenodo's own record endpoint does not report them;
+  the DataCite export does).
+- `Documentation`, `Tutorial`, `Source` and `Changelog` links in the project
+  metadata, which PyPI shows in its sidebar. There had been only `Homepage`,
+  pointing at the repository, and `Issues`.
+
+### Changed
+- `CITATION.cff` matches the curated Zenodo record: the fuller title, a wider
+  keyword list, and Renato Fabbri as the sole author, Jacopo Donati having
+  been recorded as a contributor. The Citation File Format has no way to
+  express a contributor for software, which is why that distinction lives in
+  `.zenodo.json`.
+- The README carries the DOI badge and links the tutorial.
+
+### Fixed
+- `Topic :: Multimedia :: Sound/Audio :: Sound Synthesis` was listed twice in
+  the package classifiers.
+
 ## [1.1.0] - 2026-08-29
 ### Note for anyone upgrading
 Four of the fixes below change rendered output. All are corrections -- the

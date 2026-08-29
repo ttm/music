@@ -1,0 +1,112 @@
+{
+  "title": "music: extreme-fidelity synthesis of musical elements",
+  "upload_type": "software",
+  "license": "MIT",
+  "access_right": "open",
+  "creators": [
+    {
+      "name": "Fabbri, Renato",
+      "affiliation": "BioSynCare.com, IFSC-USP, Juntadados, Nós Digitais, CDTL, ICMC/USP"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "Donati, Jacopo",
+      "type": "Other"
+    }
+  ],
+  "description": "Extreme-fidelity synthesis of musical elements, based on the MASS framework: psychophysical descriptions of musical elements in LPCM audio, expressed as equations and corresponding Python routines. State is updated at every sample, so a rendered sound is as close as it can be to the mathematical model that describes it.",
+  "keywords": [
+    "audio",
+    "music",
+    "synthesis",
+    "sound synthesis",
+    "additive synthesis",
+    "psychoacoustics",
+    "psychophysics",
+    "signal processing",
+    "sonification",
+    "data sonification",
+    "binaural",
+    "spatialization",
+    "change ringing",
+    "campanology",
+    "algorithmic composition",
+    "computer music",
+    "Python",
+    "numpy",
+    "MASS framework"
+  ],
+  "subjects": [
+    {
+      "term": "Music",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D009146"
+    },
+    {
+      "term": "Music/psychology",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D009146Q000523"
+    },
+    {
+      "term": "Music",
+      "scheme": "GEMET",
+      "identifier": "https://www.eionet.europa.eu/gemet/en/concept/5449"
+    },
+    {
+      "term": "Psychoacoustics",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D011571"
+    },
+    {
+      "term": "Psychophysics",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D011601"
+    },
+    {
+      "term": "Acoustics",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D000162"
+    },
+    {
+      "term": "Sound Localization",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D013017"
+    },
+    {
+      "term": "Signal Processing, Computer-Assisted",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D012815"
+    },
+    {
+      "term": "Signal processing",
+      "scheme": "EuroSciVoc",
+      "identifier": "http://data.europa.eu/8mn/euroscivoc/1215"
+    },
+    {
+      "term": "Acoustics",
+      "scheme": "EuroSciVoc",
+      "identifier": "http://data.europa.eu/8mn/euroscivoc/273"
+    }
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "arXiv:1412.6853",
+      "relation": "isDerivedFrom",
+      "resource_type": "publication-preprint",
+      "scheme": "arxiv"
+    },
+    {
+      "identifier": "https://pypi.org/project/music/",
+      "relation": "isIdenticalTo",
+      "resource_type": "software",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://ttm.github.io/music/",
+      "relation": "isDocumentedBy",
+      "resource_type": "publication-softwaredocumentation",
+      "scheme": "url"
+    }
+  ]
+}

@@ -197,6 +197,6 @@ the rendered [API reference](https://ttm.github.io/music/).
 
 ## Further information
 
-Music is primarily intended for artistic use, but was also designed to run psychophysics experiments and data sonification.
+Music is primarily intended for artistic use, psychophysics experiments and data sonification.
 
 You can find an example in [Versinus](https://github.com/ttm/versinus), an animated visualization method for evolving networks that uses Music to render the musical track that represents networks structures.

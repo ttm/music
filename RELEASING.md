@@ -28,12 +28,16 @@ logged in.
 ## After: sync the Zenodo record
 
 Zenodo builds each new deposit from `.zenodo.json` when the release is
-published, but do not rely on that alone: whether its ingestion honours the
-`subjects` block -- the controlled-vocabulary terms, as opposed to the
-free-text keywords -- is not something we control, and a record corrected by
-hand drifts from the file the moment anyone edits it.
+published, and gets most of it right: at 1.1.1 the title, the author, Jacopo
+Donati as a contributor, the description and all nineteen free-text keywords
+came across untouched.
 
-Push the file onto the record instead:
+**It ignores the `subjects` block entirely.** The controlled-vocabulary terms
+-- the MeSH, GEMET and EuroSciVoc entries -- arrived as zero linked subjects,
+measured on the 1.1.1 deposit. This is not a maybe; the release step below is
+required, not a precaution.
+
+So push the file onto the record after every release:
 
 ```console
 python tools/zenodo_sync.py            # show what it would send

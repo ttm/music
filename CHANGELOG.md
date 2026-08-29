@@ -1,3 +1,12 @@
+## [Unreleased]
+### Changed
+- `RELEASING.md` records what the 1.1.1 deposit settled: Zenodo's GitHub
+  ingestion reads `.zenodo.json` for the title, the creators, the contributors,
+  the description and the free-text keywords, and **ignores the `subjects`
+  block**. All nineteen keywords came across; all ten controlled-vocabulary
+  terms did not. Running `tools/zenodo_sync.py --write` after a release is
+  therefore required rather than precautionary.
+
 ## [1.1.1] - 2026-08-29
 Documentation and metadata only; no change to any rendered sound. It exists
 because the page PyPI shows can only be refreshed by an upload, and the

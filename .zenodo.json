@@ -37,6 +37,58 @@
     "numpy",
     "MASS framework"
   ],
+  "subjects": [
+    {
+      "term": "Music",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D009146"
+    },
+    {
+      "term": "Music/psychology",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D009146Q000523"
+    },
+    {
+      "term": "Music",
+      "scheme": "GEMET",
+      "identifier": "https://www.eionet.europa.eu/gemet/en/concept/5449"
+    },
+    {
+      "term": "Psychoacoustics",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D011571"
+    },
+    {
+      "term": "Psychophysics",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D011601"
+    },
+    {
+      "term": "Acoustics",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D000162"
+    },
+    {
+      "term": "Sound Localization",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D013017"
+    },
+    {
+      "term": "Signal Processing, Computer-Assisted",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D012815"
+    },
+    {
+      "term": "Signal processing",
+      "scheme": "EuroSciVoc",
+      "identifier": "http://data.europa.eu/8mn/euroscivoc/1215"
+    },
+    {
+      "term": "Acoustics",
+      "scheme": "EuroSciVoc",
+      "identifier": "http://data.europa.eu/8mn/euroscivoc/273"
+    }
+  ],
   "related_identifiers": [
     {
       "identifier": "arXiv:1412.6853",

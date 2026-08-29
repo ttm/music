@@ -32,38 +32,41 @@ Publishing the GitHub release is what triggers Zenodo. It archives the
 tarball and mints a version DOI under the existing concept DOI
 [10.5281/zenodo.22151793](https://doi.org/10.5281/zenodo.22151793).
 
-## After: top up the Zenodo record
+## After: check the Zenodo record
 
-Zenodo builds each new deposit from `.zenodo.json` in the repository, so the
-title, the author, Jacopo Donati as a contributor, the description and the
-free-text keywords all come across automatically. **One thing does not.**
+Zenodo builds each new deposit from `.zenodo.json`, so the title, the author,
+Jacopo Donati as a contributor, the description, the keywords and the
+controlled-vocabulary subjects should all come across without anyone touching
+the interface.
 
-Zenodo's *controlled-vocabulary* subjects — the MeSH, GEMET and EuroSciVoc
-terms, which appear in its interface prefixed with the vocabulary name — have
-no representation in `.zenodo.json`, whose `keywords` field is a plain list of
-strings. Writing `"(MeSH) Music"` there produces a free-text keyword that
-merely reads like a MeSH term; it is not linked to the vocabulary, and
-aggregators will not treat it as one.
+The `subjects` block is the part to verify, because it is the part that could
+silently do nothing: Zenodo's legacy metadata schema accepts
+`{term, scheme, identifier}` entries, but whether its GitHub ingestion honours
+them was established at 1.1.1 and not before. Check with:
 
-So after each release, open the new record, click **Edit**, and re-add them
-under *Keywords and subjects* by typing the term and picking the suggestion
-with the vocabulary prefix:
+```console
+curl -sL https://zenodo.org/records/<id>/export/datacite-json \
+  | python3 -c 'import json,sys; [print(s) for s in json.load(sys.stdin)["subjects"]]'
+```
 
-| Vocabulary | Terms |
-|---|---|
-| MeSH | Music · Psychoacoustics · Signal Processing, Computer-Assisted |
-| GEMET | Music |
-| EuroSciVoc | Signal processing |
+Entries carrying a `subjectScheme` are linked to their vocabulary; entries
+without one are free text. If the MeSH, GEMET and EuroSciVoc terms come back
+without a scheme, or not at all, the ingestion ignored the block, and they
+have to be re-added by hand: open the record, **Edit**, type the term under
+*Keywords and subjects*, and pick the suggestion carrying the vocabulary
+prefix. Then **Publish**; the DOI does not change.
 
-Then **Publish**. The DOI does not change.
-
-Two things to check while you are in there, both of which the interface makes
-easy to get wrong:
+Two traps in that interface, both of which have caught us:
 
 - **Names are entered family-name-first.** A contributor typed as
   `Jacopo, Donati` has "Jacopo" recorded as the family name.
-- **Edits are not live until you press Publish.** A record can sit with a
+- **Edits are not live until Publish is pressed.** A record can sit with a
   draft full of changes while the public page still shows the old metadata.
+
+One quirk worth knowing when checking: Zenodo's own
+`/api/records/<id>` endpoint omits `subjects` entirely, so a record can look
+unkeyworded there while the DataCite export and the web page both show the
+full set. Trust the export.
 
 ## Not part of the release
 

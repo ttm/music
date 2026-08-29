@@ -10,10 +10,13 @@ because the page PyPI shows can only be refreshed by an upload, and the
   authors. This file carries the title, the author, Jacopo Donati as a
   contributor, the description, the keywords and the links to the article, to
   PyPI and to the documentation.
-- `RELEASING.md`, a checklist. It records the one piece of Zenodo metadata
-  that cannot be automated -- the controlled-vocabulary subjects, which
-  `.zenodo.json` has no way to express -- so it is re-added deliberately
-  rather than rediscovered.
+  It also carries the controlled-vocabulary subjects -- the MeSH, GEMET and
+  EuroSciVoc terms -- each identified by its vocabulary's own URI, so the
+  linked subjects survive a release rather than being retyped into the
+  interface each time.
+- `RELEASING.md`, a checklist, including how to verify that those subjects
+  really did come across (Zenodo's own record endpoint does not report them;
+  the DataCite export does).
 - `Documentation`, `Tutorial`, `Source` and `Changelog` links in the project
   metadata, which PyPI shows in its sidebar. There had been only `Homepage`,
   pointing at the repository, and `Issues`.

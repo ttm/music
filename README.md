@@ -1,99 +1,137 @@
 # Music
 
-Music is a python package to generate and manipulate music and sounds. It's written using the [MASS (Music and Audio in Sample Sequences)](https://github.com/ttm/mass/) framework, a collection of psychophysical descriptions of musical elements in LPCM audio through equations and corresponding Python routines.
+[![PyPI](https://img.shields.io/pypi/v/music.svg)](https://pypi.org/project/music/)
+[![Python versions](https://img.shields.io/pypi/pyversions/music.svg)](https://pypi.org/project/music/)
+[![CI](https://github.com/ttm/music/actions/workflows/ci.yml/badge.svg)](https://github.com/ttm/music/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-ttm.github.io%2Fmusic-blue.svg)](https://ttm.github.io/music/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/ttm/music/blob/master/LICENSE)
 
-To have a further understanding of the routines you can read the article
-[Musical elements in the discrete-time representation of sound](https://github.com/ttm/mass/raw/master/doc/article.pdf).
+**Extreme-fidelity synthesis of musical elements.**
 
-If you use this package, please cite the forementioned article.
+Music generates and manipulates sound in LPCM audio, sample by sample. It
+implements [MASS (Music and Audio in Sample Sequences)](https://github.com/ttm/mass/),
+a collection of psychophysical descriptions of musical elements expressed as
+equations and corresponding Python routines.
+
+```python
+import music
+
+# a chromatic scale, written to a WAV file
+scale = [music.note(440 * 2 ** (i / 12), duration=0.25) for i in range(13)]
+music.write_wav_mono(music.horizontal_stack(*scale), "scale.wav")
+```
+
+📖 **[API reference](https://ttm.github.io/music/)** — every routine documented
+with the equation it implements and the article it comes from.
 
 ## Core features
 
-The precision of Music makes it the perfect choice for many scientific uses. At its core there are a few important features:
+* **Sample-based synthesis.** State is updated at every sample. A note with a
+  vibrato has a different instantaneous frequency at each of its samples, and
+  the vibrato pattern is folded into the wavetable lookup rather than applied
+  afterwards, so the rendered sound is as close as it can be to the
+  mathematical model that describes it.
+* **Musical structures** with an emphasis on symmetry and discourse:
+  permutation groups, change-ringing peals and plain changes.
+* **`play_audio`** to listen to a result without saving a file.
 
-* **Sample-based synth**, meaning that the state is updated at each sample.  For example, when we have a note with a vibrato, each sample is associated to a different frequency. By doing this the synthesized sound is the closest it can be to the mathematical model that describes it.
-* **Musical structures** with emphasis in symmetry and discourse.
+Music can be used alone or with other packages, and it is well suited to the
+audiovisualization of data. It works with
+[Percolation](https://github.com/ttm/percolation) and
+[Participation](https://github.com/ttm/participation) for harnessing open
+linked social data, and with the [audiovisual analytics vocabulary and ontology
+(AAVO)](https://github.com/ttm/aavo).
 
-* **play_audio** utility to listen to generated sounds without saving files.
-Music can be used alone or with other packages, and it's ideal for audiovisualization of data. For example, it can be used with [Percolation](https://github.com/ttm/percolation) and [Participation](https://github.com/ttm/participation) for harnessing open linked social data, or with [audiovisual analytics vocabulary and ontology (AAVO)](https://github.com/ttm/aavo).
+To understand the routines further, read
+[Musical elements in the discrete-time representation of sound](https://github.com/ttm/mass/raw/master/doc/article.pdf).
+**If you use this package, please cite that article.**
 
 ## How to install
 
-To install music you can either install it directly with `pip`:
-
 ```console
-pip3 install music
+pip install music
 ```
 
-or you can clone this repository and install it from there:
+Requires Python 3.10 or newer. Every dependency comes with it; they are
+declared in
+[pyproject.toml](https://github.com/ttm/music/blob/master/pyproject.toml).
+
+To hack on it, install from a checkout so your edits take effect immediately:
 
 ```console
 git clone https://github.com/ttm/music.git
-pip3 install -e <path_to_repo>
+pip install -e music
 ```
 
-This install method is especially useful when reloading the modified module in subsequent runs of music, and for greater control of customization, hacking and debugging.
+## A closer look
 
-### Dependencies
+Every routine returns a numpy array of PCM samples, so results compose with
+each other and with anything else you can express in numpy.
 
-Every dependency is installed by default by `pip`. They are declared in [pyproject.toml](https://github.com/ttm/music/blob/master/pyproject.toml), which is the single source of truth; [requirements.txt](https://github.com/ttm/music/blob/master/requirements.txt) installs from it.
+### Notes and envelopes
 
-### Testing
-
-The packages required to run the test suite are available via the `dev`
-extras defined in `pyproject.toml`.  Install them with:
-
-```console
-pip install -e '.[dev]'
+```python
+note = music.note_with_vibrato(freq=220, duration=2,
+                               vibrato_freq=6, max_pitch_dev=0.5)
+shaped = music.adsr(sonic_vector=note, attack_duration=80,
+                    sustain_level=-6, release_duration=200)
 ```
 
-You can then run the tests using `pytest`:
+Durations are in seconds, envelope stages in milliseconds, levels in decibels
+and pitch deviations in semitones — each parameter in the unit it is usually
+thought about in.
 
-```console
-pytest
+### Change ringing
+
+Permutation groups and the peals of campanology, acted on any domain you like
+— here on frequencies, so the peal *is* the melody:
+
+```python
+peal = music.PlainChanges(4)                      # every permutation, once
+rows = peal.act([220, 275, 330, 440])
+notes = [music.note(freq, duration=0.2) for row in rows for freq in row]
+music.write_wav_mono(music.horizontal_stack(*notes), "campanology.wav")
 ```
 
-### Type checking
+### Spatialisation
 
-Install the development dependencies and run `mypy` to perform static type
-analysis:
+A source moving from one side to the other, its interaural time and intensity
+differences computed at every sample from its position:
 
-```console
-pip install -e '.[dev]'
-mypy music
+```python
+passing = music.localize_linear(music.note(330, duration=3),
+                                theta1=150, theta2=30, dist=0.6)
+music.write_wav_stereo(passing, "passing.wav")
 ```
 
-### Documentation
+### Sequencing
 
-The API reference is published at
-[ttm.github.io/music](https://ttm.github.io/music/). To build it locally:
-
-```console
-pip install -e '.[docs]'
-sphinx-build -b html -W docs docs/_build/html
+```python
+seq = music.Sequencer()
+for i, freq in enumerate([440, 550, 660]):
+    seq.add_note(freq, start=i * 0.25, duration=1.0,
+                 adsr_params={"attack_duration": 20, "release_duration": 400})
+seq.write("chord.wav")
 ```
 
-`-W` turns Sphinx warnings into errors, which is how CI builds it: a malformed
-docstring fails the build rather than quietly rendering wrong.
+### Noise
 
-### Linting
+Six colours, each defined by its gain per octave — brown at −6 dB, pink at −3,
+white at 0, blue at +3, violet at +6, black at −12 — or any number you pass
+instead:
 
-The code is checked with [ruff](https://docs.astral.sh/ruff/) at PEP 8's 79
-columns:
-
-```console
-ruff check music tests examples conftest.py
+```python
+colours = [music.noise(kind, duration=0.5)
+           for kind in ("brown", "pink", "white", "blue", "violet")]
+music.write_wav_mono(music.horizontal_stack(*colours), "colours.wav")
 ```
-
-All three checks — `pytest`, `mypy` and `ruff` — run in CI on Python 3.10
-through 3.13 for every push and pull request.
 
 ## Examples
 
 Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) you can find some scripts that use the main features of Music.
 
 * [chromatic_scale](https://github.com/ttm/music/tree/master/examples/chromatic_scale.py): writes twelve notes into a WAV file from a sequence of frequencies.
-* [penta_effects](https://github.com/ttm/music/tree/master/examples/chromatic_scale.py): writes a pentatonic scale repeated once clean, once with pitch, one with vibrato, one with Doppler, and one with FM, into a WAV stereo file.
+* [penta_effects](https://github.com/ttm/music/tree/master/examples/penta_effects.py): writes a pentatonic scale repeated once clean, once with pitch, one with vibrato, one with Doppler, and one with FM, into a WAV stereo file.
 * [noisy](https://github.com/ttm/music/tree/master/examples/noisy.py): writes into a WAV file a sequence of different noises.
 * [thirty_notes](https://github.com/ttm/music/tree/master/examples/thirty_notes.py) and [thirty_numpy_notes](https://github.com/ttm/music/tree/master/examples/thirty_numpy_notes.py) generate a sequence of sounds by using a synth class (in this case the class [`Being`](https://github.com/ttm/music/tree/master/music/legacy/classes.py)).
 * [campanology](https://github.com/ttm/music/tree/master/examples/campanology.py) and [geometric_music](https://github.com/ttm/music/tree/master/examples/geometric_music.py) both use `Being` as their synth, but this time with permutations.
@@ -117,39 +155,45 @@ The modules are:
 * **utils** for various functions regarding conversions, mix, etc.
 * **sequencer** for scheduling notes into a timeline and exporting audio.
 
-## Roadmap
+## Plans
 
-Music is stable but still very young. We didn't have the opportunity yet to make Music all we want it to be.
+Concrete things the code itself is waiting for, rather than a wish list:
 
-Here is one example of what we're aiming at. **None of the names below exist
-yet** — this is a sketch of the API we would like, not documentation of the
-current one:
+* **A head-related transfer function.** Both `localize` and `localize2` say so
+  in their own notes: the height of a source, and whether it is in front of or
+  behind the listener, are cues an HRTF carries and neither of them models.
+* **The remaining peals.** `Peals.twenty_all_over` and
+  `Peals.an_eight_and_forty` raise `NotImplementedError`, and `Being.walk`'s
+  `perm-walk` method was never restored from its predecessor.
+* **Reconciling `core/functions.py` with the MASS reference implementation**,
+  routine by routine.
+* **An article describing the package**, as a companion to the MASS one.
 
-```python
-import music
+## Contributing
 
-music.render_demos() # render some wav files in ./
+The test, type-check, lint and documentation tooling comes with the `dev` and
+`docs` extras:
 
-music.legacy.experiments.cristal2(.2, 300) # wav of sonic structure in ./
-
-sound_waves = music.legacy.songs.madame_z(render=False) # return numpy array
-
-sound_waves2 = music.core.io.open("demosong2.wav") # numpy array
-
-music = music.remix(sound_waves, soundwaves2)
-music_ = music.horizontal_stack(sound_waves[:44100*2], music[len(music)/2::2])
-
-music.core.io.write_wav_mono(music_)
-
+```console
+pip install -e '.[dev,docs]'
 ```
 
-## Coding conventions
+```console
+pytest                                       # 476 tests, 100% coverage
+mypy music                                   # type check
+ruff check music tests examples conftest.py  # lint, at PEP 8's 79 columns
+sphinx-build -b html -W docs docs/_build/html
+```
 
-The code follows [PEP 8 conventions](https://peps.python.org/pep-0008/), checked by `ruff` at 79 columns.
+All four run in CI on Python 3.10 through 3.13 for every push and pull
+request, and both `pytest` and `sphinx-build` are configured to fail on
+anything less than full coverage or a docstring numpydoc cannot parse.
 
-Docstrings are written in [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) style throughout — sections under dashed underlines, not Google-style `Parameters:` with a trailing colon. The documentation build runs with `-W`, so a docstring numpydoc cannot parse fails CI.
-
-For a better understanding of each function, the math behind it and see examples of their use, you can read their docstring — or the rendered [API reference](https://ttm.github.io/music/api.html).
+Docstrings are [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html)
+style throughout, and the code follows
+[PEP 8](https://peps.python.org/pep-0008/). For the maths behind a routine,
+examples of its use, and the article it comes from, read its docstring — or
+the rendered [API reference](https://ttm.github.io/music/).
 
 ## Further information
 

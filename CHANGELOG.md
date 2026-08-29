@@ -165,6 +165,20 @@ version will not be byte-identical to one from 1.0.1:
   exactly representable levels survive a round trip unchanged.
 
 ### Changed
+- The README is rewritten for the PyPI landing page it becomes. It opened with
+  six shell blocks and no Python: the first code a visitor met was the Roadmap
+  at line 128, showing an API that does not exist. It now opens with a working
+  example, carries badges and a link to the reference, and gives each of the
+  distinctive features -- envelopes, change ringing, spatialisation,
+  sequencing, noise colours -- a short worked example. Every code block in it
+  is executed as written and produces the files it claims.
+
+  The Roadmap is replaced by *Plans*, listing what the code is actually
+  waiting for rather than a sketch of names that were never written. The four
+  sections on running the dev toolchain are folded into one *Contributing*
+  section below the content a reader came for. Fixed a bullet that swallowed
+  the paragraph after it, verified against PyPI's own renderer, and a link
+  that pointed `penta_effects` at `chromatic_scale.py`.
 - `Peals` inherits `GenericPeal`, which is what `GenericPeal` is for. It holds
   a mapping of named peals -- the model `GenericPeal.act(name, domain)` serves
   -- but did not inherit it, so it could build peals and then had no way to act

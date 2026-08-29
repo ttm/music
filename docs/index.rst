@@ -15,6 +15,9 @@ musical elements expressed as equations and corresponding Python routines.
    scale = [music.note(440 * 2 ** (i / 12), duration=0.4) for i in range(12)]
    music.write_wav_mono(music.horizontal_stack(*scale), "chromatic.wav")
 
+New here? The :doc:`tutorial` walks from a single note to a short stereo
+piece, and explains what the sample-by-sample model actually buys you.
+
 What makes it precise
 ---------------------
 
@@ -79,6 +82,7 @@ The whole public API is re-exported flat from the top level, so
    :maxdepth: 2
    :hidden:
 
+   tutorial
    api
 
 .. toctree::

@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 import urllib.error
@@ -124,8 +125,8 @@ def check_not_on_pypi(version):
 def run_gate():
     """Everything CI runs, before anything leaves the machine."""
     checks = [
-        ("lint", ("ruff", "check", "music", "tests", "examples", "tools",
-                  "conftest.py")),
+        ("lint", (sys.executable, "-m", "ruff", "check", "music", "tests",
+                  "examples", "tools", "conftest.py")),
         ("types", (sys.executable, "-m", "mypy", "music")),
         ("tests", (sys.executable, "-m", "pytest", "-q", "--cov=music",
                    "--cov-fail-under=100")),
@@ -139,7 +140,8 @@ def run_gate():
 
 def build():
     """Build the artifacts, from nothing, and validate them."""
-    run("rm", "-rf", "dist", "build")
+    for stale in ("dist", "build"):
+        shutil.rmtree(ROOT / stale, ignore_errors=True)
     run(sys.executable, "-m", "build")
     run(sys.executable, "-m", "twine", "check",
         *[str(path) for path in sorted((ROOT / "dist").iterdir())])

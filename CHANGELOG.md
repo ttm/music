@@ -21,6 +21,12 @@ because the page PyPI shows can only be refreshed by an upload, and the
   release-time ingestion honours them, and a record edited by hand can always
   be brought back in line with the file. Standard library only, and it needs
   no token to show what it would send.
+- `tools/release.py`, which checks, builds and publishes a release. The
+  version lives in three files that have to agree, the tag has to point at
+  the commit the artifacts were built from rather than wherever master has
+  since moved to, and PyPI will not release a version number back if any of
+  it goes wrong -- so it refuses to proceed on any disagreement, and re-checks
+  before it touches anything outside the machine.
 - `RELEASING.md`, a checklist, including how to verify what actually landed
   (Zenodo's own record endpoint does not report subjects at all; the DataCite
   export does).

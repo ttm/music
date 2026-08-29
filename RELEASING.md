@@ -1,36 +1,29 @@
 # Releasing
 
-## Before
-
-1. `ruff check music tests examples conftest.py`
-2. `mypy music`
-3. `pytest` — must report 100% coverage; it is configured to fail below it
-4. `sphinx-build -b html -W docs docs/_build/html`
-5. Bump `version` in `pyproject.toml` **and** in `CITATION.cff`, and set
-   `date-released` in `CITATION.cff` to the release date
-6. Move the changelog's unreleased entries under the new version heading
-
-## Publish
+## Cut it
 
 ```console
-rm -rf dist build
-python -m build
-twine check dist/*
-twine upload dist/*
+python tools/release.py            # check and build; changes nothing
+python tools/release.py publish    # upload, tag, release
 ```
 
-Then tag and release. **Tag the commit the artifacts were built from**, which
-is not necessarily the tip of `master`:
+`check` refuses to go on unless the version in `pyproject.toml`,
+`CITATION.cff` and `CHANGELOG.md` agree, master is clean and in sync with
+origin, the tag does not exist, PyPI does not already have that version, and
+lint, types, tests and docs all pass. Then it builds from scratch and runs
+`twine check`.
 
-```console
-git tag -a vX.Y.Z <commit> -m "music X.Y.Z"
-git push origin vX.Y.Z
-gh release create vX.Y.Z --verify-tag --notes-file <notes>
-```
+`publish` re-runs all of that and then does the three things that cannot be
+taken back: uploads to PyPI, which never releases a version number back; tags
+**the commit the artifacts were built from**; and creates the GitHub release,
+which is what triggers Zenodo.
 
-Publishing the GitHub release is what triggers Zenodo. It archives the
-tarball and mints a version DOI under the existing concept DOI
-[10.5281/zenodo.22151793](https://doi.org/10.5281/zenodo.22151793).
+So before either, bump `version` in `pyproject.toml` and in `CITATION.cff`,
+set `date-released` in `CITATION.cff`, and move the changelog's entries under
+the new heading. The script will tell you if you missed one.
+
+Uploading needs a PyPI token in `~/.pypirc`; the GitHub release needs `gh`
+logged in.
 
 ## After: sync the Zenodo record
 

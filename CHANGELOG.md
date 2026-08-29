@@ -252,6 +252,11 @@ version will not be byte-identical to one from 1.0.1:
   [-1, 1]), and removed a stray duplicate entry from the Returns section.
 
 ### Added
+- A [tutorial](https://ttm.github.io/music/tutorial.html) in the documentation,
+  walking from a single note to a short stereo piece: what the arrays are, the
+  units each parameter is expressed in, and a measurement showing that a
+  vibrato's instantaneous frequency really does track the model at every
+  sample. Every block on the page was run before it was written down.
 - `CITATION.cff`, so GitHub renders a "Cite this repository" button and the
   request the README makes in prose becomes something a tool can act on. It
   names the package as the software and the MASS article as the preferred

@@ -21,6 +21,8 @@ scale = [music.note(440 * 2 ** (i / 12), duration=0.25) for i in range(13)]
 music.write_wav_mono(music.horizontal_stack(*scale), "scale.wav")
 ```
 
+📖 **[Tutorial](https://ttm.github.io/music/tutorial.html)** — from a single
+note to a short stereo piece.
 📖 **[API reference](https://ttm.github.io/music/)** — every routine documented
 with the equation it implements and the article it comes from.
 
@@ -179,7 +181,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 476 tests, 100% coverage
+pytest                                       # 481 tests, 100% coverage
 mypy music                                   # type check
 ruff check music tests examples conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

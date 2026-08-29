@@ -41,6 +41,7 @@ authors:
   - family-names: Fabbri
     given-names: Renato
     email: renato.fabbri@gmail.com
+    orcid: 'https://orcid.org/0000-0002-9699-629X'
 preferred-citation:
   type: article
   title: Musical elements in the discrete-time representation of sound

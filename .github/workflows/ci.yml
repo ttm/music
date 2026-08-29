@@ -28,7 +28,7 @@ jobs:
           pip install -e '.[dev]'
 
       - name: Lint
-        run: ruff check music tests examples conftest.py
+        run: ruff check music tests examples tools conftest.py
 
       - name: Type check
         run: mypy music

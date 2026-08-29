@@ -16,6 +16,7 @@ scale = [
     466.16,  # A#4
     493.88   # B4
 ]
+# or, from the same C4: [261.63 * 2 ** (i / 12) for i in range(12)]
 
 sonic_vector = []
 

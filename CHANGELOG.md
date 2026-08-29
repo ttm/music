@@ -14,9 +14,16 @@ because the page PyPI shows can only be refreshed by an upload, and the
   EuroSciVoc terms -- each identified by its vocabulary's own URI, so the
   linked subjects survive a release rather than being retyped into the
   interface each time.
-- `RELEASING.md`, a checklist, including how to verify that those subjects
-  really did come across (Zenodo's own record endpoint does not report them;
-  the DataCite export does).
+- `tools/zenodo_sync.py`, which pushes `.zenodo.json` onto a published Zenodo
+  record through its API -- edit, update, publish, DOI unchanged. It resolves
+  each controlled term to the identifier Zenodo knows it by and insists on an
+  exact match, so the linked subjects no longer depend on whether the
+  release-time ingestion honours them, and a record edited by hand can always
+  be brought back in line with the file. Standard library only, and it needs
+  no token to show what it would send.
+- `RELEASING.md`, a checklist, including how to verify what actually landed
+  (Zenodo's own record endpoint does not report subjects at all; the DataCite
+  export does).
 - `Documentation`, `Tutorial`, `Source` and `Changelog` links in the project
   metadata, which PyPI shows in its sidebar. There had been only `Homepage`,
   pointing at the repository, and `Issues`.

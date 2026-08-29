@@ -32,17 +32,33 @@ Publishing the GitHub release is what triggers Zenodo. It archives the
 tarball and mints a version DOI under the existing concept DOI
 [10.5281/zenodo.22151793](https://doi.org/10.5281/zenodo.22151793).
 
-## After: check the Zenodo record
+## After: sync the Zenodo record
 
-Zenodo builds each new deposit from `.zenodo.json`, so the title, the author,
-Jacopo Donati as a contributor, the description, the keywords and the
-controlled-vocabulary subjects should all come across without anyone touching
-the interface.
+Zenodo builds each new deposit from `.zenodo.json` when the release is
+published, but do not rely on that alone: whether its ingestion honours the
+`subjects` block -- the controlled-vocabulary terms, as opposed to the
+free-text keywords -- is not something we control, and a record corrected by
+hand drifts from the file the moment anyone edits it.
 
-The `subjects` block is the part to verify, because it is the part that could
-silently do nothing: Zenodo's legacy metadata schema accepts
-`{term, scheme, identifier}` entries, but whether its GitHub ingestion honours
-them was established at 1.1.1 and not before. Check with:
+Push the file onto the record instead:
+
+```console
+python tools/zenodo_sync.py            # show what it would send
+python tools/zenodo_sync.py --write    # apply it
+```
+
+It resolves each controlled term to the identifier Zenodo knows it by,
+insisting on an exact match rather than accepting the nearest suggestion, then
+edits, updates and republishes the record. **The DOI does not change.** By
+default it targets the newest version under the concept DOI; `--record ID`
+overrides that.
+
+`--write` needs a token with the `deposit:write` and `deposit:actions` scopes,
+from https://zenodo.org/account/settings/applications/tokens/new/, in
+`ZENODO_TOKEN`. Reading needs none.
+
+Verify afterwards with the DataCite export rather than the record endpoint,
+which omits subjects entirely and will make a fully keyworded record look bare:
 
 ```console
 curl -sL https://zenodo.org/records/<id>/export/datacite-json \
@@ -50,23 +66,15 @@ curl -sL https://zenodo.org/records/<id>/export/datacite-json \
 ```
 
 Entries carrying a `subjectScheme` are linked to their vocabulary; entries
-without one are free text. If the MeSH, GEMET and EuroSciVoc terms come back
-without a scheme, or not at all, the ingestion ignored the block, and they
-have to be re-added by hand: open the record, **Edit**, type the term under
-*Keywords and subjects*, and pick the suggestion carrying the vocabulary
-prefix. Then **Publish**; the DOI does not change.
+without one are free text.
 
-Two traps in that interface, both of which have caught us:
+Two traps in Zenodo's web interface, if you edit there instead. Both have
+caught us, and both are why the script exists:
 
 - **Names are entered family-name-first.** A contributor typed as
   `Jacopo, Donati` has "Jacopo" recorded as the family name.
 - **Edits are not live until Publish is pressed.** A record can sit with a
   draft full of changes while the public page still shows the old metadata.
-
-One quirk worth knowing when checking: Zenodo's own
-`/api/records/<id>` endpoint omits `subjects` entirely, so a record can look
-unkeyworded there while the DataCite export and the web page both show the
-full set. Trust the export.
 
 ## Not part of the release
 

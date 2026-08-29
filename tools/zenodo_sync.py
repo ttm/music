@@ -76,11 +76,20 @@ def ssl_context():
     return ssl.create_default_context(cafile=certifi.where())
 
 
-def request(path, *, method="GET", payload=None, token=None):
+#: Zenodo serves records in two shapes. The default is its legacy one,
+#: where a resource type is ``{"title": ..., "type": ...}`` and a relation
+#: is a bare string; the write API speaks the other, where both are
+#: ``{"id": ...}``. Reading in the wrong one and writing it back strips
+#: exactly those fields, and the publish then fails validation on them.
+RDM = "application/vnd.inveniordm.v1+json"
+
+
+def request(path, *, method="GET", payload=None, token=None,
+            accept="application/json"):
     """Call the Zenodo API and return the decoded body, or None."""
     url = path if path.startswith("http") else f"{BASE}{path}"
     data = None
-    headers = {"Accept": "application/json"}
+    headers = {"Accept": accept}
     if payload is not None:
         data = json.dumps(payload).encode()
         headers["Content-Type"] = "application/json"
@@ -220,20 +229,32 @@ def describe(metadata):
 
 
 def sync(record_id, metadata, token):
-    """Edit, update and republish. The DOI is unchanged by this."""
+    """Edit, update and republish. The DOI is unchanged by this.
+
+    A draft carries everything the published record has, and a PUT
+    replaces the metadata wholesale, so what is not being changed has to
+    be read back and sent again -- in the same shape the write API
+    expects, which is why the draft is re-read as ``RDM``.
+    """
     print(f"  creating a draft of record {record_id}")
-    draft = request(f"/records/{record_id}/draft", method="POST", token=token)
+    request(f"/records/{record_id}/draft", method="POST", token=token)
+    draft = request(f"/records/{record_id}/draft", token=token, accept=RDM)
 
     merged = dict(draft["metadata"])
     merged.update(metadata)
     print("  writing the metadata")
     request(f"/records/{record_id}/draft", method="PUT",
-            payload={"metadata": merged}, token=token)
+            payload={"metadata": merged}, token=token, accept=RDM)
 
     print("  publishing")
     published = request(f"/records/{record_id}/draft/actions/publish",
                         method="POST", token=token)
     return published
+
+
+def discard(record_id, token):
+    """Throw away a draft, leaving the published record as it was."""
+    request(f"/records/{record_id}/draft", method="DELETE", token=token)
 
 
 def main(argv=None):
@@ -268,7 +289,12 @@ def main(argv=None):
             "deposit:write and deposit:actions scopes at "
             "https://zenodo.org/account/settings/applications/tokens/new/")
 
-    published = sync(record_id, metadata, token)
+    try:
+        published = sync(record_id, metadata, token)
+    except SyncError:
+        print("  discarding the draft; the published record is untouched")
+        discard(record_id, token)
+        raise
     print(f"\ndone: {published['links']['self_html']}")
     print(f"DOI {published['doi']} (unchanged)")
     return 0

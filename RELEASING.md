@@ -32,6 +32,9 @@ published, and gets most of it right: at 1.1.1 the title, the author, Jacopo
 Donati as a contributor, the description and all nineteen free-text keywords
 came across untouched.
 
+It also honours `related_identifiers`, which arrived complete with their
+relation types.
+
 **It ignores the `subjects` block entirely.** The controlled-vocabulary terms
 -- the MeSH, GEMET and EuroSciVoc entries -- arrived as zero linked subjects,
 measured on the 1.1.1 deposit. This is not a maybe; the release step below is

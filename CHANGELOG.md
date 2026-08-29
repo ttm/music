@@ -1,4 +1,14 @@
 ## [Unreleased]
+### Fixed
+- `tools/zenodo_sync.py` read the draft it was updating in Zenodo's legacy
+  serialization and wrote it back to an API that speaks the other one, where a
+  resource type is `{"id": ...}` rather than `{"title": ..., "type": ...}` and
+  a relation is an object rather than a string. Writing the wrong shape back
+  stripped exactly those fields, and the publish then failed validation on
+  them. It now re-reads the draft as `application/vnd.inveniordm.v1+json`.
+- A failed publish left a half-written draft on the record. The draft is now
+  discarded on failure, so the published record is what it was.
+
 ### Changed
 - `RELEASING.md` records what the 1.1.1 deposit settled: Zenodo's GitHub
   ingestion reads `.zenodo.json` for the title, the creators, the contributors,

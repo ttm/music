@@ -157,8 +157,14 @@ def resolve_subject(term, scheme):
         f"{BASE}/subjects?q={urllib.parse.quote(term)}")
 
 
-def build_metadata(config):
-    """The metadata payload, from the contents of ``.zenodo.json``."""
+def build_metadata(config, *, with_description=False):
+    """The metadata payload, from the contents of ``.zenodo.json``.
+
+    The description is left alone unless asked for. Zenodo fills it with
+    the release notes, which say what changed in that version and are
+    worth more on a per-version record than the package's standing
+    abstract; overwriting them by default would quietly discard them.
+    """
     subjects = [{"subject": keyword} for keyword in config["keywords"]]
     for entry in config.get("subjects", []):
         subjects.append({"id": resolve_subject(entry["term"],
@@ -166,13 +172,14 @@ def build_metadata(config):
 
     metadata = {
         "title": config["title"],
-        "description": f"<p>{config['description']}</p>",
         "creators": [as_person(person, default_role="projectleader")
                      for person in config["creators"]],
         "contributors": [as_person(person)
                          for person in config.get("contributors", [])],
         "subjects": subjects,
     }
+    if with_description:
+        metadata["description"] = f"<p>{config['description']}</p>"
     return {key: value for key, value in metadata.items() if value}
 
 
@@ -205,6 +212,10 @@ def describe(metadata):
     linked = [s["id"] for s in metadata["subjects"] if "id" in s]
     lines.append(f"  keywords      {len(free)}: {', '.join(free)}")
     lines.append(f"  subjects      {len(linked)}: {', '.join(linked)}")
+    lines.append("  description   "
+                 + ("replaced with the abstract from .zenodo.json"
+                    if "description" in metadata
+                    else "left as it is on the record"))
     return "\n".join(lines)
 
 
@@ -231,13 +242,16 @@ def main(argv=None):
                         help="apply the changes (needs ZENODO_TOKEN)")
     parser.add_argument("--record", metavar="ID",
                         help="record to update (default: newest version)")
+    parser.add_argument("--description", action="store_true",
+                        help="also replace the record's description, which "
+                             "Zenodo fills with the release notes")
     parser.add_argument("--config", type=pathlib.Path,
                         default=pathlib.Path(__file__).parent.parent
                         / ".zenodo.json")
     args = parser.parse_args(argv)
 
     config = json.loads(args.config.read_text())
-    metadata = build_metadata(config)
+    metadata = build_metadata(config, with_description=args.description)
     record_id = args.record or latest_record_id()
 
     print(f"record https://zenodo.org/records/{record_id}")

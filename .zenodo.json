@@ -116,8 +116,8 @@
   ],
   "dates": [
     {
-      "date": "2016-02-20",
-      "type": "created",
+      "start": "2016-02-20",
+      "type": "Created",
       "description": "First commit in the repository."
     }
   ],

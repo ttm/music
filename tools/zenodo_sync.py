@@ -314,9 +314,12 @@ def build_metadata(config, *, with_description=False, release_notes=None):
         metadata["references"] = [{"reference": reference}
                                   for reference in config["references"]]
     if config.get("dates"):
+        # .zenodo.json holds these in the shape Zenodo's release-time
+        # ingestion validates -- "start" and a capitalised type. The API
+        # wants "date" and a lowercase vocabulary id.
         metadata["dates"] = [
-            {"date": entry["date"],
-             "type": {"id": entry["type"]},
+            {"date": entry.get("start") or entry["date"],
+             "type": {"id": entry["type"].lower()},
              **({"description": entry["description"]}
                 if entry.get("description") else {})}
             for entry in config["dates"]]

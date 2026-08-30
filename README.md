@@ -61,9 +61,19 @@ gives you both, formatted.
 pip install music
 ```
 
-Requires Python 3.10 or newer. Every dependency comes with it; they are
-declared in
+Requires Python 3.10 or newer. Everything needed to synthesise, filter and
+write audio comes with it; the dependencies are declared in
 [pyproject.toml](https://github.com/ttm/music/blob/master/pyproject.toml).
+
+One thing is optional. `PrimaryTables.draw_tables()`, which plots the waveform
+tables so you can look at them, needs matplotlib:
+
+```console
+pip install 'music[plot]'
+```
+
+Nothing else in the package uses it, and leaving it out makes `import music`
+about 40% faster.
 
 To hack on it, install from a checkout so your edits take effect immediately:
 
@@ -188,7 +198,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 481 tests, 100% coverage
+pytest                                       # 486 tests, 100% coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

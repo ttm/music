@@ -53,6 +53,16 @@ Or from a checkout, which is convenient for hacking and debugging:
 
 Requires Python 3.10 or newer.
 
+:meth:`PrimaryTables.draw_tables <music.PrimaryTables.draw_tables>` plots the
+waveform tables and is the one thing that needs matplotlib, which is an extra:
+
+.. code-block:: console
+
+   pip install 'music[plot]'
+
+Nothing else in the package uses it, and leaving it out makes ``import music``
+about 40% faster.
+
 Where things live
 -----------------
 

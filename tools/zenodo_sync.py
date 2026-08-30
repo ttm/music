@@ -186,8 +186,11 @@ def changelog_section(version, path=None):
     """
     path = path or pathlib.Path(__file__).parent.parent / "CHANGELOG.md"
     version = version.lstrip("v")
+    # The lookahead has to accept end-of-file as well as the next
+    # heading, or the oldest release in the file never matches and its
+    # notes silently fail to attach.
     match = re.search(
-        rf"^## \[{re.escape(version)}\][^\n]*\n(.*?)(?=^## \[)",
+        rf"^## \[{re.escape(version)}\][^\n]*\n(.*?)(?=^## \[|\Z)",
         path.read_text(), re.MULTILINE | re.DOTALL)
     return match.group(1).strip() if match else None
 

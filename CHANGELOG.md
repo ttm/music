@@ -1,3 +1,30 @@
+## [1.2.1] - 2026-08-31
+Metadata only; the package itself is byte-identical to 1.2.0. It exists
+because Zenodo could not archive 1.2.0, and the fix has to be inside the tag
+Zenodo reads -- moving the 1.2.0 tag would have separated it from the sdist
+PyPI was built from, which is the one thing the release procedure guarantees.
+
+### Fixed
+- **`.zenodo.json` failed Zenodo's release-time validator**, so 1.2.0 was
+  published to PyPI and GitHub but never archived and never given a DOI.
+  Zenodo answered the webhook with `202` both times and recorded the failure
+  only on the repository's own page in its settings, where it reads
+  `Extra metadata load failed` -- invisible from GitHub and from the API.
+
+  The `dates` entry added in 1.2.0 for the repository's first commit used the
+  REST API's shape, `{"date": ..., "type": "created"}`, in a file Zenodo
+  validates against its *legacy* deposit schema, which wants
+  `{"start": ..., "type": "Created"}`. Posting the file to Zenodo's own
+  validator names it exactly: `metadata.dates`, "Invalid date provided."
+  Nothing else in the file was wrong.
+
+### Added
+- `tests/test_zenodo_metadata.py`, which checks statically what that validator
+  would have said: only keys Zenodo knows, dates in the ingestion's shape,
+  names written family-first, and subjects carrying a scheme and a resolvable
+  identifier. A malformed field there does not degrade a deposit, it fails the
+  archive, and nothing else catches it until a release has already gone out.
+
 ## [1.2.0] - 2026-08-30
 ### Note for anyone upgrading
 **matplotlib is no longer installed with the package.** If your code calls

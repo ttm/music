@@ -15,6 +15,10 @@ faster.
   three durations produced a three-note score, with no error. `write_abc()`
   appends the lyric line separately, so the words then pointed at notes that
   were no longer there. It raises now, naming both counts.
+- `CITATION.cff` named version 1.1.1 while its version DOI still pointed at
+  the 1.1.0 archive. The DOI can only be known after a release, so keeping it
+  current is now a documented release step rather than something anyone
+  remembers.
 - A doctest in `PrimaryTables`'s class docstring called `draw_tables()` without
   a skip marker, so enabling `--doctest-modules` hung the suite on a plot
   window rather than failing it. All three examples in that module are marked

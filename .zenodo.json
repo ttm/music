@@ -3,11 +3,35 @@
   "upload_type": "software",
   "license": "MIT",
   "access_right": "open",
+  "language": "eng",
   "creators": [
     {
       "name": "Fabbri, Renato",
       "affiliation": "BioSynCare.com, IFSC-USP, Juntadados, Nós Digitais, CDTL, ICMC/USP",
-      "orcid": "0000-0002-9699-629X"
+      "orcid": "0000-0002-9699-629X",
+      "affiliations": [
+        {
+          "id": "02f1crb75"
+        },
+        {
+          "id": "036rp1748"
+        },
+        {
+          "name": "ICMC/USP"
+        },
+        {
+          "name": "BioSynCare.com"
+        },
+        {
+          "name": "Juntadados"
+        },
+        {
+          "name": "Nós Digitais"
+        },
+        {
+          "name": "CDTL"
+        }
+      ]
     }
   ],
   "contributors": [
@@ -90,6 +114,16 @@
       "identifier": "http://data.europa.eu/8mn/euroscivoc/273"
     }
   ],
+  "dates": [
+    {
+      "date": "2016-02-20",
+      "type": "created",
+      "description": "First commit in the repository."
+    }
+  ],
+  "references": [
+    "Fabbri, R., Vieira da Silva Junior, V., Pessotti, A. C. S., Corrêa, D. C., & Oliveira Jr., O. N. (2017). Musical elements in the discrete-time representation of sound. arXiv:1412.6853. https://arxiv.org/abs/1412.6853"
+  ],
   "related_identifiers": [
     {
       "identifier": "arXiv:1412.6853",
@@ -109,5 +143,16 @@
       "resource_type": "publication-softwaredocumentation",
       "scheme": "url"
     }
-  ]
+  ],
+  "custom_fields": {
+    "code:codeRepository": "https://github.com/ttm/music",
+    "code:programmingLanguage": [
+      {
+        "id": "python"
+      }
+    ],
+    "code:developmentStatus": {
+      "id": "active"
+    }
+  }
 }

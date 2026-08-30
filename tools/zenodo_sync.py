@@ -139,7 +139,13 @@ def as_person(entry, *, default_role=None):
                                   "identifier": entry["orcid"]}]
 
     out = {"person_or_org": person}
-    if entry.get("affiliation"):
+    # A list lets an affiliation carry its ROR identifier, which resolves
+    # to a real organisation, alongside ones that have no ROR entry and
+    # can only be named. The single string is the fallback, and is what
+    # the release-time ingestion reads.
+    if entry.get("affiliations"):
+        out["affiliations"] = entry["affiliations"]
+    elif entry.get("affiliation"):
         out["affiliations"] = [{"name": entry["affiliation"]}]
 
     role = (entry.get("type") or default_role or "").lower()
@@ -295,6 +301,20 @@ def build_metadata(config, *, with_description=False, release_notes=None):
             "description": markdown_to_html(release_notes),
             "type": {"id": "technical-info"},
         }]
+
+    if config.get("language"):
+        metadata["languages"] = [{"id": config["language"]}]
+    if config.get("references"):
+        metadata["references"] = [{"reference": reference}
+                                  for reference in config["references"]]
+    if config.get("dates"):
+        metadata["dates"] = [
+            {"date": entry["date"],
+             "type": {"id": entry["type"]},
+             **({"description": entry["description"]}
+                if entry.get("description") else {})}
+            for entry in config["dates"]]
+
     return {key: value for key, value in metadata.items() if value}
 
 
@@ -317,7 +337,7 @@ def record_version(record_id):
     return record.get("metadata", {}).get("version") or ""
 
 
-def describe(metadata):
+def describe(metadata, custom_fields=None):
     """A readable rendering of what would be sent."""
     def named(person):
         who = person["person_or_org"]
@@ -342,10 +362,15 @@ def describe(metadata):
                  + (f"attached, {len(extra[0]['description'])} characters "
                     f"of HTML from the changelog"
                     if extra else "none found in the changelog"))
+    for key in ("languages", "dates", "references"):
+        if metadata.get(key):
+            lines.append(f"  {key:<13} {len(metadata[key])}")
+    if custom_fields:
+        lines.append(f"  custom fields {', '.join(sorted(custom_fields))}")
     return "\n".join(lines)
 
 
-def sync(record_id, metadata, token):
+def sync(record_id, metadata, token, custom_fields=None):
     """Edit, update and republish. The DOI is unchanged by this.
 
     A draft carries everything the published record has, and a PUT
@@ -359,9 +384,16 @@ def sync(record_id, metadata, token):
 
     merged = dict(draft["metadata"])
     merged.update(metadata)
+
+    # custom_fields are a sibling of metadata in the payload, not a key
+    # inside it, and the software block lives there.
+    fields = dict(draft.get("custom_fields") or {})
+    fields.update(custom_fields or {})
+
     print("  writing the metadata")
     request(f"/records/{record_id}/draft", method="PUT",
-            payload={"metadata": merged}, token=token, accept=RDM)
+            payload={"metadata": merged, "custom_fields": fields},
+            token=token, accept=RDM)
 
     print("  publishing")
     published = request(f"/records/{record_id}/draft/actions/publish",
@@ -403,7 +435,7 @@ def main(argv=None):
                               release_notes=notes)
 
     print(f"record https://zenodo.org/records/{record_id}")
-    print(describe(metadata))
+    print(describe(metadata, config.get("custom_fields")))
 
     if not args.write:
         print("\ndry run; pass --write to apply")
@@ -417,7 +449,8 @@ def main(argv=None):
             "https://zenodo.org/account/settings/applications/tokens/new/")
 
     try:
-        published = sync(record_id, metadata, token)
+        published = sync(record_id, metadata, token,
+                         config.get("custom_fields"))
     except SyncError:
         print("  discarding the draft; the published record is untouched")
         discard(record_id, token)

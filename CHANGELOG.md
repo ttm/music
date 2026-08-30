@@ -1,5 +1,22 @@
 ## [Unreleased]
 ### Added
+- Five fields of Zenodo metadata the deposit had been leaving empty, all
+  carried in `.zenodo.json` so they survive every release:
+  - **The software block.** `code:codeRepository`, `code:programmingLanguage`
+    and `code:developmentStatus` were entirely absent, so nothing told a
+    machine reading the record that this is Python.
+  - **ROR-identified affiliations.** The author's affiliation was one string
+    naming six institutions, which resolves to nothing. Two of them are in
+    ROR -- Instituto de Física de São Carlos (`02f1crb75`) and Universidade de
+    São Paulo (`036rp1748`) -- and are now linked; the rest stay as names,
+    since they have no ROR entry.
+  - **A `created` date of 2016-02-20**, the repository's first commit. The
+    record's publication date is the release date, which made a decade of work
+    look like a day of it.
+  - **The MASS article as a reference**, distinct from the related identifier:
+    one says the software derives from the article, the other cites it.
+  - **The language**, `eng`.
+
 - `tools/zenodo_sync.py` attaches the changelog entry for the record's version
   to the Zenodo deposit as an additional description of type `technical-info`,
   so a version record says what changed in that version and not only what the

@@ -15,6 +15,18 @@ faster.
   three durations produced a three-note score, with no error. `write_abc()`
   appends the lyric line separately, so the words then pointed at notes that
   were no longer there. It raises now, naming both counts.
+- **`iir()` returned two samples of nonsense for a stereo signal.** `len()` of
+  a two-dimensional array counts channels, so a `(2, n)` input produced a
+  two-element result rather than a filtered one -- silently. It raises now,
+  as it also does for an empty `b` (which raised `IndexError` from the
+  divisor) and for `b[0] == 0` (which produced an array of infinities behind a
+  `RuntimeWarning`).
+- `tools/release.py` carried a second copy of the changelog parser, with the
+  same end-of-file bug fixed above in `zenodo_sync`. It imports the one
+  implementation now, so the notes on a GitHub release and on a Zenodo deposit
+  cannot disagree.
+- `markdown_to_html` emitted a `<ul>` directly inside a `<ul>`, plus a stray
+  `</li>`, for a list whose first item was already indented.
 - `CITATION.cff` named version 1.1.1 while its version DOI still pointed at
   the 1.1.0 archive. The DOI can only be known after a release, so keeping it
   current is now a documented release step rather than something anyone

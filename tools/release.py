@@ -35,7 +35,7 @@ import urllib.request
 
 # Running this as a script puts tools/ first on sys.path, so its sibling
 # is importable by name. The CA handling belongs in one place.
-from zenodo_sync import ssl_context
+from zenodo_sync import changelog_section, ssl_context
 
 ROOT = pathlib.Path(__file__).parent.parent
 
@@ -155,14 +155,15 @@ def build():
 # ---------------------------------------------------------------------
 
 def release_notes(version):
-    """The changelog's section for this version, as the release body."""
-    changelog = (ROOT / "CHANGELOG.md").read_text()
-    match = re.search(
-        rf"^## \[{re.escape(version)}\][^\n]*\n(.*?)(?=^## \[)",
-        changelog, re.MULTILINE | re.DOTALL)
-    if not match:
+    """The changelog's section for this version, as the release body.
+
+    The extraction is zenodo_sync's, so the notes on the GitHub release
+    and the notes on the Zenodo deposit come from one implementation
+    rather than two that can disagree.
+    """
+    body = changelog_section(version)
+    if body is None:
         raise ReleaseError(f"no changelog section for {version}")
-    body = match.group(1).strip()
     return (
         f"```console\npip install -U music\n```\n\n"
         f"[Tutorial](https://ttm.github.io/music/tutorial.html) · "

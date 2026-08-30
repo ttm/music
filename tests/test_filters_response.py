@@ -127,6 +127,23 @@ def test_iir_accepts_lists_as_documented():
     assert np.allclose(out, [1.0, 0.5, 0.25, 0.125])
 
 
+@pytest.mark.parametrize("signal, a, b, message", [
+    (np.ones((2, 4)), [1.], [1.], "one channel at a time"),
+    (np.ones(4), [1.], [], "at least the divisor"),
+    (np.ones(4), [1.], [0., .5], "cannot be zero"),
+])
+def test_iir_refuses_what_it_cannot_filter(signal, a, b, message):
+    """Each of these used to produce a wrong answer rather than an error.
+
+    A stereo array came back as two samples, because ``len()`` of a 2-D
+    array counts channels; an empty ``b`` raised IndexError from the
+    divisor; and a zero divisor produced an array of infinities behind a
+    RuntimeWarning.
+    """
+    with pytest.raises(ValueError, match=message):
+        music.iir(signal, a, b)
+
+
 def test_iir_matches_the_recurrence_it_documents():
     """Pin the semantics independently of the implementation.
 

@@ -145,3 +145,30 @@ def test_sing_rejects_a_render_at_the_wrong_sample_rate(cache, monkeypatch):
 
     with pytest.raises(RuntimeError, match="44100"):
         perform.sing()
+
+
+def test_translate_to_abc_rejects_a_length_mismatch():
+    """Regression: notes and durations were zipped, so the tail of
+    whichever was longer vanished. Five notes with three durations
+    produced a three-note score, and since write_abc appends the lyric
+    line separately, the words then pointed at notes that were gone."""
+    from music.singing.perform import translate_to_abc
+
+    assert translate_to_abc([0, 2, 4], [1, 1, 1], reference=60) == "=c=de"
+
+    with pytest.raises(ValueError, match="5 notes and 3 durations"):
+        translate_to_abc([0, 2, 4, 5, 7], [1, 1, 1], reference=60)
+
+    with pytest.raises(ValueError, match="2 notes and 5 durations"):
+        translate_to_abc([0, 2], [1, 1, 1, 1, 1], reference=60)
+
+
+def test_the_note_dictionary_covers_the_midi_range_it_claims():
+    """The eight octaves of names are longer than the MIDI range the
+    dictionary maps, and the surplus is sliced off deliberately."""
+    from music.singing.perform import Notes
+
+    notes = Notes()
+    assert len(notes.notes_dict) == 85
+    assert min(notes.notes_dict) == 12
+    assert max(notes.notes_dict) == 96

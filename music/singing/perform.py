@@ -77,10 +77,45 @@ def write_abc(text, notes, durs, M='4/4', L='1/4', Q=120, K='C', reference=60):
 
 
 def translate_to_abc(notes, durs, reference):
+    """Render pitches and durations as an ABC notation fragment.
+
+    Parameters
+    ----------
+    notes : sequence of int
+        Semitone offsets from ``reference``.
+    durs : sequence
+        One duration per note.
+    reference : int
+        The MIDI note that offset zero refers to.
+
+    Returns
+    -------
+    str
+        The notes with their durations, ready to append to an ABC header.
+
+    Raises
+    ------
+    ValueError
+        If there is not exactly one duration per note. Zipping them
+        silently discarded the tail of whichever was longer, so five
+        notes with three durations produced a three-note score -- and
+        ``write_abc`` appends the lyric line separately, which then
+        pointed at notes that were no longer there.
+
+    Examples
+    --------
+    >>> translate_to_abc([0, 2, 4], [1, 1, 1], reference=60)
+    '=c=de'
+
+    """
+    if len(notes) != len(durs):
+        raise ValueError(
+            f"got {len(notes)} notes and {len(durs)} durations; "
+            f"there must be exactly one duration per note")
     durs = [str(i).replace('-', '/') for i in durs]
     durs = [i if i != '1' else '' for i in durs]
     notes = converter.convert(notes, reference)
-    return ''.join([i + j for i, j in zip(notes, durs)])
+    return ''.join([i + j for i, j in zip(notes, durs, strict=True)])
 
 
 class Notes:
@@ -100,8 +135,12 @@ class Notes:
         notes___u = [note + "'" for note in notes__u]
         notes_all = notes____ + notes___ + notes__ + notes_ + notes + \
             notes_u + notes__u + notes___u
-        self.notes_dict = dict([(i, j) for i, j in zip(range(12, 97),
-                                                       notes_all)])
+        # notes_all spans eight octaves, 96 names. The dictionary covers
+        # MIDI 12 to 96, which is 85 of them; the remaining eleven are
+        # deliberately unused. Sliced explicitly so that is a decision
+        # rather than something zip does quietly.
+        self.notes_dict = dict(zip(range(12, 97), notes_all[:85],
+                                   strict=True))
 
     def convert(self, notes, reference):
         if self.notes_dict is None:

@@ -1,4 +1,4 @@
-## [Unreleased]
+## [1.2.0] - 2026-08-30
 ### Note for anyone upgrading
 **matplotlib is no longer installed with the package.** If your code calls
 `PrimaryTables.draw_tables()`, or relied on `import music` having pulled
@@ -7,86 +7,25 @@ in the package uses it. Everything that synthesises, filters or writes audio
 is unaffected.
 
 `iir()` returns exactly the values it did before, bit for bit; it is only
-faster.
-
-### Fixed
-- **`translate_to_abc()` silently dropped notes.** It zipped pitches against
-  durations, so the tail of whichever was longer vanished: five notes with
-  three durations produced a three-note score, with no error. `write_abc()`
-  appends the lyric line separately, so the words then pointed at notes that
-  were no longer there. It raises now, naming both counts.
-- **`iir()` returned two samples of nonsense for a stereo signal.** `len()` of
-  a two-dimensional array counts channels, so a `(2, n)` input produced a
-  two-element result rather than a filtered one -- silently. It raises now,
-  as it also does for an empty `b` (which raised `IndexError` from the
-  divisor) and for `b[0] == 0` (which produced an array of infinities behind a
-  `RuntimeWarning`).
-- `fir()` rejected bad input with numpy's own messages -- "object too deep for
-  desired array" for a stereo array, "v cannot be empty" for an empty one --
-  which name neither the argument nor the problem. It now names both, matching
-  the guards `iir()` grew.
-- `tools/release.py` carried a second copy of the changelog parser, with the
-  same end-of-file bug fixed above in `zenodo_sync`. It imports the one
-  implementation now, so the notes on a GitHub release and on a Zenodo deposit
-  cannot disagree.
-- `markdown_to_html` emitted a `<ul>` directly inside a `<ul>`, plus a stray
-  `</li>`, for a list whose first item was already indented.
-- `CITATION.cff` named version 1.1.1 while its version DOI still pointed at
-  the 1.1.0 archive. The DOI can only be known after a release, so keeping it
-  current is now a documented release step rather than something anyone
-  remembers.
-- A doctest in `PrimaryTables`'s class docstring called `draw_tables()` without
-  a skip marker, so enabling `--doctest-modules` hung the suite on a plot
-  window rather than failing it. All three examples in that module are marked
-  now.
-- `tools/zenodo_sync.py` could not find the changelog entry for the *oldest*
-  release: its lookahead required a following heading, so the last section in
-  the file never matched and its notes silently failed to attach.
-- `Notes.make_dict()` built 96 note names and zipped them against 85 MIDI
-  numbers, leaving eleven quietly unused. The slice is explicit now, so the
-  range the dictionary covers is a decision rather than an accident of `zip`.
-- **`iir()` was quadratic in the length of the signal.** It rebuilt a reversed
-  copy of everything filtered so far on every sample, then threw all but the
-  first `len(a)` of it away. One second of audio at 44.1 kHz took about three
-  and a half seconds, and ten seconds of audio took over five minutes, which
-  made the routine unusable on real material.
-
-  Only the last `len(a)` inputs and `len(b) - 1` outputs are ever read, so the
-  slices are now bounded by the filter order. One second of audio takes 192 ms,
-  and cost grows linearly, so the gap widens with length.
-
-  **Output values are unchanged, bit for bit.** The slices are multiplied and
-  summed rather than dot-producted for exactly this reason: BLAS is free to
-  reassociate a dot product, and in a recursive filter that difference
-  compounds -- a dot-product version drifted by up to 1.4e-09. Verified
-  identical across 405 cases including empty input, filters longer than the
-  signal, and a pole at 0.999.
-
-### Changed
-- **matplotlib is an optional extra rather than a required dependency.** It was
-  imported at the top of `music/tables.py` for `PrimaryTables.draw_tables()`,
-  a convenience for looking at the tables, and nothing else in the package uses
-  it. Importing it eagerly cost about **40% of `import music`** -- 1237 ms down
-  to 743 ms, measured best-of-five -- and pulled contourpy, cycler, fonttools,
-  kiwisolver, packaging, pillow, pyparsing and python-dateutil into every
-  installation. It is imported inside `draw_tables` now, which raises a message
-  naming `pip install 'music[plot]'` when it is absent.
-- Development and documentation dependency floors raised to the majors CI
-  actually exercises: mypy 2.0, ruff 0.14, sphinx 8.0, numpydoc 1.8. The old
-  floors predate rule and default changes in those tools, so a contributor
-  could pass locally and fail CI.
+faster. `iir()` and `fir()` now raise instead of accepting a stereo array --
+`iir()` used to return two samples of nonsense for one. Filter each channel
+separately.
 
 ### Added
-- `iir()` gains a test that pins the recurrence it documents against a plain
-  scalar implementation -- including the plus sign on the feedback term, which
-  is not the convention `scipy.signal.lfilter` uses -- and one that fails if
-  the cost stops being linear.
 - A CI job that installs the **exact lower bounds** `pyproject.toml` declares
   -- numpy 1.26.4, scipy 1.12.0, matplotlib 3.7.1, sympy 1.12 -- and runs the
   suite on Python 3.10. Nothing had ever tested them: every other job resolves
   to the newest release, so the floors could drift into fiction without a
-  single failure. They currently hold, all 482 tests passing.
-
+  single failure. They currently hold, with the whole suite passing.
+- `tools/zenodo_sync.py` attaches the changelog entry for the record's version
+  to the Zenodo deposit as an additional description of type `technical-info`,
+  so a version record says what changed in that version and not only what the
+  package is. The record's own description is still left alone. It converts
+  the subset of markdown the changelog uses -- headings, nested bullets,
+  inline code, links, bold -- and holds code spans out of the rest of the
+  conversion, because this changelog quotes expressions such as
+  `2 ** (bit_depth - 1)` whose asterisks a bold rule would otherwise pair with
+  the next ones outside the span and emit tags that cross.
 - Five fields of Zenodo metadata the deposit had been leaving empty, all
   carried in `.zenodo.json` so they survive every release:
   - **The software block.** `code:codeRepository`, `code:programmingLanguage`
@@ -103,21 +42,86 @@ faster.
   - **The MASS article as a reference**, distinct from the related identifier:
     one says the software derives from the article, the other cites it.
   - **The language**, `eng`.
+- `iir()` gains a test that pins the recurrence it documents against a plain
+  scalar implementation -- including the plus sign on the feedback term, which
+  is not the convention `scipy.signal.lfilter` uses -- and one that fails if
+  the cost stops being linear.
 
-- `tools/zenodo_sync.py` attaches the changelog entry for the record's version
-  to the Zenodo deposit as an additional description of type `technical-info`,
-  so a version record says what changed in that version and not only what the
-  package is. The record's own description is still left alone. It converts
-  the subset of markdown the changelog uses -- headings, nested bullets,
-  inline code, links, bold -- and holds code spans out of the rest of the
-  conversion, because this changelog quotes expressions such as
-  `2 ** (bit_depth - 1)` whose asterisks a bold rule would otherwise pair with
-  the next ones outside the span and emit tags that cross.
+### Changed
+- **matplotlib is an optional extra rather than a required dependency.** It was
+  imported at the top of `music/tables.py` for `PrimaryTables.draw_tables()`,
+  a convenience for looking at the tables, and nothing else in the package uses
+  it. Importing it eagerly cost about **40% of `import music`** -- 1237 ms down
+  to 743 ms, measured best-of-five -- and pulled contourpy, cycler, fonttools,
+  kiwisolver, packaging, pillow, pyparsing and python-dateutil into every
+  installation. It is imported inside `draw_tables` now, which raises a message
+  naming `pip install 'music[plot]'` when it is absent.
+- Development and documentation dependency floors raised to the majors CI
+  actually exercises: mypy 2.0, ruff 0.14, sphinx 8.0, numpydoc 1.8. The old
+  floors predate rule and default changes in those tools, so a contributor
+  could pass locally and fail CI.
+- `RELEASING.md` records what the 1.1.1 deposit settled: Zenodo's GitHub
+  ingestion reads `.zenodo.json` for the title, the creators, the contributors,
+  the description and the free-text keywords, and **ignores the `subjects`
+  block**. All nineteen keywords came across; all ten controlled-vocabulary
+  terms did not. Running `tools/zenodo_sync.py --write` after a release is
+  therefore required rather than precautionary.
 
 ### Fixed
+- **`iir()` was quadratic in the length of the signal.** It rebuilt a reversed
+  copy of everything filtered so far on every sample, then threw all but the
+  first `len(a)` of it away. One second of audio at 44.1 kHz took about three
+  and a half seconds, and ten seconds of audio took over five minutes, which
+  made the routine unusable on real material.
+
+  Only the last `len(a)` inputs and `len(b) - 1` outputs are ever read, so the
+  slices are now bounded by the filter order. One second of audio takes 192 ms,
+  and cost grows linearly, so the gap widens with length.
+
+  **Output values are unchanged, bit for bit.** The slices are multiplied and
+  summed rather than dot-producted for exactly this reason: BLAS is free to
+  reassociate a dot product, and in a recursive filter that difference
+  compounds -- a dot-product version drifted by up to 1.4e-09. Verified
+  identical across 405 cases including empty input, filters longer than the
+  signal, and a pole at 0.999.
+- **`iir()` returned two samples of nonsense for a stereo signal.** `len()` of
+  a two-dimensional array counts channels, so a `(2, n)` input produced a
+  two-element result rather than a filtered one -- silently. It raises now,
+  as it also does for an empty `b` (which raised `IndexError` from the
+  divisor) and for `b[0] == 0` (which produced an array of infinities behind a
+  `RuntimeWarning`).
+- **`translate_to_abc()` silently dropped notes.** It zipped pitches against
+  durations, so the tail of whichever was longer vanished: five notes with
+  three durations produced a three-note score, with no error. `write_abc()`
+  appends the lyric line separately, so the words then pointed at notes that
+  were no longer there. It raises now, naming both counts.
+- `fir()` rejected bad input with numpy's own messages -- "object too deep for
+  desired array" for a stereo array, "v cannot be empty" for an empty one --
+  which name neither the argument nor the problem. It now names both, matching
+  the guards `iir()` grew.
 - The README said `structures` held "scales, chords, counterpoint, tunings".
   It holds permutations, peals and symmetry; none of those four exist. The
   sentence now describes what is there and links the issue for what is not.
+- `Notes.make_dict()` built 96 note names and zipped them against 85 MIDI
+  numbers, leaving eleven quietly unused. The slice is explicit now, so the
+  range the dictionary covers is a decision rather than an accident of `zip`.
+- A doctest in `PrimaryTables`'s class docstring called `draw_tables()` without
+  a skip marker, so enabling `--doctest-modules` hung the suite on a plot
+  window rather than failing it. All three examples in that module are marked
+  now.
+- `CITATION.cff` named version 1.1.1 while its version DOI still pointed at
+  the 1.1.0 archive. The DOI can only be known after a release, so keeping it
+  current is now a documented release step rather than something anyone
+  remembers.
+- `markdown_to_html` emitted a `<ul>` directly inside a `<ul>`, plus a stray
+  `</li>`, for a list whose first item was already indented.
+- `tools/release.py` carried a second copy of the changelog parser, with the
+  same end-of-file bug fixed above in `zenodo_sync`. It imports the one
+  implementation now, so the notes on a GitHub release and on a Zenodo deposit
+  cannot disagree.
+- `tools/zenodo_sync.py` could not find the changelog entry for the *oldest*
+  release: its lookahead required a following heading, so the last section in
+  the file never matched and its notes silently failed to attach.
 - `tools/zenodo_sync.py` read the draft it was updating in Zenodo's legacy
   serialization and wrote it back to an API that speaks the other one, where a
   resource type is `{"id": ...}` rather than `{"title": ..., "type": ...}` and
@@ -126,14 +130,6 @@ faster.
   them. It now re-reads the draft as `application/vnd.inveniordm.v1+json`.
 - A failed publish left a half-written draft on the record. The draft is now
   discarded on failure, so the published record is what it was.
-
-### Changed
-- `RELEASING.md` records what the 1.1.1 deposit settled: Zenodo's GitHub
-  ingestion reads `.zenodo.json` for the title, the creators, the contributors,
-  the description and the free-text keywords, and **ignores the `subjects`
-  block**. All nineteen keywords came across; all ten controlled-vocabulary
-  terms did not. Running `tools/zenodo_sync.py --write` after a release is
-  therefore required rather than precautionary.
 
 ## [1.1.1] - 2026-08-29
 Documentation and metadata only; no change to any rendered sound. It exists

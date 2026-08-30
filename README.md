@@ -158,7 +158,7 @@ The modules are:
   * **filters** for the application of filters such as ADSR envelopes, fades, IIR and FIR, reverb, loudness, and localization.
   * **io** for reading, writing and playing audio, both mono and stereo.
   * **functions** for normalization.
-* **structures** for higher level musical structures such as permutations (and related to algebraic groups and change ringing peals), scales, chords, counterpoint, tunings, etc.
+* **structures** for higher level musical structures: permutations and the algebraic groups they form, change-ringing peals, and symmetry. Scales, chords, counterpoint and tunings are [not there yet](https://github.com/ttm/music/issues/1).
 * **legacy** for musical pieces that are rendered with the Music package and might be used as material to make more music.
 * **tables** for the generation of lookup tables for some basic waveform.
 * **utils** for various functions regarding conversions, mix, etc.

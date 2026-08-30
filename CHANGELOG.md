@@ -28,6 +28,9 @@
   the next ones outside the span and emit tags that cross.
 
 ### Fixed
+- The README said `structures` held "scales, chords, counterpoint, tunings".
+  It holds permutations, peals and symmetry; none of those four exist. The
+  sentence now describes what is there and links the issue for what is not.
 - `tools/zenodo_sync.py` read the draft it was updating in Zenodo's legacy
   serialization and wrote it back to an API that speaks the other one, where a
   resource type is `{"id": ...}` rather than `{"title": ..., "type": ...}` and

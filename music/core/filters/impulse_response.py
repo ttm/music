@@ -80,8 +80,29 @@ def iir(sonic_vector, a, b):
     b : iterable of scalars
         The feedback filter coefficients.
 
+    Returns
+    -------
+    ndarray
+        The filtered signal, the same length as the input.
+
     Notes
     -----
+    The recurrence implemented is
+
+    .. math::
+        b_0 y[n] = \\sum_k a_k x[n-k] + \\sum_{j \\geq 1} b_j y[n-j]
+
+    Note the plus sign on the feedback sum: this is not the convention
+    ``scipy.signal.lfilter`` uses, which subtracts it, and the names of
+    the two coefficient arrays are also the other way round there.
+
+    Cost is linear in the length of the signal. It reads only the last
+    ``len(a)`` inputs and ``len(b) - 1`` outputs at each step, which is
+    all the recurrence refers to; taking a longer slice and discarding
+    the remainder -- as this did -- made a second of audio at 44.1 kHz
+    take about three seconds, and ten seconds of audio take five
+    minutes.
+
     Check [1] to know more about this function.
 
     Cite the following article whenever you use this function.
@@ -91,6 +112,12 @@ def iir(sonic_vector, a, b):
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
+    Examples
+    --------
+    >>> impulse = np.array([1., 0., 0., 0.])
+    >>> np.allclose(iir(impulse, [1.], [1., .5]), [1., .5, .25, .125])
+    True
+
     """
     # asarray so the "iterable of scalars" the parameters document really
     # works: two Python lists multiplied together is a TypeError, not an
@@ -98,15 +125,20 @@ def iir(sonic_vector, a, b):
     signal = np.asarray(sonic_vector, dtype=np.float64)
     a = np.asarray(a, dtype=np.float64)
     b = np.asarray(b, dtype=np.float64)
-    signal_: list = []
-    for i in range(len(signal)):
-        samples_a = signal[i::-1][:len(a)]
-        a_coeffs = a[:i + 1]
-        a_contrib = (samples_a * a_coeffs).sum()
 
-        samples_b = np.asarray(signal_[-1:-1 - i:-1][:len(b) - 1])
-        b_coeffs = b[1:i + 1]
-        b_contrib = (samples_b * b_coeffs).sum()
-        t_i = (a_contrib + b_contrib) / b[0]
-        signal_.append(t_i)
-    return np.array(signal_)
+    out = np.zeros(len(signal))
+    for i in range(len(signal)):
+        # Only the last len(a) inputs and len(b) - 1 outputs are read, so
+        # both slices are bounded by the filter order rather than growing
+        # with i. Multiplying and summing, rather than taking a dot
+        # product, keeps the arithmetic bit-for-bit what it was: BLAS is
+        # free to reassociate, and in a recursive filter that difference
+        # compounds.
+        first = max(0, i - len(a) + 1)
+        forward = (signal[first:i + 1][::-1] * a[:i + 1 - first]).sum()
+
+        first = max(0, i - len(b) + 1)
+        feedback = (out[first:i][::-1] * b[1:i + 1 - first]).sum()
+
+        out[i] = (forward + feedback) / b[0]
+    return out

@@ -7,6 +7,8 @@ their inverse transform, so a *flat* response low-passed the signal instead
 of leaving it alone.
 """
 
+import time
+
 import numpy as np
 import pytest
 
@@ -123,6 +125,59 @@ def test_iir_accepts_lists_as_documented():
     scalars, but two Python lists multiplied together raise TypeError."""
     out = music.iir([1.0, 0.0, 0.0, 0.0], [1.0], [1.0, 0.5])
     assert np.allclose(out, [1.0, 0.5, 0.25, 0.125])
+
+
+def test_iir_matches_the_recurrence_it_documents():
+    """Pin the semantics independently of the implementation.
+
+    The docstring states b0*y[n] = sum a_k x[n-k] + sum_{j>=1} b_j y[n-j].
+    Note the plus on the feedback term, which is not what
+    scipy.signal.lfilter does -- so the convention is worth a test that
+    does not go through any numpy vectorisation.
+    """
+    rng = np.random.RandomState(0)
+    x = rng.randn(60)
+    a = [0.7, -0.2, 0.1]
+    b = [2.0, 0.3, -0.15]
+
+    expected = []
+    for n in range(len(x)):
+        total = sum(a[k] * x[n - k] for k in range(len(a)) if n - k >= 0)
+        total += sum(b[j] * expected[n - j]
+                     for j in range(1, len(b)) if n - j >= 0)
+        expected.append(total / b[0])
+
+    assert np.allclose(music.iir(x, a, b), expected)
+
+
+def test_iir_cost_is_linear_in_the_signal_length():
+    """Regression: it rebuilt a reversed copy of the whole signal so far
+    on every sample, so cost grew with the square of the length. One
+    second of audio took about three seconds, and ten seconds took five
+    minutes. Only the last len(a) inputs and len(b) - 1 outputs are ever
+    read, so the slices are bounded by the filter order.
+
+    Quadratic growth would show as roughly 16x here; linear shows as 4x.
+    The threshold is loose because this is wall-clock on shared CI.
+    """
+    a, b = [1.0], [1.0, -0.9]
+    music.iir(np.zeros(256), a, b)  # warm up
+
+    def best_of_three(n):
+        signal = np.zeros(n)
+        times = []
+        for _ in range(3):
+            start = time.perf_counter()
+            music.iir(signal, a, b)
+            times.append(time.perf_counter() - start)
+        return min(times)
+
+    small = best_of_three(2000)
+    large = best_of_three(8000)
+    assert large / small < 8, (
+        f"quadrupling the input cost {large / small:.1f}x, which looks "
+        f"quadratic rather than linear"
+    )
 
 
 def test_iir_is_linear():

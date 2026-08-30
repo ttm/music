@@ -1,4 +1,22 @@
 ## [Unreleased]
+### Fixed
+- **`iir()` was quadratic in the length of the signal.** It rebuilt a reversed
+  copy of everything filtered so far on every sample, then threw all but the
+  first `len(a)` of it away. One second of audio at 44.1 kHz took about three
+  and a half seconds, and ten seconds of audio took over five minutes, which
+  made the routine unusable on real material.
+
+  Only the last `len(a)` inputs and `len(b) - 1` outputs are ever read, so the
+  slices are now bounded by the filter order. One second of audio takes 192 ms,
+  and cost grows linearly, so the gap widens with length.
+
+  **Output values are unchanged, bit for bit.** The slices are multiplied and
+  summed rather than dot-producted for exactly this reason: BLAS is free to
+  reassociate a dot product, and in a recursive filter that difference
+  compounds -- a dot-product version drifted by up to 1.4e-09. Verified
+  identical across 405 cases including empty input, filters longer than the
+  signal, and a pole at 0.999.
+
 ### Changed
 - **matplotlib is an optional extra rather than a required dependency.** It was
   imported at the top of `music/tables.py` for `PrimaryTables.draw_tables()`,
@@ -14,6 +32,10 @@
   could pass locally and fail CI.
 
 ### Added
+- `iir()` gains a test that pins the recurrence it documents against a plain
+  scalar implementation -- including the plus sign on the feedback term, which
+  is not the convention `scipy.signal.lfilter` uses -- and one that fails if
+  the cost stops being linear.
 - A CI job that installs the **exact lower bounds** `pyproject.toml` declares
   -- numpy 1.26.4, scipy 1.12.0, matplotlib 3.7.1, sympy 1.12 -- and runs the
   suite on Python 3.10. Nothing had ever tested them: every other job resolves

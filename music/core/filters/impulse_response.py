@@ -32,6 +32,14 @@ def fir(samples, sonic_vector, freq=True, max_freq=True):
         The kernel is symmetric, so the filter is linear phase and the
         output is delayed by half the kernel.
 
+    Raises
+    ------
+    ValueError
+        If either argument is not one-dimensional, or if either is
+        empty. numpy raises for these anyway, but with messages such as
+        "object too deep for desired array", which name neither the
+        argument nor the problem.
+
     Notes
     -----
     If freq=True, the samples are the absolute values of the frequency
@@ -54,6 +62,16 @@ def fir(samples, sonic_vector, freq=True, max_freq=True):
     """
     samples = np.asarray(samples, dtype=np.float64)
     sonic_vector = np.asarray(sonic_vector, dtype=np.float64)
+
+    for name, array in (("samples", samples),
+                        ("sonic_vector", sonic_vector)):
+        if array.ndim != 1:
+            raise ValueError(
+                f"fir works on one-dimensional arrays; {name} has shape "
+                f"{array.shape}. Filter each channel separately.")
+        if array.size == 0:
+            raise ValueError(f"{name} is empty")
+
     if not freq:
         return np.convolve(samples, sonic_vector)
     if max_freq:

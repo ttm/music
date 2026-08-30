@@ -21,6 +21,10 @@ faster.
   as it also does for an empty `b` (which raised `IndexError` from the
   divisor) and for `b[0] == 0` (which produced an array of infinities behind a
   `RuntimeWarning`).
+- `fir()` rejected bad input with numpy's own messages -- "object too deep for
+  desired array" for a stereo array, "v cannot be empty" for an empty one --
+  which name neither the argument nor the problem. It now names both, matching
+  the guards `iir()` grew.
 - `tools/release.py` carried a second copy of the changelog parser, with the
   same end-of-file bug fixed above in `zenodo_sync`. It imports the one
   implementation now, so the notes on a GitHub release and on a Zenodo deposit

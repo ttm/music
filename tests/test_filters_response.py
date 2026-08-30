@@ -127,6 +127,20 @@ def test_iir_accepts_lists_as_documented():
     assert np.allclose(out, [1.0, 0.5, 0.25, 0.125])
 
 
+@pytest.mark.parametrize("samples, signal, message", [
+    (np.ones(3), np.ones((2, 4)), "sonic_vector has shape"),
+    (np.ones((2, 3)), np.ones(4), "samples has shape"),
+    (np.array([]), np.ones(4), "samples is empty"),
+    (np.ones(3), np.array([]), "sonic_vector is empty"),
+])
+def test_fir_names_the_argument_it_cannot_use(samples, signal, message):
+    """numpy raised for all of these already, with messages like "object
+    too deep for desired array" that name neither the argument nor the
+    problem. Matches the guards iir grew."""
+    with pytest.raises(ValueError, match=message):
+        music.fir(samples, signal)
+
+
 @pytest.mark.parametrize("signal, a, b, message", [
     (np.ones((2, 4)), [1.], [1.], "one channel at a time"),
     (np.ones(4), [1.], [], "at least the divisor"),

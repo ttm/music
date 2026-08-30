@@ -1,5 +1,13 @@
 ## [Unreleased]
 ### Fixed
+- **`translate_to_abc()` silently dropped notes.** It zipped pitches against
+  durations, so the tail of whichever was longer vanished: five notes with
+  three durations produced a three-note score, with no error. `write_abc()`
+  appends the lyric line separately, so the words then pointed at notes that
+  were no longer there. It raises now, naming both counts.
+- `Notes.make_dict()` built 96 note names and zipped them against 85 MIDI
+  numbers, leaving eleven quietly unused. The slice is explicit now, so the
+  range the dictionary covers is a decision rather than an accident of `zip`.
 - **`iir()` was quadratic in the length of the signal.** It rebuilt a reversed
   copy of everything filtered so far on every sample, then threw all but the
   first `len(a)` of it away. One second of audio at 44.1 kHz took about three

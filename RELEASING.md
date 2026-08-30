@@ -60,6 +60,11 @@ from `.zenodo.json`.
 from https://zenodo.org/account/settings/applications/tokens/new/, in
 `ZENODO_TOKEN`. Reading needs none.
 
+Then update the version DOI in `CITATION.cff` to the one Zenodo has just
+minted, and commit it. The concept DOI never changes, but the version DOI
+names a specific archive, and it can only be known after the release — which
+is why it is a step here rather than something `tools/release.py` can check.
+
 Verify afterwards with the DataCite export rather than the record endpoint,
 which omits subjects entirely and will make a fully keyworded record look bare:
 

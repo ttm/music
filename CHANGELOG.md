@@ -1,5 +1,25 @@
 ## [Unreleased]
+### Changed
+- **matplotlib is an optional extra rather than a required dependency.** It was
+  imported at the top of `music/tables.py` for `PrimaryTables.draw_tables()`,
+  a convenience for looking at the tables, and nothing else in the package uses
+  it. Importing it eagerly cost about **40% of `import music`** -- 1237 ms down
+  to 743 ms, measured best-of-five -- and pulled contourpy, cycler, fonttools,
+  kiwisolver, packaging, pillow, pyparsing and python-dateutil into every
+  installation. It is imported inside `draw_tables` now, which raises a message
+  naming `pip install 'music[plot]'` when it is absent.
+- Development and documentation dependency floors raised to the majors CI
+  actually exercises: mypy 2.0, ruff 0.14, sphinx 8.0, numpydoc 1.8. The old
+  floors predate rule and default changes in those tools, so a contributor
+  could pass locally and fail CI.
+
 ### Added
+- A CI job that installs the **exact lower bounds** `pyproject.toml` declares
+  -- numpy 1.26.4, scipy 1.12.0, matplotlib 3.7.1, sympy 1.12 -- and runs the
+  suite on Python 3.10. Nothing had ever tested them: every other job resolves
+  to the newest release, so the floors could drift into fiction without a
+  single failure. They currently hold, all 482 tests passing.
+
 - Five fields of Zenodo metadata the deposit had been leaving empty, all
   carried in `.zenodo.json` so they survive every release:
   - **The software block.** `code:codeRepository`, `code:programmingLanguage`

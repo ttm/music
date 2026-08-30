@@ -40,17 +40,38 @@ def test_primary_tables_delegates_to_the_one_generator(kind, attribute):
 
 def test_draw_tables_plots_all_four(monkeypatch):
     """draw_tables is a convenience for looking at the tables; check it
-    reaches the plotting calls rather than opening a window."""
-    import music.tables as tables_module
+    reaches the plotting calls rather than opening a window.
+
+    pylab is substituted in ``sys.modules`` rather than patched as a
+    module attribute, because the import happens inside the function --
+    matplotlib is no longer imported when ``music`` is.
+    """
+    import sys
+    import types
 
     plotted, shown = [], []
-    monkeypatch.setattr(tables_module.p, "plot",
-                        lambda data, *a, **k: plotted.append(len(data)))
-    monkeypatch.setattr(tables_module.p, "xlim", lambda *a, **k: None)
-    monkeypatch.setattr(tables_module.p, "ylim", lambda *a, **k: None)
-    monkeypatch.setattr(tables_module.p, "show", lambda: shown.append(True))
+    fake = types.ModuleType("pylab")
+    fake.plot = lambda data, *a, **k: plotted.append(len(data))
+    fake.xlim = lambda *a, **k: None
+    fake.ylim = lambda *a, **k: None
+    fake.show = lambda: shown.append(True)
+    monkeypatch.setitem(sys.modules, "pylab", fake)
 
     PrimaryTables(size=32).draw_tables()
 
     assert plotted == [32, 32, 32, 32]
     assert shown == [True]
+
+
+def test_draw_tables_says_what_to_install_when_matplotlib_is_absent(
+        monkeypatch):
+    """matplotlib is an extra now, so the one function that needs it has
+    to say so rather than raise a bare ImportError from an import line."""
+    import sys
+
+    # None in sys.modules makes the import statement raise ImportError,
+    # which is how the absent-matplotlib install behaves.
+    monkeypatch.setitem(sys.modules, "pylab", None)
+
+    with pytest.raises(ImportError, match=r"pip install 'music\[plot\]'"):
+        PrimaryTables(size=8).draw_tables()

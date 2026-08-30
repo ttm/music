@@ -12,14 +12,12 @@ To create and visualize waveform tables:
 >>> PrimaryTables.__module__  # confirm correct package name
 'music.tables'
 >>> primary_tables = PrimaryTables()
->>> primary_tables.draw_tables()
+>>> primary_tables.draw_tables()  # doctest: +SKIP
 
 Classes in this module:
 
 * ``PrimaryTables`` -- provides primary tables for waveform lookup.
 """
-import pylab as p
-
 from .utils import waveform_table
 
 
@@ -81,7 +79,34 @@ class PrimaryTables:
         self.triangle = waveform_table("triangle", size)
 
     def draw_tables(self):
-        """Draw waveform tables."""
+        """Draw the four waveform tables on one pair of axes.
+
+        Notes
+        -----
+        matplotlib is imported here rather than at the top of the module.
+        It is the only thing in the package that needs it, and importing
+        it eagerly cost about half of ``import music``'s total time and
+        pulled eight further packages into every installation, for a
+        function that only exists to look at the tables.
+
+        Raises
+        ------
+        ImportError
+            If matplotlib is not installed. Install it with
+            ``pip install 'music[plot]'``.
+
+        Examples
+        --------
+        >>> PrimaryTables(size=64).draw_tables()  # doctest: +SKIP
+
+        """
+        try:
+            import pylab as p
+        except ImportError:
+            raise ImportError(
+                "draw_tables needs matplotlib, which is not installed. "
+                "Install it with: pip install 'music[plot]'") from None
+
         p.plot(self.sine, "-o")
         p.plot(self.saw, "-o")
         p.plot(self.square, "-o")

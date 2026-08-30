@@ -1,4 +1,15 @@
 ## [Unreleased]
+### Added
+- `tools/zenodo_sync.py` attaches the changelog entry for the record's version
+  to the Zenodo deposit as an additional description of type `technical-info`,
+  so a version record says what changed in that version and not only what the
+  package is. The record's own description is still left alone. It converts
+  the subset of markdown the changelog uses -- headings, nested bullets,
+  inline code, links, bold -- and holds code spans out of the rest of the
+  conversion, because this changelog quotes expressions such as
+  `2 ** (bit_depth - 1)` whose asterisks a bold rule would otherwise pair with
+  the next ones outside the span and emit tags that cross.
+
 ### Fixed
 - `tools/zenodo_sync.py` read the draft it was updating in Zenodo's legacy
   serialization and wrote it back to an API that speaks the other one, where a

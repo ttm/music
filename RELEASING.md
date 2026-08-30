@@ -48,10 +48,13 @@ python tools/zenodo_sync.py --write    # apply it
 ```
 
 It resolves each controlled term to the identifier Zenodo knows it by,
-insisting on an exact match rather than accepting the nearest suggestion, then
-edits, updates and republishes the record. **The DOI does not change.** By
-default it targets the newest version under the concept DOI; `--record ID`
-overrides that.
+insisting on an exact match rather than accepting the nearest suggestion,
+attaches the changelog entry for that version as an additional description,
+then edits, updates and republishes the record. **The DOI does not change.**
+By default it targets the newest version under the concept DOI; `--record ID`
+overrides that, `--no-release-notes` leaves the changelog off, and
+`--description` also replaces the record's own description with the abstract
+from `.zenodo.json`.
 
 `--write` needs a token with the `deposit:write` and `deposit:actions` scopes,
 from https://zenodo.org/account/settings/applications/tokens/new/, in

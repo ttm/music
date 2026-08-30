@@ -31,9 +31,11 @@ in the ``ZENODO_TOKEN`` environment variable.  Reading needs no token.
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import pathlib
+import re
 import ssl
 import sys
 import urllib.error
@@ -166,7 +168,106 @@ def resolve_subject(term, scheme):
         f"{BASE}/subjects?q={urllib.parse.quote(term)}")
 
 
-def build_metadata(config, *, with_description=False):
+# ---------------------------------------------------------------------
+# The changelog entry, as an additional description
+# ---------------------------------------------------------------------
+
+def changelog_section(version, path=None):
+    """The changelog's entry for ``version``, as markdown.
+
+    Returns None when there is no section for it, which is the normal
+    case for a record whose version predates the file.
+    """
+    path = path or pathlib.Path(__file__).parent.parent / "CHANGELOG.md"
+    version = version.lstrip("v")
+    match = re.search(
+        rf"^## \[{re.escape(version)}\][^\n]*\n(.*?)(?=^## \[)",
+        path.read_text(), re.MULTILINE | re.DOTALL)
+    return match.group(1).strip() if match else None
+
+
+def _inline(text):
+    """Escape the text, then put back the markup the changelog uses.
+
+    Code spans are held out of the rest of the conversion. This package's
+    changelog quotes expressions such as ``2 ** (bit_depth - 1)``, and a
+    bold rule that ran over them would pair those asterisks with the next
+    ones outside the span and emit tags that cross.
+    """
+    pieces = []
+    for index, part in enumerate(re.split(r"`([^`]+)`", text)):
+        escaped = html.escape(part)
+        if index % 2:  # the captured inside of a code span
+            pieces.append(f"<code>{escaped}</code>")
+            continue
+        escaped = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>",
+                         escaped)
+        pieces.append(
+            re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>',
+                   escaped))
+    return "".join(pieces)
+
+
+def markdown_to_html(markdown):
+    """Convert the subset of markdown the changelog actually uses.
+
+    Headings, bullet lists one level deep, paragraphs, and inline code,
+    links and bold. Deliberately not a general converter: anything else
+    in the changelog would come through as plain text rather than
+    silently mangled, and Zenodo sanitises what it is given anyway.
+    """
+    out, paragraph, depth = [], [], 0
+
+    def flush():
+        if paragraph:
+            out.append(f"<p>{_inline(' '.join(paragraph))}</p>")
+            paragraph.clear()
+
+    def close_lists(to):
+        """Close nested levels from the inside out.
+
+        A nested list belongs inside the item it hangs off, so closing a
+        level closes that item too -- a bare ``<ul>`` inside a ``<ul>``
+        is not valid, and a sanitiser is free to drop or re-parent it.
+        """
+        nonlocal depth
+        while depth > to:
+            out.append("</ul></li>" if depth > 1 else "</ul>")
+            depth -= 1
+
+    for line in markdown.splitlines():
+        heading = re.match(r"^(#{1,6}) +(.*)$", line)
+        bullet = re.match(r"^( *)- +(.*)$", line)
+        if heading:
+            flush(), close_lists(0)
+            level = min(len(heading.group(1)) + 1, 6)
+            out.append(f"<h{level}>{_inline(heading.group(2))}"
+                       f"</h{level}>")
+        elif bullet:
+            flush()
+            want = 1 if len(bullet.group(1)) < 2 else 2
+            close_lists(want)
+            while depth < want:
+                if depth and out[-1].endswith("</li>"):
+                    # Reopen the item this nested list hangs off.
+                    out[-1] = out[-1][:-len("</li>")]
+                out.append("<ul>")
+                depth += 1
+            out.append(f"<li>{_inline(bullet.group(2))}</li>")
+        elif not line.strip():
+            flush(), close_lists(0)
+        elif depth:
+            # A wrapped continuation of the bullet above it.
+            out[-1] = out[-1][:-len("</li>")] + " " + _inline(line.strip()) \
+                + "</li>"
+        else:
+            paragraph.append(line.strip())
+
+    flush(), close_lists(0)
+    return "\n".join(out)
+
+
+def build_metadata(config, *, with_description=False, release_notes=None):
     """The metadata payload, from the contents of ``.zenodo.json``.
 
     The description is left alone unless asked for. Zenodo fills it with
@@ -189,6 +290,11 @@ def build_metadata(config, *, with_description=False):
     }
     if with_description:
         metadata["description"] = f"<p>{config['description']}</p>"
+    if release_notes:
+        metadata["additional_descriptions"] = [{
+            "description": markdown_to_html(release_notes),
+            "type": {"id": "technical-info"},
+        }]
     return {key: value for key, value in metadata.items() if value}
 
 
@@ -203,6 +309,12 @@ def latest_record_id(concept=CONCEPT_RECORD):
     if versions:
         return str(request(versions)["id"])
     return str(record["id"])
+
+
+def record_version(record_id):
+    """The version string the record carries, such as ``v1.1.1``."""
+    record = request(f"/records/{record_id}", accept=RDM)
+    return record.get("metadata", {}).get("version") or ""
 
 
 def describe(metadata):
@@ -225,6 +337,11 @@ def describe(metadata):
                  + ("replaced with the abstract from .zenodo.json"
                     if "description" in metadata
                     else "left as it is on the record"))
+    extra = metadata.get("additional_descriptions")
+    lines.append("  release notes "
+                 + (f"attached, {len(extra[0]['description'])} characters "
+                    f"of HTML from the changelog"
+                    if extra else "none found in the changelog"))
     return "\n".join(lines)
 
 
@@ -263,6 +380,9 @@ def main(argv=None):
                         help="apply the changes (needs ZENODO_TOKEN)")
     parser.add_argument("--record", metavar="ID",
                         help="record to update (default: newest version)")
+    parser.add_argument("--no-release-notes", action="store_true",
+                        help="do not attach the changelog entry for this "
+                             "version as an additional description")
     parser.add_argument("--description", action="store_true",
                         help="also replace the record's description, which "
                              "Zenodo fills with the release notes")
@@ -272,8 +392,15 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     config = json.loads(args.config.read_text())
-    metadata = build_metadata(config, with_description=args.description)
     record_id = args.record or latest_record_id()
+
+    notes = None
+    if not args.no_release_notes:
+        version = record_version(record_id)
+        notes = changelog_section(version) if version else None
+
+    metadata = build_metadata(config, with_description=args.description,
+                              release_notes=notes)
 
     print(f"record https://zenodo.org/records/{record_id}")
     print(describe(metadata))

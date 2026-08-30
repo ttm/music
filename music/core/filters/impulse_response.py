@@ -85,6 +85,15 @@ def iir(sonic_vector, a, b):
     ndarray
         The filtered signal, the same length as the input.
 
+    Raises
+    ------
+    ValueError
+        If ``sonic_vector`` is not one-dimensional, or if ``b`` is empty
+        or begins with zero. A stereo array used to come back as a
+        two-element result -- ``len()`` of it counts channels, not
+        samples -- and a zero divisor produced an array of infinities
+        behind a warning. Filter one channel at a time.
+
     Notes
     -----
     The recurrence implemented is
@@ -125,6 +134,16 @@ def iir(sonic_vector, a, b):
     signal = np.asarray(sonic_vector, dtype=np.float64)
     a = np.asarray(a, dtype=np.float64)
     b = np.asarray(b, dtype=np.float64)
+
+    if signal.ndim != 1:
+        raise ValueError(
+            f"iir filters one channel at a time; got an array of shape "
+            f"{signal.shape}. Pass each channel separately.")
+    if b.size == 0:
+        raise ValueError("b must hold at least the divisor b[0]")
+    if b[0] == 0:
+        raise ValueError("b[0] is the divisor of the recurrence and "
+                         "cannot be zero")
 
     out = np.zeros(len(signal))
     for i in range(len(signal)):

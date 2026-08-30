@@ -254,7 +254,10 @@ def markdown_to_html(markdown):
                        f"</h{level}>")
         elif bullet:
             flush()
-            want = 1 if len(bullet.group(1)) < 2 else 2
+            # A nested level has to hang off an item, so a list that
+            # opens already indented starts at depth one rather than
+            # emitting a <ul> straight inside a <ul>.
+            want = min(1 if len(bullet.group(1)) < 2 else 2, depth + 1)
             close_lists(want)
             while depth < want:
                 if depth and out[-1].endswith("</li>"):

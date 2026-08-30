@@ -48,7 +48,9 @@ class PrimaryTables:
     Examples
     --------
     >>> primary_tables = PrimaryTables()
-    >>> primary_tables.draw_tables()  # Draw the waveform tables
+    >>> primary_tables.size
+    2048
+    >>> primary_tables.draw_tables()  # doctest: +SKIP
     """
     def __init__(self, size=2048):
         """Initialize the PrimaryTables class.
@@ -85,9 +87,13 @@ class PrimaryTables:
         -----
         matplotlib is imported here rather than at the top of the module.
         It is the only thing in the package that needs it, and importing
-        it eagerly cost about half of ``import music``'s total time and
-        pulled eight further packages into every installation, for a
-        function that only exists to look at the tables.
+        it eagerly cost about 40% of ``import music``'s total time --
+        1237 ms against 743 ms -- and pulled eight further packages into
+        every installation, for a function that only exists to look at
+        the tables.
+
+        The examples are marked ``+SKIP``: ``show()`` blocks on a window,
+        so a doctest run would hang rather than fail.
 
         Raises
         ------

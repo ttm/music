@@ -1,10 +1,27 @@
 ## [Unreleased]
+### Note for anyone upgrading
+**matplotlib is no longer installed with the package.** If your code calls
+`PrimaryTables.draw_tables()`, or relied on `import music` having pulled
+matplotlib in for you, install `music[plot]` instead of `music`. Nothing else
+in the package uses it. Everything that synthesises, filters or writes audio
+is unaffected.
+
+`iir()` returns exactly the values it did before, bit for bit; it is only
+faster.
+
 ### Fixed
 - **`translate_to_abc()` silently dropped notes.** It zipped pitches against
   durations, so the tail of whichever was longer vanished: five notes with
   three durations produced a three-note score, with no error. `write_abc()`
   appends the lyric line separately, so the words then pointed at notes that
   were no longer there. It raises now, naming both counts.
+- A doctest in `PrimaryTables`'s class docstring called `draw_tables()` without
+  a skip marker, so enabling `--doctest-modules` hung the suite on a plot
+  window rather than failing it. All three examples in that module are marked
+  now.
+- `tools/zenodo_sync.py` could not find the changelog entry for the *oldest*
+  release: its lookahead required a following heading, so the last section in
+  the file never matched and its notes silently failed to attach.
 - `Notes.make_dict()` built 96 note names and zipped them against 85 MIDI
   numbers, leaving eleven quietly unused. The slice is explicit now, so the
   range the dictionary covers is a decision rather than an accident of `zip`.

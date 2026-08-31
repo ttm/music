@@ -336,3 +336,7 @@ Where to go next
 * `Musical elements in the discrete-time representation of sound
   <https://arxiv.org/abs/1412.6853>`_, the article the whole package
   implements. If you use this package, please cite it.
+* If ``music`` is useful to you or your institution, `sponsoring its
+  development <https://github.com/sponsors/ttm>`_ helps keep it maintained
+  and open. Commissioned features and sponsored development are available
+  too.

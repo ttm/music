@@ -25,6 +25,13 @@ the new heading. The script will tell you if you missed one.
 Uploading needs a PyPI token in `~/.pypirc`; the GitHub release needs `gh`
 logged in.
 
+The release body is generated, not written: the `pip install` line, links to
+the tutorial, API reference and changelog, the changelog's own section, and a
+sponsorship footer under it. None of that is typed at release time, and the
+footer lives in `release_notes()` in `tools/release.py`, so it cannot go out
+on one release and be forgotten on the next. Change it there, not in the
+GitHub release editor, or the next release will not carry the change.
+
 ## After: sync the Zenodo record
 
 Zenodo builds each new deposit from `.zenodo.json` when the release is

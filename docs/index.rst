@@ -101,4 +101,5 @@ The whole public API is re-exported flat from the top level, so
 
    GitHub <https://github.com/ttm/music>
    Issues <https://github.com/ttm/music/issues>
+   Sponsor <https://github.com/sponsors/ttm>
    MASS framework <https://github.com/ttm/mass/>

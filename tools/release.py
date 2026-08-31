@@ -160,6 +160,11 @@ def release_notes(version):
     The extraction is zenodo_sync's, so the notes on the GitHub release
     and the notes on the Zenodo deposit come from one implementation
     rather than two that can disagree.
+
+    The sponsorship footer is generated here rather than typed at release
+    time, so it cannot be put on one release and forgotten on the next. It
+    sits below the changelog so it never displaces what the release is
+    actually about.
     """
     body = changelog_section(version)
     if body is None:
@@ -171,6 +176,12 @@ def release_notes(version):
         f"[Changelog]"
         f"(https://github.com/ttm/music/blob/master/CHANGELOG.md)\n\n"
         f"---\n\n{body}\n"
+        f"\n---\n\n"
+        f"*Maintained in the open since 2016. If `music` is useful to you "
+        f"or your institution, consider "
+        f"[sponsoring its development]"
+        f"(https://github.com/sponsors/ttm); commissioned features and "
+        f"sponsored development are available too.*\n"
     )
 
 

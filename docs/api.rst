@@ -147,10 +147,10 @@ Combining sonic vectors
 
    horizontal_stack
    mix
-   mix2
+   mix_many
+   mix_many_with_offsets
    mix_stereo
    mix_with_offset
-   mix_with_offset_
    convert_to_stereo
    resolve_stereo
    pan_transitions

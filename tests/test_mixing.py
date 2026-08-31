@@ -1,14 +1,16 @@
 """Combining sonic vectors.
 
-`mix_stereo`, `mix_with_offset_` and `resolve_stereo` had no test exercising
-their bodies at all, and each turned out to have a defect.
+`mix_stereo`, `mix_many_with_offsets` (once `mix_with_offset_`) and
+`resolve_stereo` had no test exercising their bodies at all, and each turned
+out to have a defect.
 """
 
 import numpy as np
 import pytest
 
 import music
-from music.utils import mix_stereo, mix_with_offset_, resolve_stereo
+from music.utils import (mix_many_with_offsets, mix_stereo,
+                         resolve_stereo)
 
 
 # --------------------------------------------------------------------------
@@ -63,36 +65,36 @@ def test_mix_stereo_does_not_mistake_a_two_sample_mono_for_stereo():
 
 
 # --------------------------------------------------------------------------
-# mix_with_offset_
+# mix_many_with_offsets
 # --------------------------------------------------------------------------
 
-def test_mix_with_offset_sums_vectors_given_without_offsets():
-    out = mix_with_offset_(np.ones(5), np.ones(3) * 2)
+def test_mix_many_with_offsets_sums_vectors_given_without_offsets():
+    out = mix_many_with_offsets(np.ones(5), np.ones(3) * 2)
     assert out.shape == (5,)
     assert np.allclose(out, [3, 3, 3, 1, 1])
 
 
-def test_mix_with_offset_reads_a_scalar_between_vectors_as_a_delay():
+def test_mix_many_with_offsets_reads_a_scalar_between_vectors_as_a_delay():
     """The arguments alternate vector, offset-in-seconds, vector..."""
-    out = mix_with_offset_(np.ones(5), 0.5, np.ones(3) * 2)
+    out = mix_many_with_offsets(np.ones(5), 0.5, np.ones(3) * 2)
     assert out.shape[0] == pytest.approx(0.5 * 44100 + 3, abs=2)
 
 
-def test_mix_with_offset_accepts_any_sequence():
+def test_mix_many_with_offsets_accepts_any_sequence():
     """Regression: an exact `type(a) not in (np.ndarray, list)` check
     rejected tuples, though the parameters are array_like."""
-    from_tuples = mix_with_offset_((1.0,) * 5, (2.0,) * 3)
-    from_lists = mix_with_offset_([1.0] * 5, [2.0] * 3)
+    from_tuples = mix_many_with_offsets((1.0,) * 5, (2.0,) * 3)
+    from_lists = mix_many_with_offsets([1.0] * 5, [2.0] * 3)
     assert np.allclose(from_tuples, from_lists)
 
 
-def test_mix_with_offset_rejects_a_scalar_where_a_vector_belongs():
+def test_mix_many_with_offsets_rejects_a_scalar_where_a_vector_belongs():
     with pytest.raises(ValueError, match="sequence of numbers"):
-        mix_with_offset_(3.0)
+        mix_many_with_offsets(3.0)
 
 
-def test_mix_with_offset_passes_a_single_vector_through():
-    assert np.allclose(mix_with_offset_(np.ones(4)), np.ones(4))
+def test_mix_many_with_offsets_passes_a_single_vector_through():
+    assert np.allclose(mix_many_with_offsets(np.ones(4)), np.ones(4))
 
 
 # --------------------------------------------------------------------------
@@ -115,3 +117,11 @@ def test_resolve_stereo_promotes_a_mono_argument_first():
     out = resolve_stereo(music.fade, {"sonic_vector": mono})
     assert out.shape == (2, 64)
     assert np.allclose(out[0], out[1])
+
+
+def test_the_old_mixer_names_still_resolve():
+    """`mix2` and `mix_with_offset_` said nothing about what they did or
+    how they differed from `mix_with_offset`. Both were renamed, and both
+    stay bound so that existing callers keep working."""
+    assert music.mix2 is music.mix_many
+    assert music.mix_with_offset_ is music.mix_many_with_offsets

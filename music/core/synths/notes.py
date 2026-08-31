@@ -502,7 +502,6 @@ def note_with_glissando_vibrato(start_freq=220, end_freq=440, duration=2,
     return s
 
 
-# FIXME: Unused param (`number_of_samples`)
 def _exponential_positions(start, end, curve):
     """Interpolate exponentially from `start` to `end` along `curve`.
 
@@ -521,6 +520,29 @@ def _exponential_positions(start, end, curve):
             "for a path that crosses the listener."
         )
     return start * (end / start) ** curve
+
+
+def _fit_to_samples(sonic_vector, number_of_samples):
+    """Truncate or zero-pad ``sonic_vector`` to ``number_of_samples``.
+
+    The single-note routines read ``number_of_samples`` as the length to
+    synthesise in place of ``duration * sample_rate``. The sequence
+    routines have no single duration to override -- their length is the
+    sum of their segments -- so they honour the parameter by fitting the
+    rendered result to it, which is what their docstrings promise: "the
+    number of samples of the sound". Both had declared the parameter and
+    ignored it, so callers passing it got a sound of another length.
+
+    A stereo result is fitted per channel, the fit running along the last
+    axis in either case.
+    """
+    if not number_of_samples:
+        return sonic_vector
+    length = sonic_vector.shape[-1]
+    if number_of_samples <= length:
+        return sonic_vector[..., :number_of_samples]
+    pad_shape = sonic_vector.shape[:-1] + (number_of_samples - length,)
+    return np.concatenate((sonic_vector, np.zeros(pad_shape)), axis=-1)
 
 
 def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
@@ -803,7 +825,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
             tl = np.hstack((tl, np.zeros(-int(lambda_itd))))
             tr = np.hstack((np.zeros(-int(lambda_itd)), tr))
         s = np.vstack((tl, tr))
-    return s
+    return _fit_to_samples(s, number_of_samples)
 
 
 def note_with_two_vibratos_glissando(start_freq=220, end_freq=440, duration=2,
@@ -1042,7 +1064,7 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
     s = t[gamma[pointer:] % length]
     s_.append(s)
     s = np.hstack(s_)
-    return s
+    return _fit_to_samples(s, number_of_samples)
 
 
 def note_with_vibrato(freq=220, duration=2, vibrato_freq=4,

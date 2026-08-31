@@ -360,8 +360,9 @@ def mix(first_sonic_vector: np.ndarray,
 
     See Also
     --------
-    mix2 : A better mixer function that provides more control over the mixing
-           process.
+    mix_many : the same sum over a list of sounds of any lengths, with
+               per-sound offsets and a choice of aligning their starts
+               or their ends.
     """
     l1 = len(first_sonic_vector)
     l2 = len(second_sonic_vector)
@@ -563,11 +564,11 @@ def mix_with_offset(
     -----
     If ``d < 0``, it should satisfy ``-d*fs < s1.shape[-1]``.
 
-    TODO: enhance/recycle ``J_`` and mix2 or delete them. TTM
-
     See Also
     --------
-    mix2 : a better mixer
+    mix_many_with_offsets : the same, for any number of sounds, each
+                            offset from the mix built so far.
+    mix_many : a list of sounds aligned at their starts or their ends.
 
     """
     first_sonic_vector = np.array(first_sonic_vector)
@@ -612,42 +613,27 @@ def mix_with_offset(
     return s
 
 
-def mix_with_offset_(*args: ArrayLike) -> NDArray[np.float64]:
-    """Mix sonic vectors with offsets.
+def mix_many_with_offsets(*args: ArrayLike) -> NDArray[np.float64]:
+    """Mix any number of sonic vectors, each at its own offset.
+
+    Where :func:`mix_with_offset` takes two sounds and one offset, this
+    takes as many as it is given: each sound is mixed into the result
+    built so far, delayed by the offset that follows it.
 
     Parameters
     ----------
-    ``J_`` receives a sequence of sonic vectors,
-    each a sequence of PCM samples.
-    Or a sequence alternating the sonic vectors
-    and their offsets.
+    *args : sonic vectors, each optionally followed by a scalar
+        A sequence of sonic vectors, each a sequence of PCM samples, or
+        a sequence alternating the sonic vectors and their offsets in
+        seconds. A vector with no scalar after it is mixed at offset 0.
 
     See Also
     --------
-    mix2 : a better mixer
+    mix_with_offset : two sounds and a single offset.
+    mix_many : a list of sounds aligned at their starts or their ends.
 
     """
-    # i = 0 # DEPRECATED
-    # sounds = []
-    # offsets = []
-    # while i < len(args):
-    #     print(i)
-    #     the_sound = args[i]
-    #     if len(args) < i+1:
-    #         offset = args[i+1]
-    #         if isinstance(offset, Number):
-    #             i += 2
-    #         else:
-    #             offset = 0
-    #             i += 1
-    #     else:
-    #         offset = 0
-    #         i += 1
-    #     sounds.append(the_sound)
-    #     offsets.append(offset)
-    # return np.zeros(args[0].shape[-1])
-    # return mix2(sounds, False, offsets, 44100)
-    i = 0  # DEPRECATED
+    i = 0
     s: NDArray[np.float64] = np.array([])
     while i < len(args):
         a = args[i]  # new array
@@ -670,6 +656,11 @@ def mix_with_offset_(*args: ArrayLike) -> NDArray[np.float64]:
             i += 1
         s = mix_with_offset(s, a, duration=offset)
     return s
+
+
+#: The name this had before it was renamed for saying, in the name, how it
+#: differs from ``mix_with_offset``. Kept bound so existing callers work.
+mix_with_offset_ = mix_many_with_offsets
 
 
 def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
@@ -767,7 +758,7 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
     return t
 
 
-def mix2(sonic_vectors, end=False, offset=0, sample_rate=44100):
+def mix_many(sonic_vectors, end=False, offset=0, sample_rate=44100):
     """Mix sonic vectors of arbitrary lengths.
 
     The operation consists in summing sample by sample [1].
@@ -795,7 +786,7 @@ def mix2(sonic_vectors, end=False, offset=0, sample_rate=44100):
 
     Examples
     --------
-    >>> W(mix2(sonic_vectors=[np.vstack(), N()]))  # writes a WAV file
+    >>> W(mix_many(sonic_vectors=[np.vstack(), N()]))  # writes a WAV
                                                    # with nodes
 
     Notes
@@ -829,6 +820,11 @@ def mix2(sonic_vectors, end=False, offset=0, sample_rate=44100):
         aligned.append(s)
 
     return np.sum(aligned, axis=0)
+
+
+#: The name this had while it was the second mixer rather than the general
+#: one. Kept bound so existing callers work.
+mix2 = mix_many
 
 
 def profile(adict):

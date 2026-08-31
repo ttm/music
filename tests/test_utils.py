@@ -45,20 +45,20 @@ def test_mix_and_normalize():
     assert np.max(norm) <= 1 and np.min(norm) >= -1
 
 
-def test_mix2_basic():
+def test_mix_many_basic():
     a = np.array([1, 1, 1])
     b = np.array([1, 2])
-    mixed = utils.mix2([a, b])
+    mixed = utils.mix_many([a, b])
     assert np.allclose(mixed, np.array([2, 3, 1]))
 
 
-def test_mix2_offset_and_end():
+def test_mix_many_offset_and_end():
     a = np.array([1, 1])
     b = np.array([1, 1, 1])
-    out = utils.mix2([a, b], end=True)
+    out = utils.mix_many([a, b], end=True)
     assert np.allclose(out, np.array([1, 2, 2]))
 
-    out_offset = utils.mix2([a, b], offset=[0, 1], sample_rate=1)
+    out_offset = utils.mix_many([a, b], offset=[0, 1], sample_rate=1)
     assert np.allclose(out_offset, np.array([1, 2, 1, 1]))
 
 

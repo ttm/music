@@ -1,3 +1,53 @@
+## [Unreleased]
+
+### Fixed
+- **`note_with_vibrato_seq_localization` and `note_with_vibratos_glissandos`
+  declared `number_of_samples`, documented it as "the number of samples of
+  the sound", and never read it.** A caller asking for a length got whatever
+  the durations happened to sum to instead. Nine other routines in the same
+  module take the parameter and honour it, so the two were silently
+  inconsistent with their own module's convention.
+
+  A sequence routine has no single `duration` to override -- its length is
+  the sum of its segments -- so the two now fit the rendered result to the
+  requested length, truncating it or padding it with silence along the last
+  axis, which leaves a stereo result stereo.
+
+  Only one of them carried a `FIXME`, and that marker had drifted onto the
+  private helper above it when the helper was inserted between the comment
+  and the function it described. The other carried nothing at all, so the
+  defect read as one instance rather than two.
+
+### Changed
+- **`mix2` is now `mix_many`; `mix_with_offset_` is now
+  `mix_many_with_offsets`.** Neither old name said what its function did.
+  `mix2` was a numeral left from when it was the second mixer rather than
+  the general one, and `mix_with_offset_` differed from `mix_with_offset`
+  by a trailing underscore, which said nothing about the difference it
+  marks: `mix_with_offset` takes two sounds and one offset, while
+  `mix_many_with_offsets` takes as many sounds as it is given, each mixed
+  into the result built so far at the offset that follows it.
+
+  **Both old names stay bound to the renamed functions**, so nothing that
+  imports them breaks. The API reference lists only the descriptive names;
+  an alias listed beside its target documents one object twice.
+
+  Three `See Also` entries advertised `mix2` as "a better mixer" without
+  saying better at what. They now name what it actually offers over `mix`:
+  a list of sounds of any lengths, per-sound offsets, and a choice of
+  aligning their starts or their ends.
+
+- `mix_many_with_offsets` no longer carries the commented-out alternative
+  implementation it had kept since it was called `J_`, nor the `DEPRECATED`
+  marker left behind beside it on a line that is not deprecated.
+
+- The `Parameters` section of that same docstring described the arguments
+  under the name `J_`, which nothing has exported since the rename to
+  `mix_with_offset_`. The rendered reference documented a function readers
+  could not import, and the `TODO` asking whether to "enhance/recycle `J_`
+  and mix2 or delete them" is answered by the two renames above rather than
+  left standing.
+
 ## [1.2.1] - 2026-08-31
 Metadata only; the package itself is byte-identical to 1.2.0. It exists
 because Zenodo could not archive 1.2.0, and the fix has to be inside the tag

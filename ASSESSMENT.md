@@ -1,442 +1,126 @@
-# Quality Assessment — `music` 1.0.1
+# Quality assessment and known limitations
 
-*Assessment date: 2026-08-27 · commit `5a7711a` · 36 modules, 6,306 LOC package + 529 LOC tests*
+*A living record, not a point-in-time audit. Last measured **2026-08-31**,
+`music` 1.2.1 at commit `be7990a`: 37 modules, 7,431 LOC package + 3,888 LOC
+tests, 73 names in the public API.*
 
-This document grades the repository honestly, section by section, and ends with a
-prioritised plan. Every claim below was verified by running the code — no judgement
-here is stylistic guesswork.
+The first version of this file graded the repository once, in August 2026,
+and was already stale four days later: it reported 125 tests at 61 % coverage
+against a package that had 504 at 100 %. A snapshot that nobody updates
+misrepresents the code it describes, and it undersells it in exactly the
+places recent work improved. So this file is now kept current with the code,
+and the section that matters most is **Known limitations** — what the package
+does not do, stated by the people who know.
 
-> **Status.** Phases 1–3 and most of Phase 4 are done, on the branch
-> `fix/broken-exports` (see `CHANGELOG.md`). The grades below describe the
-> repository *as assessed at the commit named above*, so the "Terrible" section
-> now reads as a record of what was fixed rather than of what ships.
->
-> | | Then | Now |
-> |---|---|---|
-> | Tests | 38 | **125** |
-> | Coverage | 43 % | **61 %** |
-> | Broken exports | 3 | **0** |
-> | CI | none | ruff + mypy + pytest on 3.10–3.13 |
-> | `type(x) in (...)` sites | 16 | **0** |
-> | Fidelity tests | none | **31** |
->
-> Nine further defects surfaced while fixing the original six — including a
-> NaN leak in `adsr`, and a systematic 1-LSB gain error on every WAV the
-> package had ever written. Still open: the `legacy/` type errors, the three
-> duplicate waveform tables, `setup_engine()` writing into `site-packages`,
-> and published API docs.
+Update it whenever a release changes what is true here. Issue #70 tracks the
+practice.
 
 ## How this was measured
 
+Every figure below came from running the code, not from reading it.
+
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest` | **38 passed**, 2.3 s |
-| Coverage | `pytest --cov=music` | **43 %** (1,884 stmts, 1,075 missed) |
-| Type check (as configured) | `mypy music` | **clean**, 36 files |
-| Type check (bodies included) | `mypy --check-untyped-defs music` | **184 errors** in 14 files |
-| Annotation coverage | AST scan | **21 / 125 functions (17 %)** |
-| Docstring coverage | AST scan | **117 / 126 public defs (93 %)** |
-| Lint | `ruff check` (E,W,F) | 21 findings; extended rule set: 217 |
-| Examples | run all 10 | **9 pass**, 1 needs external engine |
-| Public API smoke test | call every zero-arg export | **30 / 33 work, 3 always raise** |
+| Test suite | `pytest -q` | **504 passed**, 18 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,080 stmts, 0 missed) |
+| Type check | `mypy music` | **clean**, 37 files |
+| Lint | `ruff check music tests examples tools conftest.py` | **clean** |
+| Lint, extended rule set | `ruff check --select ALL music` | 1,554 findings |
+| Annotation coverage | AST scan | **31 / 140 functions (22 %)** |
+| Docstring coverage | AST scan | **126 / 133 public defs (95 %)** |
+| Examples | run all 10 | **9 pass**, 1 needs the external singing engine |
+| Public API | `tests/test_public_api.py` | every export callable on its own defaults |
 
----
+`mypy` runs with `check_untyped_defs = true`, so it inspects function bodies
+rather than skipping the unannotated ones — which is most of them. A clean
+result here is a real result, not the vacuous one an earlier configuration
+produced.
 
-## Verdict at a glance
+## Where it stands
 
 | Grade | What earns it |
 |---|---|
-| **Exceptional** | Docstrings and scientific grounding |
-| **Excellent** | Conceptual architecture; breadth of synthesis primitives |
-| **Good** | Curated public API; `Sequencer`; packaging metadata; examples |
-| **OK** | Test suite; README; changelog |
-| **Bad** | No CI; vacuous type checking; `eval`/`exec`; type-dispatch idiom; version metadata |
-| **Terrible** | Six confirmed defects in the *exported* API, incl. two functions that can never succeed |
-| **Nothing is Perfect** | See below |
-
-### Is anything perfect?
-
-No, and one thing is close. **`music/core/filters/reverb.py` is at 100 % coverage, fully
-documented, clean under the default lint set and clean under mypy.** It is 75 lines. It still
-carries the package-wide `type(x) in (np.ndarray, list)` idiom, so even the best module here
-inherits a structural flaw. That is the honest ceiling: the bar is reachable in this
-repository, and nothing has quite reached it.
-
----
-
-## Exceptional
-
-**Documentation of individual functions.** 93 % of public definitions carry docstrings, and
-they are not one-liners: they are full numpydoc blocks with `Parameters`, `Returns`,
-`See Also`, `Examples`, `Notes` and a literature `References` section citing
-*Musical elements in the discrete-time representation of sound*. `note()` in
-[music/core/synths/notes.py:7](music/core/synths/notes.py#L7) spends 50 lines documenting a
-9-line function, and the explanation of why LUT lookup incorporates the vibrato pattern is
-the kind of thing almost no audio library writes down.
-
-This is genuinely rare. Most DSP packages document *what* a parameter is; this one documents
-the psychophysics behind it and points at the paper. It is the single strongest asset in the
-repository and it should be protected in any refactor.
-
-**Grounding in a published framework.** The package is an implementation of MASS rather than
-an ad-hoc collection of effects. Sample-accurate state updates (each sample gets its own
-instantaneous frequency) is a real, defensible design commitment, not marketing.
-
-## Excellent
-
-**Conceptual decomposition.** `core/{synths,filters,io,functions}` · `structures` · `singing`
-· `legacy` · `tables` · `utils` · `sequencer` is a taxonomy that maps cleanly onto the domain.
-Someone who knows audio can guess where a function lives. `legacy/` being explicitly named and
-quarantined rather than left mixed into the core is a mature call.
-
-**Breadth of primitives.** Vibrato (single, double, sequenced), glissando, FM, AM, tremolo,
-Doppler, ADSR (mono/stereo/vibrato), reverb, FIR/IIR, binaural localisation with ITD/IID,
-six noise colours, plus change-ringing peals, plain changes and permutation groups. The
-campanology/permutation side of `structures/` is unusual and well-scoped — there is little
-else in the Python ecosystem that does it.
-
-**A single flat namespace of 70 curated exports.** `import music; music.note(...)` works, and
-the `__all__` lists are hand-maintained rather than star-imported. That is deliberate API
-design.
-
-## Good
-
-- **`music/sequencer.py`** — the newest module and the best-engineered one: dataclasses, full
-  annotations, `from __future__ import annotations`, 91 % coverage. It shows what current
-  practice in this repo looks like when unconstrained by history.
-- **Packaging metadata** — 24 keywords, 15 classifiers, dual URLs, `dev` extra. Well above
-  average for a research package.
-- **Examples** — 10 runnable scripts, 9 of which run clean against the working tree. They are
-  short, readable, and each demonstrates one idea.
-- **`mypy` and `pytest` are configured at all** — in a package of this vintage that is not a
-  given.
-
-## OK
-
-- **Test suite.** 38 tests, all green, fast. But it is 529 LOC against 6,306 LOC of package —
-  an 8 % ratio — and roughly half the assertions only check `len()` or `.shape`. For a package
-  whose central claim is *extreme fidelity*, there is no test that compares a synthesised
-  signal against the closed-form equation it implements. `tests/test_spectral.py` is the right
-  idea and the right direction; there are three of them.
-- **Test bootstrapping is inconsistent and hacky.** [tests/test_utils.py:9](tests/test_utils.py#L9)
-  loads modules by file path via `importlib.util.spec_from_file_location`, bypassing the package
-  entirely; [tests/test_synths.py:8](tests/test_synths.py#L8) instead does
-  `sys.path.insert(0, HERE)`. Neither exercises the real installed import path — which is
-  precisely how the `trill` bug below survived.
-- **README.** Clear and well-organised, but the Roadmap block shows `music.render_demos()`,
-  `music.legacy.experiments`, `music.legacy.songs` and `music.remix()` — none of which exist —
-  without labelling them as aspirational, and the file ends with a stray `:::`.
-- **CHANGELOG.** Exists, correct format, one entry. Nothing before 1.0.1 is recorded.
-
-## Bad
-
-- **No CI.** There is no `.github/` directory. Nothing runs the tests, the linter or mypy on
-  push. Every quality gate in this repo is opt-in and manual.
-- **The type checking is vacuous.** `mypy music` reports success — but only 17 % of functions
-  are annotated, and mypy skips the bodies of unannotated functions by default. Adding
-  `--check-untyped-defs` surfaces **184 errors** — 40 `attr-defined` errors from attributes
-  assigned via `exec`, 105 `call-arg` errors, and 156 of the 184 concentrated in `legacy/`.
-  The green checkmark is currently measuring almost nothing.
-- **`eval` and `exec` in library code.** [music/core/io.py:102](music/core/io.py#L102) and
-  [:157](music/core/io.py#L157) do `eval("np.int" + str(bit_depth))` where a dict lookup
-  suffices. `CanonicalSynth` and `testSong2` use `exec("self.{}={}".format(i, i))` three times
-  to set attributes — which is *why* mypy cannot see those attributes.
-- **`type(x) in (np.ndarray, list)` appears 16 times** as the input-dispatch idiom. It fails
-  for tuples and for any ndarray subclass, and it fails *silently*. Verified:
-  `adsr(sonic_vector=tuple_of_44100_samples)` does not raise — it discards the input and
-  returns the default 2-second envelope. A wrong answer is worse than an exception.
-- **~2.4 MB of RNG allocated at import.** [music/core/io.py:12-14](music/core/io.py#L12)
-  builds 300,000 random samples at module scope purely to serve as default arguments. Import
-  cost and memory for something almost no caller wants. (They are also `np.random.uniform`,
-  i.e. in `[0, 1)` — a DC-offset signal, not audio.)
-- **`requires-python = '>=3.0'` is wrong.** The code uses PEP 604 unions
-  (`np.ndarray | None`, [music/sequencer.py:110](music/sequencer.py#L110)) and mypy is pinned to
-  3.11. Installing on anything below 3.10 will fail at import. pip is being told the opposite.
-- **No `__version__` and no `py.typed`.** The version lives only in `pyproject.toml`, so it is
-  not introspectable at runtime; and without a `py.typed` marker, the annotations that *do*
-  exist are invisible to every downstream type checker.
-- **Three parallel waveform-table implementations** — `utils.WAVEFORM_*`,
-  `tables.PrimaryTables`, `legacy/tables.py` — and they have already drifted: `PrimaryTables`
-  builds its triangle as `hstack((foo, -foo))` while `utils` uses `hstack((tmp, tmp[::-1]))`,
-  giving different peak samples. Duplication that has begun to diverge is duplication that
-  will produce a support ticket.
-- **`setup_engine()` clones a git repository into the installed package directory.**
-  [music/singing/bootstrap.py:21](music/singing/bootstrap.py#L21) writes into `site-packages`
-  at runtime. This breaks on read-only installs, containers, and any multi-user environment.
-  Its system dependencies (`git`, `make`, `perl`, `espeak`, `abcmidi`) are declared nowhere.
-- **Stale build artifacts.** `dist/` holds `music-1.0.0b5` wheels while the project is at
-  1.0.1.
-
-## Terrible
-
-These are not style opinions. Each was reproduced by running the code.
-
-**1. `stretches()` can never succeed.** It is exported in `music.__all__`.
-
-```python
-obj = object()
-obj.foo = s_        # AttributeError: 'object' object has no attribute 'foo'
-```
-
-[music/core/filters/stretches.py:38-39](music/core/filters/stretches.py#L38). `obj` is used
-nowhere else — it is abandoned scratch code sitting on the only path through the function.
-The preceding line, `s_ = durations * sample_rate`, multiplies a *tuple* by 44100, building a
-176,400-element tuple by repetition. Coverage confirms it: stretches.py sits at 12 %, and the
-missed range is the entire body.
-
-**2. `trill()` can never succeed** — `TypeError: 'module' object is not callable` at
-[music/core/synths/notes.py:1275](music/core/synths/notes.py#L1275). The cause is structural:
-`music/core/filters/` contains submodules named `adsr`, `fade`, `loud`, `reverb` and
-`stretches` that **collide with the function names re-exported from them**. `adsr.py` imports
-from `notes.py`, which imports `adsr` back from the partially-initialised `filters` package —
-and during that window the name still refers to the *module*. Five colliding names means five
-latent instances of this; one has already fired.
-
-**3. `louds()` raises whenever the envelope is shorter than the signal.**
-[music/core/filters/loud.py:198](music/core/filters/loud.py#L198) writes the padded result to
-`s` instead of `e`, then returns `sonic_vector * e` with the unpadded `e`:
-
-```
-ValueError: operands could not be broadcast together with shapes (132300,) (88200,)
-```
-
-A one-character typo, on the main path, in an exported function.
-
-**4. `localize_linear()` crashes on its own documented defaults** —
-`TypeError: only length-1 arrays can be converted to Python scalars`. The function carries the
-comment *"FIXME: here we have missing the correct use of the variables calculated and also the
-return statement"* ([localization.py:151](music/core/filters/localization.py#L151)) and returns
-a 5-tuple of intermediates. It is knowingly unfinished, and it is exported as public API.
-
-**5. Two of the four documented WAV bit depths are broken.** `write_wav_mono` /
-`write_wav_stereo` advertise `bit_depth ∈ {8, 16, 32, 64}` and validate against exactly that
-set. Verified round-trip:
-
-| bit_depth | result |
-|---|---|
-| 8 | `ValueError: Unsupported data type 'int8'` — 8-bit WAV is *unsigned* by spec |
-| 16 | works |
-| 32 | works |
-| 64 | writes a file that this package's own `read_wav` then rejects |
-
-**6. Shipping broken exports is the pattern, not the incident.** Three of the 33
-zero-argument public functions raise unconditionally when called as documented. Nothing in
-the repository would have caught that, because nothing runs.
-
-## What is lacking
-
-Not bad — simply absent:
-
-- **CI/CD.** No workflow, no matrix across Python versions, no coverage gate, no publish job.
-- **Lint configuration.** `ruff`/`flake8` are not configured or pinned; the 217 extended
-  findings are unmanaged.
-- **Fidelity/regression tests.** No golden-signal comparison against the MASS equations, no
-  spectral assertion on vibrato sideband placement, no WAV round-trip test per bit depth. For
-  this package specifically, this is the most conspicuous gap: the headline claim is untested.
-- **API reference documentation.** 93 % docstring coverage and no Sphinx/MkDocs site to render
-  it. The best asset in the repo is invisible to anyone who has not cloned it.
-- **`py.typed`**, `__version__`, `CONTRIBUTING.md`, issue/PR templates, `pre-commit`.
-- **Audio-domain guards.** No clipping detection, no sample-rate consistency checks between
-  combined vectors, no dtype validation at API boundaries.
-- **A deprecation policy for `legacy/`.** It is quarantined but not scheduled.
-
----
-
-## How to raise the quality
-
-Ordered by return on effort. Phase 1 is roughly a day and removes every "Terrible" item.
-
-### Phase 1 — Stop shipping broken exports (highest value)
-
-1. **Fix the six confirmed defects.**
-   - `loud.py:198` — `s = np.hstack(...)` → `e = np.hstack(...)`.
-   - `stretches.py:38-39` — delete the `obj = object()` lines and the `obj.bar` line; fix
-     `s_ = durations * sample_rate` (it is unused once `obj` is gone — delete it too).
-   - `notes.py:4` — resolve the collision (see 2 below).
-   - `localize_linear` — either finish it or remove it from `__all__` and raise
-     `NotImplementedError`. Do not export a function whose body says it has no return statement.
-   - `io.py` — map `bit_depth` to `{8: np.uint8, 16: np.int16, 32: np.int32}` via a dict,
-     offset-encode for 8-bit, and drop 64 from the advertised set. This also removes both
-     `eval` calls.
-2. **Break the submodule/function name collisions.** Rename the five colliding modules
-   (`adsr.py` → `_adsr.py`, or `envelope.py`), or make every intra-package import fully
-   qualified (`from music.core.filters.adsr import adsr`). This is the root cause of #2 and
-   four more latent instances.
-3. **Add a smoke test that calls every name in `music.__all__` with its documented defaults.**
-   Twenty lines. It would have caught three of the six defects above on the day they landed.
-4. **Fix `requires-python` to `>=3.10`.**
-
-### Phase 2 — Make the quality gates real
-
-5. **Add GitHub Actions**: `pytest` + `ruff` + `mypy` on 3.10/3.11/3.12/3.13, on every push
-   and PR. Nothing else in this list holds without it.
-6. **Turn on `check_untyped_defs = true`** in `[tool.mypy]`, then work the errors down
-   module by module. *(Done — all 177 fixed and the flag enforced in CI. The errors were
-   not merely noise: they pointed at an exported function whose mono branch had never run,
-   a documented `localize2` method that always crashed, and a demonstration piece that
-   bound a class where it meant an instance.)*
-7. **Add `ruff` with a committed config**; auto-fix the 79 mechanical findings, triage the rest.
-8. **Add `music/py.typed`** and a `__version__` single-sourced from package metadata.
-9. **Set a coverage floor at the current 43 %** and raise it as you go, so it cannot regress.
-
-### Phase 3 — Test what the package actually claims
-
-10. **Golden-signal tests.** For `note`, `note_with_vibrato`, `note_with_fm`, `adsr`: assert
-    against the closed-form MASS expression, not against `len()`. This is what "extreme
-    fidelity" means and it is currently unverified.
-11. **Spectral assertions** — extend `test_spectral.py`: vibrato sidebands at f ± k·f_v, FM
-    Bessel-ratio amplitudes, noise colour slopes (−3 dB/oct for pink, +3 for blue) via
-    `scipy.signal.welch`.
-12. **WAV round-trip per bit depth**, and a localisation test asserting ITD sign and magnitude
-    against the geometric prediction.
-13. **Unify test bootstrapping** — install the package in CI (`pip install -e .`) and delete
-    every `sys.path` and `spec_from_file_location` hack. Tests must exercise the real import
-    path.
-
-### Phase 4 — Structural debt
-
-14. **Replace all 16 `type(x) in (np.ndarray, list)` checks** with
-    `sonic_vector is not None` plus `np.asarray()`, and change the sentinel defaults from `0`
-    to `None`. This eliminates a whole class of silent-wrong-answer bugs.
-15. **Collapse the three waveform-table implementations to one.** *(Done — though not as
-    sketched here. `utils.WAVEFORM_*` turned out to be the *wrong* set: measured against the
-    continuous waveforms, its triangle and the sawtooth in all three copies were the drifted
-    ones. All three now delegate to `music.utils.waveform_table`, which is exact.)*
-16. **Move the module-level RNG defaults into the function bodies** (`if sonic_vector is None:
-    ...`) and drop 2.4 MB and the import cost.
-17. **Remove `exec` from `CanonicalSynth`** — explicit attribute assignment restores ~40 type
-    errors' worth of visibility. *(Done, along with the other two `exec` sites.)*
-18. **Rework `setup_engine()`** to clone into a user cache dir (`platformdirs.user_cache_dir`),
-    never `site-packages`; document the `git`/`make`/`perl`/`espeak` system dependencies and
-    check for them with a clear error.
-19. **Convert the Google-style docstrings in `structures/` and `legacy/` to numpydoc.**
-    *(Done.)* The package documented itself in two incompatible styles. All 60 sections
-    across eight files are now numpydoc, and `sphinx.ext.napoleon` has been removed. See
-    the box below.
-
-### Phase 5 — Surface the strengths
-
-20. **Publish the API docs.** Sphinx + `numpydoc` + `autodoc` on GitHub Pages. The docstrings
-    are already exceptional; rendering them costs an afternoon and is the single biggest
-    increase in *perceived* quality available here. *(Done — see below.)*
-21. **Mark the README Roadmap as aspirational**, fix the trailing `:::`, and correct the
-    `noisy.py` docstring (it says "pentatonic scale"; it writes noises).
-22. **Add `CONTRIBUTING.md`**, a `legacy/` deprecation note, and backfill the changelog.
-23. **Delete stale `dist/` artifacts.**
-
----
-
-## Resolved: one docstring style
-
-**The package used to document itself in two incompatible styles.** Most of it was
-numpydoc — `Parameters` / `Returns` / `See Also` / `Examples` / `Notes` / `References`
-under dashed underlines. But `music.structures`, `music.legacy` and `music.tables` used
-Google style — `Attributes:`, `Parameters:`, `Returns:`, `Methods:` with a trailing colon
-— across **60 sections in eight files**.
-
-numpydoc cannot parse Google style, so those entries rendered as mangled definition lists
-and block quotes. Publishing the API reference first worked around it by enabling
-`sphinx.ext.napoleon` ahead of `numpydoc`, which cleared the warnings but left the project
-with two dialects, an extension carried only for the older one, and no single correct style
-for a contributor to copy.
-
-**All 60 sections are now numpydoc, and `sphinx.ext.napoleon` is gone.** The proof is that
-`sphinx-build -W` still succeeds without it: had any section failed to convert, numpydoc
-alone would have produced the mangled rendering that the strict build rejects.
-
-Four sections needed converting by hand — a `Reference:` at column zero in a module
-docstring, an `Example:` separated from its doctest by a blank line, an `Attributes:`
-section whose only content was the prose "No additional attributes", and a `Classes:`
-listing with no numpydoc equivalent (rendered as a bullet list instead). The other 56 were
-mechanical.
-
----
-
-## Decisions taken
-
-All of these have since been reviewed and accepted, and are recorded in
-`CHANGELOG.md` under 1.1.0 as a note for anyone upgrading rather than as open
-questions. They are kept here for the reasoning. None is a bug fix
-that speaks for itself, so all are recorded here and in the changelog's
-"Needs a decision before release" section rather than being allowed to land
-silently.
-
-### 1. `localize_linear()` — *resolved: finished*
-
-It was removed and left raising `NotImplementedError` because the missing piece
-was a design decision: how the *time-varying* interaural time difference should
-be applied. That decision has since been made — position the source at every
-sample, derive both cues from that position, apply them — and the function is
-implemented and exported again.
-
-Both cues are measured against the nearer ear, exactly as `localize()` measures
-them against the nearer ear of its single fixed position, so a path that stays
-put reproduces `localize()`'s cues and the output keeps its input's length. The
-per-sample delay is applied by cubic Hermite interpolation rather than by
-rounding to whole samples, which would step audibly.
-
-### 2. `PlainChanges` now returns a complete peal
-
-The default hunt count was hardcoded to two above four bells. A plain-changes
-peal needs `n - 3` hunts to traverse the whole symmetric group, so the default
-produced a fraction of it above five bells — **silently**:
-
-| bells | rows returned | `n!` | coverage |
-|---|---|---|---|
-| 3–5 | complete | | 100 % |
-| 6 | 120 | 720 | **16.7 %** |
-| 7 | 168 | 5,040 | **3.3 %** |
-| 8 | 224 | 40,320 | **0.6 %** |
-
-Two things say the complete peal was the intent. The code's own warning —
-*"peals are the same if there are N hunts less"* when `nhunts > nelements - 3`
-— already identifies `n - 3` as the saturation point; the default simply
-didn't use it. And `examples/geometric_music.py` asserts it in a comment:
-`# len(being.perms) == factorial(nel)`, true at four bells and silently false
-from six up.
-
-**The consequence to weigh:** anyone rendering from `peal_direct` at six bells
-or more now gets at least six times the material. A shorter peal is a valid
-method in campanology, so this is a change in default, not a bug fix in the
-algorithm — `nhunts=2` still gives the old behaviour.
-
-**Recommendation: keep it.** A structure named for traversing the permutations
-should traverse them, and nothing signalled that it wasn't.
-
-### 3. The WAV quantiser's scale changed
-
-Writing previously scaled by `2 ** (bit_depth - 1) - 1` while `read_wav`
-divided by `2 ** (bit_depth - 1)`. A write/read round trip therefore lost
-about 1.5 quantisation steps rather than the half step quantising actually
-costs — a systematic one-LSB gain error on every WAV the package had ever
-written.
-
-The writer now uses the reader's scale, so `-1.0`, `-0.5`, `0.0` and `0.5`
-survive a round trip exactly; only `+1.0` clips by one step, two's complement
-having one fewer positive value than negative.
-
-**The consequence to weigh:** files written from now on differ from files
-written before by one LSB of gain — about 0.0003 dB, inaudible, but the bytes
-differ. Anyone byte-comparing against previously rendered WAVs will see a
-diff. `tests/test_fidelity.py` now pins the unity-gain property, so this
-cannot silently revert.
-
-**Recommendation: keep it.** An extreme-fidelity package should not lose gain
-on a round trip, and the error was systematic rather than incidental.
-
----
-
-## Summary
-
-The distance between this package's **documentation quality** and its **execution quality** is
-the whole story. The docstrings are the work of someone who understands the domain deeply and
-cares about explaining it. The code shipping underneath them contains three exported functions
-that cannot run, two advertised WAV bit depths that do not work, a type checker configured to
-inspect 17 % of the code, and no CI to notice any of it.
-
-None of that is hard to fix — Phase 1 is a day's work and closes every "Terrible" item. What
-makes it urgent is that **the defects are all in exported, documented API**: a user following
-the README hits them immediately, and concludes the package is unreliable, when in fact its
-foundations are unusually good.
-
-Fix the six bugs, add CI, and test the fidelity claim. The rest is refinement.
+| **Exceptional** | Docstrings and scientific grounding: every routine carries the equation it implements and the article section it comes from |
+| **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
+| **Very good** | Test suite and its coverage gate; CI across Python 3.10–3.14 including a job pinned to the declared lower bounds |
+| **Good** | Curated flat public API; examples; published API reference |
+| **Needs work** | Annotation coverage at 22 %; the `legacy/` subpackage; `core/functions.py` not yet reconciled with the MASS reference implementation |
+
+## Known limitations
+
+The point of this file. Nothing here is a surprise defect; all of it is
+either documented in the code or tracked in the issue list.
+
+### Unimplemented, and raising rather than pretending
+
+- **`Peals.twenty_all_over` and `Peals.an_eight_and_forty`** raise
+  `NotImplementedError`. They are exported and documented; they do not work.
+- **`Being.walk`'s `perm-walk` method** was never restored from the code
+  this package succeeded.
+
+### Gaps the code names about itself
+
+- **No head-related transfer function.** Both `localize` and `localize2` say
+  so in their own notes: the height of a source, and whether it is in front
+  of or behind the listener, are cues an HRTF carries and neither models.
+  This is the largest genuine gap in the package, and it is research-scale
+  work rather than a fix.
+- **`core/functions.py` has not been reconciled, routine by routine, with
+  the MASS reference implementation.** The package's central claim is
+  fidelity to a published framework; until that pass is done, the claim
+  rests on the docstrings rather than on a comparison. Issue #67.
+- **Rendering is not verified against the mathematics it documents**, only
+  against shape and against regressions already found. Issue #67 again;
+  issue #76 asks for artifact detection a listener could not catch.
+
+### Scope and dependencies
+
+- **Singing needs an external engine.** `music.singing` drives eCantorix,
+  which `setup_engine()` clones into the user's cache directory. Without it,
+  `singing_demo.py` is the one example that cannot run. Issue #5 tracks
+  doing synthesis natively from per-phoneme spectra.
+- **Waveform tables are synthetic only.** No SoundFont or WAV-derived
+  tables; issue #3.
+- **matplotlib is an extra**, needed only by `PrimaryTables.draw_tables()`.
+  Installing without it makes `import music` about 40 % faster.
+
+### Debt that is not breakage
+
+- **Annotation coverage is 22 %.** The package type-checks cleanly with
+  bodies inspected, so this is missing documentation of intent rather than
+  missing safety.
+- **The extended lint set reports 1,554 findings** on `music/`, almost all
+  stylistic: 368 missing argument annotations, 286 quote-style, 92 missing
+  return annotations. The configured set — `E`, `W`, `F` — is clean. The
+  gap between the two is a deliberate choice about which rules earn their
+  noise, not an oversight.
+- **`legacy/` is 1,110 LOC** kept for `CanonicalSynth`, `IteratorSynth` and
+  the `Being` class. It is covered and type-checked, but it is not where new
+  work should go.
+
+## No longer true
+
+Items the previous version of this file listed as open, since closed. The
+CHANGELOG carries the detail; this is only so the record does not read as
+worse than the code.
+
+- **The six defects in exported API** — including two functions that could
+  never succeed and a systematic one-LSB gain error on every WAV the package
+  had written — are fixed, with `tests/test_fidelity.py` pinning the
+  properties that were wrong.
+- **`legacy/` type errors**: gone; `mypy music` is clean.
+- **Three duplicate waveform table definitions**: `music.legacy.tables.Basic`
+  is now an alias for `music.tables.PrimaryTables` rather than a third copy.
+- **`setup_engine()` writing into `site-packages`**: it uses the user's cache
+  directory, which survives an upgrade and works on a read-only install.
+- **No published API docs**: they are at <https://ttm.github.io/music/>,
+  built with warnings as errors on every push.
+- **No CI**: lint, types, tests and docs run on Python 3.10 through 3.14, plus
+  a job that installs the exact lower bounds `pyproject.toml` declares.
+
+## Is anything perfect?
+
+Still no, and the same file is still closest. `music/core/filters/reverb.py`
+is 76 lines at 100 % coverage, fully documented, clean under both the default
+lint set and the type checker. It is also small enough that saying so proves
+little — which is the honest version of the compliment.

@@ -1,24 +1,27 @@
 ## [Unreleased]
 
-### Fixed
-- **`note_with_vibrato_seq_localization` and `note_with_vibratos_glissandos`
-  declared `number_of_samples`, documented it as "the number of samples of
-  the sound", and never read it.** A caller asking for a length got whatever
-  the durations happened to sum to instead. Nine other routines in the same
-  module take the parameter and honour it, so the two were silently
-  inconsistent with their own module's convention.
-
-  A sequence routine has no single `duration` to override -- its length is
-  the sum of its segments -- so the two now fit the rendered result to the
-  requested length, truncating it or padding it with silence along the last
-  axis, which leaves a stereo result stereo.
-
-  Only one of them carried a `FIXME`, and that marker had drifted onto the
-  private helper above it when the helper was inserted between the comment
-  and the function it described. The other carried nothing at all, so the
-  defect read as one instance rather than two.
+### Added
+- **Python 3.14 to the CI matrix**, which stopped at 3.13 although 3.14 was
+  released in October 2025. The matrix now runs 3.10 through 3.14, and the
+  separate job that installs the exact lower bounds `pyproject.toml` declares
+  is unchanged.
+- **Per-version `Programming Language :: Python` classifiers**, and
+  `Typing :: Typed`. PyPI's Python-version facet had nothing to filter on:
+  the only version classifier was the bare `:: 3`, so the package did not
+  appear when anyone narrowed by interpreter version. `Typing :: Typed` was
+  simply missing although `music/py.typed` has shipped all along. All 25
+  classifiers validate against the trove list, which is what a release's
+  metadata check enforces.
 
 ### Changed
+- **`ASSESSMENT.md` is now a living record of known limitations** rather than
+  an audit of one commit. It had been written four days earlier and already
+  described a package with 125 tests at 61 % coverage, against the 504 at
+  100 % that were actually there -- a document that made the code look
+  considerably worse than it was. It now leads with what the package does not
+  do, every figure re-measured by running the code, and it drops the
+  narration of fixes that `CHANGELOG.md` already carries. Issue #70.
+
 - **`mix2` is now `mix_many`; `mix_with_offset_` is now
   `mix_many_with_offsets`.** Neither old name said what its function did.
   `mix2` was a numeral left from when it was the second mixer rather than
@@ -47,6 +50,24 @@
   could not import, and the `TODO` asking whether to "enhance/recycle `J_`
   and mix2 or delete them" is answered by the two renames above rather than
   left standing.
+
+### Fixed
+- **`note_with_vibrato_seq_localization` and `note_with_vibratos_glissandos`
+  declared `number_of_samples`, documented it as "the number of samples of
+  the sound", and never read it.** A caller asking for a length got whatever
+  the durations happened to sum to instead. Nine other routines in the same
+  module take the parameter and honour it, so the two were silently
+  inconsistent with their own module's convention.
+
+  A sequence routine has no single `duration` to override -- its length is
+  the sum of its segments -- so the two now fit the rendered result to the
+  requested length, truncating it or padding it with silence along the last
+  axis, which leaves a stereo result stereo.
+
+  Only one of them carried a `FIXME`, and that marker had drifted onto the
+  private helper above it when the helper was inserted between the comment
+  and the function it described. The other carried nothing at all, so the
+  defect read as one instance rather than two.
 
 ## [1.2.1] - 2026-08-31
 Metadata only; the package itself is byte-identical to 1.2.0. It exists

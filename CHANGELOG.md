@@ -1,6 +1,43 @@
 ## [Unreleased]
 
 ### Added
+- **`music.stimulation`, five auditory stimuli for sensory-stimulation
+  work**, each rendering one technique catalogued in SSTIM, the Sensory
+  Stimulation Vocabulary developed in the W3C Sensory Stimulation
+  Vocabulary Community Group. Every routine names the SSTIM term it
+  implements and links its IRI, so a rendered stimulus can be described in
+  the same words a protocol, a dataset or a device uses:
+  `binaural_beats` (`sstim-v:techBinauralBeats`), `monaural_beats`,
+  `isochronic_tones`, `amplitude_modulation` and `frequency_modulation`.
+
+  SSTIM records, per technique, whether a rendering puts a modulation
+  physically into the world or whether the listener constructs it, and
+  that distinction is carried into the code because it decides what a
+  recording of the output contains. Four of the five put a real
+  modulation into the air. `binaural_beats` does not: each channel is a
+  steady tone, neither contains the beat, and summing the two channels
+  does not preserve the stimulus -- it produces an envelope numerically
+  identical to `monaural_beats`, a different technique with a different
+  mechanism and a different evidence base. Anything that downmixes that
+  output has silently substituted one for the other, and the test suite
+  holds both halves of this.
+
+  `isochronic_tones` takes a `ramp_duration`. An abrupt gate is what the
+  technique names, but it is also a step discontinuity twice per pulse:
+  with a carrier and a pulse rate whose ratio is not a whole number, the
+  step reaches nearly full scale and puts nine tenths of the energy above
+  2 kHz into splatter that is not part of the stimulus. A few
+  milliseconds of ramp removes it.
+
+  The modulators are read from a wavetable rather than from `np.sin`, and
+  `frequency_modulation` integrates the instantaneous frequency into the
+  lookup index rather than modulating a finished tone, which is the
+  sample-by-sample model the rest of the package follows. Issue #72;
+  issues #73 and #75, which give `music` an IRI in SSTIM and have it
+  render SSTIM specifications, both needed this to exist first.
+- **`examples/sensory_stimulation.py`**, rendering one file per technique,
+  and `examples/binaural_beats.py` rewritten to call the new routine
+  instead of hand-rolling it.
 - **Python 3.14 to the CI matrix**, which stopped at 3.13 although 3.14 was
   released in October 2025. The matrix now runs 3.10 through 3.14, and the
   separate job that installs the exact lower bounds `pyproject.toml` declares

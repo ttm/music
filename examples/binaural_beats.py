@@ -1,42 +1,36 @@
-"""Generate a binaural beat using Music's synthesis primitives.
+"""Generate a binaural beat, with a slow tremolo over it.
 
-This script creates two sine waves with a small frequency difference and
-applies a gentle tremolo to each channel. Listening to the resulting
-stereo file can help create a calm environment for relaxation or focus.
+The stimulus itself is one call: `music.binaural_beats` renders the
+technique SSTIM catalogues as `sstim-v:techBinauralBeats`, two sine
+tones split symmetrically about a centre frequency, one per ear.
+
+Play this over headphones. The beat is not in either channel -- it is
+constructed by the listener from the two of them -- so anything that
+downmixes the file to mono destroys the stimulus and leaves a monaural
+beat, which is a different technique.
 """
 
 import numpy as np
+
 import music
 
-BASE_FREQ = 440.0  # central frequency in Hz
-BEAT_FREQ = 4.0    # difference between left and right in Hz
-DURATION = 10.0    # seconds
+BASE_FREQ = 440.0   # central frequency in Hz
+BEAT_FREQ = 4.0     # difference between left and right in Hz
+DURATION = 10.0     # seconds
 TREMOLO_FREQ = 0.5  # Hz, slow amplitude modulation
 
-left = music.note_with_phase(
-    freq=BASE_FREQ - BEAT_FREQ / 2,
+stereo = music.binaural_beats(
+    carrier_freq=BASE_FREQ,
+    beat_freq=BEAT_FREQ,
     duration=DURATION,
-    waveform_table=music.tables.PrimaryTables().sine,
-)
-right = music.note_with_phase(
-    freq=BASE_FREQ + BEAT_FREQ / 2,
-    duration=DURATION,
-    waveform_table=music.tables.PrimaryTables().sine,
 )
 
-left = music.tremolo(
-    duration=DURATION,
-    tremolo_freq=TREMOLO_FREQ,
-    max_db_dev=3,
-    sonic_vector=left,
-)
-right = music.tremolo(
-    duration=DURATION,
-    tremolo_freq=TREMOLO_FREQ,
-    max_db_dev=3,
-    sonic_vector=right,
+# A gentle tremolo, applied equally to both channels so that it does not
+# disturb the frequency difference the beat depends on.
+left, right = (
+    music.tremolo(duration=DURATION, tremolo_freq=TREMOLO_FREQ,
+                  max_db_dev=3, sonic_vector=channel)
+    for channel in stereo
 )
 
-stereo = np.vstack((left, right))
-
-music.write_wav_stereo(stereo, "binaural_beats.wav")
+music.write_wav_stereo(np.vstack((left, right)), "binaural_beats.wav")

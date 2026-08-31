@@ -33,6 +33,25 @@ movement onto it.
    note_with_doppler
    trill
 
+Sensory stimulation
+~~~~~~~~~~~~~~~~~~~
+
+Stimuli for sensory-stimulation work, each rendering one technique
+catalogued in `SSTIM <https://w3id.org/sstim>`_, the Sensory Stimulation
+Vocabulary. Every docstring names the SSTIM term it implements and states
+whether the modulation is physically present in the signal or constructed
+by the listener.
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   binaural_beats
+   monaural_beats
+   isochronic_tones
+   amplitude_modulation
+   frequency_modulation
+
 Envelopes and noise
 ~~~~~~~~~~~~~~~~~~~
 

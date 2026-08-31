@@ -69,6 +69,13 @@ from .core import (
     play_audio,
 )
 from .tables import PrimaryTables
+from .stimulation import (
+    amplitude_modulation,
+    binaural_beats,
+    frequency_modulation,
+    isochronic_tones,
+    monaural_beats,
+)
 from .structures import (
     dist,
     GenericPeal,
@@ -83,6 +90,11 @@ from .legacy import Being, CanonicalSynth, IteratorSynth
 from .sequencer import Sequencer
 
 __all__ = [
+    'amplitude_modulation',
+    'binaural_beats',
+    'frequency_modulation',
+    'isochronic_tones',
+    'monaural_beats',
     '__version__',
     'adsr_stereo',
     'adsr_vibrato',

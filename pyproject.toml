@@ -82,6 +82,7 @@ Tutorial = 'https://ttm.github.io/music/tutorial.html'
 Source = 'https://github.com/ttm/music'
 Changelog = 'https://github.com/ttm/music/blob/master/CHANGELOG.md'
 Issues = 'https://github.com/ttm/music/issues'
+Funding = 'https://github.com/sponsors/ttm'
 
 [build-system]
 requires = ['setuptools>=61.0']

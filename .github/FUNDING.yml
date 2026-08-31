@@ -1,0 +1,4 @@
+# One canonical funding destination. GitHub renders no button until the
+# account is enrolled in the Sponsors program, so this stays invisible
+# until then rather than pointing anywhere broken.
+github: ttm

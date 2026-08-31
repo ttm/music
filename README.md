@@ -214,6 +214,22 @@ style throughout, and the code follows
 examples of its use, and the article it comes from, read its docstring — or
 the rendered [API reference](https://ttm.github.io/music/).
 
+## Support
+
+`music` has been developed and maintained in the open since 2016. If it is
+useful to you, your research or your institution, please consider supporting
+its continued development through
+[GitHub Sponsors](https://github.com/sponsors/ttm).
+
+Sponsorship pays for the unglamorous work that makes a scientific package
+trustworthy — the fidelity tests, the full coverage, the documented
+equations, the archived and citable releases — and keeps every bit of it
+free for everyone.
+
+**For institutions and companies:** commissioned features, integration
+support and sponsored development are available, with the results released
+under the same open license. Open an issue or get in touch to discuss scope.
+
 ## Further information
 
 Music is primarily intended for artistic use, psychophysics experiments and data sonification.

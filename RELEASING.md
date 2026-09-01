@@ -25,6 +25,43 @@ the new heading. The script will tell you if you missed one.
 Uploading needs a PyPI token in `~/.pypirc`; the GitHub release needs `gh`
 logged in.
 
+### If the gate stops at `twine check`
+
+On Apple Silicon the gate can pass lint, types, tests and docs and then fail
+with
+
+```
+ImportError: dlopen(.../nh3/nh3.abi3.so, 0x0002):
+  (mach-o file, but is an incompatible architecture
+   (have 'x86_64', need 'arm64'))
+```
+
+`nh3` is a compiled extension that `twine check` reaches through
+`readme_renderer`, and the copy on the path was built for the other
+architecture -- usually because it was installed from a shell running under
+Rosetta, which is easy to do without noticing. The interpreter is fine and
+so is the package; only that one wheel is wrong.
+
+Confirm it before reinstalling anything. The error already names the file,
+so ask it and the interpreter what each one is:
+
+```console
+file /the/path/from/the/error/nh3.abi3.so
+python3 -c 'import platform; print(platform.machine())'
+```
+
+If those two disagree, force the right wheel in, from a shell of the
+architecture the interpreter reports:
+
+```console
+arch -arm64 python3 -m pip install --force-reinstall --no-cache-dir nh3
+```
+
+This costs nothing but time. `twine check` runs inside the gate, which is
+the part of `release.py` that changes nothing: it happens before the upload,
+the tag and the GitHub release, so a failure here has published nothing and
+can simply be fixed and rerun.
+
 The release body is generated, not written: the `pip install` line, links to
 the tutorial, API reference and changelog, the changelog's own section, and a
 sponsorship footer under it. None of that is typed at release time, and the

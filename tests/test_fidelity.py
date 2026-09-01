@@ -18,6 +18,7 @@ import music
 from music.core.functions import normalize_mono
 from music.legacy.tables import Basic
 from music.tables import PrimaryTables
+from music.utils import _integrate_phase
 from music.utils import (WAVEFORMS, WAVEFORM_SAWTOOTH, WAVEFORM_SINE,
                          WAVEFORM_SQUARE, WAVEFORM_TRIANGULAR,
                          waveform_table)
@@ -319,3 +320,81 @@ def test_waveform_table_rejects_nonsense():
         waveform_table("ocarina")
     with pytest.raises(ValueError, match="size must be positive"):
         waveform_table("sine", 0)
+
+
+# --------------------------------------------------------------------------
+# Phase integration (issue #102)
+# --------------------------------------------------------------------------
+
+SAMPLE_RATE = 44100
+TABLE_LENGTH = 16384
+
+
+def _phase_error(phase, increment, count, length=TABLE_LENGTH):
+    """How far a computed phase is from the exact one, in table entries.
+
+    Both are folded into one period, so a difference of nearly a whole
+    period is really a small one across the fold.
+    """
+    exact = (np.arange(1, count + 1, dtype=np.float64) * increment) % length
+    difference = np.abs(phase - exact)
+    return np.minimum(difference, length - difference).max()
+
+
+def test_phase_integration_does_not_drift_with_the_length_of_the_render():
+    """The property, not a magnitude.
+
+    ``np.cumsum`` accumulates into a total that keeps growing, so each
+    addition loses low bits against a larger running value and the error
+    grows with the render -- in one direction, so it is drift rather
+    than noise. What replaced it folds the total into one table period
+    as it goes, and its error stays where it starts.
+    """
+    increment = 200.0 * TABLE_LENGTH / SAMPLE_RATE
+    drifting, steady = {}, {}
+    for seconds in (5, 30):
+        count = seconds * SAMPLE_RATE
+        increments = np.full(count, increment)
+        drifting[seconds] = _phase_error(
+            np.cumsum(increments) % TABLE_LENGTH, increment, count)
+        steady[seconds] = _phase_error(
+            _integrate_phase(increments, TABLE_LENGTH), increment, count)
+
+    # Six times the render, and the old way is orders of magnitude worse
+    assert drifting[30] > 100 * drifting[5]
+
+    # while this one has barely moved, and is small in absolute terms
+    assert steady[30] < 2 * steady[5]
+    assert steady[30] < 1e-5
+
+
+def test_integrating_phase_agrees_with_the_index_the_caller_would_take():
+    """The routines truncate the phase and index a table with it. The
+    fold has to give the same entry the caller's own ``% length`` did,
+    or every rendered sample moves."""
+    increment = 200.0 * TABLE_LENGTH / SAMPLE_RATE
+    increments = np.full(1000, increment)
+
+    folded = _integrate_phase(increments, TABLE_LENGTH).astype(np.int64)
+    unfolded = np.cumsum(increments).astype(np.int64) % TABLE_LENGTH
+    assert np.array_equal(folded, unfolded)
+
+
+def test_both_paths_of_the_integrator_agree():
+    """Short inputs skip the blocking entirely; the two paths must not
+    disagree where they overlap.
+
+    Compared across the fold, because a phase just under a whole period
+    and one just over zero are neighbours: a handful of samples land
+    there, and a plain subtraction reports the difference between them
+    as nearly a whole period rather than as the 1e-8 it is.
+    """
+    increment = 200.0 * TABLE_LENGTH / SAMPLE_RATE
+    increments = np.full(5000, increment)
+
+    short = _integrate_phase(increments, TABLE_LENGTH, block=10_000)
+    blocked = _integrate_phase(increments, TABLE_LENGTH, block=512)
+
+    difference = np.abs(short - blocked)
+    across_the_fold = np.minimum(difference, TABLE_LENGTH - difference)
+    assert across_the_fold.max() < 1e-6

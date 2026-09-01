@@ -1,6 +1,7 @@
 """Utilities for synthesizing notes and note effects."""
 import numpy as np
-from ...utils import WAVEFORM_SINE, WAVEFORM_TRIANGULAR
+from ...utils import (WAVEFORM_SINE, WAVEFORM_TRIANGULAR,
+                      _integrate_phase)
 from ..filters.adsr import adsr
 
 
@@ -153,10 +154,12 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
         fl = freq * speed / (speed + vsl)
         fr = freq * speed / (speed + vsr)
 
-        gamma = np.cumsum(fl * length / sample_rate).astype(np.int64)
+        gamma = _integrate_phase(fl * length / sample_rate,
+                                 length).astype(np.int64)
         sl = waveform_table[gamma % length] * iid_al[:-1]
 
-        gamma = np.cumsum(fr * length / sample_rate).astype(np.int64)
+        gamma = _integrate_phase(fr * length / sample_rate,
+                                 length).astype(np.int64)
         sr = waveform_table[gamma % length] * iid_ar[:-1]
 
         itd0 = (dl[0] - dr[0]) / speed
@@ -177,7 +180,8 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
         vs = sample_rate * (duration[1:] - duration[:-1])
         f_ = freq * speed / (speed + vs)
 
-        gamma = np.cumsum(f_ * length / sample_rate).astype(np.int64)
+        gamma = _integrate_phase(f_ * length / sample_rate,
+                                 length).astype(np.int64)
         result = waveform_table[gamma % length] * iid[:-1]
     return result
 
@@ -268,7 +272,9 @@ def note_with_fm(freq=220, duration=2, fm=100, max_fm_deviation=2,
     waveform_table_length = len(waveform_table)
     # shift in table between each sample
     d_gamma = f * (waveform_table_length / sample_rate)
-    gamma = np.cumsum(d_gamma).astype(np.int64)  # total shift at each sample
+    # total shift at each sample
+    gamma = _integrate_phase(d_gamma,
+                             waveform_table_length).astype(np.int64)
     # final sample lookup
     result = waveform_table[gamma % waveform_table_length]
     return result
@@ -412,7 +418,8 @@ def note_with_glissando(start_freq=220, end_freq=440, duration=2, alpha=1,
     else:
         f = start_freq + (end_freq - start_freq) * samples / (lambda_p - 1)
     waveform_table_length = len(waveform_table)
-    gamma = np.cumsum(f * waveform_table_length / sample_rate).astype(np.int64)
+    gamma = _integrate_phase(f * waveform_table_length / sample_rate,
+                             waveform_table_length).astype(np.int64)
     s = waveform_table[gamma % waveform_table_length]
     return s
 
@@ -497,7 +504,7 @@ def note_with_glissando_vibrato(start_freq=220, end_freq=440, duration=2,
             (samples / (lambda_pv - 1)) * 2. ** \
             ((tv * max_pitch_dev / 12) ** alpha)
     length = len(waveform_table)
-    gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
+    gamma = _integrate_phase(f * length / sample_rate, length).astype(np.int64)
     s = waveform_table[gamma % length]
     return s
 
@@ -770,7 +777,8 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         # stereo branch below; extend() spread f_ into its 600k scalars and
         # left v_ inhomogeneous for np.prod.
         f = np.prod(v_ + [f_], axis=0)
-        gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
+        gamma = _integrate_phase(f * length / sample_rate,
+                                 length).astype(np.int64)
         s_ = []
         pointer = 0
         for i, t in enumerate(waveform_tables[0]):
@@ -787,7 +795,8 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         # left channel
         Vl = v_ + [f_[0]]
         f = np.prod(Vl, axis=0)
-        gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
+        gamma = _integrate_phase(f * length / sample_rate,
+                                 length).astype(np.int64)
         s_ = []
         pointer = 0
         for i, t in enumerate(waveform_tables[0]):
@@ -804,7 +813,8 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         # right channel
         vr = v_ + [f_[1]]
         f = np.prod(vr, axis=0)
-        gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
+        gamma = _integrate_phase(f * length / sample_rate,
+                                 length).astype(np.int64)
         s_ = []
         pointer = 0
         for i, t in enumerate(waveform_tables[0]):
@@ -936,7 +946,7 @@ def note_with_two_vibratos_glissando(start_freq=220, end_freq=440, duration=2,
             ((tv1 * max_pitch_dev / 12)) * 2. ** \
             (tv2 * secondary_max_pitch_dev / 12)
     length = len(waveform_table)
-    gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
+    gamma = _integrate_phase(f * length / sample_rate, length).astype(np.int64)
     s = waveform_table[gamma % length]
     return s
 
@@ -1053,7 +1063,7 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
 
     f = np.prod(v_, axis=0)
     length = len(waveform_tables[0][0])
-    gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
+    gamma = _integrate_phase(f * length / sample_rate, length).astype(np.int64)
     s_ = []
     pointer = 0
     for i, t in enumerate(waveform_tables[0]):
@@ -1161,7 +1171,9 @@ def note_with_vibrato(freq=220, duration=2, vibrato_freq=4,
     waveform_table_length = len(waveform_table)
     # shift in table between each sample
     d_gamma = f * (waveform_table_length / sample_rate)
-    gamma = np.cumsum(d_gamma).astype(np.int64)  # total shift at each sample
+    # total shift at each sample
+    gamma = _integrate_phase(d_gamma,
+                             waveform_table_length).astype(np.int64)
     # final sample lookup
     result = waveform_table[gamma % waveform_table_length]
     return result
@@ -1259,7 +1271,7 @@ def note_with_two_vibratos(freq=220, duration=2, vibrato_freq=2,
     else:
         f = freq * 2. ** (tv1 * nu1 / 12) * 2. ** (tv2 * nu2 / 12)
     length = len(waveform_table)
-    gamma = np.cumsum(f * length / sample_rate).astype(np.int64)
+    gamma = _integrate_phase(f * length / sample_rate, length).astype(np.int64)
     s = waveform_table[gamma % length]
     return s
 

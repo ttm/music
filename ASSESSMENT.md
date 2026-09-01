@@ -73,17 +73,6 @@ either documented in the code or tracked in the issue list.
   against shape and against regressions already found. Issue #67 again;
   issue #76 asks for artifact detection a listener could not catch.
 
-- **Phase integration drifts on long renders.** Every routine that
-  synthesises a varying frequency integrates it into the wavetable index
-  with `np.cumsum`, which accumulates into an ever-growing float64 and
-  loses low bits as it goes. Against the exact phase for a 200 Hz carrier,
-  the index error is 1.3e-2 at one minute, 4.8e-1 at ten, and 32 of 16384
-  entries at an hour -- drift in one direction, not noise. `math.fsum`
-  over the same increments gives exactly zero error, so the package is not
-  using the most exact method available. Nothing audible is at stake below
-  a minute; the claim of fidelity to the mathematical model is. 13 sites,
-  issue #102.
-
 ### Scope and dependencies
 
 - **Singing needs an external engine.** `music.singing` drives eCantorix,
@@ -120,6 +109,12 @@ worse than the code.
   had written — are fixed, with `tests/test_fidelity.py` pinning the
   properties that were wrong.
 - **`legacy/` type errors**: gone; `mypy music` is clean.
+- **Phase integration drifting on long renders**: the wavetable index was
+  accumulated with `np.cumsum`, whose error grew with the render and grew
+  in one direction -- 32 table entries of 16384 over an hour. All 14 sites
+  now fold the running total into one table period as they go, and the
+  error no longer grows with length: 2.0e-7 at five seconds and 2.1e-7 at
+  a minute, against 3.6e-6 and 1.3e-2 before. Issue #102.
 - **Three duplicate waveform table definitions**: `music.legacy.tables.Basic`
   is now an alias for `music.tables.PrimaryTables` rather than a third copy.
 - **`setup_engine()` writing into `site-packages`**: it uses the user's cache

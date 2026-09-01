@@ -105,6 +105,27 @@
   left standing.
 
 ### Fixed
+- **Phase integration no longer drifts with the length of the render**
+  (issue #102). Every routine that synthesises a varying frequency
+  accumulated the wavetable index with `np.cumsum`, whose running total
+  keeps growing and so keeps losing low bits against it. The error grew
+  with the render and grew in one direction -- drift, not noise. Measured
+  against the exact phase for a 200 Hz carrier and a 16384 entry table, it
+  reached 0.48 table entries at ten minutes and 32 at an hour, enough to
+  change the entry that gets looked up.
+
+  All 14 sites -- 13 in `core/synths/notes.py`, one in `stimulation.py` --
+  now go through `_integrate_phase`, which folds the running total into
+  one table period as it goes so it never grows, and carries between
+  blocks through `ndarray.sum` and its pairwise summation. The error stops
+  growing with length: 2.0e-7 at five seconds and 2.1e-7 at a minute,
+  where the old way gave 3.6e-6 and 1.3e-2.
+
+  **Almost nothing renders differently.** Of nine routines checked at one
+  second, eight are bit-identical to what they produced before; only
+  `frequency_modulation` moved, in 6 samples of 44100, by one table entry
+  each. Longer renders and faster modulations will differ more, always in
+  the direction of the closed-form phase.
 - **`note_with_vibrato_seq_localization` and `note_with_vibratos_glissandos`
   declared `number_of_samples`, documented it as "the number of samples of
   the sound", and never read it.** A caller asking for a length got whatever

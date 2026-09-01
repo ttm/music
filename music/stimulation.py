@@ -45,7 +45,7 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 from .core.synths.notes import note
-from .utils import WAVEFORM_SINE
+from .utils import WAVEFORM_SINE, _integrate_phase
 
 __all__ = [
     'amplitude_modulation',
@@ -515,5 +515,6 @@ def frequency_modulation(
 
     table = np.asarray(waveform_table)
     length = len(table)
-    index = np.cumsum(instantaneous * length / sample_rate).astype(np.int64)
+    index = _integrate_phase(instantaneous * length / sample_rate,
+                             length).astype(np.int64)
     return table[index % length]

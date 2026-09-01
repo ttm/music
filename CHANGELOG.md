@@ -1,6 +1,15 @@
 ## [Unreleased]
 
 ### Added
+- **The wavetables are re-exported from the top level**: `WAVEFORM_SINE`,
+  `WAVEFORM_TRIANGULAR`, `WAVEFORM_SQUARE`, `WAVEFORM_SAWTOOTH`,
+  `WAVEFORMS` and the `waveform_table` builder. They are the names that
+  already appear in the synthesis signatures -- `note` documents
+  `waveform_table=WAVEFORM_TRIANGULAR` -- but `music.WAVEFORM_SINE` raised
+  `AttributeError`, so the one family of names a reader meets in every
+  signature was the one family the flat API did not carry, and the
+  reference explained where they were hiding instead. The obvious call now
+  works. Purely additive; `music.utils` still holds them.
 - **`music.stimulation`, five auditory stimuli for sensory-stimulation
   work**, each rendering one technique catalogued in SSTIM, the Sensory
   Stimulation Vocabulary developed in the W3C Sensory Stimulation
@@ -51,6 +60,13 @@
   metadata check enforces.
 
 ### Changed
+- **`ASSESSMENT.md` records the phase-integration drift** as a known
+  limitation, with the measurements. Issue #102 tracks the fix: the
+  wavetable index is integrated with `np.cumsum`, whose error grows with
+  render length -- 32 index entries of 16384 over an hour -- where
+  compensated summation gives none. Inaudible below a minute, but the
+  package claims fidelity to a mathematical model, and long sessions are
+  what `music.stimulation` is for.
 - **`ASSESSMENT.md` is now a living record of known limitations** rather than
   an audit of one commit. It had been written four days earlier and already
   described a package with 125 tests at 61 % coverage, against the 504 at

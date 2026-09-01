@@ -73,6 +73,17 @@ either documented in the code or tracked in the issue list.
   against shape and against regressions already found. Issue #67 again;
   issue #76 asks for artifact detection a listener could not catch.
 
+- **Phase integration drifts on long renders.** Every routine that
+  synthesises a varying frequency integrates it into the wavetable index
+  with `np.cumsum`, which accumulates into an ever-growing float64 and
+  loses low bits as it goes. Against the exact phase for a 200 Hz carrier,
+  the index error is 1.3e-2 at one minute, 4.8e-1 at ten, and 32 of 16384
+  entries at an hour -- drift in one direction, not noise. `math.fsum`
+  over the same increments gives exactly zero error, so the package is not
+  using the most exact method available. Nothing audible is at stake below
+  a minute; the claim of fidelity to the mathematical model is. 13 sites,
+  issue #102.
+
 ### Scope and dependencies
 
 - **Singing needs an external engine.** `music.singing` drives eCantorix,

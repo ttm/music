@@ -94,6 +94,24 @@ def test_every_export_resolves_to_a_function_not_a_module():
     assert not isinstance(notes.adsr, types.ModuleType)
 
 
+def test_the_wavetables_named_in_the_signatures_are_reachable():
+    """`note` documents `waveform_table=WAVEFORM_TRIANGULAR`, so that is
+    the name a reader meets first. It used to live only in
+    `music.utils`, which made the one family of names appearing in every
+    synthesis signature the one family the flat API did not carry."""
+    from music import utils
+
+    for name in ("WAVEFORM_SINE", "WAVEFORM_TRIANGULAR",
+                 "WAVEFORM_SQUARE", "WAVEFORM_SAWTOOTH", "WAVEFORMS"):
+        assert name in music.__all__
+        assert getattr(music, name) is getattr(utils, name)
+
+    assert music.waveform_table is utils.waveform_table
+    rendered = music.note(freq=440, duration=0.01,
+                          waveform_table=music.WAVEFORM_SINE)
+    assert rendered.shape[0] > 0
+
+
 def test_trill_renders_audio():
     """Regression: trill() raised TypeError via the filters import cycle."""
     trill = music.trill(duration=0.2)

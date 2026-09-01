@@ -183,10 +183,14 @@ Wavetables
    :nosignatures:
 
    PrimaryTables
+   waveform_table
 
-The module-level constants ``WAVEFORM_SINE``, ``WAVEFORM_TRIANGULAR``,
-``WAVEFORM_SQUARE`` and ``WAVEFORM_SAWTOOTH`` in :mod:`music.utils` are the
-lookup tables used by default throughout the package.
+``WAVEFORM_SINE``, ``WAVEFORM_TRIANGULAR``, ``WAVEFORM_SQUARE`` and
+``WAVEFORM_SAWTOOTH`` are the lookup tables used by default throughout the
+package, and are the names that appear in the synthesis signatures above.
+They are re-exported from the top level like everything else, so
+``music.note(waveform_table=music.WAVEFORM_SINE)`` works;
+``music.WAVEFORMS`` names the shapes :func:`waveform_table` can build.
 
 Singing
 -------

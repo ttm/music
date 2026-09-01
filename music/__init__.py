@@ -8,6 +8,11 @@ except PackageNotFoundError:  # pragma: no cover - running from a checkout
     __version__ = "0.0.0.dev0"
 
 from .utils import (
+    WAVEFORM_SAWTOOTH,
+    WAVEFORM_SINE,
+    WAVEFORM_SQUARE,
+    WAVEFORM_TRIANGULAR,
+    WAVEFORMS,
     amp_to_db,
     convert_to_stereo,
     db_to_amp,
@@ -26,7 +31,8 @@ from .utils import (
     pitch_to_freq,
     profile,
     resolve_stereo,
-    rhythm_to_durations
+    rhythm_to_durations,
+    waveform_table
 )
 from .core import (
     adsr_stereo,
@@ -90,6 +96,12 @@ from .legacy import Being, CanonicalSynth, IteratorSynth
 from .sequencer import Sequencer
 
 __all__ = [
+    'WAVEFORMS',
+    'WAVEFORM_SAWTOOTH',
+    'WAVEFORM_SINE',
+    'WAVEFORM_SQUARE',
+    'WAVEFORM_TRIANGULAR',
+    'waveform_table',
     'amplitude_modulation',
     'binaural_beats',
     'frequency_modulation',

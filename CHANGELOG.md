@@ -1,4 +1,24 @@
-## [Unreleased]
+## [1.3.0] - 2026-09-01
+### Note for anyone upgrading
+**Nothing that imports from `music` breaks.** Two functions were renamed
+for saying what they do -- `mix2` is now `mix_many` and `mix_with_offset_`
+is now `mix_many_with_offsets` -- and both old names stay bound to the new
+functions.
+
+Two things do render differently, in both cases because they were wrong
+before:
+
+- `note_with_vibrato_seq_localization` and `note_with_vibratos_glissandos`
+  now honour `number_of_samples`, which they had declared, documented and
+  ignored. Code that passed it was getting a sound of whatever length the
+  durations summed to; it now gets the length it asked for.
+- Phase is integrated without accumulating drift. Of nine routines checked
+  at one second, eight are bit-identical to 1.2.1; only long renders and
+  fast modulations differ, and always towards the closed-form phase.
+
+New: `music.stimulation`, five auditory stimuli named for the SSTIM
+techniques they implement, and the `WAVEFORM_*` tables are now re-exported
+from the top level.
 
 ### Added
 - **The wavetables are re-exported from the top level**: `WAVEFORM_SINE`,

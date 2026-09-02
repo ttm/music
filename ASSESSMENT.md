@@ -1,8 +1,9 @@
 # Quality assessment and known limitations
 
-*A living record, not a point-in-time audit. Last measured **2026-09-02**,
-`music` 1.3.0 plus the unreleased sensory-stimulation toolkit: 40 modules,
-8,736 LOC package + 4,753 LOC tests, 88 names in the public API.*
+*A living record, not a point-in-time audit. Last measured **2026-09-03**,
+`music` 1.3.0 plus the unreleased stimulation toolkit and dependency work:
+40 modules, 8,790 LOC package + 4,821 LOC tests, 88 names in the public
+API.*
 
 The first version of this file graded the repository once, in August 2026,
 and was already stale four days later: it reported 125 tests at 61 % coverage
@@ -21,15 +22,16 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **586 passed**, 13 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,288 stmts, 0 missed) |
+| Test suite | `pytest -q` | **599 passed**, 10 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,292 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 1,705 findings |
-| Annotation coverage | AST scan | **43 / 159 functions (27 %)** |
+| Lint, extended rule set | `ruff check --select ALL music` | 1,714 findings |
+| Annotation coverage | AST scan | **45 / 161 functions (28 %)** |
 | Docstring coverage | AST scan | **139 / 146 public defs (95 %)** |
 | Examples | run all 11 | **10 pass**, 1 needs the external singing engine |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
+| Import cost | `import music`, warm, 3.12 | **~185-290 ms**, and no sympy in `sys.modules` |
 | Archival subjects | NLM MeSH lookup, per identifier | every term in `.zenodo.json` resolves to the term it declares |
 
 `mypy` runs with `check_untyped_defs = true`, so it inspects function bodies
@@ -45,7 +47,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; CI across Python 3.10–3.14 including a job pinned to the declared lower bounds |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 27 %; the `legacy/` subpackage; `core/functions.py` not yet reconciled with the MASS reference implementation |
+| **Needs work** | Annotation coverage at 28 %; the `legacy/` subpackage; `core/functions.py` not yet reconciled with the MASS reference implementation |
 
 ## Known limitations
 
@@ -108,14 +110,22 @@ either documented in the code or tracked in the issue list.
   tables; issue #3.
 - **matplotlib is an extra**, needed only by `PrimaryTables.draw_tables()`.
   Installing without it makes `import music` about 40 % faster.
+- **sympy is required, but no longer imported at `import music`.** The
+  permutation and change-ringing structures need it and cannot be written
+  without reimplementing a permutation group; two exported signatures take
+  and return sympy `Permutation` objects, so it is part of the public API
+  rather than an implementation detail. It is now reached through a
+  module-level `__getattr__`, so only callers who touch those structures
+  pay the roughly 400 ms it costs to import. It remains the largest single
+  dependency at 73 MB.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 27 %.** The package type-checks cleanly with
+- **Annotation coverage is 28 %.** The package type-checks cleanly with
   bodies inspected, so this is missing documentation of intent rather than
   missing safety.
-- **The extended lint set reports 1,705 findings** on `music/`, almost all
-  stylistic: 389 missing argument annotations, 330 quote-style, 92 missing
+- **The extended lint set reports 1,714 findings** on `music/`, almost all
+  stylistic: 389 missing argument annotations, 338 quote-style, 92 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.

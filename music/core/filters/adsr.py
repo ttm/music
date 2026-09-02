@@ -145,7 +145,37 @@ def adsr_vibrato(note_dict={}, adsr_dict={}):
     """
     Creates a note with a vibrato and an ADSR envelope.
 
-    Check the adsr and the note_with_vibrato functions.
+    A shorthand for calling :func:`music.note_with_vibrato` and passing
+    the result to :func:`adsr`, so that the two sets of arguments do not
+    have to be interleaved at the call site.
+
+    Parameters
+    ----------
+    note_dict : dict
+        Keyword arguments for :func:`music.note_with_vibrato`, which
+        renders the note the envelope is applied to.
+    adsr_dict : dict
+        Keyword arguments for :func:`adsr`, which shapes it.
+        ``sonic_vector`` is supplied by this function and should not be
+        given here.
+
+    Returns
+    -------
+    ndarray
+        A mono sequence of PCM samples: the vibrato note under the
+        envelope.
+
+    See Also
+    --------
+    adsr : the envelope, and the meaning of every key of ``adsr_dict``.
+    music.note_with_vibrato : the note, and the keys of ``note_dict``.
+
+    Examples
+    --------
+    >>> sound = adsr_vibrato(note_dict={'freq': 220, 'duration': 1},
+    ...                      adsr_dict={'sustain_level': -10})
+    >>> sound.ndim
+    1
 
     """
     # imported here rather than at module scope: music.core.synths.notes
@@ -162,7 +192,64 @@ def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
     """
     A shorthand to make an ADSR envelope for a stereo sound.
 
-    See adsr() for more information.
+    :func:`adsr` is applied to each channel with the same arguments, so
+    the two channels keep their relative level through the envelope
+    rather than being shaped independently.
+
+    Parameters
+    ----------
+    duration : scalar
+        The duration of the envelope in seconds. Passed to :func:`adsr`
+        as ``envelope_duration``.
+    attack_duration : scalar
+        The duration of the Attack in milliseconds.
+    decay_duration : scalar
+        The duration of the Decay in milliseconds.
+    sustain_level : scalar
+        The Sustain level after the Decay in decibels. Usually negative.
+    release_duration : scalar
+        The duration of the Release in milliseconds.
+    transition : string
+        "exp" for exponential transitions of amplitude (linear
+        loudness), "linear" for linear transitions of amplitude.
+    alpha : scalar or array_like
+        An index to make the exponential fade slower or faster. Ignored
+        if ``transition="linear"`` or ``alpha=1``. An array_like should
+        hold three values, for Attack, Decay and Release.
+    db_dev : scalar or array_like
+        The decibels deviation to reach before using a linear fade to
+        reach zero amplitude. An array_like should hold two values, for
+        Attack and Release. Ignored if ``transition="linear"``.
+    to_zero : scalar or array_like
+        The duration in milliseconds for linearly departing from zero in
+        the Attack and reaching zero at the end of the Release. An
+        array_like should hold two values, for Attack and Release.
+        Ignored if ``transition="linear"``.
+    number_of_samples : integer
+        The number of samples of the envelope. If supplied, ``duration``
+        is ignored.
+    sonic_vector : array_like
+        A ``(2, nsamples)`` stereo sound for the envelope to be applied
+        to. If supplied, ``duration`` and ``number_of_samples`` are
+        ignored.
+    sample_rate : integer
+        The sample rate.
+
+    Returns
+    -------
+    ndarray
+        A ``(2, nsamples)`` array: the envelope itself if
+        ``sonic_vector`` is 0, or the sound with the envelope applied.
+
+    See Also
+    --------
+    adsr : the mono envelope, and the meaning of every argument here.
+
+    Examples
+    --------
+    >>> envelope = adsr_stereo(duration=1)
+    >>> envelope.shape[0]
+    2
 
     """
     sonic_vector = as_sonic_vector(sonic_vector)

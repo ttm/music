@@ -1,6 +1,7 @@
 import warnings
 
 import numpy as np
+import pytest
 
 from music import utils
 from music.core import functions
@@ -66,3 +67,15 @@ def test_hz_to_midi_no_warnings():
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         utils.hz_to_midi(np.array([0.0, 440.0]))
+
+
+def test_profile_refuses_rather_than_returning_nothing():
+    """It was exported, documented as returning a dictionary, and had a
+    fully commented-out body, so every call quietly returned None.
+
+    The design in its docstring is a specification worth keeping; the
+    silence was not. This package's own rule is to raise rather than
+    pretend, and `Peals.twenty_all_over` already does.
+    """
+    with pytest.raises(NotImplementedError, match="never implemented"):
+        utils.profile({"freq": 440})

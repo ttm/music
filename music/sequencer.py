@@ -28,7 +28,23 @@ class NoteEvent:
 
 @dataclass
 class Sequencer:
-    """Schedules notes and renders them as audio."""
+    """Schedules notes and renders them as audio.
+
+    Attributes
+    ----------
+    sample_rate : integer
+        The sampling frequency in Hertz, used for every note rendered
+        and for turning each event's start time into a sample offset.
+    events : list of NoteEvent
+        The scheduled notes. Normally built with :meth:`add_note` rather
+        than passed in, and rendered in order of their start times
+        rather than the order they were added.
+
+    See Also
+    --------
+    music.StimulationSession : phases in sequence rather than notes at
+                               offsets, for stimulation protocols.
+    """
 
     sample_rate: int = 44100
     events: List[NoteEvent] = field(default_factory=list)

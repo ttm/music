@@ -34,6 +34,18 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
     sample_rate : integer
         The sample rate to use, by default 44100.
 
+    Returns
+    -------
+    ndarray
+        A mono sequence of PCM samples, normalized to [-1, 1].
+
+    Raises
+    ------
+    ValueError
+        If ``noise_type`` is neither a number of decibels per octave nor
+        one of the named colours. A misspelt colour would otherwise
+        render as silence or as an unrelated slope.
+
     Notes
     -----
     The noise is synthesized with components with random phases, with the

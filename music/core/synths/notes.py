@@ -371,13 +371,13 @@ def note_with_glissando(start_freq=220, end_freq=440, duration=2, alpha=1,
         If alpha != 1, the transition is not of linear pitch.
     waveform_table : array_like
         The table with the waveform to synthesize the sound.
-    number_of_samples : integer
-        The number of samples of the sound.
-        If supplied, d is not used.
     method : string
         "exp" for an exponential transition of frequency
         (linear pitch).
         "lin" for a linear transition of amplitude.
+    number_of_samples : integer
+        The number of samples of the sound.
+        If supplied, d is not used.
     sample_rate : integer
         The sample rate.
 
@@ -600,14 +600,14 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     method : list of strings
         An entry for each transition of location: 'exp' for
         exponential and 'lin' (default) for linear.
-    stereo : boolean
-        If True, returns a (2, nsamples) array representing
-        a stereo sound. Else it returns a simple array
-        for a mono sound.
     waveform_tables : list of lists of array_likes
         The tables with the waveforms to synthesize the sound
         and then for the oscillatory patterns of the vibratos.
         All the tables for f should have the same size.
+    stereo : boolean
+        If True, returns a (2, nsamples) array representing
+        a stereo sound. Else it returns a simple array
+        for a mono sound.
     zeta : scalar
         The distance between the ears in meters.
     air_temp : scalar
@@ -864,7 +864,7 @@ def note_with_two_vibratos_glissando(start_freq=220, end_freq=440, duration=2,
         The frequency of the secondary pattern of the vibrato.
     max_pitch_dev : scalar
         The maximum deviation of pitch in the vibrato in semitones.
-    max_pitch_dev : scalar
+    secondary_max_pitch_dev : scalar
         The maximum deviation in semitones of pitch in the
         secondary pattern of the vibrato.
     alpha : scalar
@@ -1095,7 +1095,7 @@ def note_with_vibrato(freq=220, duration=2, vibrato_freq=4,
         The duration of the note in seconds.
     vibrato_freq : scalar
         The frequency of the vibrato oscillations in Hertz.
-    max_pitch_deviation : scalar
+    max_pitch_dev : scalar
         The maximum deviation of pitch in the vibrato in semitones.
     waveform_table : array_like
         The table with the waveform to synthesize the sound.
@@ -1212,7 +1212,7 @@ def note_with_two_vibratos(freq=220, duration=2, vibrato_freq=2,
         The table with the waveform to synthesize the sound.
     vibrato_waveform_table : array_like
         The table with the waveform for the vibrato oscillatory pattern.
-    secondary_vibrato_waveform_table : array_like
+    sec_vibrato_waveform_table : array_like
         The table with the waveform for the
         secondary pattern of the vibrato.
     number_of_samples : scalar

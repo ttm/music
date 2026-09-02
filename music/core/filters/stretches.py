@@ -16,6 +16,23 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=44100):
         the second channel.
     durations : list of numbers
         Durations in seconds for each repeat of x.
+    sample_rate : integer
+        The sample rate in Hertz, used to read the length of ``x`` as a
+        duration and so to work out how much each repeat is squeezed.
+
+    Returns
+    -------
+    ndarray
+        The repeats concatenated, mono or ``(2, nsamples)`` stereo
+        according to ``x``.
+
+    Raises
+    ------
+    ValueError
+        If any entry of ``durations`` is zero or negative. A duration of
+        zero squeezes the fragment into no samples and a negative one
+        reverses the step, so neither produces the repeat the caller
+        asked for.
 
     Examples
     --------

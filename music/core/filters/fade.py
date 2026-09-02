@@ -117,7 +117,52 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
 def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
                sample_rate=44100):
     """
-    Cross fade in duration milisseconds.
+    Cross fade two sounds over `duration` milliseconds.
+
+    The tail of the first sound is faded out, the head of the second is
+    faded in, and the two are overlapped by that duration, so the result
+    is shorter than the two inputs laid end to end.
+
+    Parameters
+    ----------
+    sonic_vector_1 : ndarray
+        The sound that fades out. Mono, or ``(2, nsamples)`` stereo.
+    sonic_vector_2 : ndarray
+        The sound that fades in, of the same number of dimensions.
+    duration : scalar
+        The length of the crossfade in milliseconds.
+    method : string
+        The fade shape, as :func:`fade` takes it: "lin" or "exp".
+    sample_rate : integer
+        The sample rate in Hertz.
+
+    Returns
+    -------
+    ndarray
+        The two sounds overlapped, ``duration`` milliseconds shorter
+        than their concatenation.
+
+    Raises
+    ------
+    ValueError
+        If the two sounds do not have the same number of dimensions.
+        Crossfading a mono sound with a stereo one has no single sensible
+        answer, so it is refused rather than guessed at.
+
+    Notes
+    -----
+    **Both inputs are modified in place.** The fades are applied to the
+    caller's arrays rather than to copies, so a sound that is crossfaded
+    is no longer the sound it was. Pass a copy to keep the original.
+
+    The overlap makes the result shorter, which is why
+    :class:`music.StimulationSession` does not use this function: a
+    protocol's phase durations have to survive its transitions.
+
+    See Also
+    --------
+    fade : the fade in or out on its own.
+    music.StimulationSession : crossfades that preserve total duration.
 
     """
     ns = int(duration * sample_rate / 1000)

@@ -84,7 +84,18 @@ def read_wav(filename: str) -> NDArray[np.float64]:
     Returns
     -------
     NDArray
-        Values of the WAV file
+        The samples in [-1, 1], mono as ``(nsamples,)`` and stereo as
+        ``(2, nsamples)``. Integer PCM is divided by its own full scale;
+        a float WAV declares none, so it is scaled by its own peak.
+
+    Raises
+    ------
+    ValueError
+        If the file's encoding is one this package cannot normalize --
+        anything outside ``READABLE_SUBTYPES``. libsndfile will decode
+        ADPCM and companded formats happily, but they have no full scale
+        the normalization is defined against, so being decodable is not
+        the same as being supported.
     """
     with sf.SoundFile(str(filename)) as handle:
         subtype = handle.subtype

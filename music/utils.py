@@ -609,16 +609,28 @@ def mix_with_offset(
     second_sonic_vector : numeric array
         Another sequence of PCM samples.
     duration : numeric
-        The offset of the second sound, i.e. the displacement that
-        the start of the second sound. (First sound has offset 0).
-        Might be negative, denoting to start sound2 ``|d|`` seconds before
-    s1 ends.
+        The offset of the second sound in seconds: how far after the
+        start of the first the second begins. Negative starts the second
+        sound that many seconds before the first one ends.
     number_of_samples : int
+        The offset in samples, taken instead of ``duration`` when given.
     sample_rate : int
+        The sample rate in Hertz.
+
+    Returns
+    -------
+    ndarray
+        The two sounds summed at that offset, long enough to hold both.
 
     Notes
     -----
-    If ``d < 0``, it should satisfy ``-d*fs < s1.shape[-1]``.
+    A negative ``duration`` must satisfy
+    ``-duration * sample_rate < first_sonic_vector.shape[-1]``: the second
+    sound cannot begin before the first one does.
+
+    The description of ``duration`` above was truncated mid-sentence, and
+    its last line sat at column zero, so numpydoc read "s1 ends." as a
+    parameter of this function and rendered it as one.
 
     See Also
     --------
@@ -682,6 +694,19 @@ def mix_many_with_offsets(*args: ArrayLike) -> NDArray[np.float64]:
         A sequence of sonic vectors, each a sequence of PCM samples, or
         a sequence alternating the sonic vectors and their offsets in
         seconds. A vector with no scalar after it is mixed at offset 0.
+
+    Returns
+    -------
+    ndarray
+        Every sound summed at its offset. An empty argument list gives
+        an empty array.
+
+    Raises
+    ------
+    ValueError
+        If a positional argument that should be a sonic vector is a bare
+        number. Two consecutive offsets almost always means a sound was
+        left out, and mixing silence at a wrong offset would hide it.
 
     See Also
     --------
@@ -885,6 +910,28 @@ mix2 = mix_many
 
 def profile(adict):
     """
+    Summarize a namespace of variables. **Not implemented.**
+
+    Parameters
+    ----------
+    adict : dict
+        The namespace to describe, mapping names to values -- typically
+        ``locals()`` or ``vars()`` from a piece of synthesis code.
+
+    Returns
+    -------
+    dict
+        The structure described below, once this is written.
+
+    Raises
+    ------
+    NotImplementedError
+        Always. The body of this function has been commented out since
+        it was written, so every call returned ``None`` while the
+        docstring described a dictionary. Raising says the same thing
+        the silence did, where a caller can hear it; the design below is
+        kept because it is the specification, not a description.
+
     Notes
     -----
     Should return a dictionary with the following structure:
@@ -929,6 +976,10 @@ def profile(adict):
           it is kin to decibels notation.
 
     """
+    raise NotImplementedError(
+        "profile() was never implemented: its body is the commented-out "
+        "sketch below. It is exported and documented, and it does not "
+        "work.")
     # for key in adict:
     #     avar = adict[key]
     #     if type(sonic_vector) == np.ndarray:

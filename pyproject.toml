@@ -60,11 +60,13 @@ keywords = [
     'AM',
     'art',
     'audio',
+    'binaural beats',
     'campanology',
     'change ringing',
+    'entrainment',
     'filter',
     'FM',
-    'HRTF',
+    'isochronic tones',
     'LUT',
     'MASS',
     'multimedia',
@@ -74,11 +76,13 @@ keywords = [
     'permutation',
     'physics',
     'psychophysics',
+    'sensory stimulation',
     'signal processing',
     'sing',
     'sound',
     'spatialization',
     'speech',
+    'SSTIM',
     'synth'
 ]
 

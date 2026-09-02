@@ -51,6 +51,20 @@ by the listener.
    isochronic_tones
    amplitude_modulation
    frequency_modulation
+   modulated_noise
+   spatial_motion
+
+A protocol is a sequence of those rather than one of them.
+:class:`~music.StimulationSession` holds that sequence and renders it as
+one sound, joining the phases with crossfades centred on their boundaries
+so that the session lasts exactly the sum of the durations it was given.
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   StimulationSession
+   StimulusPhase
 
 Envelopes and noise
 ~~~~~~~~~~~~~~~~~~~

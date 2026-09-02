@@ -1,3 +1,84 @@
+## [Unreleased]
+### Note for anyone upgrading
+**Nothing that imports from `music` breaks, and nothing renders
+differently.** `music.stimulation` became a package rather than a single
+module, and every name it exported is still imported from the same
+place. `localize_linear` is bit-identical to 1.3.0; what changed there
+is the example in its docstring, which was wrong -- see below.
+
+### Added
+- **`music.modulated_noise`**, broadband noise of a chosen colour,
+  optionally amplitude-modulated. Unmodulated it is the continuous
+  broadband stimulus SSTIM catalogues as `techBroadbandNoise`, the
+  vehicle for stochastic resonance and for masking; modulated it is also
+  `techAmplitudeModulation`, whose definition names a carrier tone *or
+  noise*. The distinction is in the signal and not only in the label: at
+  a rate of zero there is no envelope to find, and the test says so.
+- **`music.spatial_motion`**, a source orbiting the listener at a chosen
+  rate, rendering `sstim-v:techSpatialAuditory`. SSTIM distinguishes
+  structured spatial trajectories from simple left/right crossfades, and
+  this is on the right side of that line: the interaural time and
+  intensity differences are computed per sample from the geometry. It
+  will move a sound it did not synthesize, so a noise bed or an already
+  rendered stimulus can be given a trajectory.
+- **`music.StimulationSession`**, a protocol: phases in order, each with
+  its own stimulus, duration and gain, joined by crossfades rather than
+  by cuts. **The session lasts exactly the sum of its phase durations.**
+  A ramp is taken half from the phase before it and half from the phase
+  after, so a transition is centred on the boundary instead of being
+  inserted between the phases and stretching the protocol past the
+  length its author wrote down -- ten minutes of stimulation stays ten
+  minutes. Boundaries are rounded from elapsed time rather than summed
+  from per-phase roundings, which is the same drift the phase
+  integration carried until 1.3.0 and would have cost a long session
+  several samples of length.
+
+  Phases that disagree about channels are reconciled by promoting the
+  session to stereo, never by flattening, because flattening is exactly
+  what destroys a binaural beat. Crossfades are equal-power by default,
+  since two different stimuli are uncorrelated and a linear pair would
+  dig a 3 dB hole at every transition; `ramp_shape='linear'` is there
+  for the correlated case, where it is the flat one instead.
+
+### Fixed
+- **`localize_linear`'s example moved nothing.** It read
+  `theta1=90, theta2=-90` and called it "a pass from the left to the
+  right", but the azimuth in this package is measured from the ear axis:
+  0 is the right ear's side and 180 the left, so 90 and -90 are both on
+  the median plane, ahead and behind. Both render the same distance to
+  both ears, so the example produced two identical channels and no
+  movement whatsoever. The example is now `theta1=180, theta2=0`, and
+  the convention is stated in the function's notes rather than left to
+  be inferred. Anyone who copied that example was writing a mono sound
+  into two channels.
+
+  That the two are indistinguishable is not itself a defect -- front
+  from back is an HRTF cue and this package has no HRTF, which it says
+  in several places. A test now pins it -- ahead and behind
+  must render the same two channels -- so that if an HRTF is ever
+  added, that test fails and the notice arrives with it.
+
+### Changed
+- **The MeSH music-therapy subjects are back in `.zenodo.json`**, along
+  with `Acoustic Stimulation`. They were removed at 1.2.0 as a claim the
+  code did not back; the toolkit backs it now, and the same reasoning
+  applies in reverse. `Intended Audience :: Healthcare Industry`, which
+  had been in `pyproject.toml` making that claim on its own, is earned
+  for the first time. Every MeSH identifier in the file was checked
+  against the NLM lookup service and resolves to the term it declares.
+- **`HRTF` is no longer a keyword in `pyproject.toml`.** There is no
+  head-related transfer function in this package -- `ASSESSMENT.md`
+  calls its absence the largest genuine gap -- and a keyword that
+  surfaces the package in searches it can only disappoint is the same
+  mistake the music-therapy subjects were, in the other direction.
+- **`music.stimulation` is a package** rather than a single module, with
+  the generators in `stimulation/stimuli.py` and the session in
+  `stimulation/session.py`. Import paths are unchanged.
+- **`localize_linear` and `spatial_motion` share their localization
+  math** through `_localize_positions`, rather than the second one
+  carrying a second copy of it. A source held still by either renders
+  identically, and a test asserts it.
+
 ## [1.3.0] - 2026-09-01
 ### Note for anyone upgrading
 **Nothing that imports from `music` breaks.** Two functions were renamed

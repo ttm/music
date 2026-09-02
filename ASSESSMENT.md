@@ -1,8 +1,8 @@
 # Quality assessment and known limitations
 
-*A living record, not a point-in-time audit. Last measured **2026-08-31**,
-`music` 1.2.1 at commit `be7990a`: 37 modules, 7,431 LOC package + 3,888 LOC
-tests, 73 names in the public API.*
+*A living record, not a point-in-time audit. Last measured **2026-09-02**,
+`music` 1.3.0 plus the unreleased sensory-stimulation toolkit: 40 modules,
+8,736 LOC package + 4,753 LOC tests, 88 names in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
 and was already stale four days later: it reported 125 tests at 61 % coverage
@@ -21,15 +21,16 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **504 passed**, 18 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,080 stmts, 0 missed) |
-| Type check | `mypy music` | **clean**, 37 files |
+| Test suite | `pytest -q` | **586 passed**, 13 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,288 stmts, 0 missed) |
+| Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 1,554 findings |
-| Annotation coverage | AST scan | **31 / 140 functions (22 %)** |
-| Docstring coverage | AST scan | **126 / 133 public defs (95 %)** |
-| Examples | run all 10 | **9 pass**, 1 needs the external singing engine |
+| Lint, extended rule set | `ruff check --select ALL music` | 1,705 findings |
+| Annotation coverage | AST scan | **43 / 159 functions (27 %)** |
+| Docstring coverage | AST scan | **139 / 146 public defs (95 %)** |
+| Examples | run all 11 | **10 pass**, 1 needs the external singing engine |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
+| Archival subjects | NLM MeSH lookup, per identifier | every term in `.zenodo.json` resolves to the term it declares |
 
 `mypy` runs with `check_untyped_defs = true`, so it inspects function bodies
 rather than skipping the unannotated ones — which is most of them. A clean
@@ -43,8 +44,8 @@ produced.
 | **Exceptional** | Docstrings and scientific grounding: every routine carries the equation it implements and the article section it comes from |
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; CI across Python 3.10–3.14 including a job pinned to the declared lower bounds |
-| **Good** | Curated flat public API; examples; published API reference |
-| **Needs work** | Annotation coverage at 22 %; the `legacy/` subpackage; `core/functions.py` not yet reconciled with the MASS reference implementation |
+| **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
+| **Needs work** | Annotation coverage at 27 %; the `legacy/` subpackage; `core/functions.py` not yet reconciled with the MASS reference implementation |
 
 ## Known limitations
 
@@ -60,11 +61,14 @@ either documented in the code or tracked in the issue list.
 
 ### Gaps the code names about itself
 
-- **No head-related transfer function.** Both `localize` and `localize2` say
-  so in their own notes: the height of a source, and whether it is in front
-  of or behind the listener, are cues an HRTF carries and neither models.
-  This is the largest genuine gap in the package, and it is research-scale
-  work rather than a fix.
+- **No head-related transfer function.** `localize`, `localize2`,
+  `localize_linear` and `spatial_motion` all say so in their own notes: the
+  height of a source, and whether it is in front of or behind the listener,
+  are cues an HRTF carries and none of them models. Concretely, azimuths of
+  90° and −90° — ahead and behind — render the same two channels, and a test
+  now asserts that they do, so adding an HRTF will announce itself by
+  breaking it. This is the largest genuine gap in the package, and it is
+  research-scale work rather than a fix.
 - **`core/functions.py` has not been reconciled, routine by routine, with
   the MASS reference implementation.** The package's central claim is
   fidelity to a published framework; until that pass is done, the claim
@@ -72,6 +76,27 @@ either documented in the code or tracked in the issue list.
 - **Rendering is not verified against the mathematics it documents**, only
   against shape and against regressions already found. Issue #67 again;
   issue #76 asks for artifact detection a listener could not catch.
+
+### Claims the metadata makes that the code cannot
+
+- **The stimulation toolkit renders stimuli; it does not demonstrate that
+  they do anything.** Every routine in `music.stimulation` is tested against
+  the property that defines it — a binaural beat has no beat in either
+  channel, an isochronic train gates at the rate asked for, an
+  amplitude-modulated carrier puts its envelope where it said it would — and
+  those tests are about the signal, which is all a synthesis library can
+  speak to. Whether a 10 Hz stimulus entrains anything in a listener is a
+  question for the literature the SSTIM terms point at, not for this
+  repository. The `Music Therapy` subjects in `.zenodo.json` and the
+  `Intended Audience :: Healthcare Industry` classifier say what the package
+  is *for*; they are not evidence of efficacy, and nothing here should be
+  read as clinical.
+- **Speaking SSTIM is currently a matter of docstrings.** Each stimulus
+  names the SSTIM technique it implements and links its IRI, and
+  `StimulationSession` borrows that model's vocabulary, but the package
+  cannot yet read an `sstim:StimulusSpecification` or emit one. Until it
+  can, the correspondence is documented rather than machine-checkable.
+  Issue #75.
 
 ### Scope and dependencies
 
@@ -86,11 +111,11 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 22 %.** The package type-checks cleanly with
+- **Annotation coverage is 27 %.** The package type-checks cleanly with
   bodies inspected, so this is missing documentation of intent rather than
   missing safety.
-- **The extended lint set reports 1,554 findings** on `music/`, almost all
-  stylistic: 368 missing argument annotations, 286 quote-style, 92 missing
+- **The extended lint set reports 1,705 findings** on `music/`, almost all
+  stylistic: 389 missing argument annotations, 330 quote-style, 92 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.
@@ -117,6 +142,14 @@ worse than the code.
   a minute, against 3.6e-6 and 1.3e-2 before. Issue #102.
 - **Three duplicate waveform table definitions**: `music.legacy.tables.Basic`
   is now an alias for `music.tables.PrimaryTables` rather than a third copy.
+- **`localize_linear`'s worked example moved nothing.** It passed
+  `theta1=90, theta2=-90` and called it a pass from the left to the right,
+  but this package measures azimuth from the ear axis, so both angles sit on
+  the median plane and the example rendered two identical channels. Anyone
+  who copied it got a mono sound in a stereo file. The example is corrected
+  and the convention is now stated rather than left to be inferred — an
+  instance of exactly what issue #67 exists to find, caught by writing a
+  test that expected the documented behaviour and getting silence.
 - **`setup_engine()` writing into `site-packages`**: it uses the user's cache
   directory, which survives an upgrade and works on a read-only install.
 - **No published API docs**: they are at <https://ttm.github.io/music/>,

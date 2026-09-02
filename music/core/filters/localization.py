@@ -151,6 +151,65 @@ def _delayed(signal, delay):
                 3 * (at - after) + beyond - before)))
 
 
+def _localize_positions(sonic_vector, xpos, ypos, zeta, air_temp,
+                        sample_rate):
+    """Apply the binaural cues of an arbitrary per-sample trajectory.
+
+    :func:`localize_linear` walks a straight line and
+    :func:`music.spatial_motion` walks a periodic one, but from the
+    positions onwards the two do the same thing, so they do it here
+    rather than each in its own copy.
+
+    Parameters
+    ----------
+    sonic_vector : ndarray
+        A one-dimensional array with the PCM samples of the sound.
+    xpos, ypos : ndarray
+        The source's coordinates at each sample, in meters, the same
+        length as `sonic_vector`.
+    zeta : scalar
+        The distance between the ears in meters.
+    air_temp : scalar
+        The temperature in Celsius used for calculating the speed of
+        sound.
+    sample_rate : integer
+        The sample rate.
+
+    Returns
+    -------
+    ndarray
+        A (2, nsamples) array with the PCM samples of the stereo sound.
+
+    Notes
+    -----
+    Both cues are measured against the nearer ear at each sample, so the
+    nearer ear is heard undelayed and unattenuated and only the
+    *difference* between the ears is applied. The propagation delay
+    common to both is not, so the result stays aligned with its input
+    and keeps its length.
+    """
+    speed = 331.3 + .606 * air_temp
+
+    # The distance from each ear at each sample.
+    dist_l = np.sqrt((xpos + zeta / 2) ** 2 + ypos ** 2)
+    dist_r = np.sqrt((xpos - zeta / 2) ** 2 + ypos ** 2)
+    nearest = np.minimum(dist_l, dist_r)
+
+    # IID: the nearer ear is heard in full, the farther one attenuated by
+    # how much farther it is.
+    iid_l = nearest / dist_l
+    iid_r = nearest / dist_r
+
+    # ITD: likewise, only the extra distance to the farther ear becomes a
+    # delay, so the nearer ear is undelayed and the sound stays in step
+    # with its input.
+    delay_l = (dist_l - nearest) * sample_rate / speed
+    delay_r = (dist_r - nearest) * sample_rate / speed
+
+    return np.vstack((_delayed(sonic_vector, delay_l) * iid_l,
+                      _delayed(sonic_vector, delay_r) * iid_r))
+
+
 def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
                     zeta=0.215, air_temp=20, sample_rate=44100):
     """
@@ -195,13 +254,21 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
     --------
     >>> write_wav_stereo(localize_linear(note(duration=3)))
     >>> # a pass from the left to the right and back
-    >>> horizontal_stack(localize_linear(note(), theta1=90, theta2=-90),
-    ...                  localize_linear(note(), theta1=-90, theta2=90))
+    >>> horizontal_stack(localize_linear(note(), theta1=180, theta2=0),
+    ...                  localize_linear(note(), theta1=0, theta2=180))
 
     Notes
     -----
     The path is a straight line between the two positions, not an arc, which
     is what makes it linear.
+
+    **The angle is measured from the ear axis, not from straight ahead.**
+    Zero degrees is the right ear's side, 180 the left, and 90 and -90 are
+    both on the median plane -- ahead and behind. Two positions that differ
+    only in whether they are in front or behind therefore render
+    identically, because the cue that separates them is one an HRTF carries
+    and this does not; see :func:`localize2` for the same gap stated there.
+    A pass across the head is ``theta1=180, theta2=0``.
 
     Both cues are measured against the nearer ear at each sample, as
     :func:`localize` measures them against the nearer ear of its one fixed
@@ -240,7 +307,6 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
     theta2 = 2 * np.pi * theta2 / 360
     x1, y1 = np.cos(theta1) * dist, np.sin(theta1) * dist
     x2, y2 = np.cos(theta2) * dist, np.sin(theta2) * dist
-    speed = 331.3 + .606 * air_temp
 
     # The position at each sample, moving in a straight line. The divisor
     # is guarded so a single-sample input stays at its starting point.
@@ -249,24 +315,8 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
     xpos = x1 + (x2 - x1) * progress
     ypos = y1 + (y2 - y1) * progress
 
-    # The distance from each ear at each sample.
-    dist_l = np.sqrt((xpos + zeta / 2) ** 2 + ypos ** 2)
-    dist_r = np.sqrt((xpos - zeta / 2) ** 2 + ypos ** 2)
-    nearest = np.minimum(dist_l, dist_r)
-
-    # IID: the nearer ear is heard in full, the farther one attenuated by
-    # how much farther it is.
-    iid_l = nearest / dist_l
-    iid_r = nearest / dist_r
-
-    # ITD: likewise, only the extra distance to the farther ear becomes a
-    # delay, so the nearer ear is undelayed and the sound stays in step
-    # with its input.
-    delay_l = (dist_l - nearest) * sample_rate / speed
-    delay_r = (dist_r - nearest) * sample_rate / speed
-
-    return np.vstack((_delayed(sonic_vector, delay_l) * iid_l,
-                      _delayed(sonic_vector, delay_r) * iid_r))
+    return _localize_positions(sonic_vector, xpos, ypos, zeta, air_temp,
+                               sample_rate)
 
 
 def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,

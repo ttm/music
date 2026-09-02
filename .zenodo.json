@@ -60,7 +60,12 @@
     "computer music",
     "Python",
     "numpy",
-    "MASS framework"
+    "MASS framework",
+    "sensory stimulation",
+    "auditory entrainment",
+    "binaural beats",
+    "isochronic tones",
+    "SSTIM"
   ],
   "subjects": [
     {
@@ -112,6 +117,26 @@
       "term": "Acoustics",
       "scheme": "EuroSciVoc",
       "identifier": "http://data.europa.eu/8mn/euroscivoc/273"
+    },
+    {
+      "term": "Music Therapy",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D009147"
+    },
+    {
+      "term": "Music Therapy/methods",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D009147Q000379"
+    },
+    {
+      "term": "Music Therapy/standards",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D009147Q000592"
+    },
+    {
+      "term": "Acoustic Stimulation",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D000161"
     }
   ],
   "dates": [

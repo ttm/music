@@ -76,11 +76,15 @@ from .core import (
 )
 from .tables import PrimaryTables
 from .stimulation import (
+    StimulationSession,
+    StimulusPhase,
     amplitude_modulation,
     binaural_beats,
     frequency_modulation,
     isochronic_tones,
+    modulated_noise,
     monaural_beats,
+    spatial_motion,
 )
 from .structures import (
     dist,
@@ -102,11 +106,15 @@ __all__ = [
     'WAVEFORM_SQUARE',
     'WAVEFORM_TRIANGULAR',
     'waveform_table',
+    'StimulationSession',
+    'StimulusPhase',
     'amplitude_modulation',
     'binaural_beats',
     'frequency_modulation',
     'isochronic_tones',
+    'modulated_noise',
     'monaural_beats',
+    'spatial_motion',
     '__version__',
     'adsr_stereo',
     'adsr_vibrato',

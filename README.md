@@ -36,6 +36,14 @@ with the equation it implements and the article it comes from.
   mathematical model that describes it.
 * **Musical structures** with an emphasis on symmetry and discourse:
   permutation groups, change-ringing peals and plain changes.
+* **Sensory stimulation.** Seven auditory stimuli -- binaural, monaural and
+  isochronic beats, amplitude and frequency modulation, modulated noise and
+  spatial motion -- each named for the technique it implements in
+  [SSTIM](https://w3id.org/sstim), the Sensory Stimulation Vocabulary, and a
+  `StimulationSession` that renders a protocol of them: phases in order,
+  crossfaded rather than cut, lasting exactly the sum of the durations you
+  wrote down. The sample-accurate synthesis is the point here, because the
+  frequency difference *is* the stimulus.
 * **`play_audio`** to listen to a result without saving a file.
 
 Music can be used alone or with other packages, and it is well suited to the
@@ -157,6 +165,7 @@ Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) 
 * [isynth](https://github.com/ttm/music/tree/master/examples/isynth.py) also uses a synth class, but of a different kind, [`IteratorSynth`](https://github.com/ttm/music/tree/master/music/legacy/classes.py), that iterates through arbitrary lists of variables.
 * [singing_demo](https://github.com/ttm/music/tree/master/examples/singing_demo.py): demonstrates `music.singing.setup_engine()` and `music.singing.make_test_song()` to render a short sung phrase.
 * [binaural_beats](https://github.com/ttm/music/tree/master/examples/binaural_beats.py): generates binaural beats using two pure tones with tremolo for relaxation or focus.
+* [sensory_stimulation](https://github.com/ttm/music/tree/master/examples/sensory_stimulation.py): writes one file per SSTIM technique with `music.stimulation`, and one three-phase session, which is the form these stimuli are actually delivered in.
 * The `music.singing` module provides basic text-to-speech utilities. Run `music.singing.setup_engine()` once to clone the [eCantorix](https://github.com/ttm/ecantorix) engine before using these features. It is cloned into your user cache directory; set `MUSIC_ECANTORIX_DIR` to put it elsewhere. Because eCantorix is a Perl program driving espeak through a Makefile, it also needs `git`, `make`, `perl` and `espeak` installed on the system — `setup_engine()` will tell you which are missing.
 
 ## Package structure
@@ -170,6 +179,7 @@ The modules are:
   * **functions** for normalization.
 * **structures** for higher level musical structures: permutations and the algebraic groups they form, change-ringing peals, and symmetry. Scales, chords, counterpoint and tunings are [not there yet](https://github.com/ttm/music/issues/1).
 * **legacy** for musical pieces that are rendered with the Music package and might be used as material to make more music.
+* **stimulation** for sensory-stimulation work: the seven stimuli above, each carrying the SSTIM term it implements, and `StimulationSession` for sequencing them into a protocol.
 * **tables** for the generation of lookup tables for some basic waveform.
 * **utils** for various functions regarding conversions, mix, etc.
 * **sequencer** for scheduling notes into a timeline and exporting audio.

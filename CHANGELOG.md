@@ -11,6 +11,29 @@ its place. Nothing in the public API changes shape, but an environment
 that installed `music` for scipy's sake will no longer get it.
 
 ### Added
+- **FLAC, read and written**, through `music.write_audio` and
+  `music.read_audio`. The container comes from the extension and the
+  channel count from the array, so a caller with a sound and a path no
+  longer dispatches on either. `read_wav` is the same function under its
+  older name and reads FLAC too; `write_wav_mono` and `write_wav_stereo`
+  are unchanged and follow the extension as well.
+
+  FLAC is lossless, and the tests say so in the only way that matters: a
+  FLAC round trip is *bit for bit* the WAV round trip at the same depth,
+  at 8, 16 and 24 bits, on a file roughly a third the size. That claim is
+  worth testing rather than trusting here, because fidelity between the
+  model and the samples is the thing this package sells.
+
+  Lossy containers are deliberately not offered, though libsndfile would
+  give them for nothing. Discarding what a listener is unlikely to notice
+  is the one thing a package whose subject is psychophysical fidelity
+  should not do quietly.
+
+  FLAC has no 32-bit form and stores 8-bit signed where WAV stores it
+  unsigned. Both are handled, and `bit_depth=32` on a `.flac` path now
+  raises a message naming the depths FLAC has, rather than libsndfile's
+  "Invalid combination of format, subtype and endian".
+
 - **`music.modulated_noise`**, broadband noise of a chosen colour,
   optionally amplitude-modulated. Unmodulated it is the continuous
   broadband stimulus SSTIM catalogues as `techBroadbandNoise`, the

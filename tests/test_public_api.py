@@ -18,6 +18,8 @@ import music
 #: Exports whose defaults touch the filesystem, an audio device, the network
 #: or an external binary, and so cannot run unattended.
 SIDE_EFFECTING = {
+    "write_audio",
+    "read_audio",
     "write_wav_mono",
     "write_wav_stereo",
     "read_wav",

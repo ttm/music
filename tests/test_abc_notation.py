@@ -97,8 +97,8 @@ def test_each_effect_selects_its_include(cache, effect, expected,
     (engine / "Makefile").write_text("all:\n\ttrue\n")
     monkeypatch.setattr(paths, "missing_requirements", lambda: [])
     monkeypatch.setattr(perform.subprocess, "run", lambda *a, **k: None)
-    monkeypatch.setattr(perform.wavfile, "read",
-                        lambda path: (44100, np.zeros(4)))
+    monkeypatch.setattr(perform.sf, "read",
+                        lambda path, dtype=None: (np.zeros(4), 44100))
 
     perform.sing(effect=effect)
 
@@ -110,8 +110,8 @@ def test_the_language_and_transposition_reach_the_conf(cache, monkeypatch):
     (engine / "Makefile").write_text("all:\n\ttrue\n")
     monkeypatch.setattr(paths, "missing_requirements", lambda: [])
     monkeypatch.setattr(perform.subprocess, "run", lambda *a, **k: None)
-    monkeypatch.setattr(perform.wavfile, "read",
-                        lambda path: (44100, np.zeros(4)))
+    monkeypatch.setattr(perform.sf, "read",
+                        lambda path, dtype=None: (np.zeros(4), 44100))
 
     perform.sing(lang="pt", transpose=-24)
 
@@ -125,8 +125,9 @@ def test_sing_returns_normalized_samples(cache, monkeypatch):
     (engine / "Makefile").write_text("all:\n\ttrue\n")
     monkeypatch.setattr(paths, "missing_requirements", lambda: [])
     monkeypatch.setattr(perform.subprocess, "run", lambda *a, **k: None)
-    monkeypatch.setattr(perform.wavfile, "read",
-                        lambda path: (44100, np.array([0.0, 1.0, 2.0])))
+    monkeypatch.setattr(perform.sf, "read",
+                        lambda path, dtype=None: (np.array([0.0, 1.0, 2.0]),
+                                                  44100))
 
     out = perform.sing()
 
@@ -140,8 +141,8 @@ def test_sing_rejects_a_render_at_the_wrong_sample_rate(cache, monkeypatch):
     (engine / "Makefile").write_text("all:\n\ttrue\n")
     monkeypatch.setattr(paths, "missing_requirements", lambda: [])
     monkeypatch.setattr(perform.subprocess, "run", lambda *a, **k: None)
-    monkeypatch.setattr(perform.wavfile, "read",
-                        lambda path: (22050, np.zeros(4)))
+    monkeypatch.setattr(perform.sf, "read",
+                        lambda path, dtype=None: (np.zeros(4), 22050))
 
     with pytest.raises(RuntimeError, match="44100"):
         perform.sing()

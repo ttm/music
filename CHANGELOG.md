@@ -6,6 +6,10 @@ module, and every name it exported is still imported from the same
 place. `localize_linear` is bit-identical to 1.3.0; what changed there
 is the example in its docstring, which was wrong -- see below.
 
+**The dependency list changed**: `scipy` is gone and `soundfile` takes
+its place. Nothing in the public API changes shape, but an environment
+that installed `music` for scipy's sake will no longer get it.
+
 ### Added
 - **`music.modulated_noise`**, broadband noise of a chosen colour,
   optionally amplitude-modulated. Unmodulated it is the continuous
@@ -39,6 +43,18 @@ is the example in its docstring, which was wrong -- see below.
   since two different stimuli are uncorrelated and a linear pair would
   dig a 3 dB hole at every transition; `ramp_shape='linear'` is there
   for the correlated case, where it is the flat one instead.
+- **24-bit WAV, read and written.** `bit_depth=24` was a `ValueError`
+  because `scipy.io.wavfile` could not write it; libsndfile can, so it now
+  sits alongside 8, 16 and 32 in `BIT_DEPTHS` and in the round-trip tests.
+  It is the depth most audio work actually wants.
+- **An encoding this package cannot normalize is now refused by name.**
+  `read_wav` checks the file's declared subtype and raises
+  `unsupported WAV encoding: ...`. libsndfile will decode ADPCM and
+  companded formats to float quite happily, but those have no full scale
+  that this package's normalization is defined against, so being decoded
+  is not the same as being supported. The test that covers it writes a
+  real ADPCM file rather than mocking a reader's return value, which the
+  two tests it replaces had to do.
 
 ### Fixed
 - **`localize_linear`'s example moved nothing.** It read
@@ -59,6 +75,22 @@ is the example in its docstring, which was wrong -- see below.
   added, that test fails and the notice arrives with it.
 
 ### Changed
+- **WAV I/O moved from `scipy.io.wavfile` to `soundfile`, and scipy is no
+  longer a dependency.** It was a hard requirement carrying 102 MB and
+  imported for nothing but reading and writing WAV files -- two imports in
+  the whole package, one of them in `music.singing`. Measured on a clean
+  install of 3.12: **230 MB down to 133 MB**, and `import music` from
+  **~760 ms to ~580 ms**. Nothing in the public API changes shape, and the
+  quantisation contract is unchanged: `tests/test_fidelity.py` still pins
+  unity gain and the one-step round trip, now at four bit depths instead
+  of three.
+
+  `read_wav` got shorter rather than longer. libsndfile divides an integer
+  sample by its own full scale on the way to float, which is the
+  normalization the function used to compute by hand from the numpy dtype,
+  so the bit-depth arithmetic and the 8-bit midpoint correction are gone.
+  What is left is the part that is genuinely this package's decision: a
+  float WAV declares no full scale, so it is still scaled by its own peak.
 - **The MeSH music-therapy subjects are back in `.zenodo.json`**, along
   with `Acoustic Stimulation`. They were removed at 1.2.0 as a claim the
   code did not back; the toolkit backs it now, and the same reasoning

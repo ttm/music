@@ -5,7 +5,7 @@ import re
 import logging
 import shutil
 import subprocess
-from scipy.io import wavfile
+import soundfile as sf
 from music.core import normalize_mono
 from .paths import (ENGINE_MARKER, cache_dir, engine_dir, is_engine,
                     require_system_dependencies)
@@ -53,7 +53,8 @@ def sing(text="Mar-ry had a litt-le lamb",
     except subprocess.CalledProcessError as exc:
         raise RuntimeError(f'Failed to build singing cache: {exc}') from exc
 
-    sample_rate, samples = wavfile.read(cache / 'achant.wav')
+    samples, sample_rate = sf.read(str(cache / 'achant.wav'),
+                                   dtype='float64')
     if sample_rate != 44100:
         raise RuntimeError(
             f'expected the engine to render at 44100 Hz, got {sample_rate}'

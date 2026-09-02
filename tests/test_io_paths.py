@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from scipy.io import wavfile
+import soundfile as sf
 
 import music
 from music.core.io import _fade_pair
@@ -75,7 +75,8 @@ def test_the_writers_render_noise_when_given_nothing(writer, channels,
 
 def test_a_float_wav_is_scaled_by_its_own_peak(tmp_path):
     path = tmp_path / "float.wav"
-    wavfile.write(path, 8000, np.array([0.0, 0.25, -0.5], dtype=np.float32))
+    sf.write(str(path), np.array([0.0, 0.25, -0.5], dtype=np.float32), 8000,
+             subtype="FLOAT")
 
     out = music.read_wav(str(path))
 
@@ -85,25 +86,25 @@ def test_a_float_wav_is_scaled_by_its_own_peak(tmp_path):
 
 def test_an_all_zero_float_wav_does_not_divide_by_zero(tmp_path):
     path = tmp_path / "silent.wav"
-    wavfile.write(path, 8000, np.zeros(8, dtype=np.float32))
+    sf.write(str(path), np.zeros(8, dtype=np.float32), 8000,
+             subtype="FLOAT")
 
     assert np.array_equal(music.read_wav(str(path)), np.zeros(8))
 
 
-def test_an_unsupported_sample_format_is_reported(tmp_path):
-    path = tmp_path / "odd.wav"
-    with patch.object(wavfile, "read",
-                      return_value=(8000, np.zeros(4, dtype=np.complex64))):
-        with pytest.raises(ValueError, match="unsupported WAV data type"):
-            music.read_wav(str(path))
+def test_an_encoding_the_reader_does_not_support_is_reported(tmp_path):
+    """A real file in a real encoding, rather than a mocked return value.
 
-
-def test_an_unsupported_integer_depth_is_reported(tmp_path):
+    libsndfile will happily decode ADPCM, but a WAV whose samples are not
+    linear PCM has no full scale this package's normalization is defined
+    against, so it is refused rather than silently rescaled.
+    """
     path = tmp_path / "odd.wav"
-    with patch.object(wavfile, "read",
-                      return_value=(8000, np.zeros(4, dtype=np.int64))):
-        with pytest.raises(ValueError, match="unsupported integer WAV bit"):
-            music.read_wav(str(path))
+    sf.write(str(path), np.zeros(64, dtype=np.int16), 8000,
+             subtype="IMA_ADPCM")
+
+    with pytest.raises(ValueError, match="unsupported WAV encoding"):
+        music.read_wav(str(path))
 
 
 # --------------------------------------------------------------------------

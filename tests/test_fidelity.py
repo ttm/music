@@ -190,7 +190,7 @@ def test_localize_delays_and_attenuates_the_far_ear_by_the_geometry():
 # Quantisation
 # --------------------------------------------------------------------------
 
-@pytest.mark.parametrize("bit_depth", [8, 16, 32])
+@pytest.mark.parametrize("bit_depth", [8, 16, 24, 32])
 def test_wav_round_trip_stays_within_one_quantisation_step(bit_depth,
                                                            tmp_path):
     """Writing and reading back may only cost the quantiser's own step.
@@ -210,7 +210,7 @@ def test_wav_round_trip_stays_within_one_quantisation_step(bit_depth,
     assert np.abs(restored - stored).max() <= step
 
 
-@pytest.mark.parametrize("bit_depth", [8, 16, 32])
+@pytest.mark.parametrize("bit_depth", [8, 16, 24, 32])
 def test_wav_round_trip_is_unity_gain(bit_depth, tmp_path):
     """Exactly representable levels must come back unchanged: the writer's
     scale and read_wav's divisor have to agree.

@@ -75,6 +75,28 @@ that installed `music` for scipy's sake will no longer get it.
   added, that test fails and the notice arrives with it.
 
 ### Changed
+- **`import music` no longer imports sympy**, and takes roughly a third
+  of the time it did: **~550-830 ms down to ~185-290 ms**, measured warm
+  on 3.12. The permutation and change-ringing structures --
+  `InterestingPermutations`, `Peals`, `PlainChanges`, `GenericPeal`,
+  `dist`, `transpose_permutation` -- are reached through a module-level
+  `__getattr__` rather than imported at the top, because importing
+  `sympy.combinatorics` runs `sympy/__init__.py` first and drags in
+  `sympy.polys` and the rest of the computer algebra system.
+
+  **Nothing about the API changes.** `music.Peals`,
+  `from music import Peals`, `help(music.Peals)` and `dir(music)` all
+  behave as before, and sympy loads on the first of them; a caller who
+  uses peals pays exactly what they paid, and a caller who only
+  synthesizes sound stops paying for them. sympy remains a required
+  dependency -- this is about when it is imported, not whether it is
+  installed. Removing it would break the structures outright and change
+  two signatures that take and return sympy `Permutation` objects.
+
+  `tests/test_import_cost.py` pins it, in a subprocess, because the way
+  this regresses is silent: one eager `from .structures import ...`
+  anywhere puts the cost back with nothing failing.
+
 - **WAV I/O moved from `scipy.io.wavfile` to `soundfile`, and scipy is no
   longer a dependency.** It was a hard requirement carrying 102 MB and
   imported for nothing but reading and writing WAV files -- two imports in

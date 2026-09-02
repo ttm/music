@@ -1,6 +1,7 @@
 """Top-level package for basic audio synthesis utilities."""
 
 from importlib.metadata import PackageNotFoundError, version as _version
+from typing import TYPE_CHECKING, Any
 
 try:
     __version__ = _version("music")
@@ -86,18 +87,64 @@ from .stimulation import (
     monaural_beats,
     spatial_motion,
 )
-from .structures import (
-    dist,
-    GenericPeal,
-    InterestingPermutations,
-    Peals,
-    PlainChanges,
-    print_peal,
-    transpose_permutation
-)
 from .singing import get_engine, make_test_song, setup_engine
 from .legacy import Being, CanonicalSynth, IteratorSynth
 from .sequencer import Sequencer
+
+# The permutation and change-ringing structures are reached through
+# ``__getattr__`` rather than imported here, because importing them means
+# importing sympy, and importing sympy means importing the computer algebra
+# system it sits on -- ``sympy.polys`` and the rest. That cost about half of
+# ``import music`` (roughly 550-830 ms down to 225-320 ms measured warm on
+# 3.12) and was paid by everyone, including the majority of callers who only
+# synthesize sound and never touch a peal.
+#
+# Nothing about the API changes: ``music.Peals``, ``from music import Peals``
+# and ``help(music.Peals)`` all work, and sympy loads on the first of them.
+# ``music.structures`` can still be imported directly for the eager path.
+#
+# This is the same bargain matplotlib already gets here, one layer up: an
+# expensive dependency that a minority of the package needs should be paid
+# for by the callers who need it.
+_LAZY_STRUCTURES = frozenset({
+    'dist',
+    'GenericPeal',
+    'InterestingPermutations',
+    'Peals',
+    'PlainChanges',
+    'print_peal',
+    'transpose_permutation',
+})
+
+if TYPE_CHECKING:  # pragma: no cover - for type checkers and IDEs only
+    from .structures import (  # noqa: F401
+        dist,
+        GenericPeal,
+        InterestingPermutations,
+        Peals,
+        PlainChanges,
+        print_peal,
+        transpose_permutation,
+    )
+
+
+def __getattr__(name: str) -> Any:
+    """Resolve the structures exports on first use.
+
+    PEP 562. Anything not deferred raises ``AttributeError`` as it would
+    have without this hook, so a typo still fails the way a reader expects
+    rather than reporting an import error from somewhere else.
+    """
+    if name in _LAZY_STRUCTURES:
+        from . import structures
+        return getattr(structures, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    """Keep the deferred names visible to ``dir()`` and to tab completion."""
+    return sorted(set(globals()) | _LAZY_STRUCTURES)
+
 
 __all__ = [
     'WAVEFORMS',

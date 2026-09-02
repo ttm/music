@@ -237,11 +237,15 @@ def test_acting_an_unknown_peal_lists_the_known_ones():
         holder.act("unknown")
 
 
-@pytest.mark.parametrize("method", ["twenty_all_over", "an_eight_and_forty"])
-def test_unimplemented_peals_say_so(method):
-    """These are honest placeholders; keep them honest."""
-    with pytest.raises(NotImplementedError):
-        getattr(music.Peals(), method)()
+def test_the_named_peals_are_implemented_now():
+    """They were honest placeholders raising NotImplementedError; both
+    are rung against Tintinnalogia's own tables in
+    tests/test_peals_named.py, so this only pins that they exist and
+    populate the peal collection they belong to."""
+    peals = music.Peals(nelements=5)
+    assert len(peals.twenty_all_over()) == 20
+    assert len(peals.an_eight_and_forty()) == 48
+    assert set(peals.peals) >= {"twenty_all_over", "an_eight_and_forty"}
 
 
 def test_print_peal_writes_a_coloured_row_per_permutation(capsys):

@@ -150,14 +150,41 @@ class Being:
         Parameters
         ----------
         n : int
-            Number of steps.
+            Number of steps, which is the number of notes appended to
+            the current sequence.
         method : str
-            Method of walking.
+            How to walk. ``'straight'`` takes consecutive elements of
+            the grid; ``'low-high'`` interleaves; ``'perm-walk'``
+            permutes each successive window of ``seqsize`` elements by
+            the next of ``perms``.
 
         Returns
         -------
-        array
-            Sequence of steps.
+        None
+            The steps are appended to the sequence named by ``curseq``.
+
+        Raises
+        ------
+        ValueError
+            If ``method`` is not one of the three above.
+
+        Notes
+        -----
+        **``'perm-walk'`` is a reconstruction.** The original was lost
+        with the code this class succeeded, and the method raised
+        ``NotImplementedError`` rather than guess. What is here is the
+        one reading the name and its neighbours support: it is
+        :meth:`stay` with ``method='perm'`` -- the same cycle through
+        ``perms``, applied to a window of the grid -- except that the
+        window advances by ``seqsize`` for each permutation and the
+        pointer ends where it walked to. Staying and walking differ by
+        whether the ground moves; nothing else about the two methods
+        differs either.
+
+        Unlike :meth:`stay`, it never reads ``domain``: a fixed domain
+        is what staying means, so honouring it here would make the walk
+        a stay. The window wraps around the end of the grid rather than
+        running off it.
 
         """
         if method == 'straight':
@@ -168,11 +195,24 @@ class Being:
             sequence = [self.grid[self.pointer + i % (self.seqsize + 1) + i //
                                   self.seqsize] for i in range(n*self.seqsize)]
         elif method == 'perm-walk':
-            # restore walk from 02peal
-            raise NotImplementedError(
-                "the 'perm-walk' method was never restored from 02peal; "
-                "use 'straight' or 'low-high', or stay(method='perm')"
-            )
+            # Reconstructed rather than restored: the original was lost
+            # with 02peal. `stay(method='perm')` cycles the permutations
+            # over one window and leaves the pointer where it was; this
+            # is that with the window walking, which is the only thing
+            # the two names differ by. Each permutation is applied to the
+            # next `seqsize` elements of the grid, and the pointer ends
+            # where it walked to.
+            sequence = []
+            count = 0
+            while len(sequence) < n:
+                start = self.pointer + count * self.seqsize
+                window = [self.grid[(start + i) % len(self.grid)]
+                          for i in range(self.seqsize)]
+                perm = self.perms[count % len(self.perms)]
+                sequence.extend(perm(window))
+                count += 1
+            sequence = sequence[:n]
+            self.pointer += count * self.seqsize
         else:
             raise ValueError(
                 f"method not understood: {method!r}; expected 'straight', "

@@ -203,10 +203,15 @@ def test_walk_rejects_an_unknown_method():
         being.walk(2, method="sideways")
 
 
-def test_walk_says_perm_walk_was_never_restored():
-    being = _being_with_grid()
-    with pytest.raises(NotImplementedError, match="perm-walk"):
-        being.walk(2, method="perm-walk")
+def test_perm_walk_is_no_longer_a_hole_in_the_api():
+    """It raised NotImplementedError because the original was lost.
+
+    What replaced it is a reconstruction rather than a recovery, and the
+    docstring says so; these tests pin the reading it committed to.
+    """
+    being = _being_with_perms()
+    being.walk(4, method="perm-walk")
+    assert being.f_ == [1, 0, 3, 2]
 
 
 def test_stay_permutes_the_domain():
@@ -316,3 +321,65 @@ def test_howl_and_freeze_are_callable():
     being = music.Being()
     being.howl()
     being.freeze()
+
+
+# --------------------------------------------------------------------------
+# Being.walk's reconstructed perm-walk
+# --------------------------------------------------------------------------
+
+def _being_with_perms(size=8, seqsize=4):
+    """A Being ready to perm-walk, with two permutations to cycle."""
+    from sympy.combinatorics import Permutation
+    being = _being_with_grid(size)
+    being.seqsize = seqsize
+    being.perms = [Permutation([1, 0, 3, 2]), Permutation([3, 2, 1, 0])]
+    return being
+
+
+def test_perm_walk_permutes_each_successive_window():
+    """The reconstruction: stay(method='perm') with the ground moving.
+
+    Window [0,1,2,3] under (1,0,3,2), then [4,5,6,7] under (3,2,1,0).
+    """
+    being = _being_with_perms()
+    being.walk(8, method='perm-walk')
+    assert being.f_ == [1, 0, 3, 2, 7, 6, 5, 4]
+
+
+def test_perm_walk_leaves_the_pointer_where_it_walked_to():
+    """This is the whole difference from stay(): staying does not move."""
+    being = _being_with_perms()
+    being.walk(8, method='perm-walk')
+    assert being.pointer == 8
+
+
+def test_perm_walk_stops_after_the_notes_it_was_asked_for():
+    """A count that is not a whole number of windows still gives n notes."""
+    being = _being_with_perms()
+    being.walk(6, method='perm-walk')
+    assert being.f_ == [1, 0, 3, 2, 7, 6]
+
+
+def test_perm_walk_wraps_around_the_end_of_the_grid():
+    """Walking past the end continues from the start rather than raising,
+    which is what makes the grid a cycle rather than a list that ends."""
+    being = _being_with_perms(size=4, seqsize=4)
+    being.walk(8, method='perm-walk')
+    assert being.f_ == [1, 0, 3, 2, 3, 2, 1, 0]
+
+
+def test_perm_walk_cycles_through_the_permutations():
+    """Three windows and two permutations: the first comes round again."""
+    being = _being_with_perms(size=12, seqsize=4)
+    being.walk(12, method='perm-walk')
+    assert being.f_[:4] == [1, 0, 3, 2]
+    assert being.f_[8:] == [9, 8, 11, 10]
+
+
+def test_perm_walk_ignores_domain_because_a_walk_is_not_a_stay():
+    """`stay` honours a fixed domain; honouring it here would make the
+    walk stand still, which is the one thing it must not do."""
+    being = _being_with_perms()
+    being.domain = [100, 200, 300, 400]
+    being.walk(8, method='perm-walk')
+    assert being.f_ == [1, 0, 3, 2, 7, 6, 5, 4]

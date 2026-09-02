@@ -11,6 +11,33 @@ its place. Nothing in the public API changes shape, but an environment
 that installed `music` for scipy's sake will no longer get it.
 
 ### Added
+- **`Peals.twenty_all_over` and `Peals.an_eight_and_forty` ring.** Both
+  raised `NotImplementedError` while being exported and documented. They
+  are implemented as the rules Tintinnalogia (1668) states -- the book
+  this class already cited as its core reference -- and the tests check
+  them against the tables it prints, row for row and in order, rather
+  than by counting rows.
+
+  `twenty_all_over` is a rule rather than a table: every bell hunts from
+  the lead to the back in turn, which is `n * (n - 1)` changes on any
+  number of bells and twenty on five. `an_eight_and_forty` is a
+  composition for five, and says so if built for any other number: the
+  fifth and fourth are whole hunts taking turns at the lead, and the
+  three bells between them ring the plain changes on three -- the same
+  six `music.PlainChanges` gives for three elements, which a test also
+  checks. It rings until it comes round, which is what ends a peal;
+  the forty eight falls out rather than being counted to.
+
+- **`Being.walk`'s `perm-walk` method**, which had been lost with the
+  code this package succeeded and raised rather than guessing. What is
+  here is a **reconstruction, and its docstring says so**: it is
+  `stay(method='perm')` -- the same cycle through `perms` -- with the
+  window walking along the grid by `seqsize` for each permutation and
+  the pointer left where it walked to. Staying and walking differ by
+  whether the ground moves, and nothing else about the two methods
+  differs either. Unlike `stay`, it never reads `domain`, because
+  honouring a fixed domain is what would make the walk a stay.
+
 - **FLAC, read and written**, through `music.write_audio` and
   `music.read_audio`. The container comes from the extension and the
   channel count from the array, so a caller with a sound and a path no

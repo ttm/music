@@ -1,12 +1,15 @@
 """Utilities for synthesizing notes and note effects."""
 import numpy as np
+from numpy.typing import ArrayLike, NDArray
 from ...utils import (WAVEFORM_SINE, WAVEFORM_TRIANGULAR,
                       _integrate_phase)
 from ..filters.adsr import adsr
 
 
-def note(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
-         number_of_samples=0, sample_rate=44100):
+def note(freq: float = 220, duration: float = 2,
+         waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
+         number_of_samples: int = 0,
+         sample_rate: int = 44100) -> NDArray[np.float64]:
     """
     Synthesize a basic musical note.
 
@@ -186,10 +189,12 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     return result
 
 
-def note_with_fm(freq=220, duration=2, fm=100, max_fm_deviation=2,
-                 waveform_table=WAVEFORM_TRIANGULAR,
-                 fm_waveform_table=WAVEFORM_SINE,
-                 number_of_samples=0, sample_rate=44100):
+def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
+                 max_fm_deviation: float = 2,
+                 waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
+                 fm_waveform_table: ArrayLike = WAVEFORM_SINE,
+                 number_of_samples: int = 0,
+                 sample_rate: int = 44100) -> NDArray[np.float64]:
     """
     Synthesize a musical note with FM synthesis.
 
@@ -280,9 +285,11 @@ def note_with_fm(freq=220, duration=2, fm=100, max_fm_deviation=2,
     return result
 
 
-def note_with_phase(freq=220, duration=2, phase=0,
-                    waveform_table=WAVEFORM_TRIANGULAR,
-                    number_of_samples=0, sample_rate=44100):
+def note_with_phase(freq: float = 220, duration: float = 2,
+                    phase: float = 0,
+                    waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
+                    number_of_samples: int = 0,
+                    sample_rate: int = 44100) -> NDArray[np.float64]:
     """
     Synthesize a basic musical note with a phase.
 
@@ -352,9 +359,11 @@ def note_with_phase(freq=220, duration=2, phase=0,
     return result
 
 
-def note_with_glissando(start_freq=220, end_freq=440, duration=2, alpha=1,
-                        waveform_table=WAVEFORM_SINE, method="exp",
-                        number_of_samples=0, sample_rate=44100):
+def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
+                        duration: float = 2, alpha: float = 1,
+                        waveform_table: ArrayLike = WAVEFORM_SINE,
+                        method: str = "exp", number_of_samples: int = 0,
+                        sample_rate: int = 44100) -> NDArray[np.float64]:
     """
     A note with a pitch transition: a glissando.
 
@@ -424,11 +433,14 @@ def note_with_glissando(start_freq=220, end_freq=440, duration=2, alpha=1,
     return s
 
 
-def note_with_glissando_vibrato(start_freq=220, end_freq=440, duration=2,
-                                vibrato_freq=4, max_pitch_dev=2, alpha=1,
-                                alpha_vibrato=1, waveform_table=WAVEFORM_SINE,
-                                vibrato_waveform_table=WAVEFORM_SINE,
-                                number_of_samples=0, sample_rate=44100):
+def note_with_glissando_vibrato(
+        start_freq: float = 220, end_freq: float = 440, duration: float = 2,
+        vibrato_freq: float = 4, max_pitch_dev: float = 2, alpha: float = 1,
+        alpha_vibrato: float = 1,
+        waveform_table: ArrayLike = WAVEFORM_SINE,
+        vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
+        number_of_samples: int = 0,
+        sample_rate: int = 44100) -> NDArray[np.float64]:
     """
     A note with a pitch transition (a glissando) and a vibrato.
 
@@ -838,14 +850,15 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     return _fit_to_samples(s, number_of_samples)
 
 
-def note_with_two_vibratos_glissando(start_freq=220, end_freq=440, duration=2,
-                                     vibrato_freq=2, secondary_vibrato_freq=6,
-                                     max_pitch_dev=2,
-                                     secondary_max_pitch_dev=.5,
-                                     alpha=1, alphav1=1, alphav2=1,
-                                     waveform_table=WAVEFORM_TRIANGULAR,
-                                     tabv1=WAVEFORM_SINE, tabv2=WAVEFORM_SINE,
-                                     number_of_samples=0, sample_rate=44100):
+def note_with_two_vibratos_glissando(
+        start_freq: float = 220, end_freq: float = 440, duration: float = 2,
+        vibrato_freq: float = 2, secondary_vibrato_freq: float = 6,
+        max_pitch_dev: float = 2, secondary_max_pitch_dev: float = .5,
+        alpha: float = 1, alphav1: float = 1, alphav2: float = 1,
+        waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
+        tabv1: ArrayLike = WAVEFORM_SINE, tabv2: ArrayLike = WAVEFORM_SINE,
+        number_of_samples: int = 0,
+        sample_rate: int = 44100) -> NDArray[np.float64]:
     """
     A note with a glissando and a vibrato that also has a secondary
     oscillatory pattern.
@@ -1077,10 +1090,13 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
     return _fit_to_samples(s, number_of_samples)
 
 
-def note_with_vibrato(freq=220, duration=2, vibrato_freq=4,
-                      max_pitch_dev=2, waveform_table=WAVEFORM_TRIANGULAR,
-                      vibrato_waveform_table=WAVEFORM_SINE,
-                      alpha=1, number_of_samples=0, sample_rate=44100):
+def note_with_vibrato(
+        freq: float = 220, duration: float = 2, vibrato_freq: float = 4,
+        max_pitch_dev: float = 2,
+        waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
+        vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
+        alpha: float = 1, number_of_samples: int = 0,
+        sample_rate: int = 44100) -> NDArray[np.float64]:
     """
     Synthesize a musical note with a vibrato.
 
@@ -1179,12 +1195,15 @@ def note_with_vibrato(freq=220, duration=2, vibrato_freq=4,
     return result
 
 
-def note_with_two_vibratos(freq=220, duration=2, vibrato_freq=2,
-                           secondary_vibrato_freq=6, nu1=2, nu2=4, alphav1=1,
-                           alphav2=1, waveform_table=WAVEFORM_TRIANGULAR,
-                           vibrato_waveform_table=WAVEFORM_SINE,
-                           sec_vibrato_waveform_table=WAVEFORM_SINE,
-                           number_of_samples=0, sample_rate=44100):
+def note_with_two_vibratos(
+        freq: float = 220, duration: float = 2, vibrato_freq: float = 2,
+        secondary_vibrato_freq: float = 6, nu1: float = 2, nu2: float = 4,
+        alphav1: float = 1, alphav2: float = 1,
+        waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
+        vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
+        sec_vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
+        number_of_samples: int = 0,
+        sample_rate: int = 44100) -> NDArray[np.float64]:
     """
     A note with a vibrato that also has a secondary oscillatory pattern.
 

@@ -1,11 +1,14 @@
 """Module for the synthesis of noises and silences."""
 from numbers import Real
 import numpy as np
+from numpy.typing import NDArray
 import music
 
 
-def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
-          number_of_samples=0, sample_rate=44100):
+def noise(noise_type: str | float = "brown", duration: float = 2,
+          min_freq: float = 15, max_freq: float = 15000,
+          number_of_samples: int = 0,
+          sample_rate: int = 44100) -> NDArray[np.float64]:
     """
     Return a colored or user-refined noise.
 
@@ -118,7 +121,8 @@ def noise(noise_type="brown", duration=2, min_freq=15, max_freq=15000,
     return music.core.normalize_mono(noise_vector)
 
 
-def gaussian_noise(mean=1, std=0.5, duration=2, sample_rate=44100):
+def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
+                   sample_rate: int = 44100) -> NDArray[np.float64]:
     """Synth gaussian noise
 
     Parameters
@@ -138,7 +142,10 @@ def gaussian_noise(mean=1, std=0.5, duration=2, sample_rate=44100):
         An array for the gaussian noise
     """
 
-    length = duration * sample_rate
+    # int(): the length indexes arrays and sets a sample count, so a
+    # fractional duration raised TypeError out of np.random.uniform
+    # rather than rendering the half second it was asked for.
+    length = int(duration * sample_rate)
     freq_res = sample_rate / float(length)
     coeffs = np.exp(1j * np.random.uniform(0, 2 * np.pi, length))
     coeffs[length // 2 + 1:] = np.real(coeffs[1:length // 2])[::-1] - 1j * \
@@ -162,7 +169,8 @@ def gaussian_noise(mean=1, std=0.5, duration=2, sample_rate=44100):
     return music.core.normalize_mono(noise_vector)
 
 
-def silence(duration=1.0, sample_rate=44100):
+def silence(duration: float = 1.0,
+            sample_rate: int = 44100) -> NDArray[np.float64]:
     """Generate a silence of specified length.
 
     Parameters

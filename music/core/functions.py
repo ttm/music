@@ -1,5 +1,6 @@
 """Core audio processing utilities reused across the package."""
 import numpy as np
+from numpy.typing import ArrayLike, NDArray
 
 
 def _scaled(values, factor):
@@ -14,7 +15,8 @@ def _scaled(values, factor):
     return values / factor
 
 
-def normalize_mono(sonic_vector, remove_bias=True):
+def normalize_mono(sonic_vector: ArrayLike,
+                   remove_bias: bool = True) -> NDArray[np.float64]:
     """
     Normalize a mono sonic vector.
 
@@ -54,7 +56,8 @@ def normalize_mono(sonic_vector, remove_bias=True):
     return ((t - t.min()) / (t.max() - t.min())) * 2. - 1.
 
 
-def normalize_stereo(sonic_vector, remove_bias=True, normalize_sep=False):
+def normalize_stereo(sonic_vector: ArrayLike, remove_bias: bool = True,
+                     normalize_sep: bool = False) -> NDArray[np.float64]:
     """
     Normalize a stereo sonic vector.
 

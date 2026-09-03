@@ -53,3 +53,14 @@ def test_note_with_doppler_stereo_shape():
     data = music.note_with_doppler(number_of_samples=100, stereo=True)
     assert data.shape[0] == 2
     assert data.shape[1] >= 100
+
+
+def test_gaussian_noise_takes_a_fractional_duration():
+    """Regression: `length = duration * sample_rate` stayed a float, so
+    np.random.uniform was handed 22050.0 as a size and raised TypeError.
+    Every duration that was not a whole number of seconds failed, which
+    is most of the durations anyone would ask for.
+    """
+    samples = music.gaussian_noise(duration=0.5)
+    assert len(samples) == int(0.5 * 44100)
+    assert np.isfinite(samples).all()

@@ -1,9 +1,9 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-03**,
-`music` 1.3.0 plus the unreleased stimulation toolkit and dependency work:
-40 modules, 8,790 LOC package + 4,821 LOC tests, 88 names in the public
-API.*
+`music` 1.3.0 plus the unreleased stimulation, dependency and
+documentation work: 40 modules, 9,422 LOC package + 5,340 LOC tests, 90
+names in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
 and was already stale four days later: it reported 125 tests at 61 % coverage
@@ -22,13 +22,14 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **599 passed**, 10 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,292 stmts, 0 missed) |
+| Test suite | `pytest -q` | **793 passed**, 9 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,363 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 1,714 findings |
-| Annotation coverage | AST scan | **45 / 161 functions (28 %)** |
-| Docstring coverage | AST scan | **139 / 146 public defs (95 %)** |
+| Lint, extended rule set | `ruff check --select ALL music` | 1,620 findings |
+| Annotation coverage | AST scan | **62 / 166 functions (37 %)**; 39 / 70 exported (56 %) |
+| Docstring coverage | AST scan | **140 / 148 public defs (95 %)** |
+| Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Examples | run all 11 | **10 pass**, 1 needs the external singing engine |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
 | Import cost | `import music`, warm, 3.12 | **~185-290 ms**, and no sympy in `sys.modules` |
@@ -47,7 +48,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; CI across Python 3.10–3.14 including a job pinned to the declared lower bounds |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 28 %; the `legacy/` subpackage; `core/functions.py` not yet reconciled with the MASS reference implementation |
+| **Needs work** | Annotation coverage at 37 %; the `legacy/` subpackage; `core/functions.py` not yet reconciled with the MASS reference implementation |
 
 ## Known limitations
 
@@ -56,10 +57,11 @@ either documented in the code or tracked in the issue list.
 
 ### Unimplemented, and raising rather than pretending
 
-- **`Peals.twenty_all_over` and `Peals.an_eight_and_forty`** raise
-  `NotImplementedError`. They are exported and documented; they do not work.
-- **`Being.walk`'s `perm-walk` method** was never restored from the code
-  this package succeeded.
+- **`music.profile`** raises `NotImplementedError`. Its body has been a
+  commented-out sketch since it was written, so until recently it was an
+  exported, documented function that returned `None` while its docstring
+  described a dictionary. The design in the docstring is a specification
+  rather than a description.
 
 ### Gaps the code names about itself
 
@@ -121,11 +123,17 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 28 %.** The package type-checks cleanly with
-  bodies inspected, so this is missing documentation of intent rather than
-  missing safety.
-- **The extended lint set reports 1,714 findings** on `music/`, almost all
-  stylistic: 389 missing argument annotations, 338 quote-style, 92 missing
+- **Annotation coverage is 37 %**, and 56 % across the exported API. The
+  package type-checks cleanly with bodies inspected, so this is missing
+  documentation of intent rather than missing safety. What remains is not
+  a matter of typing time: the functions still unannotated are the ones
+  whose array parameters are genuinely permissive -- `array_like` really
+  does mean lists as well as arrays here, which was checked -- and
+  annotating them honestly needs `np.asarray` coercion through the
+  bodies rather than a signature edit. Doing it by signature alone
+  produced 583 mypy errors and was reverted.
+- **The extended lint set reports 1,620 findings** on `music/`, almost all
+  stylistic: 342 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.
@@ -152,6 +160,19 @@ worse than the code.
   a minute, against 3.6e-6 and 1.3e-2 before. Issue #102.
 - **Three duplicate waveform table definitions**: `music.legacy.tables.Basic`
   is now an alias for `music.tables.PrimaryTables` rather than a third copy.
+- **Two exported routines documented parameters that did not exist.**
+  `note_with_vibrato` said `max_pitch_deviation` for `max_pitch_dev`, and
+  `note_with_two_vibratos` said `secondary_vibrato_waveform_table` for
+  `sec_vibrato_waveform_table`, so code written from the reference raised
+  `TypeError`. Twenty-four defects of that family were fixed, and
+  `tests/test_docstring_signature.py` now fails on any of them.
+- **The two named peals, and `Being.walk`'s `perm-walk`.** All three
+  raised `NotImplementedError`. `twenty_all_over` and
+  `an_eight_and_forty` are implemented from the rules Tintinnalogia
+  states and checked against the tables it prints; `perm-walk` is a
+  reconstruction, and says so.
+- **`gaussian_noise` could not take a fractional duration**, having kept
+  its sample count as a float. Found by annotating it.
 - **`localize_linear`'s worked example moved nothing.** It passed
   `theta1=90, theta2=-90` and called it a pass from the left to the right,
   but this package measures azimuth from the ear axis, so both angles sit on

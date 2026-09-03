@@ -64,3 +64,44 @@ def test_dir_still_lists_the_deferred_names():
     assert music._LAZY_STRUCTURES <= set(listed)
     assert "note" in listed
     assert listed == sorted(listed)
+
+
+def test_the_structures_submodule_still_resolves_as_an_attribute():
+    """Regression: `music.structures` was bound as a side effect of the
+    eager `from .structures import ...`. Deferring that import took the
+    attribute with it, so `music.structures.peals.PlainChanges` -- which
+    three of the examples use -- raised AttributeError. Nothing in the
+    suite touched it, and CI does not run the examples.
+    """
+    assert run("import music; print(music.structures.__name__)") \
+        == "music.structures"
+
+
+def test_the_submodule_hook_runs_even_once_something_has_imported_it():
+    """The subprocess tests above prove the behaviour but run in another
+    interpreter, where coverage cannot see the hook. Once anything has
+    imported the submodule it is cached in the module dict and
+    `__getattr__` is never consulted again, so it is removed and put
+    back to exercise the path in this process.
+    """
+    cached = music.__dict__.pop('structures', None)
+    try:
+        assert music.structures.__name__ == 'music.structures'
+    finally:
+        if cached is not None:
+            music.__dict__['structures'] = cached
+
+
+def test_reaching_the_submodule_is_what_pulls_sympy_in():
+    """It is lazy in the same way the names are, not eager again."""
+    assert run("import sys, music; music.structures; "
+               "print('sympy' in sys.modules)") == "True"
+
+
+def test_a_submodule_that_does_not_exist_still_raises_attribute_error():
+    with pytest.raises(AttributeError, match="no attribute 'sctructures'"):
+        music.sctructures
+
+
+def test_dir_lists_the_structures_submodule_too():
+    assert 'structures' in dir(music)

@@ -107,6 +107,21 @@ that installed `music` for scipy's sake will no longer get it.
   two tests it replaces had to do.
 
 ### Fixed
+- **`music.structures` stopped resolving as an attribute.** Deferring
+  the structures import took the submodule attribute with it, because
+  `music.structures` had only ever been bound as a side effect of the
+  eager `from .structures import ...`. Three of the examples use
+  `music.structures.peals.PlainChanges` and all three broke. Nothing in
+  the suite touched it and CI does not run the examples, so it passed
+  every check. `__getattr__` now resolves the submodule as well as the
+  names, still lazily, and the tests cover both.
+- **`gaussian_noise` could not take a fractional duration.** It kept its
+  sample count as a float, so `np.random.uniform` was handed `22050.0`
+  as a size and raised `TypeError`. Every duration that was not a whole
+  number of seconds failed, which is most of the durations anyone would
+  ask for. Found by annotating the signature -- the type checker asked
+  what `duration * sample_rate` was, and the answer was wrong.
+
 - **`localize_linear`'s example moved nothing.** It read
   `theta1=90, theta2=-90` and called it "a pass from the left to the
   right", but the azimuth in this package is measured from the ear axis:
@@ -125,6 +140,19 @@ that installed `music` for scipy's sake will no longer get it.
   added, that test fails and the notice arrives with it.
 
 ### Changed
+- **Annotations across the exported API**, from 36 % to 56 % of the
+  exported functions and 28 % to 37 % overall. The docstrings already
+  stated these types in prose, where nothing checked them; the
+  annotations state the same thing where mypy does.
+
+  The rest were left deliberately. Their array parameters are genuinely
+  permissive -- `array_like` here really does accept lists as well as
+  arrays, which was checked rather than assumed -- so annotating them
+  honestly means `np.asarray` coercion through the bodies rather than a
+  signature edit. Attempted by signature alone it produced 583 mypy
+  errors, and was reverted rather than papered over with a narrower type
+  that would have rejected calls that work.
+
 - **`import music` no longer imports sympy**, and takes roughly a third
   of the time it did: **~550-830 ms down to ~185-290 ms**, measured warm
   on 3.12. The permutation and change-ringing structures --

@@ -11,6 +11,26 @@ its place. Nothing in the public API changes shape, but an environment
 that installed `music` for scipy's sake will no longer get it.
 
 ### Added
+- **Value tests for `adsr` and `note_with_doppler`** (#67, fourth pass).
+  The envelope is checked stage by stage -- attack to unity, decay to
+  the sustain level, release to silence, each over the milliseconds it
+  was given, and each monotonic in the direction it should be. Only the
+  sustain plateau had been checked before, and an envelope with the
+  right plateau in the wrong place is still the wrong envelope.
+
+  Doppler is checked against ``f' = f * c / (c + v)``: a stationary
+  source is not shifted, a receding one is flattened by the equation at
+  three velocities, a source passing the listener crosses its own pitch
+  from sharp to flat, and the amplitude grows as it arrives. Its stereo
+  pair favours the ear the source is on, which is the same convention
+  the rest of the localization family follows.
+
+  Both routines proved correct. `fir` and `iir` were examined too and
+  needed nothing: their tests already check the closed form, the
+  recurrence and linearity. The three of theirs the audit lists are
+  about errors and cost rather than audio, which is the heuristic
+  under-reporting as its docstring says it does.
+
 - **Value tests for the localization family** (#67, third pass), and a
   finding they turned up. `localize2` is checked against the geometry it
   models: a source on the median plane leaves the channels identical, a

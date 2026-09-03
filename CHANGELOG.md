@@ -190,6 +190,33 @@ that installed `music` for scipy's sake will no longer get it.
   two tests it replaces had to do.
 
 ### Fixed
+- **`localize2` placed sounds on the wrong side of the head, in three
+  separate ways.** Both of its methods now put the near ear louder
+  *and* earlier, for a source given as an angle or as a position.
+
+  - Both `ifft` branches added ``+2*pi*f*itd`` to the far ear, which
+    advances it. A delay is ``-2*pi*f*tau``, so the louder ear arrived
+    after the quieter one, on both sides and at every frequency. The
+    delay had also been wrapped into one period of ``f`` first; a phase
+    is periodic in ``2*pi`` already, so the wrap did nothing except
+    wrap a positive and a negative value differently, which is how the
+    two branches ended up inconsistent with each other.
+  - `brute` stopped resynthesizing one bin short of the one carrying
+    the energy over its cutoff -- the loudest bin. It rebuilt a 400 Hz
+    tone from everything below 400 Hz and returned it peaking at
+    298 Hz. Placing a sound should not change its pitch.
+  - `brute` chose the delayed ear from `theta` and the amplified ear
+    from `theta_`. Those disagree whenever a caller gives a position
+    rather than an angle, since `theta` is 0 there: a source on the
+    left came out louder in the left ear and earlier in the right.
+
+  Which ear is near was not decided from outside. `localize` and
+  `localize_linear` put the right ear at ``+zeta/2``, and `localize2`
+  reaches the same convention by its own route -- ``arctan2(-x, y)``,
+  with its IID amplifying the left ear for positive theta. A test now
+  checks that `localize` and `localize2` place the same source on the
+  same side.
+
 - **`trill` ignored `sample_rate`.** The note length and the loop bound
   were hardcoded to 44100 while the argument was declared, documented,
   and passed to `note()` -- so a trill asked for at 22050 Hz rendered two

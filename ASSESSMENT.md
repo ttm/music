@@ -73,12 +73,6 @@ either documented in the code or tracked in the issue list.
   now asserts that they do, so adding an HRTF will announce itself by
   breaking it. This is the largest genuine gap in the package, and it is
   research-scale work rather than a fix.
-- **`localize2`'s `brute` method does not preserve the frequencies it is
-  given.** A 400 Hz tone comes back peaking elsewhere. The docstring
-  already says so -- "currently not giving good results for all sounds"
-  -- and pins it now as behaviour, so a fix is visible when it comes.
-  `ifft`, which the docstring calls the working method, is correct on
-  this point and is the default.
 - **`core/functions.py` has not been reconciled, routine by routine, with
   the MASS reference implementation.** The package's central claim is
   fidelity to a published framework; until that pass is done, the claim

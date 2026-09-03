@@ -429,11 +429,21 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
         normsr = np.copy(norms)
         anglesr = np.copy(angles)
     else:
-        # limit the number of coeffs considered
+        # Limit the number of coefficients considered to those holding
+        # all but the last p of the energy.
+        #
+        # The + 1 is the bin that carries the energy over the cutoff,
+        # and it is the loudest one. Without it `ncoeffs` counted the
+        # bins strictly below the threshold and the loop below, running
+        # to ncoeffs - 1, stopped just short of the dominant partial: a
+        # 400 Hz tone was resynthesized from everything under 400 Hz and
+        # came back peaking at 298 Hz. Clamped to max_coef so that a
+        # signal whose energy is all in the last bin cannot index past
+        # the half-spectrum.
         energy = np.cumsum(norms[:max_coef] ** 2)
         p = 0.01
         cutoff = energy.max() * (1 - p)
-        ncoeffs = (energy < cutoff).sum()
+        ncoeffs = min(int((energy < cutoff).sum()) + 1, max_coef)
         maxfreq = ncoeffs * df
         if maxfreq <= 4000:
             foo = .3
@@ -458,27 +468,37 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
                 continue
             f = freqs[i]
             if f <= 4000:
-                itd = .3 * zeta * np.sin(theta_) / speed
+                itd = .3 * zeta * np.sin(abs(theta_)) / speed
             else:
-                itd = .2 * zeta * np.sin(theta_) / speed
+                itd = .2 * zeta * np.sin(abs(theta_)) / speed
             iid = 1 + ((f / 1000) ** .8) * np.sin(abs(theta_))
             # not needed, coefs are duplicated afterwards:
             # if i != Lambda/2:
             #     IID *= 2
-            # IID > 0 : left ear has amplification
-            # ITD > 0 : right ear has a delay
-            # relate ITD to phase change (anglesl)
-            lamb = 1 / f
+            #
+            # A delay of tau is a phase change of -2*pi*f*tau, and it is
+            # the *far* ear that is delayed and attenuated relative to
+            # the near one. Both branches used to add +2*pi*f*itd, which
+            # advances the far ear instead: the louder ear arrived after
+            # the quieter one, in both of them.
+            #
+            # theta_ > 0 is the left side -- that is what the x/y
+            # fallback above computes with arctan2(-x, y), and the IID
+            # below agrees, amplifying the left ear there. Only the
+            # difference between the ears is applied, so the near ear
+            # stays in step with the input, as in localize().
+            #
+            # The delay used to be wrapped into one period of f before
+            # being turned into a phase. A phase is periodic in 2*pi
+            # already, so the wrap changed nothing and the two branches
+            # wrapped a positive and a negative value differently, which
+            # is how they ended up inconsistent with each other.
+            delay = -2 * np.pi * f * itd
             if theta_ > 0:
-                change = itd - (itd // lamb) * lamb
-                change_ = (change / lamb) * 2 * np.pi
-                anglesr[i] += change_
+                anglesr[i] += delay
                 normsl[i] *= iid
             else:
-                itd = -itd
-                change = itd - (itd // lamb) * lamb
-                change_ = (change / lamb) * 2 * np.pi
-                anglesl[i] += change_
+                anglesl[i] += delay
                 normsr[i] *= iid
 
     elif method == "brute":
@@ -488,12 +508,13 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
                 continue
             f = freqs[i]
             if f <= 4000:
-                itd = .3 * zeta * np.sin(theta_) / speed
+                itd = .3 * zeta * np.sin(abs(theta_)) / speed
             else:
-                itd = .2 * zeta * np.sin(theta_) / speed
+                itd = .2 * zeta * np.sin(abs(theta_)) / speed
             iid = 1 + ((f / 1000) ** .8) * np.sin(abs(theta_))
-            # IID > 0 : left ear has amplification
-            # ITD > 0 : right ear has a delay
+            # The far ear is the delayed and attenuated one, and which
+            # ear that is comes from theta_ -- the same variable the
+            # amplification below uses.
             itd_l = abs(int(sample_rate * itd))
             # The Nyquist bin is not doubled, having no conjugate partner.
             # Unreachable as written: the loop runs to ncoeffs - 1, and
@@ -516,7 +537,14 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
                 tl = np.copy(sine)
                 tr = sine * iid
 
-            if theta > 0:
+            # This branched on `theta` where the amplification above
+            # branches on `theta_`. They disagree whenever a caller
+            # gives a position instead of an angle: `theta` is then 0,
+            # so the delay always took this second branch while the
+            # amplification followed the position, and a source on the
+            # left was rendered louder in the left ear and earlier in
+            # the right one.
+            if theta_ > 0:
                 tl = np.hstack((tl, np.zeros(itd_l)))
                 tr = np.hstack((np.zeros(itd_l), tr))
             else:

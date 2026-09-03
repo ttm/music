@@ -846,28 +846,139 @@ def test_localize2_leaves_the_near_ear_in_step_with_its_input():
     assert _shift_at(rendered[0], tone, 400) == pytest.approx(0, abs=1e-9)
 
 
-def test_the_brute_method_does_not_preserve_the_frequencies_it_is_given():
-    """**Recorded, not endorsed**, and the docstring says so already:
-    brute is "currently not giving good results for all sounds".
+@pytest.mark.parametrize("theta, near, far", [(40, 0, 1), (-40, 1, 0)])
+def test_localize2_delays_the_far_ear_and_not_the_near_one(theta, near, far):
+    """The ear that hears it louder must hear it first.
 
-    It resynthesizes each spectral component separately rather than
-    reshaping the coefficients, and a 400 Hz tone comes back peaking
-    somewhere else entirely. Correcting the frequency axis moved where
-    it lands without making it right, so the remaining fault is its
-    own rather than a shared one. This pins the state of it so that a
-    future fix is visible as a change of behaviour.
+    Both branches used to advance the far ear rather than delay it, so
+    the louder ear arrived after the quieter one -- on both sides, and
+    for every frequency. Which ear is near is not an outside convention
+    here: the routine's own x/y fallback computes theta with
+    ``arctan2(-x, y)``, so positive theta is the left side, and its IID
+    agrees by amplifying the left ear there.
     """
-    tone = music.note(freq=400, duration=0.1, waveform_table=WAVEFORM_SINE)
+    freq = 400.0
+    tone = music.note(freq=freq, duration=0.5, waveform_table=WAVEFORM_SINE)
+    rendered = music.localize2(tone, theta=theta, method="ifft")
 
+    assert np.abs(rendered[near]).max() > np.abs(rendered[far]).max()
+
+    speed = 331.3 + .606 * 20
+    itd = .3 * 0.215 * np.sin(abs(np.arcsin(
+        np.sin(np.radians(theta))))) / speed
+    # The near ear stays in step with the input and the far ear carries
+    # the whole difference, as in localize().
+    assert _shift_at(rendered[near], tone, freq) == pytest.approx(0, abs=1e-9)
+    assert _shift_at(rendered[far], tone, freq) == pytest.approx(itd,
+                                                                rel=1e-6)
+
+
+def test_localize2_puts_the_same_source_on_the_same_side_as_localize():
+    """The family must agree about which side is which.
+
+    `localize` and `localize_linear` put the right ear at +zeta/2, so a
+    source at positive x is on the right. `localize2` reaches the same
+    place by a different route -- arctan2(-x, y) -- and this checks the
+    two arrive together rather than trusting that they do.
+    """
+    tone = music.note(freq=400, duration=0.2, waveform_table=WAVEFORM_SINE)
+
+    def louder_ear(rendered):
+        return 0 if np.abs(rendered[0]).max() > np.abs(rendered[1]).max() \
+            else 1
+
+    # A source well to the right, given to each routine in its own terms.
+    naive = music.localize(tone, x=1.0, y=0.01)
+    experimental = music.localize2(tone, x=1.0, y=0.01)
+
+    assert louder_ear(naive) == 1, "localize should favour the right ear"
+    assert louder_ear(experimental) == 1
+
+
+def _rendered(method, **kwargs):
+    """localize2 with the brute method's warning suppressed."""
+    tone = music.note(freq=400, duration=0.2, waveform_table=WAVEFORM_SINE)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        brute = music.localize2(tone, theta=40, method="brute")
-    ifft = music.localize2(tone, theta=40, method="ifft")
+        return tone, music.localize2(tone, method=method, **kwargs)
 
-    def peak(signal):
-        spectrum = np.abs(np.fft.rfft(signal))
-        return np.fft.rfftfreq(len(signal), 1 / SAMPLE_RATE)[
-            np.argmax(spectrum)]
 
-    assert peak(ifft[0]) == pytest.approx(400, abs=10)
-    assert abs(peak(brute[0]) - 400) > 50
+def _peak_freq(signal, sample_rate=SAMPLE_RATE):
+    spectrum = np.abs(np.fft.rfft(signal))
+    return np.fft.rfftfreq(len(signal), 1 / sample_rate)[np.argmax(spectrum)]
+
+
+@pytest.mark.parametrize("method", ["ifft", "brute"])
+@pytest.mark.parametrize("freq", [220.0, 400.0, 1000.0])
+def test_localize2_returns_the_frequency_it_was_given(method, freq):
+    """Regression: `brute` resynthesizes each spectral component, and the
+    bin it stopped at was the one carrying the energy over the cutoff --
+    the loudest one. It rebuilt a 400 Hz tone from everything below
+    400 Hz and returned it peaking at 298 Hz. Placing a sound must not
+    change its pitch.
+    """
+    tone = music.note(freq=freq, duration=0.1, waveform_table=WAVEFORM_SINE)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        rendered = music.localize2(tone, theta=40, method=method)
+
+    assert _peak_freq(rendered[0]) == pytest.approx(freq, rel=0.02)
+
+
+#: Each case names the side the source is on, and so the near ear, in
+#: both of the ways localize2 accepts a position. `theta` defaults to
+#: -70 rather than 0, so x and y are only consulted when theta is passed
+#: as 0 explicitly.
+SIDES = [
+    ("angle, left", {"theta": 40}, 0, 1),
+    ("angle, right", {"theta": -40}, 1, 0),
+    ("position, left", {"theta": 0, "x": -1.0, "y": 0.01}, 0, 1),
+    ("position, right", {"theta": 0, "x": 1.0, "y": 0.01}, 1, 0),
+]
+
+
+@pytest.mark.parametrize("method", ["ifft", "brute"])
+@pytest.mark.parametrize("label, kwargs, near, far", SIDES)
+def test_localize2_puts_the_near_ear_first_and_loudest(method, label,
+                                                       kwargs, near, far):
+    """The ear nearer the source hears it louder and sooner. Both.
+
+    Three separate faults each broke half of this. Both `ifft` branches
+    advanced the far ear rather than delaying it, so the louder ear
+    arrived last. `brute` chose the delayed ear from `theta` while
+    choosing the amplified ear from `theta_`, and those disagree
+    whenever a caller gives a position, because `theta` is 0 there.
+    """
+    tone, rendered = _rendered(method, **kwargs)
+
+    assert np.abs(rendered[near]).max() > np.abs(rendered[far]).max(), (
+        f"{label}: the near ear should be the louder one")
+
+    lag = _interaural_lag(rendered[0], rendered[1])
+    later = 0 if lag > 0 else 1
+    assert later == far, f"{label}: the far ear should be the later one"
+
+
+@pytest.mark.parametrize("method", ["ifft", "brute"])
+def test_the_two_localize2_methods_agree_about_the_side(method):
+    """They are offered as alternatives, so they must not disagree about
+    where the sound is. They did: `brute` returned the wrong pitch and
+    `ifft` the wrong ear order, so the two placed a source differently.
+    """
+    _, rendered = _rendered(method, theta=40)
+    assert np.abs(rendered[0]).max() > np.abs(rendered[1]).max()
+
+
+def test_localize2_ignores_x_and_y_unless_theta_is_zero():
+    """`theta` defaults to -70, not to 0, so a caller who passes only a
+    position gets the default angle and no error. Documented in the
+    signature and easy to miss; pinned so it is a choice rather than a
+    surprise.
+    """
+    tone = music.note(freq=400, duration=0.1, waveform_table=WAVEFORM_SINE)
+    ignored = music.localize2(tone, x=1.0, y=0.01)
+    default = music.localize2(tone)
+    assert np.array_equal(ignored, default)
+
+    honoured = music.localize2(tone, theta=0, x=1.0, y=0.01)
+    assert not np.array_equal(honoured, default)

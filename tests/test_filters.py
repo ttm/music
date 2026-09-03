@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from music.core.filters import (
     adsr,
@@ -103,3 +104,13 @@ def test_louds_concatenation_and_continuity():
     assert np.isclose(env[n1 - 1], mid_amp, atol=1e-6)
     assert np.isclose(env[-1], 1.0, atol=1e-6)
 
+
+
+def test_reverb_refuses_a_first_phase_longer_than_the_whole_reverb():
+    """Regression: the shapes disagreed and numpy reported a broadcast
+    failure naming two sample counts, which says nothing about the two
+    durations that caused it. `reverb(duration=0.1)` hit it on the
+    default first_phase_duration of 0.15.
+    """
+    with pytest.raises(ValueError, match="cannot exceed duration"):
+        reverb(duration=0.1)

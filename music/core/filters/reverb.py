@@ -29,6 +29,11 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     sample_rate : scalar
         The sampling frequency.
 
+    Raises
+    ------
+    ValueError
+        If ``first_phase_duration`` is longer than ``duration``.
+
     Returns
     -------
     result : numpy.ndarray
@@ -56,6 +61,16 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     """
     lambda_r = int(duration * sample_rate)
     lambda1 = int(first_phase_duration * sample_rate)
+    if lambda1 > lambda_r:
+        # ii[:lambda1] is only lambda_r long, so p and the incidences
+        # below came out different lengths and numpy reported a
+        # broadcast failure naming two sample counts, which says
+        # nothing about the two durations that caused it.
+        raise ValueError(
+            f"first_phase_duration ({first_phase_duration} s) cannot "
+            f"exceed duration ({duration} s): the first period of the "
+            "reverberation is part of it, not longer than it"
+        )
     # Sound reincidence probability in the first period:
     ii = np.arange(lambda_r)
     p = (ii[:lambda1] / lambda1) ** 2.
@@ -75,5 +90,9 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     result[0] = 1.
     samples = as_sonic_vector(sonic_vector)
     if samples is not None:
-        return np.convolve(samples, result)
+        # asarray rather than the bare convolve: numpy's stubs on the
+        # oldest supported version type the result as floating[Any]
+        # rather than float64, and only that job saw it. No copy, the
+        # dtype already matching.
+        return np.asarray(np.convolve(samples, result), dtype=np.float64)
     return result

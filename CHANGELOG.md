@@ -107,6 +107,13 @@ that installed `music` for scipy's sake will no longer get it.
   two tests it replaces had to do.
 
 ### Fixed
+- **`reverb` named the wrong thing when its phases disagreed.** A
+  `first_phase_duration` longer than `duration` left two arrays of
+  different lengths, and numpy reported a broadcast failure naming two
+  sample counts -- which says nothing about the two durations that
+  caused it. `reverb(duration=0.1)` hit it on the default first phase of
+  0.15 s. It now refuses, naming both durations.
+
 - **`music.structures` stopped resolving as an attribute.** Deferring
   the structures import took the submodule attribute with it, because
   `music.structures` had only ever been bound as a side effect of the

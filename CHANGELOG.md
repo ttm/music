@@ -11,6 +11,27 @@ its place. Nothing in the public API changes shape, but an environment
 that installed `music` for scipy's sake will no longer get it.
 
 ### Added
+- **Value tests for the localization family** (#67, third pass), and a
+  finding they turned up. `localize2` is checked against the geometry it
+  models: a source on the median plane leaves the channels identical, a
+  source at -theta is the source at +theta with the ears swapped, and
+  the level difference grows with both frequency and angle, which is the
+  IID the code applies.
+
+  These are deliberately not called tests that localization is correct.
+  There is no head-related transfer function anywhere in this package,
+  and `localize2` says in its own docstring that its calculations are
+  "not standard and are only to illustrate the method".
+
+  **`localize2`'s two methods produce opposite spatial images.** Both
+  compute the same interaural time difference and carry the same comment
+  saying the right ear is delayed; at 40 degrees `brute` delays it by
+  113 us and `ifft` advances it by 249 us. A listener would hear the
+  source on opposite sides depending on the method. This is pinned by a
+  test and recorded in `ASSESSMENT.md` rather than fixed: correcting it
+  changes rendered audio and is a decision about what the model should
+  be, not a tidy-up.
+
 - **`tools/audit_audio_tests.py`**, which classifies every test that
   renders audio by what it asserts about it and names the ones that
   assert nothing. It is how the batches of #67 are chosen: from a list

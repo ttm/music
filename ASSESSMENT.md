@@ -73,6 +73,16 @@ either documented in the code or tracked in the issue list.
   now asserts that they do, so adding an HRTF will announce itself by
   breaking it. This is the largest genuine gap in the package, and it is
   research-scale work rather than a fix.
+- **`localize2`'s two methods disagree about which ear leads.** Both
+  compute the same interaural time difference and both carry the same
+  comment saying the right ear is delayed. At 40 degrees `brute` delays
+  the right ear by 113 us, which is that model; `ifft` *advances* it by
+  249 us -- the opposite direction, and about twice the magnitude. A
+  listener would place the source on opposite sides depending on which
+  method was chosen. The docstring offers them as alternatives. Pinned
+  by `test_the_two_localize2_methods_disagree_about_which_ear_leads`,
+  which records the discrepancy rather than endorsing it: correcting it
+  changes rendered audio and is a decision about the model.
 - **`core/functions.py` has not been reconciled, routine by routine, with
   the MASS reference implementation.** The package's central claim is
   fidelity to a published framework; until that pass is done, the claim

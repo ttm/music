@@ -11,6 +11,8 @@ References
        representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 """
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -716,3 +718,119 @@ def test_stretches_squeezes_rather_than_truncates():
 
     # Reading every other sample is what halving the duration means.
     assert np.array_equal(squeezed, fragment[::2][:len(squeezed)])
+
+
+# --------------------------------------------------------------------------
+# The localization family, against the geometry it does model
+#
+# These check the interaural cues the code computes. They are not tests
+# that localization is "correct": there is no head-related transfer
+# function anywhere in this package, so elevation and front-versus-back
+# are not modelled at all, and `localize2` says in its own docstring that
+# its calculations are "not standard and are only to illustrate the
+# method".
+# --------------------------------------------------------------------------
+
+def _interaural_lag(left, right, sample_rate=SAMPLE_RATE):
+    """How far `left` lags `right`, in seconds, by cross-correlation.
+
+    Positive means the left channel arrives later. Calibrated against a
+    known shift in test_the_lag_measurement_reads_a_known_shift below,
+    because a sign convention assumed rather than checked is how a
+    measurement ends up confirming whatever it was pointed at.
+    """
+    count = min(len(left), len(right))
+    a = left[:count] - left[:count].mean()
+    b = right[:count] - right[:count].mean()
+    correlation = np.correlate(a, b, "full")
+    return (np.argmax(correlation) - (count - 1)) / sample_rate
+
+
+def test_the_lag_measurement_reads_a_known_shift():
+    """The measurement the tests below depend on, checked first."""
+    tone = music.note(freq=400, duration=0.1, waveform_table=WAVEFORM_SINE)
+    delayed_right = _interaural_lag(tone[10:], tone[:-10])
+    assert delayed_right * SAMPLE_RATE == pytest.approx(-10)
+
+
+def test_localize2_leaves_a_source_on_the_median_plane_alone():
+    """No angle, no cues: the two channels must be the same samples.
+
+    `theta=0` does not do this -- it is falsy, so the routine falls back
+    to the x/y position -- which is why this passes x=0 instead.
+    """
+    tone = music.note(freq=500, duration=0.1, waveform_table=WAVEFORM_SINE)
+    both = music.localize2(tone, theta=0, x=0, y=1)
+    assert np.array_equal(both[0], both[1])
+
+
+def test_localize2_mirrors_across_the_median_plane():
+    """A source at -theta is the source at +theta with the ears swapped.
+
+    Nothing in the geometry distinguishes the two sides, so any
+    asymmetry would be an implementation artefact.
+    """
+    tone = music.note(freq=500, duration=0.1, waveform_table=WAVEFORM_SINE)
+    left_side = music.localize2(tone, theta=40)
+    right_side = music.localize2(tone, theta=-40)
+
+    assert np.allclose(left_side[0], right_side[1])
+    assert np.allclose(left_side[1], right_side[0])
+
+
+@pytest.mark.parametrize("low, high", [(200, 1000), (1000, 3000)])
+def test_localize2_attenuates_the_far_ear_more_at_higher_frequencies(low,
+                                                                    high):
+    """The IID the code applies is 1 + (f/1000) ** .8 * sin|theta|, so it
+    grows with frequency: a head shadows treble more than bass."""
+    def ratio(freq):
+        tone = music.note(freq=freq, duration=0.1,
+                          waveform_table=WAVEFORM_SINE)
+        out = music.localize2(tone, theta=40)
+        return np.abs(out[0]).max() / np.abs(out[1]).max()
+
+    assert ratio(high) > ratio(low)
+
+
+def test_localize2_widens_the_level_difference_with_the_angle():
+    """sin|theta| again: further off centre, more shadow."""
+    tone = music.note(freq=1000, duration=0.1, waveform_table=WAVEFORM_SINE)
+
+    def ratio(theta):
+        out = music.localize2(tone, theta=theta)
+        return np.abs(out[0]).max() / np.abs(out[1]).max()
+
+    assert ratio(70) > ratio(40) > ratio(10)
+
+
+def test_the_two_localize2_methods_disagree_about_which_ear_leads():
+    """**Recorded, not endorsed.** The two methods the docstring offers
+    as alternatives produce opposite spatial images.
+
+    Both compute the same interaural time difference,
+    ``.3 * zeta * sin(theta) / speed``, and both carry the same comment
+    saying ``ITD > 0 : right ear has a delay``. At theta=40 that is
+    120.7 us.
+
+    - ``brute`` delays the right ear by 113.4 us, which is that model.
+    - ``ifft`` *advances* the right ear by 249.4 us: the opposite
+      direction, and about twice the magnitude.
+
+    A listener would hear the source on opposite sides depending on
+    which method was chosen. This test pins the discrepancy so that it
+    cannot drift further and so that fixing it is a visible, deliberate
+    change to rendered audio rather than a silent one -- which is a
+    decision about what the model should be, not a tidy-up.
+    """
+    tone = music.note(freq=400, duration=0.05, waveform_table=WAVEFORM_SINE)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        brute = music.localize2(tone, theta=40, method="brute")
+    ifft = music.localize2(tone, theta=40, method="ifft")
+
+    brute_lag = _interaural_lag(brute[0], brute[1])
+    ifft_lag = _interaural_lag(ifft[0], ifft[1])
+
+    assert brute_lag < 0 < ifft_lag, "the two methods still disagree"
+    assert abs(ifft_lag) > abs(brute_lag)

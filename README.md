@@ -208,15 +208,21 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 493 tests, 100% coverage
+pytest                                       # 794 tests, 100% coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html
+python tools/run_examples.py                 # run every example
 ```
 
-All four run in CI on Python 3.10 through 3.13 for every push and pull
+All five run in CI on Python 3.10 through 3.14 for every push and pull
 request, and both `pytest` and `sphinx-build` are configured to fail on
 anything less than full coverage or a docstring numpydoc cannot parse.
+
+The last one is there because the other four look at the package and none
+of them looks at a caller. The examples are the only callers this
+repository has, and a change that broke three of them once passed every
+other check.
 
 Docstrings are [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html)
 style throughout, and the code follows

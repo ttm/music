@@ -11,6 +11,24 @@ its place. Nothing in the public API changes shape, but an environment
 that installed `music` for scipy's sake will no longer get it.
 
 ### Added
+- **CI runs the examples**, through `tools/run_examples.py`, which also
+  runs them locally in one command. Every example is expected to
+  complete with a zero exit status unless it is named in the script's
+  `SKIP` table with a reason -- only `singing_demo.py` is, because it
+  needs the external eCantorix engine -- so a new example is covered the
+  moment it is added rather than when someone remembers to list it. Each
+  runs in a scratch directory, since they write WAV files next to
+  themselves.
+
+  This exists because of a specific failure. Deferring the
+  `music.structures` import removed the submodule attribute that three
+  examples use, and the break survived the full suite at 100% coverage,
+  a clean mypy, a clean ruff and a docs build. Every one of those checks
+  looks at the package; none of them looks at a caller, and the examples
+  are the only callers this repository has. The script was verified by
+  reintroducing that exact break and confirming it fails on the three
+  examples and exits non-zero.
+
 - **`Peals.twenty_all_over` and `Peals.an_eight_and_forty` ring.** Both
   raised `NotImplementedError` while being exported and documented. They
   are implemented as the rules Tintinnalogia (1668) states -- the book

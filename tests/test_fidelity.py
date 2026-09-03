@@ -982,3 +982,112 @@ def test_localize2_ignores_x_and_y_unless_theta_is_zero():
 
     honoured = music.localize2(tone, theta=0, x=1.0, y=0.01)
     assert not np.array_equal(honoured, default)
+
+
+# --------------------------------------------------------------------------
+# The ADSR envelope, stage by stage
+# --------------------------------------------------------------------------
+
+def test_adsr_reaches_each_stage_where_it_says_it_will():
+    """Attack to unity, decay to the sustain level, release to silence,
+    each over the milliseconds it was given.
+
+    The sustain plateau was already checked above. The stages that
+    reach it were not, and an envelope with the right plateau in the
+    wrong place is still the wrong envelope.
+    """
+    attack, decay, release = 100, 200, 300      # milliseconds
+    sustain = -6.0                              # decibels
+    envelope = music.adsr(envelope_duration=1.0, attack_duration=attack,
+                          decay_duration=decay, sustain_level=sustain,
+                          release_duration=release)
+
+    assert len(envelope) == SAMPLE_RATE
+    a = int(attack / 1000 * SAMPLE_RATE)
+    d = int(decay / 1000 * SAMPLE_RATE)
+    r = int(release / 1000 * SAMPLE_RATE)
+
+    assert envelope[0] < 1e-3, "the attack starts from silence"
+    assert envelope[a - 1] == pytest.approx(1.0, rel=1e-6)
+    assert envelope[a + d - 1] == pytest.approx(10 ** (sustain / 20),
+                                                rel=1e-3)
+    assert envelope[-1] < 1e-3, "the release ends in silence"
+
+    assert np.all(np.diff(envelope[:a]) >= 0), "the attack only rises"
+    assert np.all(np.diff(envelope[a:a + d]) <= 0), "the decay only falls"
+    assert np.all(np.diff(envelope[-r:]) <= 0), "the release only falls"
+
+
+def test_the_adsr_sustain_holds_its_level_flat():
+    """Between decay and release nothing should move."""
+    envelope = music.adsr(envelope_duration=1.0, attack_duration=100,
+                          decay_duration=200, sustain_level=-6,
+                          release_duration=300)
+    a = int(0.1 * SAMPLE_RATE)
+    d = int(0.2 * SAMPLE_RATE)
+    r = int(0.3 * SAMPLE_RATE)
+    plateau = envelope[a + d:len(envelope) - r]
+
+    assert len(plateau) > 0
+    assert np.allclose(plateau, 10 ** (-6 / 20), rtol=1e-3)
+
+
+# --------------------------------------------------------------------------
+# Doppler: the pitch a moving source arrives at
+# --------------------------------------------------------------------------
+
+def _speed_of_sound(air_temp=20):
+    return 331.3 + .606 * air_temp
+
+
+def test_a_source_that_does_not_move_is_not_shifted():
+    """No velocity, no Doppler. The existing tests checked the shape of
+    the output for both channel modes and never its pitch."""
+    still = music.note_with_doppler(freq=440, duration=0.5, x=(10, 10),
+                                    y=(1, 1), stereo=False)
+    assert _peak_freq(still) == pytest.approx(440, abs=4)
+
+
+@pytest.mark.parametrize("velocity", [50.0, 100.0, 200.0])
+def test_a_receding_source_is_flattened_by_the_doppler_equation(velocity):
+    """f' = f * c / (c + v), with v the rate the distance grows."""
+    freq = 440.0
+    receding = music.note_with_doppler(freq=freq, duration=1.0, x=(1, 1),
+                                       y=(1, 1 + velocity), stereo=False)
+    expected = freq * _speed_of_sound() / (_speed_of_sound() + velocity)
+    assert _peak_freq(receding) == pytest.approx(expected, rel=0.02)
+
+
+def test_a_source_passing_the_listener_falls_in_pitch():
+    """The siren: sharp while it approaches, flat once it has gone by,
+    crossing the source frequency as it passes."""
+    freq = 440.0
+    passing = music.note_with_doppler(freq=freq, duration=1.0, x=(-50, 50),
+                                      y=(1, 1), stereo=False)
+    window = int(0.2 * SAMPLE_RATE)
+    approaching = _peak_freq(passing[:window])
+    receding = _peak_freq(passing[-window:])
+
+    assert approaching > freq > receding
+
+
+def test_a_doppler_source_grows_louder_as_it_arrives():
+    """The amplitude carries 1 / distance, so approaching is also
+    getting nearer, not only getting sharper."""
+    approaching = music.note_with_doppler(freq=440, duration=1.0,
+                                          x=(50, 1), y=(1, 1), stereo=False)
+    window = int(0.1 * SAMPLE_RATE)
+    assert np.abs(approaching[-window:]).max() > \
+        np.abs(approaching[:window]).max() * 5
+
+
+def test_the_doppler_stereo_pair_favours_the_ear_the_source_is_on():
+    """Same convention as the rest of the family: the right ear sits at
+    +zeta/2, so a source at positive x is heard louder on the right."""
+    right_side = music.note_with_doppler(freq=440, duration=0.5, x=(5, 5),
+                                         y=(1, 1), stereo=True)
+    left_side = music.note_with_doppler(freq=440, duration=0.5, x=(-5, -5),
+                                        y=(1, 1), stereo=True)
+
+    assert np.abs(right_side[1]).max() > np.abs(right_side[0]).max()
+    assert np.abs(left_side[0]).max() > np.abs(left_side[1]).max()

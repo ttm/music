@@ -14,7 +14,7 @@ identifiers:
     description: >-
       Concept DOI, resolving to the most recent release of the software.
   - type: doi
-    value: 10.5281/zenodo.22217520
+    value: 10.5281/zenodo.22288656
     description: >-
       Archived snapshot of the version this file names. Update it with
       the version, after Zenodo has minted the DOI for the new release.

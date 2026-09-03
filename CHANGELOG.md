@@ -23,14 +23,14 @@ that installed `music` for scipy's sake will no longer get it.
   and `localize2` says in its own docstring that its calculations are
   "not standard and are only to illustrate the method".
 
-  **`localize2`'s two methods produce opposite spatial images.** Both
-  compute the same interaural time difference and carry the same comment
-  saying the right ear is delayed; at 40 degrees `brute` delays it by
-  113 us and `ifft` advances it by 249 us. A listener would hear the
-  source on opposite sides depending on the method. This is pinned by a
-  test and recorded in `ASSESSMENT.md` rather than fixed: correcting it
-  changes rendered audio and is a decision about what the model should
-  be, not a tidy-up.
+  **`localize2` worked at twice every frequency.** `df`, the spacing
+  between FFT bins, was `2 * sample_rate / lambda_l` where it is
+  `sample_rate / lambda_l`, so the interaural delay came out at exactly
+  twice the ITD computed on the line above it, the level difference was
+  the head-shadow of a tone an octave up, and the 4000 Hz crossover
+  between the two delay coefficients fired at a true 2000 Hz. Fixed, and
+  the realized delay is now the computed one to within a part in a
+  million at every frequency tested.
 
 - **`tools/audit_audio_tests.py`**, which classifies every test that
   renders audio by what it asserts about it and names the ones that

@@ -410,7 +410,13 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
 
     lambda_l = len(sonic_vector)
     max_coef = int(lambda_l / 2)
-    df = 2 * sample_rate / lambda_l
+    # The spacing between FFT bins is sample_rate / lambda_l. This read
+    # 2 * sample_rate / lambda_l, so every frequency the routine worked
+    # with was twice the true frequency of its bin: the interaural delay
+    # came out at exactly twice the ITD computed just below it, the IID
+    # was the shadow of a tone an octave up, and the 4000 Hz crossover
+    # between the two delay coefficients fired at a true 2000 Hz.
+    df = sample_rate / lambda_l
 
     # zero theta in right ahead and counter-clockwise is positive
     # theta_ = 2*np.pi*theta/360

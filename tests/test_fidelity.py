@@ -803,34 +803,71 @@ def test_localize2_widens_the_level_difference_with_the_angle():
     assert ratio(70) > ratio(40) > ratio(10)
 
 
-def test_the_two_localize2_methods_disagree_about_which_ear_leads():
-    """**Recorded, not endorsed.** The two methods the docstring offers
-    as alternatives produce opposite spatial images.
+def _shift_at(rendered, source, freq, sample_rate=SAMPLE_RATE):
+    """The time shift of `rendered` against `source` at `freq`, in seconds.
 
-    Both compute the same interaural time difference,
-    ``.3 * zeta * sin(theta) / speed``, and both carry the same comment
-    saying ``ITD > 0 : right ear has a delay``. At theta=40 that is
-    120.7 us.
-
-    - ``brute`` delays the right ear by 113.4 us, which is that model.
-    - ``ifft`` *advances* the right ear by 249.4 us: the opposite
-      direction, and about twice the magnitude.
-
-    A listener would hear the source on opposite sides depending on
-    which method was chosen. This test pins the discrepancy so that it
-    cannot drift further and so that fixing it is a visible, deliberate
-    change to rendered audio rather than a silent one -- which is a
-    decision about what the model should be, not a tidy-up.
+    Read from the phase of one FFT bin, which resolves a fraction of a
+    sample where cross-correlation resolves whole ones. Positive is a
+    delay.
     """
-    tone = music.note(freq=400, duration=0.05, waveform_table=WAVEFORM_SINE)
+    count = min(len(rendered), len(source))
+    bin_index = int(round(freq * count / sample_rate))
+    ratio = (np.fft.fft(rendered[:count])[bin_index]
+             / np.fft.fft(source[:count])[bin_index])
+    return -np.angle(ratio) / (2 * np.pi * freq)
+
+
+@pytest.mark.parametrize("freq", [200.0, 400.0, 1000.0])
+def test_localize2_realizes_the_interaural_delay_it_computes(freq):
+    """The phase change applied must be worth the ITD in the line above it.
+
+    It was worth exactly twice: ``df`` was ``2 * sample_rate / lambda_l``
+    where the spacing between FFT bins is ``sample_rate / lambda_l``, so
+    every frequency the routine worked with was an octave high. The
+    factor came out as 2.000 at every frequency tested, which is what a
+    wrong frequency axis looks like and what a modelling choice does not.
+    """
+    theta = 40.0
+    tone = music.note(freq=freq, duration=0.5, waveform_table=WAVEFORM_SINE)
+    rendered = music.localize2(tone, theta=theta, method="ifft")
+
+    speed = 331.3 + .606 * 20
+    itd = .3 * 0.215 * np.sin(np.arcsin(np.sin(np.radians(theta)))) / speed
+    measured = _shift_at(rendered[1], tone, freq)
+
+    assert abs(measured) == pytest.approx(itd, rel=1e-6)
+
+
+def test_localize2_leaves_the_near_ear_in_step_with_its_input():
+    """Only the difference between the ears is applied, as in localize:
+    one channel carries the whole delay and the other does not move."""
+    tone = music.note(freq=400, duration=0.5, waveform_table=WAVEFORM_SINE)
+    rendered = music.localize2(tone, theta=40, method="ifft")
+    assert _shift_at(rendered[0], tone, 400) == pytest.approx(0, abs=1e-9)
+
+
+def test_the_brute_method_does_not_preserve_the_frequencies_it_is_given():
+    """**Recorded, not endorsed**, and the docstring says so already:
+    brute is "currently not giving good results for all sounds".
+
+    It resynthesizes each spectral component separately rather than
+    reshaping the coefficients, and a 400 Hz tone comes back peaking
+    somewhere else entirely. Correcting the frequency axis moved where
+    it lands without making it right, so the remaining fault is its
+    own rather than a shared one. This pins the state of it so that a
+    future fix is visible as a change of behaviour.
+    """
+    tone = music.note(freq=400, duration=0.1, waveform_table=WAVEFORM_SINE)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         brute = music.localize2(tone, theta=40, method="brute")
     ifft = music.localize2(tone, theta=40, method="ifft")
 
-    brute_lag = _interaural_lag(brute[0], brute[1])
-    ifft_lag = _interaural_lag(ifft[0], ifft[1])
+    def peak(signal):
+        spectrum = np.abs(np.fft.rfft(signal))
+        return np.fft.rfftfreq(len(signal), 1 / SAMPLE_RATE)[
+            np.argmax(spectrum)]
 
-    assert brute_lag < 0 < ifft_lag, "the two methods still disagree"
-    assert abs(ifft_lag) > abs(brute_lag)
+    assert peak(ifft[0]) == pytest.approx(400, abs=10)
+    assert abs(peak(brute[0]) - 400) > 50

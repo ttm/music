@@ -36,7 +36,8 @@ from .filters import (
     stretches
 )
 from .functions import normalize_mono, normalize_stereo
-from .io import read_wav, write_wav_mono, write_wav_stereo, play_audio
+from .io import (read_audio, read_wav, write_audio, write_wav_mono,
+                 write_wav_stereo, play_audio)
 from .synths import (
     am,
     gaussian_noise,
@@ -102,6 +103,7 @@ __all__ = [
     'pan_transitions',
     'pitch_to_freq',
     'profile',
+    'read_audio',
     'read_wav',
     'resolve_stereo',
     'reverb',
@@ -111,6 +113,7 @@ __all__ = [
     'tremolo',
     'tremolos',
     'trill',
+    'write_audio',
     'write_wav_mono',
     'write_wav_stereo',
     'play_audio'

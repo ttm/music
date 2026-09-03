@@ -17,16 +17,16 @@ def localize(sonic_vector=None, theta=0, distance=0, x=.1, y=.01,
     ----------
     sonic_vector : array_like
         An one dimensional with the PCM samples of the sound.
-    x : scalar
-        The lateral component of the position in meters.
-    y : scalar
-        The frontal component of the position in meters.
     theta : scalar
         The azimuthal angle of the position in degrees. If theta is supplied,
         x and y are ignored and dist must also be supplied for the sound
         localization to have effect.
     distance : scalar
         The distance of the source from the listener in meters.
+    x : scalar
+        The lateral component of the position in meters.
+    y : scalar
+        The frontal component of the position in meters.
     zeta : scalar
         The distance between the ears in meters.
     air_temp : scalar
@@ -332,14 +332,14 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
     ----------
     sonic_vector : array_like
         An one dimensional with the PCM samples of the sound.
-    x : scalar
-        The lateral component of the position in meters.
-    y : scalar
-        The frontal component of the position in meters.
     theta : scalar
         The azimuthal angle of the position in degrees.  If theta is supplied,
         x and y are ignored and dist must also be supplied for the sound
         localization to have effect.
+    x : scalar
+        The lateral component of the position in meters.
+    y : scalar
+        The frontal component of the position in meters.
     zeta : scalar
         The distance between the ears in meters.
     air_temp : scalar
@@ -352,6 +352,13 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
         (currently not giving good results for all sounds).
     sample_rate : integer
         The sample rate.
+
+    Raises
+    ------
+    ValueError
+        If ``method`` is neither "ifft" nor "brute". Those are the only
+        two implemented, and a misspelling would otherwise fall through
+        to whichever branch happened to be last.
 
     Returns
     -------

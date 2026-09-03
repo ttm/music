@@ -11,6 +11,56 @@ its place. Nothing in the public API changes shape, but an environment
 that installed `music` for scipy's sake will no longer get it.
 
 ### Added
+- **`Peals.twenty_all_over` and `Peals.an_eight_and_forty` ring.** Both
+  raised `NotImplementedError` while being exported and documented. They
+  are implemented as the rules Tintinnalogia (1668) states -- the book
+  this class already cited as its core reference -- and the tests check
+  them against the tables it prints, row for row and in order, rather
+  than by counting rows.
+
+  `twenty_all_over` is a rule rather than a table: every bell hunts from
+  the lead to the back in turn, which is `n * (n - 1)` changes on any
+  number of bells and twenty on five. `an_eight_and_forty` is a
+  composition for five, and says so if built for any other number: the
+  fifth and fourth are whole hunts taking turns at the lead, and the
+  three bells between them ring the plain changes on three -- the same
+  six `music.PlainChanges` gives for three elements, which a test also
+  checks. It rings until it comes round, which is what ends a peal;
+  the forty eight falls out rather than being counted to.
+
+- **`Being.walk`'s `perm-walk` method**, which had been lost with the
+  code this package succeeded and raised rather than guessing. What is
+  here is a **reconstruction, and its docstring says so**: it is
+  `stay(method='perm')` -- the same cycle through `perms` -- with the
+  window walking along the grid by `seqsize` for each permutation and
+  the pointer left where it walked to. Staying and walking differ by
+  whether the ground moves, and nothing else about the two methods
+  differs either. Unlike `stay`, it never reads `domain`, because
+  honouring a fixed domain is what would make the walk a stay.
+
+- **FLAC, read and written**, through `music.write_audio` and
+  `music.read_audio`. The container comes from the extension and the
+  channel count from the array, so a caller with a sound and a path no
+  longer dispatches on either. `read_wav` is the same function under its
+  older name and reads FLAC too; `write_wav_mono` and `write_wav_stereo`
+  are unchanged and follow the extension as well.
+
+  FLAC is lossless, and the tests say so in the only way that matters: a
+  FLAC round trip is *bit for bit* the WAV round trip at the same depth,
+  at 8, 16 and 24 bits, on a file roughly a third the size. That claim is
+  worth testing rather than trusting here, because fidelity between the
+  model and the samples is the thing this package sells.
+
+  Lossy containers are deliberately not offered, though libsndfile would
+  give them for nothing. Discarding what a listener is unlikely to notice
+  is the one thing a package whose subject is psychophysical fidelity
+  should not do quietly.
+
+  FLAC has no 32-bit form and stores 8-bit signed where WAV stores it
+  unsigned. Both are handled, and `bit_depth=32` on a `.flac` path now
+  raises a message naming the depths FLAC has, rather than libsndfile's
+  "Invalid combination of format, subtype and endian".
+
 - **`music.modulated_noise`**, broadband noise of a chosen colour,
   optionally amplitude-modulated. Unmodulated it is the continuous
   broadband stimulus SSTIM catalogues as `techBroadbandNoise`, the
@@ -57,6 +107,28 @@ that installed `music` for scipy's sake will no longer get it.
   two tests it replaces had to do.
 
 ### Fixed
+- **`reverb` named the wrong thing when its phases disagreed.** A
+  `first_phase_duration` longer than `duration` left two arrays of
+  different lengths, and numpy reported a broadcast failure naming two
+  sample counts -- which says nothing about the two durations that
+  caused it. `reverb(duration=0.1)` hit it on the default first phase of
+  0.15 s. It now refuses, naming both durations.
+
+- **`music.structures` stopped resolving as an attribute.** Deferring
+  the structures import took the submodule attribute with it, because
+  `music.structures` had only ever been bound as a side effect of the
+  eager `from .structures import ...`. Three of the examples use
+  `music.structures.peals.PlainChanges` and all three broke. Nothing in
+  the suite touched it and CI does not run the examples, so it passed
+  every check. `__getattr__` now resolves the submodule as well as the
+  names, still lazily, and the tests cover both.
+- **`gaussian_noise` could not take a fractional duration.** It kept its
+  sample count as a float, so `np.random.uniform` was handed `22050.0`
+  as a size and raised `TypeError`. Every duration that was not a whole
+  number of seconds failed, which is most of the durations anyone would
+  ask for. Found by annotating the signature -- the type checker asked
+  what `duration * sample_rate` was, and the answer was wrong.
+
 - **`localize_linear`'s example moved nothing.** It read
   `theta1=90, theta2=-90` and called it "a pass from the left to the
   right", but the azimuth in this package is measured from the ear axis:
@@ -75,6 +147,19 @@ that installed `music` for scipy's sake will no longer get it.
   added, that test fails and the notice arrives with it.
 
 ### Changed
+- **Annotations across the exported API**, from 36 % to 56 % of the
+  exported functions and 28 % to 37 % overall. The docstrings already
+  stated these types in prose, where nothing checked them; the
+  annotations state the same thing where mypy does.
+
+  The rest were left deliberately. Their array parameters are genuinely
+  permissive -- `array_like` here really does accept lists as well as
+  arrays, which was checked rather than assumed -- so annotating them
+  honestly means `np.asarray` coercion through the bodies rather than a
+  signature edit. Attempted by signature alone it produced 583 mypy
+  errors, and was reverted rather than papered over with a narrower type
+  that would have rejected calls that work.
+
 - **`import music` no longer imports sympy**, and takes roughly a third
   of the time it did: **~550-830 ms down to ~185-290 ms**, measured warm
   on 3.12. The permutation and change-ringing structures --

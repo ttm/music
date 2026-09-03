@@ -34,6 +34,18 @@ class InterestingPermutations:
     """Get permutations of n elements in meaningful sequences.
     Mirrors are ordered by swaps (0,n-1...).
 
+    Parameters
+    ----------
+    nelements : integer
+        How many elements are permuted. Every group generated here --
+        symmetric, alternating, cyclic, dihedral -- is the group on this
+        many elements, so it also sets how many permutations there are.
+    method : string
+        The generation method handed to sympy's group ``generate()``,
+        such as ``"dimino"`` or ``"coset"``. It changes the order the
+        permutations come out in, which is the sequence this class
+        exists to make meaningful, and not which permutations they are.
+
     Methods
     -------
     get_alternating

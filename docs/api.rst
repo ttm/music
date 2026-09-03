@@ -120,7 +120,9 @@ Input and output
    :toctree: generated
    :nosignatures:
 
+   read_audio
    read_wav
+   write_audio
    write_wav_mono
    write_wav_stereo
    play_audio

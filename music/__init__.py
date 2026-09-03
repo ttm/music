@@ -64,6 +64,7 @@ from .core import (
     note_with_vibrato,
     note_with_vibratos_glissandos,
     note,
+    read_audio,
     read_wav,
     reverb,
     silence,
@@ -71,6 +72,7 @@ from .core import (
     tremolo,
     tremolos,
     trill,
+    write_audio,
     write_wav_mono,
     write_wav_stereo,
     play_audio,
@@ -138,12 +140,20 @@ def __getattr__(name: str) -> Any:
     if name in _LAZY_STRUCTURES:
         from . import structures
         return getattr(structures, name)
+    if name == 'structures':
+        # `music.structures` used to be bound as a side effect of
+        # importing the names above. Deferring that import took the
+        # submodule attribute with it, and `music.structures.peals`
+        # stopped resolving -- which the examples use and the tests did
+        # not cover.
+        import importlib
+        return importlib.import_module('.structures', __name__)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def __dir__() -> list[str]:
     """Keep the deferred names visible to ``dir()`` and to tab completion."""
-    return sorted(set(globals()) | _LAZY_STRUCTURES)
+    return sorted(set(globals()) | _LAZY_STRUCTURES | {'structures'})
 
 
 __all__ = [
@@ -221,6 +231,7 @@ __all__ = [
     'PrimaryTables',
     'print_peal',
     'profile',
+    'read_audio',
     'read_wav',
     'resolve_stereo',
     'reverb',
@@ -231,6 +242,7 @@ __all__ = [
     'tremolo',
     'tremolos',
     'trill',
+    'write_audio',
     'write_wav_mono',
     'write_wav_stereo',
     'play_audio',

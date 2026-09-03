@@ -1,12 +1,15 @@
 """Simple reverberation filters and impulse response generation."""
 
 import numpy as np
+from numpy.typing import ArrayLike, NDArray
 from ..synths.noises import noise
 from ...utils import as_sonic_vector
 
 
-def reverb(duration=1.9, first_phase_duration=0.15, decay=-50,
-           noise_type="brown", sonic_vector=0, sample_rate=44100):
+def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
+           decay: float = -50, noise_type: str | float = "brown",
+           sonic_vector: ArrayLike = 0,
+           sample_rate: int = 44100) -> NDArray[np.float64]:
     """
     Apply an artificial reverberation or return the impulse response.
 
@@ -25,6 +28,11 @@ def reverb(duration=1.9, first_phase_duration=0.15, decay=-50,
         An optional one dimensional array for the reverberation to be applied.
     sample_rate : scalar
         The sampling frequency.
+
+    Raises
+    ------
+    ValueError
+        If ``first_phase_duration`` is longer than ``duration``.
 
     Returns
     -------
@@ -53,6 +61,16 @@ def reverb(duration=1.9, first_phase_duration=0.15, decay=-50,
     """
     lambda_r = int(duration * sample_rate)
     lambda1 = int(first_phase_duration * sample_rate)
+    if lambda1 > lambda_r:
+        # ii[:lambda1] is only lambda_r long, so p and the incidences
+        # below came out different lengths and numpy reported a
+        # broadcast failure naming two sample counts, which says
+        # nothing about the two durations that caused it.
+        raise ValueError(
+            f"first_phase_duration ({first_phase_duration} s) cannot "
+            f"exceed duration ({duration} s): the first period of the "
+            "reverberation is part of it, not longer than it"
+        )
     # Sound reincidence probability in the first period:
     ii = np.arange(lambda_r)
     p = (ii[:lambda1] / lambda1) ** 2.
@@ -70,7 +88,11 @@ def reverb(duration=1.9, first_phase_duration=0.15, decay=-50,
     # Eq. 78 Impulse response of the reverberation
     result = np.hstack((r1, r2))
     result[0] = 1.
-    sonic_vector = as_sonic_vector(sonic_vector)
-    if sonic_vector is not None:
-        return np.convolve(sonic_vector, result)
+    samples = as_sonic_vector(sonic_vector)
+    if samples is not None:
+        # asarray rather than the bare convolve: numpy's stubs on the
+        # oldest supported version type the result as floating[Any]
+        # rather than float64, and only that job saw it. No copy, the
+        # dtype already matching.
+        return np.asarray(np.convolve(samples, result), dtype=np.float64)
     return result

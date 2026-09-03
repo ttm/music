@@ -587,3 +587,132 @@ def test_trill_alternates_between_the_frequencies_it_was_given():
     assert peaks[0] == pytest.approx(400, abs=40)
     assert peaks[1] == pytest.approx(1200, abs=60)
     assert peaks[2] == pytest.approx(400, abs=40)
+
+
+# --------------------------------------------------------------------------
+# Filters and envelopes, checked against the curves they describe
+# --------------------------------------------------------------------------
+
+@pytest.mark.parametrize("trans_dev", [-20.0, -6.0, 6.0, 20.0])
+@pytest.mark.parametrize("alpha", [1.0, 2.0])
+def test_loud_is_the_decibel_curve_it_documents(trans_dev, alpha):
+    """e = 10 ** ((n/N) ** alpha * trans_dev / 20), sample for sample.
+
+    The existing test checked the two endpoints, which any monotonic
+    curve between them would satisfy. This checks the curve.
+    """
+    from music.core.filters.loud import loud
+
+    count = 512
+    produced = loud(trans_dev=trans_dev, alpha=alpha, method="exp", to=1,
+                    number_of_samples=count)
+
+    # The divisor is the last index, not the count: the curve reaches
+    # its full deviation at the final sample rather than one step short.
+    samples = np.arange(count)
+    expected = 10 ** ((samples / (count - 1)) ** alpha * trans_dev / 20)
+
+    assert np.allclose(produced, expected, rtol=0, atol=1e-12)
+
+
+def test_loud_with_no_deviation_is_unity_gain():
+    """Zero decibels of transition must leave a signal alone, exactly."""
+    from music.core.filters.loud import loud
+
+    tone = music.note(freq=220, duration=0.05)
+    unchanged = loud(trans_dev=0, method="exp", sonic_vector=tone)
+    assert np.array_equal(unchanged, tone)
+
+
+def test_a_fade_out_ends_where_its_decibels_say():
+    """fade(db=-80) must arrive at -80 dB, not merely get quieter."""
+    from music.core.filters.fade import fade
+
+    envelope = fade(db=-80, number_of_samples=1024, fade_out=True, perc=0)
+    assert envelope[0] == pytest.approx(1.0)
+    assert envelope[-1] == pytest.approx(10 ** (-80 / 20), rel=1e-3)
+
+
+def test_the_last_percent_of_a_fade_runs_to_true_silence():
+    """`perc` is why a fade ends at zero rather than at -80 dB.
+
+    A decibel curve never reaches zero, and a signal cut off at -80 dB
+    still steps to silence at the boundary, which is a click. The last
+    `perc` of the fade is linear to exactly zero for that reason, and
+    the two-sided behaviour is easy to lose in a refactor: at 8 samples
+    one percent rounds to nothing and the fade ends at -80 dB instead.
+    """
+    from music.core.filters.fade import fade
+
+    with_tail = fade(db=-80, number_of_samples=1024, fade_out=True)
+    assert with_tail[-1] == 0.0
+    # The decibel curve still passes through -80 dB, where the linear
+    # run to zero takes over.
+    assert np.isclose(with_tail, 10 ** (-80 / 20), rtol=1e-9).any()
+    # And it is a run rather than a step: the last ten samples descend
+    # to zero in even increments, which is what makes it linear.
+    tail = with_tail[-10:]
+    steps = np.diff(tail)
+    assert np.all(steps < 0)
+    assert np.allclose(steps, steps[0])
+
+
+def test_a_fade_in_is_the_fade_out_reversed():
+    """The two are the same curve read in opposite directions, so one
+    must be the other's mirror rather than merely also monotonic."""
+    from music.core.filters.fade import fade
+
+    out = fade(db=-40, number_of_samples=512, fade_out=True, perc=0)
+    into = fade(db=-40, number_of_samples=512, fade_out=False, perc=0)
+    assert np.allclose(out, into[::-1], atol=1e-12)
+
+
+def test_reverb_decays_by_the_decibels_it_was_given():
+    """The impulse response's envelope is 10 ** ((decay/20) * n/(N-1)),
+    so the last incidence sits `decay` dB below the first.
+
+    The existing test rendered one and checked its length.
+    """
+    np.random.seed(0)
+    decay, duration, sample_rate = -60.0, 0.5, 8000
+    impulse = music.reverb(duration=duration, first_phase_duration=0.05,
+                           decay=decay, sample_rate=sample_rate)
+
+    count = len(impulse)
+    window = count // 10
+    # The response is sparse incidences under a decaying envelope, so the
+    # peak of a window follows the envelope where individual samples do
+    # not.
+    early = np.abs(impulse[1:window]).max()
+    late = np.abs(impulse[-window:]).max()
+    measured = 20 * np.log10(late / early)
+
+    assert measured == pytest.approx(decay, abs=12)
+    assert late < early
+
+
+@pytest.mark.parametrize("duration", [0.25, 0.5, 1.0, 2.0])
+def test_stretches_gives_each_repeat_the_duration_it_asked_for(duration):
+    """Each repeat is resampled to last `duration` seconds. The existing
+    test checked the total against the sum, which a single wrong segment
+    compensated by another would satisfy.
+    """
+    sample_rate = 8000
+    fragment = music.note(freq=220, duration=1.0, sample_rate=sample_rate)
+    out = music.stretches(fragment, durations=(duration,),
+                          sample_rate=sample_rate)
+
+    assert len(out) == pytest.approx(duration * sample_rate, abs=2)
+
+
+def test_stretches_squeezes_rather_than_truncates():
+    """A half-length repeat must be the whole fragment at twice the
+    speed, not the first half of it: the last sample of the fragment has
+    to survive into the squeezed copy."""
+    sample_rate = 8000
+    fragment = music.note(freq=110, duration=1.0, sample_rate=sample_rate)
+    squeezed = music.stretches(fragment, durations=(0.5,),
+                               sample_rate=sample_rate)
+
+    # Reading every other sample is what halving the duration means.
+    assert np.array_equal(squeezed, fragment[::2][:len(squeezed)])

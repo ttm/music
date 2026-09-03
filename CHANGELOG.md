@@ -11,6 +11,30 @@ its place. Nothing in the public API changes shape, but an environment
 that installed `music` for scipy's sake will no longer get it.
 
 ### Added
+- **`tools/audit_audio_tests.py`**, which classifies every test that
+  renders audio by what it asserts about it and names the ones that
+  assert nothing. It is how the batches of #67 are chosen: from a list
+  rather than from memory. It under-reports rather than flatters -- a
+  test doing something the heuristic does not recognise is filed lower
+  than it deserves -- which is the right direction for a tool that picks
+  work.
+
+- **Value tests for the filters and envelopes** (#67, second pass).
+  `loud` is checked against `10 ** ((n/N) ** alpha * dev / 20)` sample
+  for sample, where the existing test checked its two endpoints and any
+  monotonic curve between them would have passed. `fade` must arrive at
+  the decibels it was given, and its fade in must be its fade out
+  reversed. `reverb` must decay by the decibels it was given. `stretches`
+  must give *each* repeat the duration it asked for -- the existing test
+  checked the total, which one segment wrong in each direction would
+  satisfy -- and a squeezed repeat must be the whole fragment read
+  faster rather than a truncation of it.
+
+  One of these pins behaviour that is easy to lose: `fade`'s last
+  `perc` runs linearly to true zero, because a decibel curve never
+  reaches zero and a signal cut off at -80 dB still steps to silence,
+  which is a click.
+
 - **Value tests for four synthesis routines that had only their shape
   checked** (issue #67, a first pass). `note_with_phase`,
   `note_with_fm`, `note_with_glissando` and `trill` are now checked

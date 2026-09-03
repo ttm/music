@@ -1,6 +1,6 @@
 # Quality assessment and known limitations
 
-*A living record, not a point-in-time audit. Last measured **2026-09-03**,
+*A living record, not a point-in-time audit. Last measured **2026-09-04**,
 `music` 1.4.0: 40 modules, 9,480 LOC package + 6,044 LOC tests, 90 names
 in the public API.*
 

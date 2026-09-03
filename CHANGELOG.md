@@ -1,119 +1,111 @@
-## [1.4.0] - 2026-09-03
+## [1.4.0] - 2026-09-04
 ### Note for anyone upgrading
-**Nothing that imports from `music` breaks, and nothing renders
-differently.** `music.stimulation` became a package rather than a single
-module, and every name it exported is still imported from the same
-place. `localize_linear` is bit-identical to 1.3.0; what changed there
-is the example in its docstring, which was wrong -- see below.
+**Nothing that imports from `music` breaks.** No exported name was
+removed, and none was renamed without keeping the old one bound:
+`read_wav` is still `read_wav`, now an alias for `read_audio`.
+`music.stimulation` became a package rather than a single module, and
+everything it exported is imported from the same place as before.
+
+**Several routines do render differently, because they were wrong.**
+This is the part to read before upgrading a piece of work that has to
+sound the same as it did:
+
+- **`localize2` placed sounds on the wrong side of the head.** Both of
+  its methods now put the near ear louder *and* earlier; before, the
+  louder ear arrived last. Its `brute` method also returned the wrong
+  pitch -- a 400 Hz tone came back at 298 Hz. Anything rendered with
+  `localize2` will sound different, and the old output was not what the
+  routine documents.
+- **`trill` ignored `sample_rate`**, so at anything other than 44100 Hz
+  it produced the wrong duration at the wrong note rate. A one-second
+  trill at 22050 Hz was two seconds long.
+- **`gaussian_noise` raised `TypeError` for any duration that was not a
+  whole number of seconds.** It works now, so calls that used to fail
+  will start producing audio.
+
+**Two routines now raise where they used to return.** `music.profile`
+returned `None` while its docstring described a dictionary -- its body
+had been commented out since it was written -- and raises
+`NotImplementedError` now. `reverb` refuses a `first_phase_duration`
+longer than its `duration`, which previously reached numpy as an
+unhelpful broadcasting error.
+
+**`localize_linear` is bit-identical to 1.3.0.** What changed there is
+the worked example in its docstring, which rendered no movement at all.
 
 **The dependency list changed**: `scipy` is gone and `soundfile` takes
 its place. Nothing in the public API changes shape, but an environment
-that installed `music` for scipy's sake will no longer get it.
+that installed `music` for scipy's sake will no longer get it, and
+`soundfile` brings libsndfile with it.
 
 ### Added
-- **Value tests for `adsr` and `note_with_doppler`** (#67, fourth pass).
-  The envelope is checked stage by stage -- attack to unity, decay to
-  the sustain level, release to silence, each over the milliseconds it
-  was given, and each monotonic in the direction it should be. Only the
-  sustain plateau had been checked before, and an envelope with the
-  right plateau in the wrong place is still the wrong envelope.
+- **`music.StimulationSession`**, a protocol: phases in order, each with
+  its own stimulus, duration and gain, joined by crossfades rather than
+  by cuts. **The session lasts exactly the sum of its phase durations.**
+  A ramp is taken half from the phase before it and half from the phase
+  after, so a transition is centred on the boundary instead of being
+  inserted between the phases and stretching the protocol past the
+  length its author wrote down -- ten minutes of stimulation stays ten
+  minutes. Boundaries are rounded from elapsed time rather than summed
+  from per-phase roundings, which is the same drift the phase
+  integration carried until 1.3.0 and would have cost a long session
+  several samples of length.
 
-  Doppler is checked against ``f' = f * c / (c + v)``: a stationary
-  source is not shifted, a receding one is flattened by the equation at
-  three velocities, a source passing the listener crosses its own pitch
-  from sharp to flat, and the amplitude grows as it arrives. Its stereo
-  pair favours the ear the source is on, which is the same convention
-  the rest of the localization family follows.
+  Phases that disagree about channels are reconciled by promoting the
+  session to stereo, never by flattening, because flattening is exactly
+  what destroys a binaural beat. Crossfades are equal-power by default,
+  since two different stimuli are uncorrelated and a linear pair would
+  dig a 3 dB hole at every transition; `ramp_shape='linear'` is there
+  for the correlated case, where it is the flat one instead.
+- **`music.modulated_noise`**, broadband noise of a chosen colour,
+  optionally amplitude-modulated. Unmodulated it is the continuous
+  broadband stimulus SSTIM catalogues as `techBroadbandNoise`, the
+  vehicle for stochastic resonance and for masking; modulated it is also
+  `techAmplitudeModulation`, whose definition names a carrier tone *or
+  noise*. The distinction is in the signal and not only in the label: at
+  a rate of zero there is no envelope to find, and the test says so.
+- **`music.spatial_motion`**, a source orbiting the listener at a chosen
+  rate, rendering `sstim-v:techSpatialAuditory`. SSTIM distinguishes
+  structured spatial trajectories from simple left/right crossfades, and
+  this is on the right side of that line: the interaural time and
+  intensity differences are computed per sample from the geometry. It
+  will move a sound it did not synthesize, so a noise bed or an already
+  rendered stimulus can be given a trajectory.
+- **FLAC, read and written**, through `music.write_audio` and
+  `music.read_audio`. The container comes from the extension and the
+  channel count from the array, so a caller with a sound and a path no
+  longer dispatches on either. `read_wav` is the same function under its
+  older name and reads FLAC too; `write_wav_mono` and `write_wav_stereo`
+  are unchanged and follow the extension as well.
 
-  Both routines proved correct. `fir` and `iir` were examined too and
-  needed nothing: their tests already check the closed form, the
-  recurrence and linearity. The three of theirs the audit lists are
-  about errors and cost rather than audio, which is the heuristic
-  under-reporting as its docstring says it does.
+  FLAC is lossless, and the tests say so in the only way that matters: a
+  FLAC round trip is *bit for bit* the WAV round trip at the same depth,
+  at 8, 16 and 24 bits, on a file roughly a third the size. That claim is
+  worth testing rather than trusting here, because fidelity between the
+  model and the samples is the thing this package sells.
 
-- **Value tests for the localization family** (#67, third pass), and a
-  finding they turned up. `localize2` is checked against the geometry it
-  models: a source on the median plane leaves the channels identical, a
-  source at -theta is the source at +theta with the ears swapped, and
-  the level difference grows with both frequency and angle, which is the
-  IID the code applies.
+  Lossy containers are deliberately not offered, though libsndfile would
+  give them for nothing. Discarding what a listener is unlikely to notice
+  is the one thing a package whose subject is psychophysical fidelity
+  should not do quietly.
 
-  These are deliberately not called tests that localization is correct.
-  There is no head-related transfer function anywhere in this package,
-  and `localize2` says in its own docstring that its calculations are
-  "not standard and are only to illustrate the method".
+  FLAC has no 32-bit form and stores 8-bit signed where WAV stores it
+  unsigned. Both are handled, and `bit_depth=32` on a `.flac` path now
+  raises a message naming the depths FLAC has, rather than libsndfile's
+  "Invalid combination of format, subtype and endian".
 
-  **`localize2` worked at twice every frequency.** `df`, the spacing
-  between FFT bins, was `2 * sample_rate / lambda_l` where it is
-  `sample_rate / lambda_l`, so the interaural delay came out at exactly
-  twice the ITD computed on the line above it, the level difference was
-  the head-shadow of a tone an octave up, and the 4000 Hz crossover
-  between the two delay coefficients fired at a true 2000 Hz. Fixed, and
-  the realized delay is now the computed one to within a part in a
-  million at every frequency tested.
-
-- **`tools/audit_audio_tests.py`**, which classifies every test that
-  renders audio by what it asserts about it and names the ones that
-  assert nothing. It is how the batches of #67 are chosen: from a list
-  rather than from memory. It under-reports rather than flatters -- a
-  test doing something the heuristic does not recognise is filed lower
-  than it deserves -- which is the right direction for a tool that picks
-  work.
-
-- **Value tests for the filters and envelopes** (#67, second pass).
-  `loud` is checked against `10 ** ((n/N) ** alpha * dev / 20)` sample
-  for sample, where the existing test checked its two endpoints and any
-  monotonic curve between them would have passed. `fade` must arrive at
-  the decibels it was given, and its fade in must be its fade out
-  reversed. `reverb` must decay by the decibels it was given. `stretches`
-  must give *each* repeat the duration it asked for -- the existing test
-  checked the total, which one segment wrong in each direction would
-  satisfy -- and a squeezed repeat must be the whole fragment read
-  faster rather than a truncation of it.
-
-  One of these pins behaviour that is easy to lose: `fade`'s last
-  `perc` runs linearly to true zero, because a decibel curve never
-  reaches zero and a signal cut off at -80 dB still steps to silence,
-  which is a click.
-
-- **Value tests for four synthesis routines that had only their shape
-  checked** (issue #67, a first pass). `note_with_phase`,
-  `note_with_fm`, `note_with_glissando` and `trill` are now checked
-  against the equations their docstrings describe, sample for sample
-  where the routine is deterministic and spectrally where the claim is
-  about pitch.
-
-  The tests they join asserted a length and an amplitude range, which
-  silence and white noise both satisfy. `note_with_fm(max_fm_deviation=0)`
-  is now required to be a steady tone with nothing at the modulation
-  rate; a glissando between equal frequencies is required not to move;
-  a trill is required to alternate.
-
-  One test documents something worth knowing about table synthesis:
-  writing `(end - start) * samples / (count - 1)` and
-  `(end - start) * (samples / (count - 1))` differ in the last bit, and
-  since the lookup index is an integer floor, one bit is enough to
-  change a sample. The test reproduces the implementation's grouping
-  rather than tolerating the difference away.
-
-- **CI runs the examples**, through `tools/run_examples.py`, which also
-  runs them locally in one command. Every example is expected to
-  complete with a zero exit status unless it is named in the script's
-  `SKIP` table with a reason -- only `singing_demo.py` is, because it
-  needs the external eCantorix engine -- so a new example is covered the
-  moment it is added rather than when someone remembers to list it. Each
-  runs in a scratch directory, since they write WAV files next to
-  themselves.
-
-  This exists because of a specific failure. Deferring the
-  `music.structures` import removed the submodule attribute that three
-  examples use, and the break survived the full suite at 100% coverage,
-  a clean mypy, a clean ruff and a docs build. Every one of those checks
-  looks at the package; none of them looks at a caller, and the examples
-  are the only callers this repository has. The script was verified by
-  reintroducing that exact break and confirming it fails on the three
-  examples and exits non-zero.
-
+- **24-bit WAV, read and written.** `bit_depth=24` was a `ValueError`
+  because `scipy.io.wavfile` could not write it; libsndfile can, so it now
+  sits alongside 8, 16 and 32 in `BIT_DEPTHS` and in the round-trip tests.
+  It is the depth most audio work actually wants.
+- **An encoding this package cannot normalize is now refused by name.**
+  `read_wav` checks the file's declared subtype and raises
+  `unsupported WAV encoding: ...`. libsndfile will decode ADPCM and
+  companded formats to float quite happily, but those have no full scale
+  that this package's normalization is defined against, so being decoded
+  is not the same as being supported. The test that covers it writes a
+  real ADPCM file rather than mocking a reader's return value, which the
+  two tests it replaces had to do.
 - **`Peals.twenty_all_over` and `Peals.an_eight_and_forty` ring.** Both
   raised `NotImplementedError` while being exported and documented. They
   are implemented as the rules Tintinnalogia (1668) states -- the book
@@ -141,73 +133,109 @@ that installed `music` for scipy's sake will no longer get it.
   differs either. Unlike `stay`, it never reads `domain`, because
   honouring a fixed domain is what would make the walk a stay.
 
-- **FLAC, read and written**, through `music.write_audio` and
-  `music.read_audio`. The container comes from the extension and the
-  channel count from the array, so a caller with a sound and a path no
-  longer dispatches on either. `read_wav` is the same function under its
-  older name and reads FLAC too; `write_wav_mono` and `write_wav_stereo`
-  are unchanged and follow the extension as well.
+- **CI runs the examples**, through `tools/run_examples.py`, which also
+  runs them locally in one command. Every example is expected to
+  complete with a zero exit status unless it is named in the script's
+  `SKIP` table with a reason -- only `singing_demo.py` is, because it
+  needs the external eCantorix engine -- so a new example is covered the
+  moment it is added rather than when someone remembers to list it. Each
+  runs in a scratch directory, since they write WAV files next to
+  themselves.
 
-  FLAC is lossless, and the tests say so in the only way that matters: a
-  FLAC round trip is *bit for bit* the WAV round trip at the same depth,
-  at 8, 16 and 24 bits, on a file roughly a third the size. That claim is
-  worth testing rather than trusting here, because fidelity between the
-  model and the samples is the thing this package sells.
+  This exists because of a specific failure. Deferring the
+  `music.structures` import removed the submodule attribute that three
+  examples use, and the break survived the full suite at 100% coverage,
+  a clean mypy, a clean ruff and a docs build. Every one of those checks
+  looks at the package; none of them looks at a caller, and the examples
+  are the only callers this repository has. The script was verified by
+  reintroducing that exact break and confirming it fails on the three
+  examples and exits non-zero.
 
-  Lossy containers are deliberately not offered, though libsndfile would
-  give them for nothing. Discarding what a listener is unlikely to notice
-  is the one thing a package whose subject is psychophysical fidelity
-  should not do quietly.
+- **`tools/audit_audio_tests.py`**, which classifies every test that
+  renders audio by what it asserts about it and names the ones that
+  assert nothing. It is how the batches of #67 are chosen: from a list
+  rather than from memory. It under-reports rather than flatters -- a
+  test doing something the heuristic does not recognise is filed lower
+  than it deserves -- which is the right direction for a tool that picks
+  work.
 
-  FLAC has no 32-bit form and stores 8-bit signed where WAV stores it
-  unsigned. Both are handled, and `bit_depth=32` on a `.flac` path now
-  raises a message naming the depths FLAC has, rather than libsndfile's
-  "Invalid combination of format, subtype and endian".
+- **Value tests for four synthesis routines that had only their shape
+  checked** (issue #67, a first pass). `note_with_phase`,
+  `note_with_fm`, `note_with_glissando` and `trill` are now checked
+  against the equations their docstrings describe, sample for sample
+  where the routine is deterministic and spectrally where the claim is
+  about pitch.
 
-- **`music.modulated_noise`**, broadband noise of a chosen colour,
-  optionally amplitude-modulated. Unmodulated it is the continuous
-  broadband stimulus SSTIM catalogues as `techBroadbandNoise`, the
-  vehicle for stochastic resonance and for masking; modulated it is also
-  `techAmplitudeModulation`, whose definition names a carrier tone *or
-  noise*. The distinction is in the signal and not only in the label: at
-  a rate of zero there is no envelope to find, and the test says so.
-- **`music.spatial_motion`**, a source orbiting the listener at a chosen
-  rate, rendering `sstim-v:techSpatialAuditory`. SSTIM distinguishes
-  structured spatial trajectories from simple left/right crossfades, and
-  this is on the right side of that line: the interaural time and
-  intensity differences are computed per sample from the geometry. It
-  will move a sound it did not synthesize, so a noise bed or an already
-  rendered stimulus can be given a trajectory.
-- **`music.StimulationSession`**, a protocol: phases in order, each with
-  its own stimulus, duration and gain, joined by crossfades rather than
-  by cuts. **The session lasts exactly the sum of its phase durations.**
-  A ramp is taken half from the phase before it and half from the phase
-  after, so a transition is centred on the boundary instead of being
-  inserted between the phases and stretching the protocol past the
-  length its author wrote down -- ten minutes of stimulation stays ten
-  minutes. Boundaries are rounded from elapsed time rather than summed
-  from per-phase roundings, which is the same drift the phase
-  integration carried until 1.3.0 and would have cost a long session
-  several samples of length.
+  The tests they join asserted a length and an amplitude range, which
+  silence and white noise both satisfy. `note_with_fm(max_fm_deviation=0)`
+  is now required to be a steady tone with nothing at the modulation
+  rate; a glissando between equal frequencies is required not to move;
+  a trill is required to alternate.
 
-  Phases that disagree about channels are reconciled by promoting the
-  session to stereo, never by flattening, because flattening is exactly
-  what destroys a binaural beat. Crossfades are equal-power by default,
-  since two different stimuli are uncorrelated and a linear pair would
-  dig a 3 dB hole at every transition; `ramp_shape='linear'` is there
-  for the correlated case, where it is the flat one instead.
-- **24-bit WAV, read and written.** `bit_depth=24` was a `ValueError`
-  because `scipy.io.wavfile` could not write it; libsndfile can, so it now
-  sits alongside 8, 16 and 32 in `BIT_DEPTHS` and in the round-trip tests.
-  It is the depth most audio work actually wants.
-- **An encoding this package cannot normalize is now refused by name.**
-  `read_wav` checks the file's declared subtype and raises
-  `unsupported WAV encoding: ...`. libsndfile will decode ADPCM and
-  companded formats to float quite happily, but those have no full scale
-  that this package's normalization is defined against, so being decoded
-  is not the same as being supported. The test that covers it writes a
-  real ADPCM file rather than mocking a reader's return value, which the
-  two tests it replaces had to do.
+  One test documents something worth knowing about table synthesis:
+  writing `(end - start) * samples / (count - 1)` and
+  `(end - start) * (samples / (count - 1))` differ in the last bit, and
+  since the lookup index is an integer floor, one bit is enough to
+  change a sample. The test reproduces the implementation's grouping
+  rather than tolerating the difference away.
+
+- **Value tests for the filters and envelopes** (#67, second pass).
+  `loud` is checked against `10 ** ((n/N) ** alpha * dev / 20)` sample
+  for sample, where the existing test checked its two endpoints and any
+  monotonic curve between them would have passed. `fade` must arrive at
+  the decibels it was given, and its fade in must be its fade out
+  reversed. `reverb` must decay by the decibels it was given. `stretches`
+  must give *each* repeat the duration it asked for -- the existing test
+  checked the total, which one segment wrong in each direction would
+  satisfy -- and a squeezed repeat must be the whole fragment read
+  faster rather than a truncation of it.
+
+  One of these pins behaviour that is easy to lose: `fade`'s last
+  `perc` runs linearly to true zero, because a decibel curve never
+  reaches zero and a signal cut off at -80 dB still steps to silence,
+  which is a click.
+
+- **Value tests for the localization family** (#67, third pass), and a
+  finding they turned up. `localize2` is checked against the geometry it
+  models: a source on the median plane leaves the channels identical, a
+  source at -theta is the source at +theta with the ears swapped, and
+  the level difference grows with both frequency and angle, which is the
+  IID the code applies.
+
+  These are deliberately not called tests that localization is correct.
+  There is no head-related transfer function anywhere in this package,
+  and `localize2` says in its own docstring that its calculations are
+  "not standard and are only to illustrate the method".
+
+  **`localize2` worked at twice every frequency.** `df`, the spacing
+  between FFT bins, was `2 * sample_rate / lambda_l` where it is
+  `sample_rate / lambda_l`, so the interaural delay came out at exactly
+  twice the ITD computed on the line above it, the level difference was
+  the head-shadow of a tone an octave up, and the 4000 Hz crossover
+  between the two delay coefficients fired at a true 2000 Hz. Fixed, and
+  the realized delay is now the computed one to within a part in a
+  million at every frequency tested.
+
+- **Value tests for `adsr` and `note_with_doppler`** (#67, fourth pass).
+  The envelope is checked stage by stage -- attack to unity, decay to
+  the sustain level, release to silence, each over the milliseconds it
+  was given, and each monotonic in the direction it should be. Only the
+  sustain plateau had been checked before, and an envelope with the
+  right plateau in the wrong place is still the wrong envelope.
+
+  Doppler is checked against ``f' = f * c / (c + v)``: a stationary
+  source is not shifted, a receding one is flattened by the equation at
+  three velocities, a source passing the listener crosses its own pitch
+  from sharp to flat, and the amplitude grows as it arrives. Its stereo
+  pair favours the ear the source is on, which is the same convention
+  the rest of the localization family follows.
+
+  Both routines proved correct. `fir` and `iir` were examined too and
+  needed nothing: their tests already check the closed form, the
+  recurrence and linearity. The three of theirs the audit lists are
+  about errors and cost rather than audio, which is the heuristic
+  under-reporting as its docstring says it does.
+
 
 ### Fixed
 - **`localize2` placed sounds on the wrong side of the head, in three
@@ -253,7 +281,10 @@ that installed `music` for scipy's sake will no longer get it.
   caused it. `reverb(duration=0.1)` hit it on the default first phase of
   0.15 s. It now refuses, naming both durations.
 
-- **`music.structures` stopped resolving as an attribute.** Deferring
+- **`music.structures` stopped resolving as an attribute.** Introduced
+  and fixed within this release, so no published version carried it;
+  recorded because the way it survived every check is worth knowing.
+  Deferring
   the structures import took the submodule attribute with it, because
   `music.structures` had only ever been bound as a side effect of the
   eager `from .structures import ...`. Three of the examples use

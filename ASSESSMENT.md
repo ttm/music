@@ -1,9 +1,8 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-03**,
-`music` 1.3.0 plus the unreleased stimulation, dependency and
-documentation work: 40 modules, 9,422 LOC package + 5,340 LOC tests, 90
-names in the public API.*
+`music` 1.4.0: 40 modules, 9,480 LOC package + 6,044 LOC tests, 90 names
+in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
 and was already stale four days later: it reported 125 tests at 61 % coverage
@@ -22,11 +21,11 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **793 passed**, 9 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,363 stmts, 0 missed) |
+| Test suite | `pytest -q` | **868 passed**, 16 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,360 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 1,620 findings |
+| Lint, extended rule set | `ruff check --select ALL music` | 1,627 findings |
 | Annotation coverage | AST scan | **62 / 166 functions (37 %)**; 39 / 70 exported (56 %) |
 | Docstring coverage | AST scan | **140 / 148 public defs (95 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
@@ -132,8 +131,8 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 1,620 findings** on `music/`, almost all
-  stylistic: 342 quote-style, 296 missing argument annotations, 78 missing
+- **The extended lint set reports 1,627 findings** on `music/`, almost all
+  stylistic: 345 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.

@@ -1,4 +1,4 @@
-## [Unreleased]
+## [1.4.0] - 2026-09-03
 ### Note for anyone upgrading
 **Nothing that imports from `music` breaks, and nothing renders
 differently.** `music.stimulation` became a package rather than a single

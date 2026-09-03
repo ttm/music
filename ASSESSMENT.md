@@ -30,7 +30,7 @@ Every figure below came from running the code, not from reading it.
 | Annotation coverage | AST scan | **62 / 166 functions (37 %)**; 39 / 70 exported (56 %) |
 | Docstring coverage | AST scan | **140 / 148 public defs (95 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
-| Examples | run all 11 | **10 pass**, 1 needs the external singing engine |
+| Examples | `python tools/run_examples.py` | **10 pass**, 1 skipped for the external singing engine |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
 | Import cost | `import music`, warm, 3.12 | **~185-290 ms**, and no sympy in `sys.modules` |
 | Archival subjects | NLM MeSH lookup, per identifier | every term in `.zenodo.json` resolves to the term it declares |

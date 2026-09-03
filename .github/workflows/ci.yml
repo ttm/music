@@ -36,6 +36,29 @@ jobs:
       - name: Test
         run: pytest -q --cov=music --cov-report=term-missing --cov-fail-under=100
 
+  examples:
+    name: Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the package
+        # The plot extra: PrimaryTables.draw_tables() needs matplotlib,
+        # and an example that reaches for it should fail here for a real
+        # reason rather than for a missing optional dependency.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e '.[plot]'
+      - name: Run every example
+        # Nothing ran these until now, and it showed: deferring the
+        # music.structures import broke three of them, and the break
+        # survived the full suite at 100% coverage, mypy, ruff and the
+        # docs build. Every one of those checks looks at the package;
+        # the examples are the only callers this repository has.
+        run: python tools/run_examples.py
+
   minimums:
     name: Oldest supported dependencies
     runs-on: ubuntu-latest

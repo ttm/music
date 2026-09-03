@@ -11,6 +11,26 @@ its place. Nothing in the public API changes shape, but an environment
 that installed `music` for scipy's sake will no longer get it.
 
 ### Added
+- **Value tests for four synthesis routines that had only their shape
+  checked** (issue #67, a first pass). `note_with_phase`,
+  `note_with_fm`, `note_with_glissando` and `trill` are now checked
+  against the equations their docstrings describe, sample for sample
+  where the routine is deterministic and spectrally where the claim is
+  about pitch.
+
+  The tests they join asserted a length and an amplitude range, which
+  silence and white noise both satisfy. `note_with_fm(max_fm_deviation=0)`
+  is now required to be a steady tone with nothing at the modulation
+  rate; a glissando between equal frequencies is required not to move;
+  a trill is required to alternate.
+
+  One test documents something worth knowing about table synthesis:
+  writing `(end - start) * samples / (count - 1)` and
+  `(end - start) * (samples / (count - 1))` differ in the last bit, and
+  since the lookup index is an integer floor, one bit is enough to
+  change a sample. The test reproduces the implementation's grouping
+  rather than tolerating the difference away.
+
 - **CI runs the examples**, through `tools/run_examples.py`, which also
   runs them locally in one command. Every example is expected to
   complete with a zero exit status unless it is named in the script's
@@ -125,6 +145,15 @@ that installed `music` for scipy's sake will no longer get it.
   two tests it replaces had to do.
 
 ### Fixed
+- **`trill` ignored `sample_rate`.** The note length and the loop bound
+  were hardcoded to 44100 while the argument was declared, documented,
+  and passed to `note()` -- so a trill asked for at 22050 Hz rendered two
+  seconds of audio for every one requested, at half the note rate. The
+  same defect `number_of_samples` had until 1.3.0: an argument honoured
+  in one place and ignored in another. Found by writing a test that
+  asked what the duration should be, where the old test asked only
+  whether some audio came back.
+
 - **`reverb` named the wrong thing when its phases disagreed.** A
   `first_phase_duration` longer than `duration` left two arrays of
   different lengths, and numpy reported a broadcast failure naming two

@@ -398,3 +398,192 @@ def test_both_paths_of_the_integrator_agree():
     difference = np.abs(short - blocked)
     across_the_fold = np.minimum(difference, TABLE_LENGTH - difference)
     assert across_the_fold.max() < 1e-6
+
+
+# --------------------------------------------------------------------------
+# Synthesis routines that had only their shape checked
+#
+# Each of these was covered by a test that asserted a length and a range,
+# which silence and white noise both satisfy. What follows checks the
+# samples against the equation the docstring describes, in the style of
+# test_note_matches_the_lookup_equation_sample_for_sample above.
+# --------------------------------------------------------------------------
+
+@pytest.mark.parametrize("phase", [0.0, np.pi / 2, np.pi, 2 * np.pi])
+def test_note_with_phase_offsets_the_lookup_by_the_phase(phase):
+    """gamma = floor(phase * L / 2pi + n * f * L / fs), read mod L."""
+    freq, duration = 220.0, 0.05
+    produced = music.note_with_phase(freq=freq, duration=duration,
+                                     phase=phase,
+                                     waveform_table=WAVEFORM_SINE)
+
+    count = int(duration * SAMPLE_RATE)
+    length = len(WAVEFORM_SINE)
+    i0 = phase * length / (2 * np.pi)
+    gamma = (i0 + np.arange(count) * freq * length
+             / SAMPLE_RATE).astype(np.int64)
+    expected = WAVEFORM_SINE[gamma % length]
+
+    assert np.array_equal(produced, expected)
+
+
+def test_a_phase_of_zero_is_the_plain_note():
+    """The two routines describe the same sound when the phase is zero,
+    so they must render the same samples, not merely similar ones."""
+    plain = music.note(freq=220, duration=0.05,
+                       waveform_table=WAVEFORM_SINE)
+    phased = music.note_with_phase(freq=220, duration=0.05, phase=0,
+                                   waveform_table=WAVEFORM_SINE)
+    assert np.array_equal(plain, phased)
+
+
+def test_a_phase_of_a_quarter_turn_advances_a_quarter_of_the_table():
+    """The offset is in the table, not in time: a quarter turn starts the
+    lookup a quarter of the way through the period."""
+    length = len(WAVEFORM_SINE)
+    phased = music.note_with_phase(freq=SAMPLE_RATE / length, duration=0.05,
+                                   phase=np.pi / 2,
+                                   waveform_table=WAVEFORM_SINE)
+    assert phased[0] == WAVEFORM_SINE[length // 4]
+
+
+def test_note_with_fm_matches_the_modulated_lookup_equation():
+    """The modulator indexes its own table, sets the instantaneous
+    frequency, and that is integrated into the carrier's lookup."""
+    freq, fm, deviation, duration = 220.0, 30.0, 40.0, 0.05
+    produced = music.note_with_fm(freq=freq, duration=duration, fm=fm,
+                                  max_fm_deviation=deviation,
+                                  waveform_table=WAVEFORM_SINE,
+                                  fm_waveform_table=WAVEFORM_SINE)
+
+    count = int(duration * SAMPLE_RATE)
+    samples = np.arange(count)
+    modulator_length = len(WAVEFORM_SINE)
+    gamma_m = (samples * fm * modulator_length
+               / SAMPLE_RATE).astype(np.int64)
+    modulator = WAVEFORM_SINE[gamma_m % modulator_length]
+
+    instantaneous = freq + modulator * deviation
+    length = len(WAVEFORM_SINE)
+    gamma = _integrate_phase(instantaneous * length / SAMPLE_RATE,
+                             length).astype(np.int64)
+    expected = WAVEFORM_SINE[gamma % length]
+
+    assert np.array_equal(produced, expected)
+
+
+def test_fm_with_no_deviation_is_a_steady_tone():
+    """Zero deviation leaves the instantaneous frequency at `freq`, so
+    the modulator cannot appear in the output at all. The old test for
+    this routine asserted only a length and a range, which silence
+    satisfies."""
+    steady = music.note_with_fm(freq=440, duration=0.2, fm=7,
+                                max_fm_deviation=0,
+                                waveform_table=WAVEFORM_SINE)
+    spectrum = np.abs(np.fft.rfft(steady))
+    freqs = np.fft.rfftfreq(len(steady), 1 / SAMPLE_RATE)
+
+    assert freqs[np.argmax(spectrum)] == pytest.approx(440, abs=6)
+    # Nothing at the modulation rate, which a real deviation would put there.
+    at_modulator = spectrum[np.argmin(np.abs(freqs - 7))]
+    assert at_modulator < spectrum.max() / 1000
+
+
+def test_fm_sweeps_the_carrier_by_the_deviation_it_was_given():
+    """A slow, deep modulation puts energy across freq +/- deviation and
+    essentially none outside it."""
+    freq, deviation = 2000.0, 400.0
+    swept = music.note_with_fm(freq=freq, duration=1.0, fm=0.5,
+                               max_fm_deviation=deviation,
+                               waveform_table=WAVEFORM_SINE)
+    spectrum = np.abs(np.fft.rfft(swept))
+    freqs = np.fft.rfftfreq(len(swept), 1 / SAMPLE_RATE)
+
+    inside = ((freqs >= freq - deviation - 20)
+              & (freqs <= freq + deviation + 20))
+    band = (freqs > 100) & (freqs < 6000)
+    energy_inside = (spectrum[inside] ** 2).sum()
+    energy_in_band = (spectrum[band] ** 2).sum()
+    assert energy_inside / energy_in_band > 0.95
+
+
+@pytest.mark.parametrize("method, alpha", [("exp", 1), ("exp", 2),
+                                           ("lin", 1)])
+def test_glissando_follows_its_documented_frequency_law(method, alpha):
+    """Exponential glissando is f0 * (f1/f0) ** (n/N) ** alpha; linear is
+    the straight line between the two."""
+    start, end, duration = 220.0, 440.0, 0.05
+    produced = music.note_with_glissando(start_freq=start, end_freq=end,
+                                         duration=duration, alpha=alpha,
+                                         method=method,
+                                         waveform_table=WAVEFORM_SINE)
+
+    count = int(duration * SAMPLE_RATE)
+    samples = np.arange(count)
+    if method == "exp":
+        instantaneous = start * (end / start) ** (
+            (samples / (count - 1)) ** alpha)
+    else:
+        # Grouped as the implementation groups it. Association matters
+        # here: (end - start) * samples / (count - 1) and
+        # (end - start) * (samples / (count - 1)) differ in the last
+        # bit, and the lookup index is an integer floor, so one bit is
+        # enough to change a sample. That sensitivity is a property of
+        # table synthesis worth stating rather than tolerating away.
+        instantaneous = start + (end - start) * samples / (count - 1)
+    length = len(WAVEFORM_SINE)
+    gamma = _integrate_phase(instantaneous * length / SAMPLE_RATE,
+                             length).astype(np.int64)
+    expected = WAVEFORM_SINE[gamma % length]
+
+    assert np.array_equal(produced, expected)
+
+
+def test_a_glissando_between_equal_frequencies_is_a_plain_tone():
+    """Nothing to slide between, so the pitch must not move."""
+    flat = music.note_with_glissando(start_freq=440, end_freq=440,
+                                     duration=0.2,
+                                     waveform_table=WAVEFORM_SINE)
+    spectrum = np.abs(np.fft.rfft(flat))
+    freqs = np.fft.rfftfreq(len(flat), 1 / SAMPLE_RATE)
+    assert freqs[np.argmax(spectrum)] == pytest.approx(440, abs=6)
+
+
+@pytest.mark.parametrize("sample_rate", [22050, 44100, 48000])
+def test_trill_lasts_the_time_it_was_asked_for_at_any_rate(sample_rate):
+    """Regression: the note length and the loop bound were hardcoded to
+    44100 while `sample_rate` was declared, documented and passed to
+    note(). A trill asked for at 22050 rendered two seconds for every
+    one, at half the note rate. The old test asserted only that some
+    audio came back.
+    """
+    duration = 0.5
+    out = music.trill(freqs=[400, 500], notes_per_second=8,
+                      duration=duration, sample_rate=sample_rate)
+    assert len(out) == pytest.approx(duration * sample_rate,
+                                     abs=sample_rate / 8)
+
+
+def test_trill_alternates_between_the_frequencies_it_was_given():
+    """Each note in turn, which is what makes it a trill rather than a
+    sequence of identical notes."""
+    notes_per_second = 4
+    out = music.trill(freqs=[400, 1200], notes_per_second=notes_per_second,
+                      duration=1.0)
+    # Only whole notes are rendered, so the trill is three notes rather
+    # than four: the loop stops when the next one would not fit.
+    note_length = SAMPLE_RATE // notes_per_second
+    assert len(out) == 3 * note_length
+
+    def peak(signal):
+        spectrum = np.abs(np.fft.rfft(signal))
+        return np.fft.rfftfreq(len(signal), 1 / SAMPLE_RATE)[
+            np.argmax(spectrum)]
+
+    # A window inside each note, clear of the ADSR release at its end.
+    window = note_length // 2
+    peaks = [peak(out[i * note_length:i * note_length + window])
+             for i in range(3)]
+    assert peaks[0] == pytest.approx(400, abs=40)
+    assert peaks[1] == pytest.approx(1200, abs=60)
+    assert peaks[2] == pytest.approx(400, abs=40)

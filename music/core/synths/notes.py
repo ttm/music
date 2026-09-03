@@ -1343,11 +1343,16 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
-    number_of_samples = 44100 / notes_per_second
+    # These were 44100 rather than sample_rate, which is declared,
+    # documented, and passed to note() below: a trill asked for at 22050
+    # rendered two seconds of audio for every one it was asked for, at
+    # half the note rate. The same defect number_of_samples had until
+    # 1.3.0 -- an argument honoured in one place and ignored in another.
+    number_of_samples = sample_rate / notes_per_second
     pointer = 0
     i = 0
     s = []
-    while pointer + number_of_samples < duration * 44100:
+    while pointer + number_of_samples < duration * sample_rate:
         ns = int(number_of_samples * (i + 1) - pointer)
         note_ = note(freqs[i % len(freqs)], number_of_samples=ns,
                      waveform_table=WAVEFORM_TRIANGULAR,

@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-04**,
-`music` 1.4.0: 40 modules, 9,596 LOC package + 6,668 LOC tests, 90 names
+`music` 1.4.0: 40 modules, 9,617 LOC package + 6,971 LOC tests, 90 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -35,7 +35,7 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **1579 passed**, 16 s |
+| Test suite | `pytest -q` | **1603 passed**, 16 s |
 | Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,420 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
@@ -45,6 +45,7 @@ Every figure below came from running the code, not from reading it.
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **26 of 35 routines sample-exact**; 5 divergent with a stated reason, 4 where the reference does not run |
+| Article coverage | `tools/article_coverage.py` | **12 of 47 labelled equations** cited by a test in `tests/test_article.py` |
 | Examples | `python tools/run_examples.py` | **10 pass**, 1 skipped for the external singing engine |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
 | Import cost | `import music`, warm, 3.12 | **~185-290 ms**, and no sympy in `sys.modules` |
@@ -80,14 +81,24 @@ either documented in the code or tracked in the issue list.
   now asserts that they do, so adding an HRTF will announce itself by
   breaking it. This is the largest genuine gap in the package, and it is
   research-scale work rather than a fix.
-- **The reconciliation compares this package with the reference
-  implementation, not with the article.** `RECONCILIATION.md` establishes
-  that 26 of the reference's 35 routines are reproduced sample for sample
-  and that the other nine differ for stated reasons. Where the two differ,
-  the reason argues which is right; that argument is a comment, not a
-  proof. `tests/test_fidelity.py` is the file that checks routines against
-  the closed-form expressions the article states, and it does not cover
-  every routine.
+- **Most of the article is still unchecked.** `tests/test_article.py`
+  checks routines against the article's numbered equations, citing each by
+  the label its LaTeX source gives it, and `tools/article_coverage.py`
+  measures the result: 12 of 47 across `body.tex`, `spectra.tex` and
+  `notesInMusic.tex`. What is checked is the DFT bin spacing, the five
+  noise colours coefficient by coefficient, power and the decibel, the
+  Doppler ratio and the tuning equation. What is not includes the ADSR
+  envelope, reverberation, the AM and FM spectra, the IIR filter designs,
+  and the whole of the harmony and counterpoint in `notesInMusic.tex`.
+- **`localize2` implements a model the article does not specify.** The
+  frequency-dependent ITD and IID it uses — the 4 kHz crossover between two
+  delay coefficients, and a head shadow growing as `(f/1000) ** .8` —
+  appear in none of the article's sources, which give the geometric ITD and
+  IID that `localize` implements and one qualitative sentence about low
+  frequencies diffracting. Its docstring claimed the calculations were "as
+  described in [1]"; it now says what the article does and does not
+  support. This is a rule of thumb that sounds better than the geometric
+  model, and it should not be read as a published result.
 - **Rendering is not verified against the mathematics it documents** for
   the routines outside both files, only against shape and against
   regressions already found. Issue #76 asks for artifact detection a

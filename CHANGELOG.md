@@ -22,6 +22,28 @@
   `tests/fixtures/mass_reference.npz`. The reference also does not run:
   loading it at all needs four source patches, each listed with its reason.
 
+- **`tests/test_article.py`**, which checks routines against the numbered
+  equations of the article rather than against the reference
+  implementation, citing each equation by the label its LaTeX source gives
+  it, and **`tools/article_coverage.py`**, which measures how much of the
+  article that is: **12 of 47 labelled equations** across `body.tex`,
+  `spectra.tex` and `notesInMusic.tex`.
+
+  `RECONCILIATION.md` established that the package agrees with the MASS
+  reference implementation, and said in its own last section that this is
+  not the same as agreeing with the article. This is the other leg. What it
+  covers so far: the frequency a DFT coefficient stands for, the five noise
+  colours coefficient by coefficient rather than by a fitted slope, power
+  and the decibel, the Doppler ratio, and the tuning equation.
+
+  It settles one row of the reconciliation register. `localize2` diverges
+  from the reference for four corrections that were argued in comments; the
+  first is now proved, because the article fixes the coefficient spacing at
+  `f_i = i * f_s / Lambda` in `eq:branco` and the routine had read it as
+  twice that. The test pins it through the consequence a listener could
+  check: the crossover between the routine's two delay coefficients now
+  falls at the 4 kHz it names rather than at a real 2 kHz.
+
 - **`tests/test_mass_reconciliation.py`**, which checks the register on
   every push without needing a MASS checkout, and
   **`tests/test_docstring_references.py`**, which fails when a docstring
@@ -73,6 +95,25 @@
   namespace that is neither in `__all__` nor a submodule. Submodules stay
   reachable: `music.core.io` is how a caller gets at the writers, and a
   docstring example uses exactly that.
+
+- **`localize2` cited the article for a model the article does not
+  contain.** Its notes said it "uses a less naive ITD and IID calculations
+  as described in [1]". The 4 kHz crossover between its two delay
+  coefficients and its head shadow of `1 + (f/1000) ** .8` appear in none
+  of the article's sources: the article gives the geometric ITD and IID
+  that `localize` implements, and one sentence saying low frequencies
+  diffract and reach the far ear later. The docstring now says what the
+  article does and does not support, and that the refinement is a rule of
+  thumb rather than a published result.
+
+- **Five docstring examples stated outputs the code does not produce.**
+  `amp_to_db(2.0)` was shown returning `6.0` where it returns
+  `6.020599913279624`, and `db_to_amp(6)` returning `2.0` where it returns
+  `1.9952623149688795` -- the article writes those round figures with an
+  approximately sign, and the conversions are exact. `pitch_to_freq()` was
+  the substantive one: its example showed the frequencies for fourteen
+  semitones beside a comment naming seven, so a reader checking a fifth
+  against it would have read a ninth.
 
 - **Two exported routines multiplied their frequency contour by the wrong
   thing.** `note_with_vibratos_glissandos` and

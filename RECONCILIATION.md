@@ -113,11 +113,21 @@ does, and the test asserts it.
 ## What this does not establish
 
 That the package agrees with the reference implementation, not that either
-agrees with the article. Where the two differ, the reason says which one
-this package thinks is right and why, but that is an argument in a comment,
-not a proof. `tests/test_fidelity.py` is the file that checks routines
-against the closed-form expressions the article states; this one checks
-them against the code that accompanied it.
+agrees with the article. `tests/test_article.py` is the other leg: it
+checks routines against the article's numbered equations, citing each by
+the label its LaTeX source gives it, and `tools/article_coverage.py`
+measures how far that has got — **12 of the article's 47 labelled
+equations** across `body.tex`, `spectra.tex` and `notesInMusic.tex`.
+
+One row of the register above is settled by it. `loc_`/`localize2` diverges
+for four corrections that were argued in comments; the first of them is now
+proved. The article fixes the frequency a DFT coefficient stands for,
+`f_i = i * f_s / Lambda` in `eq:branco`, and the routine had read it as
+twice that. The other three remain arguments, and the frequency-dependent
+ITD/IID model the routine implements is in none of the article's sources —
+its docstring used to say the calculations were "as described in [1]",
+which they are not, and now says what the article does and does not
+support.
 
 Nothing here touches the parts of the package that MASS has no counterpart
 for: `music.stimulation`, `music.singing`, `music.structures`, the

@@ -185,9 +185,9 @@ def db_to_amp(db_difference: float) -> float:
     Examples
     --------
     >>> db_to_amp(6)
-    2.0
+    1.9952623149688795
     >>> db_to_amp(-6)
-    0.5
+    0.5011872336272722
     """
     return 10. ** (db_difference / 20.)
 
@@ -211,10 +211,10 @@ def amp_to_db(amplitude_difference: float) -> float:
 
     Examples
     --------
-    >>> amp_to_db(2.0)
-    6.0
-    >>> amp_to_db(0.5)
-    -6.0
+    >>> float(amp_to_db(2.0))
+    6.020599913279624
+    >>> float(amp_to_db(0.5))
+    -6.020599913279624
     """
     return 20. * np.log10(amplitude_difference)
 
@@ -237,9 +237,9 @@ def hz_to_midi(hertz_value: float) -> np.float64:
 
     Examples
     --------
-    >>> hz_to_midi(440)
+    >>> float(hz_to_midi(440))
     69.0
-    >>> hz_to_midi(880)
+    >>> float(hz_to_midi(880))
     81.0
     """
     safe_hz = np.clip(hertz_value, np.finfo(float).eps, None)
@@ -328,9 +328,10 @@ def pitch_to_freq(
 
     Examples
     --------
-    >>> pitch_to_freq()  # Default semitones [0, 7, 7, 4, 7, 0]
-    [220.0, 493.8833012561241, 493.8833012561241, 329.62755691286986,
-     493.8833012561241, 220.0]
+    >>> pitch_to_freq(semitones=(0, 7, 12))  # a fifth, then an octave
+    [220.0, 329.6275569128699, 440.0]
+    >>> len(pitch_to_freq())  # the default is (0, 7, 7, 4, 7, 0)
+    6
     >>> pitch_to_freq(start_freq=440, semitones=[0, 12, 12, 12])
     [440.0, 880.0, 880.0, 880.0]
     """
@@ -1049,12 +1050,14 @@ def profile(adict, sample_rate=44100):
 
     Examples
     --------
-    >>> import numpy as np
-    >>> summary = profile({'s': note(), 'freqs': np.array([220., 440.])})
+    >>> sound = np.sin(2 * np.pi * 440 * np.arange(88200) / 44100)
+    >>> summary = profile({'s': sound, 'freqs': np.array([220., 440.])})
     >>> sorted(summary['type']['collections'])
     ['freqs', 's']
-    >>> round(summary['analyses']['ndarray']['s']['seconds'], 3)
+    >>> summary['analyses']['ndarray']['s']['seconds']
     2.0
+    >>> [reading for reading, _reason in summary['guesses']['s']]
+    ['pcm samples']
     """
     types: dict = {'scalar': [], 'collections': [], 'other': []}
     analyses: dict = {'ndarray': {}}

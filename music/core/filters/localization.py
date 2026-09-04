@@ -381,7 +381,25 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
 
     Notes
     -----
-    Uses a less naive ITD and IID calculations as described in [1].
+    Works per frequency rather than on the sound as a whole: the delay
+    between the ears is longer below 4 kHz than above it, and the shadow
+    the head casts grows with frequency as ``1 + (f/1000) ** .8`` scaled by
+    ``sin|theta|``.
+
+    **The article does not specify this model.** It gives the geometric ITD
+    and IID that :func:`localize` implements (its equations ``eq:dti`` and
+    ``eq:dii``), and then says in one sentence that low frequencies
+    diffract and reach the far ear with a greater ITD; the crossover
+    frequency, the two delay coefficients and the shadow exponent appear in
+    none of its sources. This docstring used to say the calculations were
+    "as described in [1]", which they are not. What [1] does fix is the
+    frequency a coefficient stands for, ``f_i = i * f_s / Lambda`` in
+    ``eq:branco``, and this routine had read it as twice that -- see
+    ``tests/test_article.py``.
+
+    Treat the refinement as a rule of thumb that sounds better than the
+    geometric model, not as a result the article supports. A full
+    treatment needs an HRTF, which nothing here has.
 
     See localize() for further notes.
 

@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-04**,
-`music` 1.4.0: 40 modules, 9,507 LOC package + 6,523 LOC tests, 90 names
+`music` 1.4.0: 40 modules, 9,596 LOC package + 6,668 LOC tests, 90 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -35,12 +35,12 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **1558 passed**, 16 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,358 stmts, 0 missed) |
+| Test suite | `pytest -q` | **1579 passed**, 16 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,420 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 1,627 findings |
-| Annotation coverage | AST scan | **62 / 166 functions (37 %)**; 39 / 70 exported (56 %) |
+| Lint, extended rule set | `ruff check --select ALL music` | 1,682 findings |
+| Annotation coverage | AST scan | **62 / 168 functions (37 %)**; 39 / 70 exported (56 %) |
 | Docstring coverage | AST scan | **140 / 148 public defs (95 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
@@ -69,14 +69,6 @@ produced.
 
 The point of this file. Nothing here is a surprise defect; all of it is
 either documented in the code or tracked in the issue list.
-
-### Unimplemented, and raising rather than pretending
-
-- **`music.profile`** raises `NotImplementedError`. Its body has been a
-  commented-out sketch since it was written, so until recently it was an
-  exported, documented function that returned `None` while its docstring
-  described a dictionary. The design in the docstring is a specification
-  rather than a description.
 
 ### Gaps the code names about itself
 
@@ -152,7 +144,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 1,627 findings** on `music/`, almost all
+- **The extended lint set reports 1,682 findings** on `music/`, almost all
   stylistic: 345 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
@@ -191,6 +183,22 @@ worse than the code.
   on their continuation lines and were not parseable Python, and three
   called routines with the reference's parameter names. All corrected, with
   `tests/test_docstring_references.py` failing on any of them.
+- **`music.profile` raised `NotImplementedError`.** Its body had been a
+  commented-out sketch since it was written, so it was first an exported,
+  documented function returning `None` while its docstring described a
+  dictionary, and then one that raised. The docstring is now a description:
+  the function sorts a namespace by what its names hold, measures every
+  array in it, and reads each array as PCM samples or as parametrisation.
+  Measurement and inference are kept in separate keys, and every guess
+  carries the reason that produced it, because the rules the specification
+  gave are heuristics and saying so is cheaper than being wrong quietly.
+- **Three names reached `music.` that the package neither documents nor
+  owns.** `typing.Any`, `typing.TYPE_CHECKING` and
+  `importlib.metadata.PackageNotFoundError` were imported unaliased into
+  `__init__.py`, so `music.Any` resolved, in an API this file calls
+  curated. They are private aliases now, and `tests/test_public_api.py`
+  fails on any name in the flat namespace that is neither in `__all__` nor
+  a submodule.
 - **The six defects in exported API** — including two functions that could
   never succeed and a systematic one-LSB gain error on every WAV the package
   had written — are fixed, with `tests/test_fidelity.py` pinning the

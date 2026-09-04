@@ -1,11 +1,12 @@
 """Top-level package for basic audio synthesis utilities."""
 
-from importlib.metadata import PackageNotFoundError, version as _version
-from typing import TYPE_CHECKING, Any
+from importlib.metadata import (PackageNotFoundError as _NotFound,
+                                version as _version)
+from typing import TYPE_CHECKING as _TYPE_CHECKING, Any as _Any
 
 try:
     __version__ = _version("music")
-except PackageNotFoundError:  # pragma: no cover - running from a checkout
+except _NotFound:  # pragma: no cover - running from a checkout
     __version__ = "0.0.0.dev0"
 
 from .utils import (
@@ -118,7 +119,7 @@ _LAZY_STRUCTURES = frozenset({
     'transpose_permutation',
 })
 
-if TYPE_CHECKING:  # pragma: no cover - for type checkers and IDEs only
+if _TYPE_CHECKING:  # pragma: no cover - for type checkers and IDEs only
     from .structures import (  # noqa: F401
         dist,
         GenericPeal,
@@ -130,7 +131,7 @@ if TYPE_CHECKING:  # pragma: no cover - for type checkers and IDEs only
     )
 
 
-def __getattr__(name: str) -> Any:
+def __getattr__(name: str) -> _Any:
     """Resolve the structures exports on first use.
 
     PEP 562. Anything not deferred raises ``AttributeError`` as it would

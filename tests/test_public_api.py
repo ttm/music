@@ -281,3 +281,36 @@ def test_noise_accepts_a_numeric_gain_per_octave():
     out = music.noise(3.5, duration=0.5)
     assert out.size > 0
     assert np.isfinite(out).all()
+
+
+def test_the_flat_namespace_holds_only_the_api_and_the_submodules():
+    """Nothing reaches `music.` except what `__all__` names, or a submodule.
+
+    `typing.Any`, `typing.TYPE_CHECKING` and
+    `importlib.metadata.PackageNotFoundError` were all imported unaliased
+    into `music/__init__.py` and so were reachable as `music.Any`,
+    `music.TYPE_CHECKING` and `music.PackageNotFoundError` -- three names
+    the package neither documents nor owns, in an API it describes as
+    curated. They are private aliases now.
+
+    The submodules are a different thing: `music.core.io` is how a caller
+    reaches the writers, and one docstring example uses exactly that. They
+    stay reachable, and this asserts they are the only exception.
+    """
+    import importlib
+    import pkgutil
+
+    submodules = {name for _finder, name, _pkg
+                  in pkgutil.iter_modules(music.__path__)}
+    public = {name for name in dir(music) if not name.startswith('_')}
+    unexpected = public - set(music.__all__) - submodules
+
+    assert not unexpected, (
+        f'{sorted(unexpected)} reach the `music` namespace without being in '
+        f'__all__ and without being submodules. Import them under a private '
+        f'alias, or export them deliberately.')
+
+    # And every export really exists, so __all__ cannot rot the other way.
+    missing = [name for name in music.__all__ if not hasattr(music, name)]
+    assert not missing, f'__all__ names {missing}, which do not exist'
+    assert importlib.import_module('music.core') is music.core

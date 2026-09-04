@@ -908,85 +908,173 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=44100):
 mix2 = mix_many
 
 
-def profile(adict):
+def _describe_array(array, sample_rate, blocks=16):
+    """Measure one array: the figures :func:`profile` reports for it."""
+    values = np.asarray(array)
+    flat = values.reshape(-1)
+    description: dict = {
+        'shape': values.shape,
+        'samples': int(flat.size),
+        'seconds': float(flat.size) / sample_rate,
+        'dtype': str(values.dtype),
+    }
+    if flat.size == 0 or not np.issubdtype(values.dtype, np.number):
+        description['numeric'] = False
+        return description
+
+    finite = flat[np.isfinite(flat)] if np.issubdtype(
+        values.dtype, np.floating) else flat
+    description['numeric'] = True
+    if finite.size == 0:
+        description['finite'] = False
+        return description
+    description['finite'] = True
+    description['mean'] = float(np.mean(finite))
+    description['mean_square'] = float(np.mean(np.square(finite)))
+    description['rms'] = float(np.sqrt(description['mean_square']))
+    description['minimum'] = float(np.min(finite))
+    description['maximum'] = float(np.max(finite))
+
+    # The RMS of successive blocks: its spread is the hint of discontinuity
+    # the specification asks for, and its mean is the level over the whole.
+    block = max(1, finite.size // blocks)
+    usable = finite[:block * max(1, finite.size // block)]
+    per_block = np.sqrt(np.mean(
+        np.square(usable.reshape(-1, block).astype(np.float64)), axis=1))
+    description['block_rms_mean'] = float(np.mean(per_block))
+    description['block_rms_std'] = float(np.std(per_block))
+    return description
+
+
+def _guess_role(description, pcm_samples=1000):
+    """Read a measured array as PCM, as parametrisation, or as neither.
+
+    Inference, not measurement.  The rules are the ones the specification
+    in :func:`profile` states, and each guess is returned with the reason
+    that produced it so a caller can disagree with it.
     """
-    Summarize a namespace of variables. **Not implemented.**
+    guesses: list = []
+    if not description.get('numeric') or not description.get('finite'):
+        return guesses
+
+    samples = description['samples']
+    mean, low, high = (description['mean'], description['minimum'],
+                       description['maximum'])
+    bound = max(abs(low), abs(high))
+    centred = abs(mean) < 0.05 * max(bound, 1e-12)
+    within_unity = bound <= 1.0
+    power_of_two = bound > 1.0 and abs(
+        bound - 2 ** round(np.log2(bound))) <= 1
+
+    if samples >= pcm_samples and centred and (within_unity or power_of_two):
+        guesses.append(('pcm samples',
+                        f'{samples} elements, mean {mean:.3g} near zero, '
+                        f'bounded by {bound:.6g}'))
+    elif samples < pcm_samples and not centred:
+        guesses.append(('parametrisation',
+                        f'only {samples} elements and an offset mean of '
+                        f'{mean:.3g}'))
+
+    if bound >= 150:
+        guesses.append(('frequencies in Hz',
+                        f'values reach {bound:.6g}, in the hundreds or above'))
+    elif 0 <= low and high <= 150:
+        near_integer = bool(np.isclose(
+            np.round([low, high, mean]), [low, high, mean], atol=1e-6).all())
+        steps = description.get('block_rms_std', 0.0)
+        if near_integer or steps < 10:
+            guesses.append(('MIDI pitches or semitone intervals',
+                            'values in [0, 150] that are integers or move '
+                            'in steps under 10'))
+        else:
+            guesses.append(('decibels',
+                            'values in [0, 150] moving in steps of tens'))
+    return guesses
+
+
+def profile(adict, sample_rate=44100):
+    """Summarize a namespace of variables.
+
+    Sorts the names by what they hold, measures every array in it, and
+    reads each array as PCM samples or as parametrisation. Written for
+    looking at a piece of synthesis code mid-flight: hand it ``locals()``
+    and it says which of the names are sounds, how long each is, and which
+    of the numbers look like frequencies, decibels or pitches.
 
     Parameters
     ----------
     adict : dict
         The namespace to describe, mapping names to values -- typically
         ``locals()`` or ``vars()`` from a piece of synthesis code.
+    sample_rate : scalar
+        The sample rate the durations are reckoned at.
 
     Returns
     -------
     dict
-        The structure described below, once this is written.
-
-    Raises
-    ------
-    NotImplementedError
-        Always. The body of this function has been commented out since
-        it was written, so every call returned ``None`` while the
-        docstring described a dictionary. Raising says the same thing
-        the silence did, where a caller can hear it; the design below is
-        kept because it is the specification, not a description.
+        ``d['type']`` sorts the names: ``'scalar'`` for numbers and
+        strings, ``'collections'`` for dicts, lists, sets and arrays, and
+        ``'other'`` for everything else. ``d['analyses']['ndarray']`` maps
+        each array name to its measurements -- ``shape``, ``samples``,
+        ``seconds`` at `sample_rate`, ``mean``, ``mean_square``, ``rms``,
+        ``minimum``, ``maximum``, and the mean and standard deviation of
+        the RMS taken block by block, whose spread is what discontinuity
+        shows up in. ``d['guesses']`` maps the same names to readings of
+        those measurements, each a ``(reading, reason)`` pair.
 
     Notes
     -----
-    Should return a dictionary with the following structure:
-      d['type']['scalar'] should return all the names of scalar variables
-      as strings.
-      scalar: all names in numeric, string, float, integer,
-      collections: all names in dict, list, set, ndarray
+    The measurements are measurements; the guesses are guesses, which is
+    why they are kept apart. A guess carries the reason that produced it
+    so that a caller can disagree with it:
 
-      d['analyses']['ndarray'] should return a general analysis of the
-      ndarrays, including size in seconds of each considering fs.
-      Mean and mean square values to have an idea of what is there.
-      RMS values in different scales and the overal RMS standard deviation
-      on a scale is helpful in grasping disconttinuities.
-      The overal RMS mean of a scale is a hint of whether the variable
-      is meant to be used (or usable as) PCM samples or parametrization.
-      E.g.
+    * A large array whose mean sits at zero and whose values are bounded
+      by 1 or by a power of two is read as PCM samples.
+    * A short array with an offset mean is read as parametrisation --
+      values meant to be used rather than heard, often driving a rhythm.
+    * Values reaching into the hundreds are read as frequencies in Hz.
+    * Values within [0, 150] are read as MIDI pitches or semitone
+      intervals when they are integers or move in steps under 10, and as
+      decibels when they move in steps of tens.
 
-        * Large arrays, i.e. with many elements, are usable as PCM samples.
-          If the mean is zero, and they are bound to [-1,1] or to some power
-          of 2, specially [-2**15, 2**15-1], it is probably PCM samples
-          synthesized or sampled or derivatives.
-          If it has more than one or two dimensions where the many samples
-          are, it might be a collection of audio samples with the sample size
+    This function used to raise ``NotImplementedError``: its body had been
+    a commented-out sketch since it was written, and the docstring above
+    was a specification rather than a description. It is now the second of
+    these.
 
-        * Arrays with an offset (abs(mean) << 0) and small number of elements
-          are good candidates for parametrization.
-          They might be used for repetition, yielding a clear rhythm.
-          They might also be used to derive more ellaborate patterns,
-          such as by using the values of more then one arrays,
-          and using them simultaneously, often creating patterns
-          because of the different sizes of each array.
+    See Also
+    --------
+    amp_to_db : the conversion the decibel reading above is about.
+    hz_to_midi : the conversion the pitch reading is about.
 
-        * Values in the order of hundreds and thousands are
-          candidates for frequency.
-          Values within zero and 150 are candidates for decibels,
-          and for absolute pitch or pitch interval through MIDI notes
-          and semitones count, respectively.
-          If the values are integers of very close to them,
-          or have many consecutive values deviating less then
-          10, it is more likely to be related to pitches.
-          If the consecutive values deviate by tens to about a hundred,
-          it is kin to decibels notation.
-
+    Examples
+    --------
+    >>> import numpy as np
+    >>> summary = profile({'s': note(), 'freqs': np.array([220., 440.])})
+    >>> sorted(summary['type']['collections'])
+    ['freqs', 's']
+    >>> round(summary['analyses']['ndarray']['s']['seconds'], 3)
+    2.0
     """
-    raise NotImplementedError(
-        "profile() was never implemented: its body is the commented-out "
-        "sketch below. It is exported and documented, and it does not "
-        "work.")
-    # for key in adict:
-    #     avar = adict[key]
-    #     if type(sonic_vector) == np.ndarray:
-    #     elif type(sonic_vector) == list:
-    #     elif np.isscalar(avar):
-    #     else:
-    #         print('unrecognized type, implement dealing with it')
+    types: dict = {'scalar': [], 'collections': [], 'other': []}
+    analyses: dict = {'ndarray': {}}
+    guesses: dict = {}
+
+    for name in adict:
+        value = adict[name]
+        if isinstance(value, np.ndarray):
+            types['collections'].append(name)
+            description = _describe_array(value, sample_rate)
+            analyses['ndarray'][name] = description
+            guesses[name] = _guess_role(description)
+        elif isinstance(value, (dict, list, set, tuple)):
+            types['collections'].append(name)
+        elif isinstance(value, (str, bytes)) or np.isscalar(value):
+            types['scalar'].append(name)
+        else:
+            types['other'].append(name)
+
+    return {'type': types, 'analyses': analyses, 'guesses': guesses}
 
 
 def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),

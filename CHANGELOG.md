@@ -50,6 +50,30 @@
   from when the file was wrong, which it has to keep quoting.
 
 ### Fixed
+- **`music.profile` now does what its docstring says.** It was exported and
+  documented as returning a dictionary while its body was a commented-out
+  sketch, so it first returned `None` and then raised
+  `NotImplementedError`. It now sorts a namespace by what its names hold,
+  measures every array in it -- shape, sample count, duration at a given
+  sample rate, mean, mean square, RMS, bounds, and the mean and spread of
+  the RMS block by block, which is where a discontinuity shows -- and reads
+  each array as PCM samples or as parametrisation, and its values as
+  frequencies, decibels or MIDI pitches.
+
+  The measurements and the readings are separate keys, and every reading
+  carries the reason that produced it. The rules the docstring specified
+  are heuristics; presenting them as determinations would have been the
+  same kind of overclaim the function was already making.
+
+- **Three names reached the `music` namespace that the package neither
+  documents nor owns.** `typing.Any`, `typing.TYPE_CHECKING` and
+  `importlib.metadata.PackageNotFoundError` were imported unaliased into
+  `music/__init__.py`, so `music.Any` resolved. They are private aliases
+  now, and `tests/test_public_api.py` fails on any name in the flat
+  namespace that is neither in `__all__` nor a submodule. Submodules stay
+  reachable: `music.core.io` is how a caller gets at the writers, and a
+  docstring example uses exactly that.
+
 - **Two exported routines multiplied their frequency contour by the wrong
   thing.** `note_with_vibratos_glissandos` and
   `note_with_vibrato_seq_localization` had collapsed the reference's two

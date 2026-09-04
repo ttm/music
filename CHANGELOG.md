@@ -1,3 +1,27 @@
+## [Unreleased]
+### Added
+- **`tools/assessment_figures.py`**, which measures every number in
+  `ASSESSMENT.md` and fails when the file disagrees with the package.
+  CI runs the cheap half on every push -- the figures an AST scan can
+  settle -- and the release gate runs all of it, so a release cannot go
+  out describing a version that no longer exists.
+
+  `ASSESSMENT.md` opens by saying that a snapshot nobody updates
+  misrepresents the code it describes. It then went stale four times in
+  two days and was corrected by hand each time, once during the
+  preparation of 1.4.0 with the wrong test count already committed.
+  Issue #70 asked for the practice of keeping it current; a practice
+  that depends on remembering is the thing that kept failing, so this
+  replaces it with a check.
+
+  It found a figure wrong on its first run: `legacy/` is 1,150 lines,
+  not the 1,110 the file had claimed for some time.
+
+  Two things are deliberately not checked. The wall-clock time in the
+  test-suite row is a property of the machine rather than of the
+  package. And the history in the opening paragraphs quotes figures
+  from when the file was wrong, which it has to keep quoting.
+
 ## [1.4.0] - 2026-09-04
 ### Note for anyone upgrading
 **Nothing that imports from `music` breaks.** No exported name was

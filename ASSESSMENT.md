@@ -12,8 +12,22 @@ places recent work improved. So this file is now kept current with the code,
 and the section that matters most is **Known limitations** — what the package
 does not do, stated by the people who know.
 
-Update it whenever a release changes what is true here. Issue #70 tracks the
-practice.
+Keeping it current is no longer a practice anyone has to remember.
+`tools/assessment_figures.py` measures every number below and fails when
+the file disagrees with the package; CI runs the cheap half of it on every
+push and the release gate runs all of it, so a release cannot go out
+describing a version that no longer exists. Issue #70 asked for the
+practice; this is the check that replaced it.
+
+```console
+python tools/assessment_figures.py           # report any drift
+python tools/assessment_figures.py --write   # correct it
+```
+
+The wall-clock time in the test-suite row is not checked, being a
+property of the machine rather than of the package, and neither is the
+history in the paragraph above, which quotes figures from when this file
+was wrong and has to keep quoting them.
 
 ## How this was measured
 
@@ -136,7 +150,7 @@ either documented in the code or tracked in the issue list.
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.
-- **`legacy/` is 1,110 LOC** kept for `CanonicalSynth`, `IteratorSynth` and
+- **`legacy/` is 1,150 LOC** kept for `CanonicalSynth`, `IteratorSynth` and
   the `Being` class. It is covered and type-checked, but it is not where new
   work should go.
 

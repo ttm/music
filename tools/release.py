@@ -132,6 +132,13 @@ def run_gate():
                    "--cov-fail-under=100")),
         ("docs", (sys.executable, "-m", "sphinx", "-b", "html", "-W",
                   "docs", "docs/_build/html")),
+        # ASSESSMENT.md goes out with the release and is the file that
+        # tells a reader what the package does not do. It went stale
+        # four times in two days when keeping it current was a habit
+        # rather than a check, once with the wrong test count already
+        # committed during a release.
+        ("figures", (sys.executable, str(ROOT / "tools"
+                                         / "assessment_figures.py"))),
     ]
     for name, command in checks:
         run(*command)

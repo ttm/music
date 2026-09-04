@@ -9,9 +9,15 @@ python tools/release.py publish    # upload, tag, release
 
 `check` refuses to go on unless the version in `pyproject.toml`,
 `CITATION.cff` and `CHANGELOG.md` agree, master is clean and in sync with
-origin, the tag does not exist, PyPI does not already have that version, and
-lint, types, tests and docs all pass. Then it builds from scratch and runs
+origin, the tag does not exist, PyPI does not already have that version,
+lint, types, tests and docs all pass, and `ASSESSMENT.md` still describes
+the package it ships with. Then it builds from scratch and runs
 `twine check`.
+
+That last one is there because the file went stale four times in two days
+when it depended on someone remembering, once with the wrong test count
+already committed during a release. `python tools/assessment_figures.py
+--write` corrects it.
 
 `publish` re-runs all of that and then does the three things that cannot be
 taken back: uploads to PyPI, which never releases a version number back; tags

@@ -213,6 +213,7 @@ mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html
 python tools/run_examples.py                 # run every example
+python tools/assessment_figures.py           # ASSESSMENT.md vs the package
 ```
 
 All five run in CI on Python 3.10 through 3.14 for every push and pull

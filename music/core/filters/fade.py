@@ -61,7 +61,8 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
     >>> s = horizontal_stack([note_with_vibrato() * fade(fade_out=i, method=j)
     ...                       for i, j in zip([1, 0, 1],
     ...                                       ["exp", "exp", "linear"])])
-    >>> s = horizontal_stack([fade(fade_out=i, method=j, sonic_vector=V())
+    >>> s = horizontal_stack(
+    ...     [fade(fade_out=i, method=j, sonic_vector=note_with_vibrato())
     ...                       for i, j in zip([1, 0, 1],
     ...                                       ["exp", "exp", "linear"])])
     >>> envelope = fade(duration=10, fade_out=0, perc=0.1)

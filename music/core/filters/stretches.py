@@ -43,7 +43,7 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=44100):
     >>> s = stretches(asound,
     ...               durations=[.2, .3] * 10 + [.1, .2, .3, .4] * 8 +
     ...               [.5, 1.5, .5, 1., 5., .5, .25, .25, .5, 1., .5] * 2)
-    >>> write_wav_mono(durations, 'stretches.wav')
+    >>> write_wav_mono(s, 'stretches.wav')
 
     Notes
     -----

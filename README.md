@@ -191,11 +191,15 @@ Concrete things the code itself is waiting for, rather than a wish list:
 * **A head-related transfer function.** Both `localize` and `localize2` say so
   in their own notes: the height of a source, and whether it is in front of or
   behind the listener, are cues an HRTF carries and neither of them models.
-* **The remaining peals.** `Peals.twenty_all_over` and
-  `Peals.an_eight_and_forty` raise `NotImplementedError`, and `Being.walk`'s
-  `perm-walk` method was never restored from its predecessor.
-* **Reconciling `core/functions.py` with the MASS reference implementation**,
-  routine by routine.
+* **`Being.walk`'s `perm-walk` method**, which was never restored from its
+  predecessor and is currently a reconstruction. (`Peals.twenty_all_over` and
+  `Peals.an_eight_and_forty` no longer raise; this entry used to say they did.)
+* **Reconciling the routines MASS has no counterpart for.**
+  [`RECONCILIATION.md`](RECONCILIATION.md) compares the package with the MASS
+  reference implementation routine by routine — 26 of 35 are reproduced sample
+  for sample, and the rest diverge for stated reasons. It leaves
+  `music.stimulation`, `music.singing`, `music.structures` and the sequencer
+  with nothing to be measured against.
 * **An article describing the package**, as a companion to the MASS one.
 
 ## Contributing
@@ -208,7 +212,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 868 tests, 100% coverage
+pytest                                       # 1556 tests, 100% coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

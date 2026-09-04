@@ -134,8 +134,8 @@ def horizontal_stack(*arrays: ArrayLike) -> NDArray[np.float64]:
     >>> mono_array1 = np.array([0.1, 0.2, 0.3])
     >>> mono_array2 = np.array([0.4, 0.5, 0.6])
     >>> stereo_array = np.array([[1, 2, 3], [4, 5, 6]])
-    >>> stacked_array = create_horizontal_stack(mono_array1, stereo_array,
-    >>>                                         mono_array2)
+    >>> stacked_array = horizontal_stack(mono_array1, stereo_array,
+    ...                                  mono_array2)
     >>> stacked_array.shape
     (2, 9)
     """
@@ -867,8 +867,8 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=44100):
 
     Examples
     --------
-    >>> W(mix_many(sonic_vectors=[np.vstack(), N()]))  # writes a WAV
-                                                   # with nodes
+    >>> mixed = mix_many([note(220, 2), note(440, 1)])
+    >>> write_wav_mono(mixed)  # writes a WAV of the two notes summed
 
     Notes
     -----
@@ -1023,7 +1023,7 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
     >>> dtut = [4,2,2, [8, 1,1,1], 4, [4, 1,1,.5,.5], 3,1, 3,1, 4]
     >>> durs1 = rhythm_to_durations(dtut)
     >>> dtuf2 = [4,8,8, [2, 3,3,3], 4, [4, 3,3,6,6], 16/3, 16, 16/3, 16, 4]
-    >>> durs1_ = rhythm_to_durations(freqs=dtut2, duration=4)
+    >>> durs1_ = rhythm_to_durations(freqs=dtuf2, duration=4)
 
     Notes
     -----

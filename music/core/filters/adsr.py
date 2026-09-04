@@ -74,9 +74,11 @@ def adsr(envelope_duration=2, attack_duration=20,
     >>> s = horizontal_stack([note_with_vibrato() *
     ...                       adsr(attack_duration=i, release_duration=j)
     ...                       for i, j in zip([6, 50, 300], [100, 10, 200])])
-    >>> s = horizontal_stack([adsr(A=i, R=j, sonic_vector=note_with_vibrato())
+    >>> s = horizontal_stack([adsr(attack_duration=i, release_duration=j,
+    ...                            sonic_vector=note_with_vibrato())
     ...                       for i, j in zip([6, 15, 100], [2, 2, 20])])
-    >>> envelope = adsr(d=440, A=10e3, D=0, R=5e3)
+    >>> envelope = adsr(envelope_duration=440, attack_duration=10e3,
+    ...                 decay_duration=0, release_duration=5e3)
 
     Notes
     -----

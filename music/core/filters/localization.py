@@ -373,9 +373,9 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
 
     Examples
     --------
-    >>> write_wav_stereo(localized2())
+    >>> write_wav_stereo(localize2())
     >>> write_wav_stereo(horizontal_stack([
-    ...     localized2(note_with_vibrato(duration=1), x=i, y=j)
+    ...     localize2(note_with_vibrato(duration=1), x=i, y=j)
     ...     for i, j in zip([.1, .7, np.pi - .1, np.pi - .7],
     ...                     [.1, .1, .1, .1])]))
 

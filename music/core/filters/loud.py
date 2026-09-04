@@ -164,7 +164,7 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
 
     Examples
     --------
-    >>> write_wav_mono(note_with_vibrato(duraton=8) * louds())
+    >>> write_wav_mono(note_with_vibrato(duration=8) * louds())
 
     Notes
     -----

@@ -13,7 +13,7 @@ class IteratorSynth(CanonicalSynth):
 
     Examples
     --------
-    >>> isynth = M.IteratorSynth()
+    >>> isynth = music.IteratorSynth()
     >>> isynth.fundamental_frequency_sequence = [220, 400, 100, 500]
     >>> isynth.duration_sequence = [2, 1, 1.5]
     >>> isynth.vibrato_frequency_sequence = [3, 6.5, 10]
@@ -21,7 +21,8 @@ class IteratorSynth(CanonicalSynth):
     >>> for i in range(300):
     ...     sounds += [isynth.renderIterate(tremolo_frequency=.2*i)]
     >>> import music.core.io
-    >>> music.core.io.write_wav_mono(M.H(*sounds), "./example.wav")
+    >>> music.core.io.write_wav_mono(music.horizontal_stack(*sounds),
+    ...                              "./example.wav")
     """
 
     def renderIterate(self, **statevars):

@@ -1,5 +1,32 @@
 ## [Unreleased]
 ### Added
+- **`RECONCILIATION.md`**, the routine-by-routine comparison with the MASS
+  reference implementation, and `tools/mass_reconcile.py`, which measures
+  it. For each of the 35 routines and constants in the reference's
+  `src/aux/functions.py`, the package either reproduces it sample for
+  sample or diverges for a reason the register states: **26 exact, 5
+  divergent, 4 where the reference does not run.** The tool fails when the
+  register disagrees with what it measures, so a divergence cannot appear
+  or widen without someone writing down why.
+
+  This was the package's central unverified claim -- `ASSESSMENT.md` said
+  the fidelity claim "rests on the docstrings rather than on a comparison",
+  and issue #67 tracked it. Both that entry and the roadmap in `README.md`
+  named `core/functions.py`, a 123-line file holding three routines; the
+  line came from `notes.md`, written before the split into `synths/` and
+  `filters/` that the same file's next bullet proposed.
+
+  The reference is GPL-3 and this package is MIT, so it is never vendored.
+  `tools/mass_reference.py` reads whatever checkout it is pointed at and
+  only the numbers that come out of running it enter this repository, in
+  `tests/fixtures/mass_reference.npz`. The reference also does not run:
+  loading it at all needs four source patches, each listed with its reason.
+
+- **`tests/test_mass_reconciliation.py`**, which checks the register on
+  every push without needing a MASS checkout, and
+  **`tests/test_docstring_references.py`**, which fails when a docstring
+  points at a name that does not exist.
+
 - **`tools/assessment_figures.py`**, which measures every number in
   `ASSESSMENT.md` and fails when the file disagrees with the package.
   CI runs the cheap half on every push -- the figures an AST scan can
@@ -21,6 +48,34 @@
   test-suite row is a property of the machine rather than of the
   package. And the history in the opening paragraphs quotes figures
   from when the file was wrong, which it has to keep quoting.
+
+### Fixed
+- **Two exported routines multiplied their frequency contour by the wrong
+  thing.** `note_with_vibratos_glissandos` and
+  `note_with_vibrato_seq_localization` had collapsed the reference's two
+  accumulators -- one per vibrato, one per segment within a vibrato -- into
+  a single name. Each outer pass discarded the vibrato before it, and each
+  appended its own concatenation back into the list it was concatenating,
+  so the contour was multiplied by every segment *and* by their joins.
+  Both returned an array of the expected length with 99.9 % of its samples
+  wrong, which is why the suite never noticed. Found by the reconciliation.
+
+- **Ninety-two docstring cross-references named routines that do not
+  exist.** `note` said `See Also: V, T` and its example called `H` -- MASS's
+  names for `note_with_vibrato`, `tremolo` and `horizontal_stack`. Anyone
+  following a cross-reference found nothing; anyone copying an example got
+  a `NameError`. Eight further examples had lost the `...` prompt on their
+  continuation lines and were not parseable Python at all, three called
+  routines with the reference's parameter names rather than this package's,
+  one wrote its own argument instead of its result, two had typos
+  (`duraton`, `dtut2`), and one `See Also` entry named a shorthand that
+  exists in neither this package nor the reference.
+
+- **Nine reference defects are now on the record** rather than implicit in
+  code that had quietly worked around them. Four mean a reference routine
+  has never run: `loc2` and `R` read variables their own signatures do not
+  declare, `noises` indexes with a float, and `FIR` calls a `convolve` that
+  recurses into itself in both branches.
 
 ## [1.4.0] - 2026-09-04
 ### Note for anyone upgrading

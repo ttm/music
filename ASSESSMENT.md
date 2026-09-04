@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-04**,
-`music` 1.4.0: 40 modules, 9,480 LOC package + 6,044 LOC tests, 90 names
+`music` 1.4.0: 40 modules, 9,507 LOC package + 6,523 LOC tests, 90 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -35,14 +35,16 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **868 passed**, 16 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,360 stmts, 0 missed) |
+| Test suite | `pytest -q` | **1558 passed**, 16 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,358 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
 | Lint, extended rule set | `ruff check --select ALL music` | 1,627 findings |
 | Annotation coverage | AST scan | **62 / 166 functions (37 %)**; 39 / 70 exported (56 %) |
 | Docstring coverage | AST scan | **140 / 148 public defs (95 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
+| Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
+| MASS reconciliation | `tools/mass_reconcile.py` | **26 of 35 routines sample-exact**; 5 divergent with a stated reason, 4 where the reference does not run |
 | Examples | `python tools/run_examples.py` | **10 pass**, 1 skipped for the external singing engine |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
 | Import cost | `import music`, warm, 3.12 | **~185-290 ms**, and no sympy in `sys.modules` |
@@ -57,11 +59,11 @@ produced.
 
 | Grade | What earns it |
 |---|---|
-| **Exceptional** | Docstrings and scientific grounding: every routine carries the equation it implements and the article section it comes from |
+| **Exceptional** | Docstrings and scientific grounding: every routine carries the equation it implements and the article section it comes from, and `RECONCILIATION.md` now measures the correspondence routine by routine rather than asserting it |
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; CI across Python 3.10–3.14 including a job pinned to the declared lower bounds |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 37 %; the `legacy/` subpackage; `core/functions.py` not yet reconciled with the MASS reference implementation |
+| **Needs work** | Annotation coverage at 37 %; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -86,13 +88,18 @@ either documented in the code or tracked in the issue list.
   now asserts that they do, so adding an HRTF will announce itself by
   breaking it. This is the largest genuine gap in the package, and it is
   research-scale work rather than a fix.
-- **`core/functions.py` has not been reconciled, routine by routine, with
-  the MASS reference implementation.** The package's central claim is
-  fidelity to a published framework; until that pass is done, the claim
-  rests on the docstrings rather than on a comparison. Issue #67.
-- **Rendering is not verified against the mathematics it documents**, only
-  against shape and against regressions already found. Issue #67 again;
-  issue #76 asks for artifact detection a listener could not catch.
+- **The reconciliation compares this package with the reference
+  implementation, not with the article.** `RECONCILIATION.md` establishes
+  that 26 of the reference's 35 routines are reproduced sample for sample
+  and that the other nine differ for stated reasons. Where the two differ,
+  the reason argues which is right; that argument is a comment, not a
+  proof. `tests/test_fidelity.py` is the file that checks routines against
+  the closed-form expressions the article states, and it does not cover
+  every routine.
+- **Rendering is not verified against the mathematics it documents** for
+  the routines outside both files, only against shape and against
+  regressions already found. Issue #76 asks for artifact detection a
+  listener could not catch.
 
 ### Claims the metadata makes that the code cannot
 
@@ -150,7 +157,7 @@ either documented in the code or tracked in the issue list.
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.
-- **`legacy/` is 1,150 LOC** kept for `CanonicalSynth`, `IteratorSynth` and
+- **`legacy/` is 1,151 LOC** kept for `CanonicalSynth`, `IteratorSynth` and
   the `Being` class. It is covered and type-checked, but it is not where new
   work should go.
 
@@ -160,6 +167,30 @@ Items the previous version of this file listed as open, since closed. The
 CHANGELOG carries the detail; this is only so the record does not read as
 worse than the code.
 
+- **`core/functions.py` was never the file the claim rested on.** This
+  entry, and the roadmap in `README.md`, named a 123-line file holding three
+  routines. The reference is `src/aux/functions.py` in ttm/mass: 2,997 lines
+  and 35 routines, which map onto the whole of `music/core/` and parts of
+  `music/utils.py`. The line came from `notes.md`, written before the split
+  into `synths/` and `filters/` that the same file's next bullet proposed.
+  `RECONCILIATION.md` is the comparison that entry was asking for, and
+  `tools/mass_reconcile.py` fails when the register in it disagrees with
+  what it measures. Issue #67.
+- **Two exported routines multiplied their frequency contour by the wrong
+  thing.** `note_with_vibratos_glissandos` and
+  `note_with_vibrato_seq_localization` had collapsed the reference's two
+  accumulators into one name, so each vibrato discarded the one before it
+  and each appended its own concatenation back into the list it was
+  concatenating. Both returned an array of the expected length with 99.9 %
+  of its samples wrong, which is why the suite never noticed. Found by the
+  reconciliation, and now covered by it.
+- **Ninety-two docstring cross-references pointed at names that do not
+  exist.** `note` said `See Also: V, T` and its example called `H` — MASS's
+  names for `note_with_vibrato`, `tremolo` and `horizontal_stack`, none of
+  which this package exports. Eight more examples had lost the `...` prompt
+  on their continuation lines and were not parseable Python, and three
+  called routines with the reference's parameter names. All corrected, with
+  `tests/test_docstring_references.py` failing on any of them.
 - **The six defects in exported API** — including two functions that could
   never succeed and a systematic one-LSB gain error on every WAV the package
   had written — are fixed, with `tests/test_fidelity.py` pinning the

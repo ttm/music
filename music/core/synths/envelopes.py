@@ -40,16 +40,20 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     See Also
     --------
     note_with_vibrato : A musical note with an oscillation of pitch.
-    fm : A linear oscillation of fundamental frequency.
+    note_with_fm : A linear oscillation of fundamental frequency.
     tremolo : A tremolo, an oscillation of loudness.
 
     Examples
     --------
-    >>> W(V()*am())  # writes a WAV file of a note with tremolo
-    >>> s = H([V()*am(fm=i, a=j) for i, j in zip([60, 150, 100],
-                                                 [2, 1, 20])])
-    >>> s = H([am(fm=i, a=j, sonic_vector=V()) for i, j in zip([60, 150, 100],
-                                                               [2, 1, 20])])
+    >>> write_wav_mono(note_with_vibrato() * am())  # a note with tremolo
+    >>> s = horizontal_stack(
+    ...     [note_with_vibrato() * am(fm=i, max_amplitude=j)
+    ...      for i, j in zip([60, 150, 100],
+    ... [2, 1, 20])])
+    >>> s = horizontal_stack(
+    ...     [am(fm=i, max_amplitude=j, sonic_vector=note_with_vibrato())
+    ...      for i, j in zip([60, 150, 100],
+    ... [2, 1, 20])])
     >>> envelope2 = am(440, 150, 60)  # a lengthy envelope
 
     Notes
@@ -134,16 +138,20 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     See Also
     --------
     note_with_vibrato : A musical note with an oscillation of pitch.
-    fm : A linear oscillation of fundamental frequency.
+    note_with_fm : A linear oscillation of fundamental frequency.
     am : A linear oscillation of amplitude.
 
     Examples
     --------
-    >>> W(V()*t())  # writes a WAV file of a note with tremolo
-    >>> s = H([V()*t(fa=i, dB=j) for i, j in zip([6, 15, 100], [2, 1, 20])])
-    >>> s = H([t(fa=i, dB=j, sonic_vector=V()) for i, j in zip([6, 15, 100],
-                                                               [2, 1, 20])])
-    >>> envelope2 = t(440, 1.5, 60)  # a lengthy envelope
+    >>> write_wav_mono(note_with_vibrato() * tremolo())  # a note with tremolo
+    >>> s = horizontal_stack(
+    ...     [note_with_vibrato() * tremolo(tremolo_freq=i, max_db_dev=j)
+    ...      for i, j in zip([6, 15, 100], [2, 1, 20])])
+    >>> s = horizontal_stack(
+    ...     [tremolo(tremolo_freq=i, max_db_dev=j,
+    ...              sonic_vector=note_with_vibrato())
+    ...      for i, j in zip([6, 15, 100], [2, 1, 20])])
+    >>> envelope2 = tremolo(440, 1.5, 60)  # a lengthy envelope
 
     Notes
     -----
@@ -240,7 +248,7 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
 
     Examples
     --------
-    >>> W(V(d=8)*L_())  # writes a WAV file with a loudness transitions
+    >>> write_wav_mono(note_with_vibrato(duration=8) * louds())
 
     Notes
     -----

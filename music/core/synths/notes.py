@@ -34,13 +34,14 @@ def note(freq: float = 220, duration: float = 2,
 
     See Also
     --------
-    V : A note with vibrato.
-    T : A tremolo envelope.
+    note_with_vibrato : A note with vibrato.
+    tremolo : A tremolo envelope.
 
     Examples
     --------
     >>> write_wav_mono(note())  # writes a WAV file of a note
-    >>> s = H([note(i, j) for i, j in zip([200, 500, 100], [2, 1, 2])])
+    >>> s = horizontal_stack([note(i, j) for i, j in
+    ...                       zip([200, 500, 100], [2, 1, 2])])
     >>> s2 = note(440, 1.5, waveform_table=WAVEFORM_SAWTOOTH)
 
     Notes
@@ -114,15 +115,16 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
 
     See Also
     --------
-    D_ : a note with arbitrary vibratos, transitions of pitch and transitions
-         of localization.
-    PV_ : a note with an arbitrary sequence of pitch transition and a
-          meta-vibrato.
+    note_with_vibrato_seq_localization : a note with arbitrary vibratos,
+                                         transitions of pitch and transitions
+                                         of localization.
+    note_with_vibratos_glissandos : a note with an arbitrary sequence of pitch
+                                    transition and a meta-vibrato.
 
     Examples
     --------
     >>> write_wav_stereo(note_with_doppler())
-    >>> write_wav_mono(T()*note_with_doppler(stereo=False))
+    >>> write_wav_mono(tremolo()*note_with_doppler(stereo=False))
 
     Notes
     -----
@@ -228,16 +230,17 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
 
     See Also
     --------
-    N : A basic musical note without vibrato.
-    V : A musical note with an oscillation of pitch.
-    T : A tremolo, an oscillation of loudness.
-    AM : A linear oscillation of amplitude (not linear loudness).
+    note : A basic musical note without vibrato.
+    note_with_vibrato : A musical note with an oscillation of pitch.
+    tremolo : A tremolo, an oscillation of loudness.
+    am : A linear oscillation of amplitude (not linear loudness).
 
     Examples
     --------
     >>> write_wav_mono(note_with_fm())  # writes a WAV file of a note
-    >>> sonic_vector = H([note_with_fm(i, j) for i, j in zip([200, 500, 100],
-                                                             [2, 1, 2])])
+    >>> sonic_vector = horizontal_stack(
+    ...     [note_with_fm(i, j) for i, j in zip([200, 500, 100],
+    ... [2, 1, 2])])
     >>> s2 = note_with_fm(440, 1.5, 600, 10)
 
     Notes
@@ -319,16 +322,17 @@ def note_with_phase(freq: float = 220, duration: float = 2,
 
     See Also
     --------
-    synth_note : A basic note.
-    V : A note with vibrato.
-    T : A tremolo envelope.
+    note : A basic note.
+    note_with_vibrato : A note with vibrato.
+    tremolo : A tremolo envelope.
 
     Examples
     --------
-    >>> write_wav_mono(synth_note_with_phase())  # writes a WAV file of a note
-    >>> s = H([synth_note_with_phase(i, j) for i, j in zip([200, 500, 100],
-                                                           [2, 1, 2])])
-    >>> s2 = synth_note_with_phase(440, 1.5, waveform_table=Sa)
+    >>> write_wav_mono(note_with_phase())  # writes a WAV file of a note
+    >>> s = horizontal_stack(
+    ...     [note_with_phase(i, j) for i, j in zip([200, 500, 100],
+    ... [2, 1, 2])])
+    >>> s2 = note_with_phase(440, 1.5, waveform_table=WAVEFORM_SAWTOOTH)
 
     Notes
     -----
@@ -397,17 +401,18 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
 
     See Also
     --------
-    N : A basic musical note without vibrato or pitch transition.
-    V : A musical note with an oscillation of pitch.
-    T : A tremolo, an oscillation of loudness.
-    L : A transition of loudness.
-    F : Fade in or out.
+    note : A basic musical note without vibrato or pitch transition.
+    note_with_vibrato : A musical note with an oscillation of pitch.
+    tremolo : A tremolo, an oscillation of loudness.
+    loud : A transition of loudness.
+    fade : Fade in or out.
 
     Examples
     --------
-    >>> write_wav_mono(note_with_pitch())  # writes file with a glissando
-    >>> s = H([note_with_pitch(i, j) for i, j in zip([220, 440, 4000],
-                                                     [440, 220, 220])])
+    >>> write_wav_mono(note_with_glissando())  # writes file with a glissando
+    >>> s = horizontal_stack(
+    ...     [note_with_glissando(i, j) for i, j in zip([220, 440, 4000],
+    ... [440, 220, 220])])
     >>> write_wav_mono(s)  # writes a file with glissandi
 
     """
@@ -478,19 +483,20 @@ def note_with_glissando_vibrato(
 
     See Also
     --------
-    P : A glissando.
-    V : A musical note with an oscillation of pitch.
-    N : A basic musical note without vibrato.
-    T : A tremolo, an oscillation of loudness.
-    F : Fade in and out.
-    L : A transition of loudness.
+    note_with_glissando : A glissando.
+    note_with_vibrato : A musical note with an oscillation of pitch.
+    note : A basic musical note without vibrato.
+    tremolo : A tremolo, an oscillation of loudness.
+    fade : Fade in and out.
+    loud : A transition of loudness.
 
     Examples
     --------
-    >>> W(note_with_pitch_vibrato())  # writes file with glissando and vibrato
-    >>> s = H([AD(sonic_vector=note_with_pitch_vibrato(i, j)) \
-            for i, j in zip([220, 440, 4000], [440, 220, 220])])
-    >>> W(s)  # writes a file with glissandi and vibratos
+    >>> write_wav_mono(note_with_glissando_vibrato())  # glissando + vibrato
+    >>> s = horizontal_stack(
+    ...     [adsr(sonic_vector=note_with_glissando_vibrato(i, j))
+    ...      for i, j in zip([220, 440, 4000], [440, 220, 220])])
+    >>> write_wav_mono(s)  # writes a file with glissandi and vibratos
 
     """
     waveform_table = np.array(waveform_table)
@@ -638,19 +644,21 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
 
     See Also
     --------
-    PV : A note with a glissando and a vibrato.
-    D : A note with a simple linear transition of location.
-    PVV : A note with a glissando and two vibratos.
-    VV : A note with a vibrato with two oscillatory patterns.
-    N : a basic musical note without vibrato.
-    V : a musical note with an oscillation of pitch.
-    T : a tremolo, an oscillation of loudness.
-    F : fade in and out.
-    L : a transition of loudness.
+    note_with_glissando_vibrato : A note with a glissando and a vibrato.
+    note_with_doppler : A note with a simple linear transition of location.
+    note_with_two_vibratos_glissando : A note with a glissando and two
+                                       vibratos.
+    note_with_two_vibratos : A note with a vibrato with two oscillatory
+                             patterns.
+    note : a basic musical note without vibrato.
+    note_with_vibrato : a musical note with an oscillation of pitch.
+    tremolo : a tremolo, an oscillation of loudness.
+    fade : fade in and out.
+    loud : a transition of loudness.
 
     Examples
     --------
-    >>> write_wav_mono(note_with_pitch_vibratos_localization())
+    >>> write_wav_mono(note_with_vibrato_seq_localization())
 
     Notes
     -----
@@ -678,10 +686,11 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         pitch_parts.append(f)
     ft = np.hstack(pitch_parts)
 
-    # vibrato contributions
+    # vibrato contributions: one line per vibrato, each the concatenation of
+    # that vibrato's own segments
     v_: list = []
     for i, vib in enumerate(durations[1:-1]):
-        v_ = []
+        segments = []
         for j, dur in enumerate(vib):
             samples = np.arange(dur * sample_rate)
             lv = len(waveform_tables[i + 1][j])
@@ -693,10 +702,9 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
                 f = 2. ** ((tv * max_pitch_devs[i][j] / 12) ** alpha[i + 1][j])
             else:
                 f = 2. ** (tv * max_pitch_devs[i][j] / 12)
-            v_.append(f)
+            segments.append(f)
 
-        v = np.hstack(v_)
-        v_.append(v)
+        v_.append(np.hstack(segments))
 
     v_ = [ft] + v_
 
@@ -908,22 +916,25 @@ def note_with_two_vibratos_glissando(
 
     See Also
     --------
-    PV : A note with a glissando and a vibrato.
-    VV : A note with a vibrato with two oscillatory patterns.
-    PV_ : A note with arbitrary pitch transitions and vibratos.
-    V : a musical note with an oscillation of pitch.
-    N : a basic musical note without vibrato.
-    T : a tremolo, an oscillation of loudness.
-    F : fade in or out.
-    L : a transition of loudness.
+    note_with_glissando_vibrato : A note with a glissando and a vibrato.
+    note_with_two_vibratos : A note with a vibrato with two oscillatory
+                             patterns.
+    note_with_vibratos_glissandos : A note with arbitrary pitch transitions and
+                                    vibratos.
+    note_with_vibrato : a musical note with an oscillation of pitch.
+    note : a basic musical note without vibrato.
+    tremolo : a tremolo, an oscillation of loudness.
+    fade : fade in or out.
+    loud : a transition of loudness.
 
     Examples
     --------
-    >>> W(note_with_pitch_vibratos())
-    >>> s = H([AD(note_with_pitch_vibratos(secondary_vibrato_freq=i,
-                                           max_pitch_dev=j)) \
-                    for i, j in zip([330, 440, 100], [8, 2, 15])])
-    >>> W(s)
+    >>> write_wav_mono(note_with_two_vibratos_glissando())
+    >>> s = horizontal_stack(
+    ...     [adsr(note_with_two_vibratos_glissando(
+    ...         secondary_vibrato_freq=i, max_pitch_dev=j))
+    ...      for i, j in zip([330, 440, 100], [8, 2, 15])])
+    >>> write_wav_mono(s)
 
     """
     waveform_table = np.array(waveform_table)
@@ -1019,18 +1030,20 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
 
     See Also
     --------
-    PV : A note with a glissando and a vibrato.
-    PVV : A note with a glissando and two vibratos.
-    VV : A note with a vibrato with two oscillatory patterns.
-    N : a basic musical note without vibrato.
-    V : a musical note with an oscillation of pitch.
-    T : a tremolo, an oscillation of loudness.
-    F : fade in and out.
-    L : a transition of loudness.
+    note_with_glissando_vibrato : A note with a glissando and a vibrato.
+    note_with_two_vibratos_glissando : A note with a glissando and two
+                                       vibratos.
+    note_with_two_vibratos : A note with a vibrato with two oscillatory
+                             patterns.
+    note : a basic musical note without vibrato.
+    note_with_vibrato : a musical note with an oscillation of pitch.
+    tremolo : a tremolo, an oscillation of loudness.
+    fade : fade in and out.
+    loud : a transition of loudness.
 
     Examples
     --------
-    >>> W(note_with_pitches_vibratos())
+    >>> write_wav_mono(note_with_vibratos_glissandos())
 
     """
     # pitch transition contributions
@@ -1046,10 +1059,11 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
         f_.append(f)
     ft = np.hstack(f_)
 
-    # vibrato contributions
+    # vibrato contributions: one line per vibrato, each the concatenation of
+    # that vibrato's own segments
     v_: list = []
     for i, vib in enumerate(durations[1:]):
-        v_ = []
+        segments = []
         for j, dur in enumerate(vib):
             samples = np.arange(dur * sample_rate)
             lv = len(waveform_tables[i + 1][j])
@@ -1062,10 +1076,9 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
                            alpha[i + 1][j])
             else:
                 f = 2. ** (tv * vibratos_max_pitch_devs[i][j] / 12)
-            v_.append(f)
+            segments.append(f)
 
-        v = np.hstack(v_)
-        v_.append(v)
+        v_.append(np.hstack(segments))
 
     # find maximum size, fill others with ones
     v_ = [ft] + v_
@@ -1133,18 +1146,17 @@ def note_with_vibrato(
 
     See Also
     --------
-    synth_note : A basic musical note without vibrato.
-    T : A tremolo, an oscillation of loudness.
-    fm : A linear oscillation of the frequency (not linear pitch).
-    AM : A linear oscillation of amplitude (not linear loudness).
-    V_ : A shorthand to render a note with vibrato using
-        a reference frequency and a pitch interval.
+    note : A basic musical note without vibrato.
+    tremolo : A tremolo, an oscillation of loudness.
+    note_with_fm : A linear oscillation of the frequency (not linear pitch).
+    am : A linear oscillation of amplitude (not linear loudness).
 
     Examples
     --------
     >>> write_wav_mono(note_with_vibrato())  # writes a WAV file of a note
-    >>> s = H([note_with_vibrato(i, j) for i, j in zip([200, 500, 100],
-                                                       [2, 1, 2])])
+    >>> s = horizontal_stack(
+    ...     [note_with_vibrato(i, j) for i, j in zip([200, 500, 100],
+    ... [2, 1, 2])])
     >>> s2 = note_with_vibrato(440, 1.5, 6, 1)
 
     Notes
@@ -1247,20 +1259,23 @@ def note_with_two_vibratos(
 
     See Also
     --------
-    PV : A note with a glissando and a vibrato.
-    PVV : A note with a glissando and a vibrato with two oscillatory patterns.
-    N : A basic musical note without vibrato.
-    V : A musical note with an oscillation of pitch.
-    T : A tremolo, an oscillation of loudness.
-    F : Fade in and out.
-    L : A transition of loudness.
+    note_with_glissando_vibrato : A note with a glissando and a vibrato.
+    note_with_two_vibratos_glissando : A note with a glissando and a vibrato
+                                       with two oscillatory patterns.
+    note : A basic musical note without vibrato.
+    note_with_vibrato : A musical note with an oscillation of pitch.
+    tremolo : A tremolo, an oscillation of loudness.
+    fade : Fade in and out.
+    loud : A transition of loudness.
 
     Examples
     --------
-    >>> W(note_with_vibratos())  # writes file with a two simultaneous vibratos
-    >>> s = H([AD(note_with_vibratos(vibrato_freq=i, secondary_vibrato_freq=j))
-              for i, j in zip([2, 6, 4], [8, 10, 15])])
-    >>> W(s)  # writes a file with two vibratos
+    >>> write_wav_mono(note_with_two_vibratos())  # two simultaneous vibratos
+    >>> s = horizontal_stack(
+    ...     [adsr(note_with_two_vibratos(vibrato_freq=i,
+    ...                                  secondary_vibrato_freq=j))
+    ... for i, j in zip([2, 6, 4], [8, 10, 15])])
+    >>> write_wav_mono(s)  # writes a file with two vibratos
 
     """
     waveform_table = np.array(waveform_table)
@@ -1319,10 +1334,10 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
 
     See Also
     --------
-    V : A note with vibrato.
-    PV_ : a note with an arbitrary sequence of pitch transition and
-          a meta-vibrato.
-    T : A tremolo envelope.
+    note_with_vibrato : A note with vibrato.
+    note_with_vibratos_glissandos : a note with an arbitrary sequence of pitch
+                                    transition and a meta-vibrato.
+    tremolo : A tremolo envelope.
 
     Returns
     -------
@@ -1331,7 +1346,7 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
 
     Examples
     --------
-    >>> W(trill())
+    >>> write_wav_mono(trill())
 
     Notes
     -----

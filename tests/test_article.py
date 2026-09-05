@@ -20,6 +20,8 @@ References
        representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 """
 
+import math
+
 import numpy as np
 import pytest
 
@@ -579,3 +581,286 @@ def test_the_rotations_are_a_group_in_their_own_right():
     for first in rotations:
         for second in rotations:
             assert first * second in rotations
+
+
+# --------------------------------------------------------------------------
+# eq:notaBasicaTimbre -- a note of any timbre is one period repeated
+# --------------------------------------------------------------------------
+
+@pytest.mark.parametrize("table", ["sine", "square", "triangle", "sawtooth"])
+def test_a_note_of_any_timbre_is_one_period_repeated(table):
+    """t_i = l_(i % (f_s / f)): the period is the timbre, and it repeats.
+
+    eq:notaBasica writes the note for the primary waveforms; this one says
+    the same of an arbitrary period `l`. The package reaches that through
+    the lookup of eq:lut, so the repetition is what to check rather than
+    the indexing.
+    """
+    freq, duration = 441.0, 0.1        # 441 Hz divides 44100 exactly
+    produced = music.note(freq=freq, duration=duration,
+                          waveform_table=music.waveform_table(table),
+                          sample_rate=SAMPLE_RATE)
+
+    period = int(SAMPLE_RATE / freq)
+    whole_periods = len(produced) // period
+    assert whole_periods > 1
+    first = produced[:period]
+    for k in range(1, whole_periods):
+        assert np.array_equal(produced[k * period:(k + 1) * period], first)
+
+
+# --------------------------------------------------------------------------
+# eq:adsr and eq:adsrApl -- the envelope, and applying it
+# --------------------------------------------------------------------------
+
+def test_the_adsr_envelope_is_the_four_pieces_equation_adsr_writes():
+    """Attack, decay, sustain and release, each its own expression.
+
+    The article gives an exponential and a linear form for each sloped
+    piece; the package's `transition="exp"` is the first of them, rising
+    from xi to 1, falling to a_S, holding, and falling from a_S to xi.
+    """
+    duration, attack, decay, release = 1.0, 100.0, 100.0, 200.0
+    sustain_db, db_dev = -6.0, -80.0
+    envelope = music.adsr(envelope_duration=duration,
+                          attack_duration=attack, decay_duration=decay,
+                          sustain_level=sustain_db,
+                          release_duration=release, transition="exp",
+                          db_dev=db_dev, sample_rate=SAMPLE_RATE)
+
+    lambda_a = int(attack * SAMPLE_RATE * 0.001)
+    lambda_d = int(decay * SAMPLE_RATE * 0.001)
+    lambda_r = int(release * SAMPLE_RATE * 0.001)
+    xi = 10 ** (db_dev / 20)
+    a_s = 10 ** (sustain_db / 20)
+
+    i = np.arange(lambda_a)
+    attack_expected = xi * (1 / xi) ** (i / (lambda_a - 1))
+    assert np.allclose(envelope[:lambda_a], attack_expected)
+    assert envelope[0] == pytest.approx(xi)
+    assert envelope[lambda_a - 1] == pytest.approx(1.0)
+
+    j = np.arange(lambda_d)
+    decay_expected = a_s ** (j / (lambda_d - 1))
+    assert np.allclose(envelope[lambda_a:lambda_a + lambda_d],
+                       decay_expected)
+
+    sustain = envelope[lambda_a + lambda_d:len(envelope) - lambda_r]
+    assert np.allclose(sustain, a_s)
+
+    # The release is where the three sources part company. eq:adsr writes
+    # a_S (xi / a_S) ** t, which lands on xi; the package multiplies a fade
+    # by a_S and so lands on xi * a_S, and the MASS reference does exactly
+    # the same. Package and reference agree to the sample; both differ from
+    # the article. See DISCREPANCIES.md -- this is the author's to settle,
+    # not something to change under a sample-exact register row.
+    k = np.arange(lambda_r)
+    as_the_article_writes_it = a_s * (xi / a_s) ** (k / (lambda_r - 1))
+    as_implemented = a_s * xi ** (k / (lambda_r - 1))
+    release = envelope[len(envelope) - lambda_r:]
+
+    assert np.allclose(release, as_implemented)
+    assert not np.allclose(release, as_the_article_writes_it)
+    assert release[0] == pytest.approx(a_s)
+    assert release[-1] == pytest.approx(xi * a_s)
+    # They part by exactly the sustain level, which is what multiplying by
+    # a_S rather than interpolating to xi costs: 6 dB here, and growing
+    # with any deeper sustain.
+    largest_gap = np.max(np.abs(
+        20 * np.log10(release / as_the_article_writes_it)))
+    assert largest_gap == pytest.approx(-sustain_db, abs=1e-6)
+
+
+def test_applying_the_envelope_is_the_product_equation_adsrapl_writes():
+    """t_i^ADSR = t_i . a_i, sample by sample and nothing else."""
+    tone = music.note(freq=440, duration=0.5, sample_rate=SAMPLE_RATE)
+    envelope = music.adsr(envelope_duration=0.5, sample_rate=SAMPLE_RATE)
+    applied = music.adsr(sonic_vector=tone, sample_rate=SAMPLE_RATE)
+    assert np.allclose(applied, tone * envelope)
+
+
+# --------------------------------------------------------------------------
+# eq:p1rev, eq:p2rev, eq:rev -- the two periods of the reverberation
+# --------------------------------------------------------------------------
+
+def test_the_reverberation_is_the_two_periods_equations_p1rev_and_p2rev():
+    """Sparse reincidences, then noise, both under one decay curve.
+
+    eq:p1rev makes the first period a train of impulses whose probability
+    grows as (i/Lambda_1)**2; eq:p2rev fills the second with noise; both
+    are scaled by 10 ** (V_dB/20 . i/(Lambda_R - 1)), and eq:rev joins them
+    at Lambda_1.
+    """
+    duration, first_phase, decay = 0.4, 0.1, -50.0
+    lambda_r = int(duration * SAMPLE_RATE)
+    lambda_1 = int(first_phase * SAMPLE_RATE)
+
+    np.random.seed(0)
+    impulse = music.reverb(duration=duration,
+                           first_phase_duration=first_phase, decay=decay,
+                           sample_rate=SAMPLE_RATE)
+    assert len(impulse) == lambda_r
+
+    i = np.arange(lambda_r)
+    envelope = 10. ** ((decay / 20) * (i / (lambda_r - 1)))
+
+    # The first period is sparse: most samples are exactly zero, and the
+    # ones that are not sit on the decay curve.
+    first = impulse[1:lambda_1]                # index 0 is the direct sound
+    assert np.count_nonzero(first) < 0.75 * len(first)
+    struck = first != 0
+    assert np.allclose(first[struck], envelope[1:lambda_1][struck])
+
+    # And it fills up towards its end, as p_i = (i / Lambda_1) ** 2 says.
+    early = np.count_nonzero(first[:len(first) // 4])
+    late = np.count_nonzero(first[-len(first) // 4:])
+    assert late > 3 * early
+
+    # The second period is not sparse, and stays under the same curve.
+    second = impulse[lambda_1:]
+    assert np.count_nonzero(second) > 0.99 * len(second)
+    assert np.all(np.abs(second) <= envelope[lambda_1:] + 1e-12)
+
+
+def test_the_reverberation_decays_by_exactly_the_curve_it_documents():
+    """Dividing the curve out leaves the same sound at any decay.
+
+    The impulse response is noise under 10 ** (V_dB/20 . i/(Lambda_R - 1)),
+    and that noise is not stationary -- brown noise wanders, so its local
+    RMS is no measure of the envelope over it. Divide the curve out
+    instead: if the decay enters only through it, two renders from the same
+    seed that differ only in `decay` come back identical, and they do, to
+    the sample.
+    """
+    duration, first_phase = 0.6, 0.1
+    renders = {}
+    for decay in (-20.0, -50.0, -80.0):
+        np.random.seed(0)
+        impulse = music.reverb(duration=duration,
+                               first_phase_duration=first_phase, decay=decay,
+                               sample_rate=SAMPLE_RATE)
+        i = np.arange(len(impulse))
+        curve = 10. ** ((decay / 20) * (i / (len(impulse) - 1)))
+        renders[decay] = impulse / curve
+
+    reference = renders[-20.0]
+    for decay, divided in renders.items():
+        assert np.allclose(divided, reference, atol=1e-9), (
+            f'dividing out the curve for {decay} dB left a different sound, '
+            f'so the decay is not entering only through that curve')
+
+    # And the curve really does span the decibels asked for.
+    for decay in renders:
+        i = np.arange(int(duration * SAMPLE_RATE))
+        curve = 10. ** ((decay / 20) * (i / (len(i) - 1)))
+        assert music.amp_to_db(curve[-1] / curve[0]) == pytest.approx(decay)
+
+
+# --------------------------------------------------------------------------
+# eq:fmEsp, eq:Bessel, eq:specAM -- what modulation does in the spectrum
+# --------------------------------------------------------------------------
+
+def _spectrum(samples, sample_rate=SAMPLE_RATE):
+    """Magnitudes and their frequencies, windowed."""
+    windowed = samples * np.hanning(len(samples))
+    magnitude = np.abs(np.fft.rfft(windowed)) * 2 / np.sum(np.hanning(
+        len(samples)))
+    return np.fft.rfftfreq(len(samples), 1 / sample_rate), magnitude
+
+
+def _bessel(k, mu, points=20001):
+    """J_k(mu), by the integral `eq:Bessel` writes it as.
+
+    Evaluated here rather than imported so that the sideband test below
+    rests on the article's own definition, and so that checking a spectrum
+    costs the package no dependency it does not already have.
+    """
+    k_bar = k % 2
+    w = np.linspace(0, np.pi / 2, points)
+    integrand = (np.cos(k_bar * np.pi / 2 + mu * np.sin(w))
+                 * np.cos(k_bar * np.pi / 2 + k * w))
+    return (2 / np.pi) * np.trapezoid(integrand, w)
+
+
+def _at(freqs, magnitude, target, width=12.0):
+    """The peak magnitude within `width` Hz of `target`."""
+    band = np.abs(freqs - target) <= width
+    return float(magnitude[band].max()) if band.any() else 0.0
+
+
+@pytest.mark.parametrize("index", [0.5, 1.0, 2.0, 3.0])
+def test_fm_puts_bessel_sidebands_where_equation_fmesp_says(index):
+    """A carrier at f gains partials at f + k f', each J_k(mu) tall.
+
+    The article expands the FM signal into that sum (eq:fmEsp), with the
+    coefficients the Bessel integral of eq:Bessel gives. This is the
+    strongest statement it makes about a spectrum, and checking it is the
+    difference between rendering something that varies in pitch and
+    rendering frequency modulation.
+    """
+    carrier, modulator, duration = 4000.0, 400.0, 0.5
+    deviation = index * modulator          # mu = deviation / f'
+
+    samples = music.note_with_fm(
+        freq=carrier, duration=duration, fm=modulator,
+        max_fm_deviation=deviation,
+        waveform_table=music.WAVEFORM_SINE,
+        fm_waveform_table=music.WAVEFORM_SINE, sample_rate=SAMPLE_RATE)
+
+    freqs, magnitude = _spectrum(samples)
+    carrier_height = _at(freqs, magnitude, carrier)
+    assert carrier_height > 0
+
+    for k in (1, 2, 3):
+        expected = abs(_bessel(k, index) / _bessel(0, index))
+        for side in (carrier + k * modulator, carrier - k * modulator):
+            measured = _at(freqs, magnitude, side) / carrier_height
+            assert measured == pytest.approx(expected, abs=0.06), (
+                f'the sideband at {side} Hz is {measured:.3f} of the '
+                f'carrier; J_{k}({index}) / J_0({index}) is {expected:.3f}')
+
+
+@pytest.mark.parametrize("k", range(5))
+@pytest.mark.parametrize("mu", [0.5, 1.0, 2.0, 3.5])
+def test_the_bessel_integral_of_equation_bessel_is_the_function_it_names(
+        k, mu):
+    """J_k(mu) = (2/pi) int_0^(pi/2) cos(k_bar pi/2 + mu sin w)
+    cos(k_bar pi/2 + k w) dw.
+
+    The article writes the coefficients of eq:fmEsp as that integral rather
+    than by name. It is the Bessel function of the first kind, and the
+    series that defines that function is independent of the integral, so
+    agreeing with it establishes both.
+    """
+    series = sum((-1) ** m / (math.factorial(m) * math.factorial(m + k))
+                 * (mu / 2) ** (2 * m + k)
+                 for m in range(40))
+    assert _bessel(k, mu) == pytest.approx(series, abs=1e-9)
+
+
+def test_am_puts_one_sideband_each_side_as_equation_specam_says():
+    """(1 + M sin(f' t)) P sin(f t) is the carrier plus two partials.
+
+    eq:specAM expands it: the carrier at P, and sidebands at f -/+ f' each
+    of height P M / 2. Two partials, not the infinite family FM makes.
+    """
+    carrier, modulator, depth, duration = 4000.0, 300.0, 0.4, 0.5
+
+    tone = music.note(freq=carrier, duration=duration,
+                      waveform_table=music.WAVEFORM_SINE,
+                      sample_rate=SAMPLE_RATE)
+    modulated = music.am(duration=duration, fm=modulator,
+                         max_amplitude=depth,
+                         waveform_table=music.WAVEFORM_SINE,
+                         sonic_vector=tone, sample_rate=SAMPLE_RATE)
+
+    freqs, magnitude = _spectrum(modulated)
+    carrier_height = _at(freqs, magnitude, carrier)
+
+    for side in (carrier - modulator, carrier + modulator):
+        ratio = _at(freqs, magnitude, side) / carrier_height
+        assert ratio == pytest.approx(depth / 2, abs=0.02)
+
+    # And nothing at twice the modulator away, where FM would have partials.
+    for far in (carrier - 2 * modulator, carrier + 2 * modulator):
+        assert _at(freqs, magnitude, far) / carrier_height < 0.02

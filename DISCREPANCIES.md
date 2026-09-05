@@ -81,6 +81,26 @@ one-pole design does rather than an error in the coefficients, but the
 article does not say so. `tests/test_filter_design.py` pins both the
 accuracy at the bottom of the range and the monotone drift towards Nyquist.
 
+### `eq:adsr` — where the release lands
+
+The article's release is `a_S (ξ/a_S)^t`, which reaches **ξ** at the end of
+the envelope. The package multiplies a fade by `a_S`, so it reaches
+**ξ·a_S**; the MASS reference does exactly the same, to the sample. Package
+and reference agree; both differ from the paper.
+
+The two curves part by exactly the sustain level — 6 dB at `sustain_level =
+-6`, more at a deeper sustain — over the course of the release. Both end
+inaudible, so nothing here is broken; the question is which of the author's
+two artifacts is the specification.
+
+**This package follows the reference**, because `AD` is a sample-exact row
+of `RECONCILIATION.md` and changing it would break that on a reading of the
+paper rather than on a decision by its author. Attack, decay and sustain
+match `eq:adsr` exactly.
+`tests/test_article.py::test_the_adsr_envelope_is_the_four_pieces_equation_adsr_writes`
+asserts the implemented form and asserts the article's form is *not* what
+comes out, so this entry cannot go stale in either direction.
+
 ### `localize2` implements a model the article does not give
 
 The frequency-dependent ITD and IID in `music.localize2` — a crossover at

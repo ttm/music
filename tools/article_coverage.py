@@ -72,7 +72,7 @@ def cited() -> set:
     """The equation labels the test suite names."""
     names = set()
     for path in TESTS.glob('test_*.py'):
-        names |= set(re.findall(r'eq:([A-Za-z_-]+)', path.read_text()))
+        names |= set(re.findall(r'eq:([A-Za-z0-9_-]+)', path.read_text()))
     return names
 
 

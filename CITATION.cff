@@ -4,8 +4,8 @@ message: >-
   If you use this package, please cite the article under
   preferred-citation, as the documentation asks.
 type: software
-version: 1.4.0
-date-released: '2026-09-04'
+version: 1.5.0
+date-released: '2026-09-05'
 license: MIT
 repository-code: https://github.com/ttm/music
 identifiers:

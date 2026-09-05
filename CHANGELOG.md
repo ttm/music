@@ -1,4 +1,22 @@
-## [Unreleased]
+## [1.5.0] - 2026-09-05
+### Note for anyone upgrading
+**Two exported routines now produce different samples.**
+`note_with_vibratos_glissandos` and `note_with_vibrato_seq_localization`
+were multiplying their frequency contour by the wrong thing -- see the
+first entry under Fixed -- so anything rendered with them before this
+version was wrong, and re-rendering it will not match. Nothing else in the
+package changes what it returns.
+
+**Three names no longer resolve on `music`**: `music.Any`,
+`music.TYPE_CHECKING` and `music.PackageNotFoundError` were implementation
+imports that leaked into the namespace. They were never in `__all__` and
+never documented, and are private aliases now. Import them from `typing`
+and `importlib.metadata` as their owners intend.
+
+**`music.profile` no longer raises.** It returns the dictionary its
+docstring has always described, so a caller that was catching
+`NotImplementedError` around it can stop.
+
 ### Added
 - **Three examples for the new modules**: `scales_and_chords.py` renders the
   seven modes, a cadence and the harmonic series over its own fundamental;

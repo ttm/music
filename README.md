@@ -36,6 +36,17 @@ with the equation it implements and the article it comes from.
   mathematical model that describes it.
 * **Musical structures** with an emphasis on symmetry and discourse:
   permutation groups, change-ringing peals and plain changes.
+* **Music theory** as the MASS companion paper states it: the seven diatonic
+  modes and the single step pattern each is a rotation of, the three minor
+  scales, the triads and the tetrads that extend them, and the harmonic
+  series. All in semitones from a tonic of zero, so a scale becomes
+  frequencies and then sound in two steps.
+* **Filter design.** `iir` applies coefficients; `low_pass`, `high_pass`,
+  `band_pass` and `band_reject` compute them, from the four designs the
+  article specifies.
+* **Bonds between a note's characteristics**, so a piece decides once how its
+  notes behave rather than note by note -- a vibrato that speeds up as the
+  line rises, a tremolo that only appears above middle C.
 * **Sensory stimulation.** Seven auditory stimuli -- binaural, monaural and
   isochronic beats, amplitude and frequency modulation, modulated noise and
   spatial motion -- each named for the technique it implements in
@@ -108,6 +119,42 @@ Durations are in seconds, envelope stages in milliseconds, levels in decibels
 and pitch deviations in semitones — each parameter in the unit it is usually
 thought about in.
 
+### Scales and chords
+
+Everything is counted in semitones from a tonic of zero, which is what
+`pitch_to_freq` takes:
+
+```python
+freqs = music.pitch_to_freq(220.0, music.scale("dorian"))
+chord = music.pitch_to_freq(220.0, music.chord("minor seventh"))
+music.write_wav_mono(music.mix_many(
+    [music.note(f, duration=1.5) for f in chord]), "chord.wav")
+```
+
+The seven modes are one step pattern read from seven places, and
+`mode_by_rotation` reaches them that way rather than by name.
+
+### Filters, designed
+
+Cutoffs are fractions of the sample rate — `fraction_of` converts Hertz —
+so the same coefficients describe the same filter at any rate:
+
+```python
+a, b = music.low_pass(music.fraction_of(1000))
+muffled = music.iir(music.noise("white", duration=2), a, b)
+```
+
+### Bonds
+
+A vibrato whose rate follows the pitch, and a depth that falls as it rises:
+
+```python
+voice = music.Bonds(vibrato_freq=music.proportional(1 / 40),
+                    max_pitch_dev=music.inversely_proportional(400))
+music.write_wav_mono(voice.render([220, 277, 330, 440], duration=0.5),
+                     "bound.wav")
+```
+
 ### Change ringing
 
 Permutation groups and the peals of campanology, acted on any domain you like
@@ -164,6 +211,9 @@ Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) 
 * [campanology](https://github.com/ttm/music/tree/master/examples/campanology.py) and [geometric_music](https://github.com/ttm/music/tree/master/examples/geometric_music.py) both use `Being` as their synth, but this time with permutations.
 * [isynth](https://github.com/ttm/music/tree/master/examples/isynth.py) also uses a synth class, but of a different kind, [`IteratorSynth`](https://github.com/ttm/music/tree/master/music/legacy/classes.py), that iterates through arbitrary lists of variables.
 * [singing_demo](https://github.com/ttm/music/tree/master/examples/singing_demo.py): demonstrates `music.singing.setup_engine()` and `music.singing.make_test_song()` to render a short sung phrase.
+* [scales_and_chords](https://github.com/ttm/music/tree/master/examples/scales_and_chords.py): renders the seven modes, a I–vi–IV–V7 cadence, and sixteen partials of the harmonic series over their own fundamental, where the octaves land on the tempered scale and nothing else does.
+* [filtered_noise](https://github.com/ttm/music/tree/master/examples/filtered_noise.py): puts each of the four filter designs on white noise — the useful thing to hear a filter on — and sweeps a low pass across five octaves.
+* [bonds](https://github.com/ttm/music/tree/master/examples/bonds.py): plays one line three times, changing only how its characteristics are bound to its pitch.
 * [binaural_beats](https://github.com/ttm/music/tree/master/examples/binaural_beats.py): generates binaural beats using two pure tones with tremolo for relaxation or focus.
 * [sensory_stimulation](https://github.com/ttm/music/tree/master/examples/sensory_stimulation.py): writes one file per SSTIM technique with `music.stimulation`, and one three-phase session, which is the form these stimuli are actually delivered in.
 * The `music.singing` module provides basic text-to-speech utilities. Run `music.singing.setup_engine()` once to clone the [eCantorix](https://github.com/ttm/ecantorix) engine before using these features. It is cloned into your user cache directory; set `MUSIC_ECANTORIX_DIR` to put it elsewhere. Because eCantorix is a Perl program driving espeak through a Makefile, it also needs `git`, `make`, `perl` and `espeak` installed on the system — `setup_engine()` will tell you which are missing.
@@ -174,10 +224,12 @@ The modules are:
 
 * **core**:
   * **synths** for synthesization of notes (including vibratos, glissandos, etc.), noises and envelopes.
-  * **filters** for the application of filters such as ADSR envelopes, fades, IIR and FIR, reverb, loudness, and localization.
+  * **filters** for the application of filters such as ADSR envelopes, fades, IIR and FIR, reverb, loudness, and localization, and for designing the coefficients the IIR ones take.
   * **io** for reading, writing and playing audio, both mono and stereo.
   * **functions** for normalization.
-* **structures** for higher level musical structures: permutations and the algebraic groups they form, change-ringing peals, and symmetry. Scales, chords, counterpoint and tunings are [not there yet](https://github.com/ttm/music/issues/1).
+* **structures** for higher level musical structures: permutations and the algebraic groups they form, change-ringing peals, and symmetry.
+* **theory** for scales, chords and the harmonic series. Counterpoint, harmonic expansion and modulation are described in the companion paper and are [not there yet](https://github.com/ttm/music/issues/1).
+* **bonds** for tying a note's vibrato and tremolo to its frequency, which is where an arbitrary construction of that kind goes.
 * **legacy** for musical pieces that are rendered with the Music package and might be used as material to make more music.
 * **stimulation** for sensory-stimulation work: the seven stimuli above, each carrying the SSTIM term it implements, and `StimulationSession` for sequencing them into a protocol.
 * **tables** for the generation of lookup tables for some basic waveform.
@@ -194,12 +246,18 @@ Concrete things the code itself is waiting for, rather than a wish list:
 * **`Being.walk`'s `perm-walk` method**, which was never restored from its
   predecessor and is currently a reconstruction. (`Peals.twenty_all_over` and
   `Peals.an_eight_and_forty` no longer raise; this entry used to say they did.)
-* **Reconciling the routines MASS has no counterpart for.**
+* **Counterpoint, harmonic expansion and modulation**, which the companion
+  paper describes and `music.theory` does not implement.
+* **Checking the routines MASS has no counterpart for.**
   [`RECONCILIATION.md`](RECONCILIATION.md) compares the package with the MASS
   reference implementation routine by routine — 26 of 35 are reproduced sample
-  for sample, and the rest diverge for stated reasons. It leaves
-  `music.stimulation`, `music.singing`, `music.structures` and the sequencer
-  with nothing to be measured against.
+  for sample, and the rest diverge for reasons it states.
+  [`tests/test_article.py`](tests/test_article.py) checks the article's
+  equations instead of its code, and covers all 45 of the 47 that a test could
+  settle. Both leave `music.stimulation`, `music.singing`, `music.structures`
+  and the sequencer with nothing to be measured against.
+  [`DISCREPANCIES.md`](DISCREPANCIES.md) is where the article, the reference
+  implementation and this package are recorded as disagreeing.
 * **An article describing the package**, as a companion to the MASS one.
 
 ## Contributing

@@ -28,10 +28,17 @@ import music
 PACKAGE = pathlib.Path(music.__file__).parent
 PUBLIC = {name for name in dir(music) if not name.startswith('_')}
 BUILTINS = set(dir(builtins))
-#: Names an example may use without this package exporting them.
-AMBIENT = {'np', 'numpy', 'music', 'plt', 'sympy'}
+#: Names an example may use without this package exporting them. These are
+#: the ones ``conftest.py`` puts into every doctest's namespace, so an
+#: example may rely on them and still run.
+AMBIENT = {'np', 'numpy', 'music', 'plt', 'sympy', 'Path'}
 
 _SECTION = re.compile(r'^(See Also|Examples)$')
+
+
+def _who(node):
+    """What to call the thing a docstring belongs to, in a message."""
+    return getattr(node, 'name', '<module>')
 
 
 def _section(doc, title):
@@ -129,17 +136,25 @@ def _documented():
                   for node in tree.body
                   if isinstance(node, (ast.Import, ast.ImportFrom))
                   for alias in node.names}
+        known = PUBLIC | BUILTINS | AMBIENT | local
+        # The module's own docstring counts: `music/structures/permutations`
+        # had an example with `>>>` where a continuation needed `...`, and
+        # walking only the definitions inside it missed that.
+        module_doc = ast.get_docstring(tree)
+        if module_doc:
+            yield path, tree, module_doc, known
         for node in ast.walk(tree):
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef,
                                      ast.ClassDef)):
                 continue
             doc = ast.get_docstring(node)
             if doc:
-                yield path, node, doc, PUBLIC | BUILTINS | AMBIENT | local
+                yield path, node, doc, known
 
 
 DOCUMENTED = list(_documented())
-IDS = [f'{path.relative_to(PACKAGE.parent)}::{node.name}'
+IDS = [f'{path.relative_to(PACKAGE.parent)}::'
+       f'{getattr(node, "name", "<module>")}'
        for path, node, _doc, _known in DOCUMENTED]
 
 
@@ -154,7 +169,8 @@ def test_see_also_points_at_names_that_exist(path, node, doc, known):
     for name in _see_also_names(doc):
         root = name.split('.')[0]
         assert root in known, (
-            f'{node.name} in {path.name} refers under See Also to {name!r}, '
+            f'{_who(node)} in {path.name} refers under See Also to '
+            f'{name!r}, '
             f'which this package does not export')
 
 
@@ -167,9 +183,9 @@ def test_examples_parse_as_python(path, node, doc, known):
     try:
         ast.parse(source)
     except SyntaxError as exc:
-        pytest.fail(f"{node.name} in {path.name} has an example that does not "
-                    f'parse: {exc.msg} (line {exc.lineno}). A continuation '
-                    f'line needs its own `...` prompt.')
+        pytest.fail(f'{_who(node)} in {path.name} has an example that does '
+                    f'not parse: {exc.msg} (line {exc.lineno}). A '
+                    f'continuation line needs its own `...` prompt.')
 
 
 @pytest.mark.parametrize('path, node, doc, known', DOCUMENTED, ids=IDS)
@@ -184,7 +200,8 @@ def test_examples_only_call_names_that_exist(path, node, doc, known):
         return              # reported by test_examples_parse_as_python
     for name in free:
         assert name in known, (
-            f'{node.name} in {path.name} has an example using {name!r}, '
+            f'{_who(node)} in {path.name} has an example using '
+            f'{name!r}, '
             f'which this package does not export')
 
 
@@ -219,7 +236,7 @@ def test_examples_pass_arguments_the_signature_has(path, node, doc, known):
             continue
         for keyword in call.keywords:
             assert keyword.arg is None or keyword.arg in parameters, (
-                f'{node.name} in {path.name} has an example calling '
+                f'{_who(node)} in {path.name} has an example calling '
                 f'{call.func.id}({keyword.arg}=...), which is not a parameter '
                 f'of {call.func.id}{signature}')
 
@@ -230,5 +247,37 @@ def test_examples_pass_arguments_the_signature_has(path, node, doc, known):
                       inspect.Parameter.POSITIONAL_OR_KEYWORD)
         accepts = sum(1 for p in parameters.values() if p.kind in positional)
         assert given <= accepts, (
-            f'{node.name} in {path.name} has an example passing {given} '
+            f'{_who(node)} in {path.name} has an example passing '
+            f'{given} '
             f'positional arguments to {call.func.id}, which takes {accepts}')
+
+
+def test_the_examples_are_actually_being_run():
+    """`--doctest-modules` is configured, and it collects the examples.
+
+    The tests above check that an example parses and names things that
+    exist. Running it is what catches the rest: `adsr(note_with_vibrato())`
+    passes a sound as `envelope_duration`, and `horizontal_stack([a, b])`
+    hands a list to a routine taking `*arrays`. Both parse, both name real
+    routines, and both raise.
+
+    That checking only happens while pytest is told to collect doctests, so
+    this fails if the setting is dropped -- otherwise the examples would go
+    back to being unverified prose without anything saying so.
+    """
+    import configparser
+
+    config = configparser.ConfigParser()
+    config.read(PACKAGE.parent / 'pytest.ini')
+    options = config['pytest']['addopts']
+    paths = config['pytest']['testpaths'].split()
+
+    assert '--doctest-modules' in options, (
+        'examples stop being checked without this')
+    assert 'music' in paths, (
+        '--doctest-modules only collects from the paths pytest is given')
+
+    # And there really are examples for it to find.
+    with_examples = [_who(node) for _p, node, doc, _k in DOCUMENTED
+                     if _example_source(doc)]
+    assert len(with_examples) > 50

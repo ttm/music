@@ -47,7 +47,7 @@ def localize(sonic_vector=None, theta=0, distance=0, x=.1, y=.01,
     Examples
     --------
     >>> write_wav_stereo(localize())
-    >>> write_wav_stereo(horizontal_stack([
+    >>> write_wav_stereo(horizontal_stack(*[
     ...     localize(note_with_vibrato(duration=1), x=i, y=j)
     ...     for i, j in zip([.1, .7, np.pi - .1, np.pi - .7],
     ...                     [.1, .1, .1, .1])]))
@@ -254,8 +254,11 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
     --------
     >>> write_wav_stereo(localize_linear(note(duration=3)))
     >>> # a pass from the left to the right and back
-    >>> horizontal_stack(localize_linear(note(), theta1=180, theta2=0),
-    ...                  localize_linear(note(), theta1=0, theta2=180))
+    >>> there_and_back = horizontal_stack(
+    ...     localize_linear(note(), theta1=180, theta2=0),
+    ...     localize_linear(note(), theta1=0, theta2=180))
+    >>> there_and_back.shape[0]  # a stereo pair
+    2
 
     Notes
     -----
@@ -374,7 +377,7 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
     Examples
     --------
     >>> write_wav_stereo(localize2())
-    >>> write_wav_stereo(horizontal_stack([
+    >>> write_wav_stereo(horizontal_stack(*[
     ...     localize2(note_with_vibrato(duration=1), x=i, y=j)
     ...     for i, j in zip([.1, .7, np.pi - .1, np.pi - .7],
     ...                     [.1, .1, .1, .1])]))

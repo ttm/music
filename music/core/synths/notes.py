@@ -40,7 +40,7 @@ def note(freq: float = 220, duration: float = 2,
     Examples
     --------
     >>> write_wav_mono(note())  # writes a WAV file of a note
-    >>> s = horizontal_stack([note(i, j) for i, j in
+    >>> s = horizontal_stack(*[note(i, j) for i, j in
     ...                       zip([200, 500, 100], [2, 1, 2])])
     >>> s2 = note(440, 1.5, waveform_table=WAVEFORM_SAWTOOTH)
 
@@ -239,7 +239,7 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
     --------
     >>> write_wav_mono(note_with_fm())  # writes a WAV file of a note
     >>> sonic_vector = horizontal_stack(
-    ...     [note_with_fm(i, j) for i, j in zip([200, 500, 100],
+    ...     *[note_with_fm(i, j) for i, j in zip([200, 500, 100],
     ... [2, 1, 2])])
     >>> s2 = note_with_fm(440, 1.5, 600, 10)
 
@@ -330,7 +330,7 @@ def note_with_phase(freq: float = 220, duration: float = 2,
     --------
     >>> write_wav_mono(note_with_phase())  # writes a WAV file of a note
     >>> s = horizontal_stack(
-    ...     [note_with_phase(i, j) for i, j in zip([200, 500, 100],
+    ...     *[note_with_phase(i, j) for i, j in zip([200, 500, 100],
     ... [2, 1, 2])])
     >>> s2 = note_with_phase(440, 1.5, waveform_table=WAVEFORM_SAWTOOTH)
 
@@ -411,7 +411,7 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
     --------
     >>> write_wav_mono(note_with_glissando())  # writes file with a glissando
     >>> s = horizontal_stack(
-    ...     [note_with_glissando(i, j) for i, j in zip([220, 440, 4000],
+    ...     *[note_with_glissando(i, j) for i, j in zip([220, 440, 4000],
     ... [440, 220, 220])])
     >>> write_wav_mono(s)  # writes a file with glissandi
 
@@ -494,7 +494,7 @@ def note_with_glissando_vibrato(
     --------
     >>> write_wav_mono(note_with_glissando_vibrato())  # glissando + vibrato
     >>> s = horizontal_stack(
-    ...     [adsr(sonic_vector=note_with_glissando_vibrato(i, j))
+    ...     *[adsr(sonic_vector=note_with_glissando_vibrato(i, j))
     ...      for i, j in zip([220, 440, 4000], [440, 220, 220])])
     >>> write_wav_mono(s)  # writes a file with glissandi and vibratos
 
@@ -658,7 +658,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
 
     Examples
     --------
-    >>> write_wav_mono(note_with_vibrato_seq_localization())
+    >>> write_wav_stereo(note_with_vibrato_seq_localization())
 
     Notes
     -----
@@ -931,9 +931,9 @@ def note_with_two_vibratos_glissando(
     --------
     >>> write_wav_mono(note_with_two_vibratos_glissando())
     >>> s = horizontal_stack(
-    ...     [adsr(note_with_two_vibratos_glissando(
+    ...     *[adsr(sonic_vector=note_with_two_vibratos_glissando(
     ...         secondary_vibrato_freq=i, max_pitch_dev=j))
-    ...      for i, j in zip([330, 440, 100], [8, 2, 15])])
+    ...       for i, j in zip([330, 440, 100], [8, 2, 15])])
     >>> write_wav_mono(s)
 
     """
@@ -1155,7 +1155,7 @@ def note_with_vibrato(
     --------
     >>> write_wav_mono(note_with_vibrato())  # writes a WAV file of a note
     >>> s = horizontal_stack(
-    ...     [note_with_vibrato(i, j) for i, j in zip([200, 500, 100],
+    ...     *[note_with_vibrato(i, j) for i, j in zip([200, 500, 100],
     ... [2, 1, 2])])
     >>> s2 = note_with_vibrato(440, 1.5, 6, 1)
 
@@ -1272,9 +1272,9 @@ def note_with_two_vibratos(
     --------
     >>> write_wav_mono(note_with_two_vibratos())  # two simultaneous vibratos
     >>> s = horizontal_stack(
-    ...     [adsr(note_with_two_vibratos(vibrato_freq=i,
-    ...                                  secondary_vibrato_freq=j))
-    ... for i, j in zip([2, 6, 4], [8, 10, 15])])
+    ...     *[adsr(sonic_vector=note_with_two_vibratos(
+    ...         vibrato_freq=i, secondary_vibrato_freq=j))
+    ...       for i, j in zip([2, 6, 4], [8, 10, 15])])
     >>> write_wav_mono(s)  # writes a file with two vibratos
 
     """

@@ -14,8 +14,9 @@ class TestSong2:
 
     Examples
     --------
-    >>> test_song = TestSong2()
-    # TODO: Add more examples
+    >>> song = TestSong2()  # renders, and writes its WAVs to the cwd
+    >>> sorted(p.name for p in Path('.').glob('*.wav'))
+    ['TV.wav', 'asound.wav', 'tremolos.wav', 'vibratos.wav']
     """
 
     # __init__ copies its locals onto the instance; render() reads this one.

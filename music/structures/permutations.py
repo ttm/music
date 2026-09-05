@@ -21,8 +21,9 @@ To work with interesting permutations:
 >>> from sympy.combinatorics import Permutation
 >>> from sympy.combinatorics.named_groups import AlternatingGroup
 >>> interesting_perms = InterestingPermutations(nelements=4,
->>>                                             method="dimino")
->>> print(interesting_perms.alternations)
+...                                             method="dimino")
+>>> len(interesting_perms.alternations)
+12
 
 """
 from sympy.combinatorics import Permutation
@@ -298,10 +299,10 @@ def transpose_permutation(permutation, step=1):
     --------
     >>> from sympy.combinatorics import Permutation
     >>> perm = Permutation([2, 0, 1])
-    >>> transpose_permutation(perm, 1)
-    Permutation([3, 1, 2])
-    >>> transpose_permutation(perm, 0)
-    Permutation([2, 0, 1])
+    >>> transpose_permutation(perm, 1).array_form
+    [0, 2, 3, 1]
+    >>> transpose_permutation(perm, 0).array_form
+    [2, 0, 1]
     """
     if not step:
         return permutation

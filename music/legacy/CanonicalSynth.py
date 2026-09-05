@@ -41,8 +41,13 @@ class CanonicalSynth:
 
     Examples
     --------
-    >>> cs =  CanonicalSynth()
-    # TODO: develop example
+    >>> synth = CanonicalSynth()
+    >>> sound = synth.render(duration=0.2)
+    >>> sound.shape
+    (8820,)
+    >>> quieter = synth.render(duration=0.2, fundamental_frequency=110)
+    >>> len(quieter) == len(sound)
+    True
     """
 
     # Assigned by synthSetup and adsrSetup, which copy their locals onto the

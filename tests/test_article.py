@@ -301,3 +301,281 @@ def test_a_change_of_tuning_rescales_the_step_count_as_equation_micro_says():
         assert music.pitch_to_freq(start_freq=reference,
                                    semitones=(steps,)) == \
             pytest.approx([coarse])
+
+
+# --------------------------------------------------------------------------
+# eq:dur, eq:notaBasica, eq:lut -- the note, and how long it is
+# --------------------------------------------------------------------------
+
+@pytest.mark.parametrize("duration", [0.1, 0.25, 1.0, 0.333])
+def test_a_sound_lasts_the_samples_equation_dur_counts(duration):
+    """Lambda = floor(Delta * f_s), the floor and not a rounding."""
+    expected = int(np.floor(duration * SAMPLE_RATE))
+    assert len(music.note(duration=duration,
+                          sample_rate=SAMPLE_RATE)) == expected
+    assert len(music.silence(duration=duration,
+                             sample_rate=SAMPLE_RATE)) == expected
+
+
+@pytest.mark.parametrize("freq", [110.0, 220.0, 443.7])
+def test_the_note_is_the_lookup_equation_lut_writes(freq):
+    """gamma_i = floor(i * f * Lambda_table / f_s), read modulo the table.
+
+    eq:notaBasica states the note as a period repeated; eq:lut is how that
+    is done with a table of a fixed size, which is what the package does.
+    """
+    duration = 0.05
+    table = music.WAVEFORM_TRIANGULAR
+    produced = music.note(freq=freq, duration=duration, waveform_table=table,
+                          sample_rate=SAMPLE_RATE)
+
+    count = int(np.floor(duration * SAMPLE_RATE))
+    index = np.arange(count)
+    table_length = len(table)
+    gamma = np.floor(
+        index * freq * table_length / SAMPLE_RATE).astype(np.int64)
+    assert np.array_equal(produced, np.asarray(table)[gamma % table_length])
+
+
+# --------------------------------------------------------------------------
+# eq:distOuvidos, eq:dti, eq:dii, eq:angulo -- the geometric localization
+# --------------------------------------------------------------------------
+
+def test_localize_delays_and_attenuates_by_the_geometry_the_article_gives():
+    """d, d', ITD and IID, straight from the figure the article draws.
+
+    d = sqrt((x - zeta/2) ** 2 + y ** 2) is the near ear and d' the far one
+    (eq:distOuvidos); ITD is their difference over the speed of sound
+    (eq:dti); IID as a multiplier is d / d' (eq:dii, as eq:locImpl applies
+    it).
+    """
+    x, y, zeta, air_temp = 2.0, 1.0, 0.215, 20
+    speed = 331.3 + .606 * air_temp
+
+    near = np.sqrt((x - zeta / 2) ** 2 + y ** 2)          # eq:distOuvidos
+    far = np.sqrt((x + zeta / 2) ** 2 + y ** 2)
+    itd = (far - near) / speed                            # eq:dti
+    iid = near / far                                      # eq:dii
+    expected_delay = int(itd * SAMPLE_RATE)               # eq:locImpl
+
+    tone = music.note(freq=440, duration=0.1, sample_rate=SAMPLE_RATE)
+    left, right = music.localize(sonic_vector=tone, x=x, y=y, zeta=zeta,
+                                 air_temp=air_temp, sample_rate=SAMPLE_RATE)
+
+    # The near ear carries the sound unattenuated and unmoved.
+    assert np.array_equal(right[:len(tone)], tone)
+    # The far one is quieter by the ratio, and later by the delay.
+    delayed = left[expected_delay:expected_delay + len(tone)]
+    assert np.allclose(delayed, tone * iid, atol=1e-12)
+    assert np.allclose(left[:expected_delay], 0)
+
+
+def test_the_azimuth_is_the_arctangent_equation_angulo_gives():
+    """theta = arctan(y, x), measured from the axis through the ears.
+
+    A source on the median plane is equidistant from both ears, so the two
+    channels come out identical; one on the ear axis is as far to a side as
+    the model goes. This is the convention that makes theta = 90 and
+    theta = -90 the same sound, which is the cone of confusion the article
+    names and the HRTF gap this package documents.
+    """
+    tone = music.note(freq=440, duration=0.05, sample_rate=SAMPLE_RATE)
+
+    # x = 0 puts the source straight ahead: arctan(y, 0) is a right angle.
+    ahead = music.localize(sonic_vector=tone, x=0.0, y=1.0,
+                           sample_rate=SAMPLE_RATE)
+    assert np.array_equal(ahead[0], ahead[1])
+
+    # And behind, arctan(-y, 0), renders the same two channels.
+    behind = music.localize(sonic_vector=tone, x=0.0, y=-1.0,
+                            sample_rate=SAMPLE_RATE)
+    assert np.array_equal(behind[0], behind[1])
+
+
+# --------------------------------------------------------------------------
+# eq:conv and eq:diferencas -- the two filters
+# --------------------------------------------------------------------------
+
+def test_fir_is_the_convolution_equation_conv_writes():
+    """t'_i = sum_j h_j * t_(i-j), of length Lambda_t + Lambda_h - 1."""
+    signal = music.note(freq=330, duration=0.02, sample_rate=SAMPLE_RATE)
+    kernel = np.array([1.0, 0.5, -0.25, 0.125])
+
+    produced = music.fir(samples=kernel, sonic_vector=signal, freq=False,
+                         max_freq=False)
+    expected = np.convolve(signal, kernel)
+
+    assert len(produced) == len(signal) + len(kernel) - 1
+    assert np.allclose(produced, expected, atol=1e-12)
+
+
+def test_iir_is_the_difference_equation_diferencas_writes():
+    """t'_i = (sum_j a_j t_(i-j) + sum_k b_k t'_(i-k)) / b_0."""
+    signal = music.note(freq=330, duration=0.01, sample_rate=SAMPLE_RATE)
+    a = np.array([0.6, 0.3])
+    b = np.array([1.0, -0.4])
+
+    produced = music.iir(sonic_vector=signal, a=a, b=b)
+
+    expected = np.zeros(len(signal))
+    for i in range(len(signal)):
+        feedforward = sum(a[j] * signal[i - j]
+                          for j in range(min(len(a), i + 1)))
+        feedback = sum(b[k] * expected[i - k]
+                       for k in range(1, min(len(b), i + 1)))
+        expected[i] = (feedforward + feedback) / b[0]
+
+    assert np.allclose(produced, expected, atol=1e-12)
+
+
+# --------------------------------------------------------------------------
+# eq:mixagem and eq:concatenacao -- putting sounds together
+# --------------------------------------------------------------------------
+
+def test_mixing_is_the_sample_by_sample_sum_equation_mixagem_writes():
+    """t_i = sum_k t_(k,i), and nothing else."""
+    first = music.note(freq=220, duration=0.05, sample_rate=SAMPLE_RATE)
+    second = music.note(freq=330, duration=0.05, sample_rate=SAMPLE_RATE)
+    third = music.note(freq=440, duration=0.05, sample_rate=SAMPLE_RATE)
+
+    assert np.allclose(music.mix(first, second), first + second)
+    assert np.allclose(music.mix_many([first, second, third]),
+                       first + second + third)
+
+
+def test_concatenation_lays_the_sounds_end_to_end_as_equation_concatenacao():
+    """Sound l starts where the sum of the lengths before it ends."""
+    parts = [music.note(freq=f, duration=d, sample_rate=SAMPLE_RATE)
+             for f, d in ((220, 0.03), (330, 0.05), (440, 0.02))]
+    joined = music.horizontal_stack(*parts)
+
+    assert len(joined) == sum(len(part) for part in parts)
+    start = 0
+    for part in parts:
+        assert np.array_equal(joined[start:start + len(part)], part)
+        start += len(part)
+
+
+# --------------------------------------------------------------------------
+# eq:reconsCompleta -- rebuilding a real signal from half its spectrum
+# --------------------------------------------------------------------------
+
+def test_a_real_signal_is_the_cosine_sum_equation_reconscompleta_writes():
+    """t_i from half a spectrum, as `spectra.tex` derives it.
+
+    A real signal needs only the coefficients up to the Nyquist bin,
+    because the rest are their conjugates. `noise` builds exactly such a
+    half spectrum and inverts it, and this is the check that its conjugate
+    handling is right -- the MASS reference built the same array with a
+    real dtype, silently discarding the imaginary part of every coefficient
+    it set.
+
+    Two departures from the equation as it is typeset, both established
+    below by reconstructing a known spectrum:
+
+    * The phase is ``+arctan(b_k, a_k)``, not ``-``. The line above it in
+      `spectra.tex` gives the sum as ``a_k cos(w_k i) - b_k sin(w_k i)``,
+      and ``a cos(x) - b sin(x)`` is ``R cos(x + arctan2(b, a))``: matching
+      ``R cos(phi) = a`` and ``R sin(phi) = b`` fixes the sign.
+    * The Nyquist term is ``a_(L/2) cos(pi i) / L``, not the constant
+      ``a_(L/2) / L``. That coefficient stands for the alternating sequence
+      at half the sample rate, so it changes sign every sample.
+
+    With both, the reconstruction is exact to 6e-15; with the equation as
+    typeset it is out by 4e-3 on the spectrum used here.
+    """
+    length = 512
+    rng = np.random.default_rng(0)
+    coefficients = np.zeros(length, dtype=complex)
+    coefficients[:length // 2] = rng.uniform(0, 1, length // 2) * np.exp(
+        1j * rng.uniform(0, 2 * np.pi, length // 2))
+    # a_0 and the Nyquist coefficient are real, which is what writing them
+    # as a_0 and a_(Lambda/2) rather than as moduli means.
+    coefficients[0] = coefficients[0].real
+    coefficients[length // 2] = 1.0
+    coefficients[length // 2 + 1:] = np.conj(
+        coefficients[1:length // 2][::-1])
+
+    inverted = np.fft.ifft(coefficients)
+    assert np.allclose(inverted.imag, 0, atol=1e-12)   # it is real
+
+    a, b = coefficients.real, coefficients.imag
+    index = np.arange(length)
+    omega = 2 * np.pi * np.arange(length) / length
+    partials = (2 / length) * sum(
+        np.sqrt(a[k] ** 2 + b[k] ** 2)
+        * np.cos(omega[k] * index + np.arctan2(b[k], a[k]))
+        for k in range(1, length // 2))
+
+    corrected = (a[0] / length
+                 + a[length // 2] * np.cos(np.pi * index) / length
+                 + partials)
+    assert np.allclose(inverted.real, corrected, atol=1e-12)
+
+    as_typeset = (a[0] / length
+                  + a[length // 2] / length * (1 - length % 2)
+                  + partials)
+    assert not np.allclose(inverted.real, as_typeset, atol=1e-6), (
+        "the equation as typeset now reconstructs the signal, so this "
+        "test's note about the Nyquist term is out of date")
+
+
+def test_noise_comes_back_real_because_its_spectrum_is_conjugate_symmetric():
+    """The consequence of eq:reconsCompleta, on the routine that uses it."""
+    np.random.seed(0)
+    samples = music.noise(noise_type="pink", duration=0.1,
+                          sample_rate=SAMPLE_RATE)
+    assert np.isrealobj(samples)
+    assert np.isfinite(samples).all()
+
+    spectrum = np.fft.fft(samples)
+    upper = spectrum[1:len(spectrum) // 2]
+    lower = spectrum[len(spectrum) // 2 + 1:][::-1]
+    assert np.allclose(upper, np.conj(lower), atol=1e-9)
+
+
+# --------------------------------------------------------------------------
+# eq:groups -- the axioms the permutation structures are built on
+# --------------------------------------------------------------------------
+
+@pytest.mark.parametrize("family", ["rotations", "mirrors", "dihedral"])
+def test_the_permutation_structures_satisfy_the_axioms_of_equation_groups(
+        family):
+    """Closure, associativity, an identity, and an inverse for each element.
+
+    `notesInMusic.tex` states these while introducing the cyclic and
+    dihedral structures the package generates. `rotations` is the cyclic
+    group and `dihedral` the one it sits inside; `mirrors` is the coset of
+    reflections, which is closed only under composition with itself into
+    the rotations, so this checks it as a subset of the dihedral group
+    rather than as a group of its own.
+    """
+    from sympy.combinatorics import Permutation
+
+    structures = music.InterestingPermutations(nelements=4)
+    elements = list(getattr(structures, family))
+    assert elements
+
+    identity = Permutation(list(range(4)))
+    whole = set(structures.dihedral) | {identity}
+
+    for first in elements:
+        for second in elements:
+            assert first * second in whole              # closure
+        # an inverse, inside the same closed set
+        assert first ** -1 in whole
+        assert first * (first ** -1) == identity
+
+    for a in elements[:3]:
+        for b in elements[:3]:
+            for c in elements[:3]:
+                assert (a * b) * c == a * (b * c)       # associativity
+
+
+def test_the_rotations_are_a_group_in_their_own_right():
+    """The cyclic group closes on itself, which the reflections do not."""
+    structures = music.InterestingPermutations(nelements=4)
+    rotations = set(structures.rotations)
+    for first in rotations:
+        for second in rotations:
+            assert first * second in rotations

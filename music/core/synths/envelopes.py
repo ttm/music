@@ -47,11 +47,11 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     --------
     >>> write_wav_mono(note_with_vibrato() * am())  # a note with tremolo
     >>> s = horizontal_stack(
-    ...     [note_with_vibrato() * am(fm=i, max_amplitude=j)
+    ...     *[note_with_vibrato() * am(fm=i, max_amplitude=j)
     ...      for i, j in zip([60, 150, 100],
     ... [2, 1, 20])])
     >>> s = horizontal_stack(
-    ...     [am(fm=i, max_amplitude=j, sonic_vector=note_with_vibrato())
+    ...     *[am(fm=i, max_amplitude=j, sonic_vector=note_with_vibrato())
     ...      for i, j in zip([60, 150, 100],
     ... [2, 1, 20])])
     >>> envelope2 = am(440, 150, 60)  # a lengthy envelope
@@ -145,10 +145,10 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     --------
     >>> write_wav_mono(note_with_vibrato() * tremolo())  # a note with tremolo
     >>> s = horizontal_stack(
-    ...     [note_with_vibrato() * tremolo(tremolo_freq=i, max_db_dev=j)
+    ...     *[note_with_vibrato() * tremolo(tremolo_freq=i, max_db_dev=j)
     ...      for i, j in zip([6, 15, 100], [2, 1, 20])])
     >>> s = horizontal_stack(
-    ...     [tremolo(tremolo_freq=i, max_db_dev=j,
+    ...     *[tremolo(tremolo_freq=i, max_db_dev=j,
     ...              sonic_vector=note_with_vibrato())
     ...      for i, j in zip([6, 15, 100], [2, 1, 20])])
     >>> envelope2 = tremolo(440, 1.5, 60)  # a lengthy envelope

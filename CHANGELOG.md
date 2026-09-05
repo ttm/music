@@ -44,6 +44,23 @@
   check: the crossover between the routine's two delay coefficients now
   falls at the 4 kHz it names rather than at a real 2 kHz.
 
+- **The docstring examples now run.** `conftest.py` gives every example the
+  namespace a reader has -- the package's exports, `numpy`, `Path` -- and a
+  scratch working directory, and `pytest.ini` turns on `--doctest-modules`,
+  so the 62 examples in `music/` are checked on every run rather than being
+  prose formatted as code. `tests/test_docstring_references.py` fails if
+  that setting is dropped.
+
+  Running them found what static checking could not.
+  `adsr(note_with_two_vibratos(...))` passed a sound as
+  `envelope_duration`; `horizontal_stack([a, b])` handed a list to a
+  routine taking `*arrays`, which numpy then tried to make one ragged array
+  of; `write_wav_mono(note_with_vibrato_seq_localization())` gave a stereo
+  pair to the mono writer. Each parses, each names real routines, and each
+  raises. Two `# TODO: develop example` stubs in `legacy/` were being read
+  by doctest as the expected output of the line above them, and are now
+  examples.
+
 - **`tests/test_mass_reconciliation.py`**, which checks the register on
   every push without needing a MASS checkout, and
   **`tests/test_docstring_references.py`**, which fails when a docstring
@@ -95,6 +112,11 @@
   namespace that is neither in `__all__` nor a submodule. Submodules stay
   reachable: `music.core.io` is how a caller gets at the writers, and a
   docstring example uses exactly that.
+
+- **`music/structures/permutations` had a module-level example that could
+  not run**, with `>>>` where a continuation needed `...`.
+  `tests/test_docstring_references.py` only walked the definitions inside a
+  module and never its own docstring; it does both now.
 
 - **`localize2` cited the article for a model the article does not
   contain.** Its notes said it "uses a less naive ITD and IID calculations

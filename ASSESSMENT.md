@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-04**,
-`music` 1.4.0: 40 modules, 9,617 LOC package + 6,971 LOC tests, 90 names
+`music` 1.4.0: 40 modules, 9,627 LOC package + 7,298 LOC tests, 90 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -35,7 +35,7 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **1603 passed**, 16 s |
+| Test suite | `pytest -q` | **1834 passed**, 16 s |
 | Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,420 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
@@ -45,7 +45,8 @@ Every figure below came from running the code, not from reading it.
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **26 of 35 routines sample-exact**; 5 divergent with a stated reason, 4 where the reference does not run |
-| Article coverage | `tools/article_coverage.py` | **12 of 47 labelled equations** cited by a test in `tests/test_article.py` |
+| Article coverage | `tools/article_coverage.py` | **26 of 47 labelled equations** cited by a test; **26 of the 36** a test could settle |
+| Docstring examples | `pytest --doctest-modules` | **62 examples run**, 1 skipped |
 | Examples | `python tools/run_examples.py` | **10 pass**, 1 skipped for the external singing engine |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
 | Import cost | `import music`, warm, 3.12 | **~185-290 ms**, and no sympy in `sys.modules` |
@@ -81,15 +82,31 @@ either documented in the code or tracked in the issue list.
   now asserts that they do, so adding an HRTF will announce itself by
   breaking it. This is the largest genuine gap in the package, and it is
   research-scale work rather than a fix.
-- **Most of the article is still unchecked.** `tests/test_article.py`
-  checks routines against the article's numbered equations, citing each by
-  the label its LaTeX source gives it, and `tools/article_coverage.py`
-  measures the result: 12 of 47 across `body.tex`, `spectra.tex` and
-  `notesInMusic.tex`. What is checked is the DFT bin spacing, the five
-  noise colours coefficient by coefficient, power and the decibel, the
-  Doppler ratio and the tuning equation. What is not includes the ADSR
-  envelope, reverberation, the AM and FM spectra, the IIR filter designs,
-  and the whole of the harmony and counterpoint in `notesInMusic.tex`.
+- **A quarter of the article's equations are still unchecked, and a fifth
+  describe things this package does not implement.**
+  `tests/test_article.py` checks routines against the article's numbered
+  equations, citing each by the label its LaTeX source gives it, and
+  `tools/article_coverage.py` measures the result across `body.tex`,
+  `spectra.tex` and `notesInMusic.tex`: 26 of 47 checked, 10 outstanding,
+  10 that this package has nothing to check against, and one that no test
+  could settle. **100 % is not the target** — the four IIR filter designs
+  and the scales, intervals and harmonic series of `notesInMusic.tex` are
+  article content with no counterpart here, and `eq:vinculos` is a schema
+  rather than a formula. What is outstanding and reachable: the ADSR
+  envelope, reverberation, the Bessel expansion of an FM spectrum, and the
+  rhythmic unit.
+- **The package has no filter design.** `iir` applies coefficients a caller
+  brings; the article gives one-pole low-pass, high-pass, band-pass and
+  band-reject designs (`eq:passa-baixas` and its neighbours) and nothing
+  here computes them. This is the largest piece of `body.tex` the package
+  leaves out.
+- **The package implements none of the theory in the companion paper.**
+  `notesInMusic.tex` gives scales, intervals, chords, harmonic expansion,
+  modulation and counterpoint. Of it, the package has the tuning equation
+  — in `hz_to_midi`, `midi_to_hz`, `midi_to_hz_interval` and
+  `pitch_to_freq` — the group axioms its permutation structures satisfy,
+  and `rhythm_to_durations`. Everything else is unimplemented, which is a
+  scope boundary rather than a defect, but nothing said so before.
 - **`localize2` implements a model the article does not specify.** The
   frequency-dependent ITD and IID it uses — the 4 kHz crossover between two
   delay coefficients, and a head shadow growing as `(f/1000) ** .8` —
@@ -160,7 +177,7 @@ either documented in the code or tracked in the issue list.
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.
-- **`legacy/` is 1,151 LOC** kept for `CanonicalSynth`, `IteratorSynth` and
+- **`legacy/` is 1,157 LOC** kept for `CanonicalSynth`, `IteratorSynth` and
   the `Being` class. It is covered and type-checked, but it is not where new
   work should go.
 

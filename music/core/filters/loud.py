@@ -56,11 +56,11 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
     Examples
     --------
     >>> write_wav_mono(note_with_vibrato() * loud())
-    >>> s = horizontal_stack([note_with_vibrato() *
+    >>> s = horizontal_stack(*[note_with_vibrato() *
     ...                       loud(trans_dev=i, method=j)
     ...                       for i, j in zip([6, -50, 2.3],
     ...                                       ["exp", "exp", "linear"])])
-    >>> s = horizontal_stack([
+    >>> s = horizontal_stack(*[
     ...     loud(trans_dev=i, method=j, sonic_vector=note_with_vibrato())
     ...     for i, j in zip([6, -50, 2.3], ["exp", "exp", "linear"])])
     >>> envelope = loud(duration=10, trans_dev=-80, to=False, alpha=2)

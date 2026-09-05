@@ -26,6 +26,32 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from tools.mass_reference import locate  # noqa: E402
 
 TESTS = Path(__file__).resolve().parent.parent / 'tests'
+
+#: Why an equation is not checked, where the reason is not "nobody has yet".
+#: `100 %` is not the target: some of what the article states is about
+#: things this package does not implement, and a test for those would be a
+#: test of nothing. Anything absent from this map and uncited is simply
+#: outstanding work.
+UNIMPLEMENTED = {
+    'passa-baixas': 'a one-pole lowpass design; `iir` applies coefficients '
+                    'but the package has no helper that designs them',
+    'passa-altas': 'a highpass design, as above',
+    'passa-banda': 'a bandpass design, as above',
+    'rejeita-banda': 'a band-reject design, as above',
+    'varAux': 'the auxiliary variable those four designs share',
+    'intervalos': 'interval nomenclature; the package counts semitones and '
+                  'does not name intervals',
+    'escalas': 'the scale degrees; the package has no scales',
+    'relacaoDia': 'the diatonic step pattern, as above',
+    'escalasMenores': 'the minor scales, as above',
+    'serieHarmonica': 'the harmonic series as a scale, as above',
+}
+
+#: Statements the article makes that no test could settle.
+NOT_A_CHECK = {
+    'vinculos': 'a schema rather than a formula: it says a vibrato rate may '
+                'be a function of the note frequency, without fixing which',
+}
 #: The article's own sources, in the order a reader meets them.
 SOURCES = ('body.tex', 'spectra.tex', 'notesInMusic.tex')
 
@@ -76,12 +102,37 @@ def main() -> int:
         hits = sum(1 for label, _ in entries if label in checked)
         print(f'\n{source}: {hits} of {len(entries)} equations checked')
         for label, section in entries:
-            mark = 'x' if label in checked else ' '
-            print(f'  [{mark}] eq:{label:<16} {section}')
+            if label in checked:
+                mark, note = 'x', ''
+            elif label in UNIMPLEMENTED:
+                mark, note = '-', f'  -- {UNIMPLEMENTED[label]}'
+            elif label in NOT_A_CHECK:
+                mark, note = '.', f'  -- {NOT_A_CHECK[label]}'
+            else:
+                mark, note = ' ', ''
+            print(f'  [{mark}] eq:{label:<16} {section}{note}')
 
+    total = len(found)
     total_hits = sum(1 for label in found if label in checked)
-    print(f'\n{total_hits} of {len(found)} labelled equations are cited by a '
-          f'test ({100 * total_hits / len(found):.0f} %)')
+    absent = sum(1 for label in found if label in UNIMPLEMENTED)
+    unsettleable = sum(1 for label in found if label in NOT_A_CHECK)
+    reachable = total - absent - unsettleable
+
+    print(f'\n  [x] checked                     {total_hits}')
+    print(f'  [ ] implemented, not yet checked '
+          f'{reachable - total_hits}')
+    print(f'  [-] not implemented here         {absent}')
+    print(f'  [.] not settleable by a test     {unsettleable}')
+    print(f'\n{total_hits} of {total} labelled equations are cited by a test '
+          f'({100 * total_hits / total:.0f} %); {total_hits} of {reachable} '
+          f'of the ones a test could settle '
+          f'({100 * total_hits / reachable:.0f} %)')
+
+    for label in sorted(set(UNIMPLEMENTED) | set(NOT_A_CHECK)):
+        if label in checked:
+            print(f'\neq:{label} is listed as unreachable but a test cites '
+                  f'it; move it out of the map')
+            return 1
 
     stray = checked - set(found)
     if stray:

@@ -148,6 +148,13 @@ ONE_TABLE_STEP = 2 / 8192
 #: A 16-bit sample is this far from its neighbour.
 SIXTEEN_BIT_STEP = 2 / 2 ** 15
 
+#: Above the last few bits of a float64 and far below anything audible.
+#: Two libm implementations disagree by an ulp or so on `sin` and on `**`,
+#: and that reaches hundreds of samples out of thousands -- which is
+#: nothing, and is not the same event as a lookup landing on the next table
+#: entry. The tests below count only differences larger than this.
+FLOATING_POINT_NOISE = 1e-12
+
 
 def test_the_tolerance_is_bounded_by_a_count_rather_than_by_being_small():
     """One table entry is four 16-bit steps, so the count is what binds.
@@ -165,6 +172,9 @@ def test_the_tolerance_is_bounded_by_a_count_rather_than_by_being_small():
     """
     assert ONE_TABLE_STEP > SIXTEEN_BIT_STEP
     assert ONE_TABLE_STEP / SIXTEEN_BIT_STEP == pytest.approx(4.0)
+    # And the noise floor sits eight orders below one entry, so counting
+    # above it cannot mistake a rounding for a regression or the reverse.
+    assert FLOATING_POINT_NOISE < ONE_TABLE_STEP / 1e8
 
 
 def test_the_exact_cases_reproduce_the_reference(cases, recorded):
@@ -192,11 +202,16 @@ def test_the_exact_cases_reproduce_the_reference(cases, recorded):
             f'table; run tools/mass_reconcile.py against a MASS checkout to '
             f'see where')
 
-        differing = int(np.count_nonzero(difference))
-        assert differing <= max(4, produced.size // 1000), (
-            f'{case.music} differs from {case.mass} on {differing} of '
-            f'{produced.size} samples. A different NumPy rounds a handful '
-            f'of lookups to the next entry; this is too many for that')
+        # Hundreds of samples differ in their last bits on a runner whose
+        # libm is not this machine's, which is expected and invisible.
+        # What must stay rare is a difference big enough to be a lookup
+        # landing on a different entry.
+        moved = int(np.count_nonzero(difference > FLOATING_POINT_NOISE))
+        assert moved <= max(4, produced.size // 1000), (
+            f'{case.music} differs from {case.mass} by more than '
+            f'{FLOATING_POINT_NOISE:g} on {moved} of {produced.size} '
+            f'samples. Rounding moves a handful of lookups to the next '
+            f'table entry; this is too many for that')
         checked.append(case.mass)
     assert len(checked) == 26
 
@@ -216,9 +231,10 @@ def test_the_divergences_stay_the_size_their_reason_accounts_for(
 
     assert produced.shape == reference.shape
     delta = float(np.max(np.abs(produced - reference)))
-    assert delta > 0, (
-        f'{case.music} now matches {case.mass} exactly, which undoes the '
-        f'correction the register records: {case.reason}')
+    assert delta > FLOATING_POINT_NOISE, (
+        f'{case.music} now matches {case.mass} to within floating-point '
+        f'noise, which undoes the correction the register records: '
+        f'{case.reason}')
     assert delta <= case.bound, (
         f'{case.music} differs from {case.mass} by {delta:.3e}, more than the '
         f'{case.bound:.3g} its reason accounts for: {case.reason}')

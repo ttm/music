@@ -40,7 +40,7 @@
       "type": "Other"
     }
   ],
-  "description": "Extreme-fidelity synthesis of musical elements, based on the MASS framework: psychophysical descriptions of musical elements in LPCM audio, expressed as equations and corresponding Python routines. State is updated at every sample, so a rendered sound is as close as it can be to the mathematical model that describes it.",
+  "description": "Extreme-fidelity synthesis of musical elements, based on the MASS framework: psychophysical descriptions of musical elements in LPCM audio, expressed as equations and corresponding Python routines. State is updated at every sample, so a rendered sound is as close as it can be to the mathematical model that describes it.\n\nThe package covers synthesis of notes and their variation (vibrato, glissando, FM and AM, ADSR envelopes, the six noise colours), filters and their design, spatialisation by interaural time and intensity difference, reverberation, music theory (the diatonic modes, the minor scales, triads and tetrads, the harmonic series), permutation groups and change-ringing peals, and a sensory-stimulation toolkit whose stimuli each name the technique they implement in the SSTIM vocabulary.\n\nIts correspondence with the published framework is measured rather than asserted. Every routine is compared with the MASS reference implementation, and separately against the numbered equations of the article itself: 26 of the reference’s 35 routines are reproduced sample for sample and the rest diverge for stated reasons, and 45 of the article’s 47 labelled equations are checked by a test, which is all of those a test could settle. Where the article, the reference implementation and this package disagree, the disagreement is recorded with the evidence for it.",
   "keywords": [
     "audio",
     "music",
@@ -65,7 +65,18 @@
     "auditory entrainment",
     "binaural beats",
     "isochronic tones",
-    "SSTIM"
+    "SSTIM",
+    "music theory",
+    "scales",
+    "chords",
+    "harmonic series",
+    "digital filters",
+    "IIR filters",
+    "filter design",
+    "frequency modulation",
+    "reproducible research",
+    "software verification",
+    "LPCM"
   ],
   "subjects": [
     {
@@ -137,6 +148,21 @@
       "term": "Acoustic Stimulation",
       "scheme": "MeSH",
       "identifier": "https://id.nlm.nih.gov/mesh/D000161"
+    },
+    {
+      "term": "Auditory Perception",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D001307"
+    },
+    {
+      "term": "Pitch Perception",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D010898"
+    },
+    {
+      "term": "Sound",
+      "scheme": "MeSH",
+      "identifier": "https://id.nlm.nih.gov/mesh/D013016"
     }
   ],
   "dates": [

@@ -50,7 +50,7 @@ Every figure below came from running the code, not from reading it.
 | Examples | `python tools/run_examples.py` | **10 pass**, 1 skipped for the external singing engine |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
 | Import cost | `import music`, warm, 3.12 | **~185-290 ms**, and no sympy in `sys.modules` |
-| Archival subjects | NLM MeSH lookup, per identifier | every term in `.zenodo.json` resolves to the term it declares |
+| Archival subjects | `tools/verify_subjects.py` | **15 of 17** resolve to the term they declare; 2 unconfirmable, EuroSciVoc serving an empty graph |
 
 `mypy` runs with `check_untyped_defs = true`, so it inspects function bodies
 rather than skipping the unannotated ones — which is most of them. A clean
@@ -111,6 +111,17 @@ either documented in the code or tracked in the issue list.
   `Intended Audience :: Healthcare Industry` classifier say what the package
   is *for*; they are not evidence of efficacy, and nothing here should be
   read as clinical.
+- **Two archival subjects cannot be confirmed from their identifiers.**
+  `tools/verify_subjects.py` resolves each subject in `.zenodo.json`
+  against its own vocabulary and compares the label that comes back:
+  fourteen MeSH terms and one GEMET concept agree with the file. The two
+  EuroSciVoc identifiers answer 200 at both `data.europa.eu` and
+  `publications.europa.eu` and return an empty RDF graph with no
+  `skos:prefLabel` in it, so nothing confirms them. That is a fact about
+  the service rather than evidence the file is wrong, and the tool reports
+  it as unconfirmable rather than as an error. This row used to claim that
+  every term resolved, on a lookup that had been done by hand and that
+  nothing could repeat.
 - **Speaking SSTIM is currently a matter of docstrings.** Each stimulus
   names the SSTIM technique it implements and links its IRI, and
   `StimulationSession` borrows that model's vocabulary, but the package

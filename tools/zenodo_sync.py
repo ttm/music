@@ -164,11 +164,18 @@ def resolve_subject(term, scheme):
     identifier for the same entry, so look it up and insist on an exact
     match rather than accepting the closest suggestion.
     """
-    query = urllib.parse.urlencode({"q": f'"{term}"', "size": 50})
-    hits = request(f"/subjects?{query}")["hits"]["hits"]
-    for hit in hits:
-        if hit.get("subject") == term and hit.get("scheme") == scheme:
-            return hit["id"]
+    # A quoted query ranks the phrase highest, which is what a compound
+    # term like "Music Therapy/methods" needs. A short common one such as
+    # "Sound" is the opposite case: the quoted search returns fifty entries
+    # that all contain it and the bare term is not among them, while the
+    # unquoted search puts it first. Try both before giving up, since
+    # neither ordering is documented and both are the same index.
+    for q in (f'"{term}"', term):
+        query = urllib.parse.urlencode({"q": q, "size": 50})
+        hits = request(f"/subjects?{query}")["hits"]["hits"]
+        for hit in hits:
+            if hit.get("subject") == term and hit.get("scheme") == scheme:
+                return hit["id"]
     raise SyncError(
         f"Zenodo has no {scheme} subject called {term!r}. Check it in "
         f"{BASE}/subjects?q={urllib.parse.quote(term)}")

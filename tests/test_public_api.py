@@ -71,10 +71,14 @@ def test_export_runs_with_its_documented_defaults(name):
     result = _callable_with_defaults(name)()
     assert result is not None
 
-    array = np.asarray(result)
-    if array.dtype.kind == "f":
-        assert array.size > 0, f"{name} returned an empty result"
-        assert np.isfinite(array).all(), f"{name} returned NaN or infinity"
+    # A filter design returns the two coefficient arrays as a pair, and they
+    # are of different lengths, so check the parts rather than the whole.
+    parts = result if isinstance(result, tuple) else (result,)
+    for part in parts:
+        array = np.asarray(part)
+        if array.dtype.kind == "f":
+            assert array.size > 0, f"{name} returned an empty result"
+            assert np.isfinite(array).all(), f"{name} returned NaN or infinity"
 
 
 def test_every_export_resolves_to_a_function_not_a_module():

@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-04**,
-`music` 1.4.0: 40 modules, 9,627 LOC package + 7,298 LOC tests, 90 names
+`music` 1.4.0: 41 modules, 9,909 LOC package + 7,516 LOC tests, 95 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -35,13 +35,13 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **1834 passed**, 16 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,420 stmts, 0 missed) |
+| Test suite | `pytest -q` | **1925 passed**, 16 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,457 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 1,682 findings |
-| Annotation coverage | AST scan | **62 / 168 functions (37 %)**; 39 / 70 exported (56 %) |
-| Docstring coverage | AST scan | **140 / 148 public defs (95 %)** |
+| Lint, extended rule set | `ruff check --select ALL music` | 1,733 findings |
+| Annotation coverage | AST scan | **69 / 175 functions (39 %)**; 44 / 75 exported (59 %) |
+| Docstring coverage | AST scan | **145 / 153 public defs (95 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **26 of 35 routines sample-exact**; 5 divergent with a stated reason, 4 where the reference does not run |
@@ -65,7 +65,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; CI across Python 3.10–3.14 including a job pinned to the declared lower bounds |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 37 %; the `legacy/` subpackage |
+| **Needs work** | Annotation coverage at 39 %; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -163,7 +163,7 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 37 %**, and 56 % across the exported API. The
+- **Annotation coverage is 39 %**, and 59 % across the exported API. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones
@@ -172,7 +172,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 1,682 findings** on `music/`, almost all
+- **The extended lint set reports 1,733 findings** on `music/`, almost all
   stylistic: 345 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their

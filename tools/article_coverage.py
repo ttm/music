@@ -33,12 +33,6 @@ TESTS = Path(__file__).resolve().parent.parent / 'tests'
 #: test of nothing. Anything absent from this map and uncited is simply
 #: outstanding work.
 UNIMPLEMENTED = {
-    'passa-baixas': 'a one-pole lowpass design; `iir` applies coefficients '
-                    'but the package has no helper that designs them',
-    'passa-altas': 'a highpass design, as above',
-    'passa-banda': 'a bandpass design, as above',
-    'rejeita-banda': 'a band-reject design, as above',
-    'varAux': 'the auxiliary variable those four designs share',
     'intervalos': 'interval nomenclature; the package counts semitones and '
                   'does not name intervals',
     'escalas': 'the scale degrees; the package has no scales',

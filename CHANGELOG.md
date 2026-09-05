@@ -1,5 +1,22 @@
 ## [Unreleased]
 ### Added
+- **Four IIR filter designs**, in `music.core.filters.design` and exported
+  as `low_pass`, `high_pass`, `band_pass`, `band_reject` and
+  `fraction_of`. `iir` applied coefficients a caller had to bring; these
+  compute them, from `body.tex`'s equations `eq:passa-baixas`,
+  `eq:passa-altas`, `eq:varAux`, `eq:passa-banda` and `eq:rejeita-banda`.
+  This was the largest piece of the article's synthesis chapter the package
+  left out.
+
+  `tests/test_filter_design.py` checks each against the equation that
+  writes it and against the behaviour the article claims for it: 3 dB down
+  at the cutoff, a band as wide as asked for, a notch that reaches zero.
+
+- **`DISCREPANCIES.md`**, where the article, the reference implementation
+  and this package are recorded as disagreeing, with what each says, which
+  one the package follows, and the test that fails if the disagreement
+  stops being real.
+
 - **`RECONCILIATION.md`**, the routine-by-routine comparison with the MASS
   reference implementation, and `tools/mass_reconcile.py`, which measures
   it. For each of the 35 routines and constants in the reference's

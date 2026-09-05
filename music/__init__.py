@@ -37,6 +37,11 @@ from .utils import (
     waveform_table
 )
 from .core import (
+    band_pass,
+    band_reject,
+    fraction_of,
+    high_pass,
+    low_pass,
     adsr_stereo,
     adsr_vibrato,
     adsr,
@@ -158,6 +163,11 @@ def __dir__() -> list[str]:
 
 
 __all__ = [
+    'band_pass',
+    'band_reject',
+    'fraction_of',
+    'high_pass',
+    'low_pass',
     'WAVEFORMS',
     'WAVEFORM_SAWTOOTH',
     'WAVEFORM_SINE',

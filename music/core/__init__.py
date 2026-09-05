@@ -20,6 +20,11 @@ from ..utils import (
     rhythm_to_durations
 )
 from .filters import (
+    band_pass,
+    band_reject,
+    fraction_of,
+    high_pass,
+    low_pass,
     adsr,
     adsr_stereo,
     adsr_vibrato,
@@ -60,6 +65,11 @@ from .synths import (
 )
 
 __all__ = [
+    'band_pass',
+    'band_reject',
+    'fraction_of',
+    'high_pass',
+    'low_pass',
     'adsr_stereo',
     'adsr_vibrato',
     'adsr',

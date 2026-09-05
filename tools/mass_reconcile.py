@@ -401,23 +401,30 @@ def digest(array: np.ndarray) -> str:
 
 
 def write_fixture(cases: list[Case]) -> dict:
-    """Record what the reference produced.
+    """Record what the reference produced, as samples.
 
-    A digest for every routine that ran, which is what a claim of sample-exact
-    agreement needs; the samples themselves only where the two implementations
-    differ, which is where a failure is worth reading in full.  Nothing here is
-    reference source: it is the numbers that came out of running it, so the
-    fixture carries none of the reference's licence into this repository.
+    The samples rather than a digest of them. A digest would be smaller, and
+    it was what this wrote first, but it asserts something untrue: that two
+    NumPy builds agree on the last bit of `np.sin`. They need not, nothing
+    promises they will, and CI proved they do not -- so a fixture recorded
+    here failed on a runner while the package was correct.
+
+    What survives that is the size of the difference, which is what the test
+    reads these back for. This tool stays the bit-exact check, because it
+    runs both implementations in one process against one NumPy, where
+    sample-exact is a claim that means something.
+
+    Nothing here is reference source: it is the numbers that came out of
+    running it, so the fixture carries none of the reference's licence into
+    this repository.
     """
     payload: dict = {}
     for case in cases:
         output = case.result.get('reference')
         if output is None:
             continue
+        payload[f'{case.mass}.samples'] = output
         payload[f'{case.mass}.digest'] = np.array(digest(output))
-        payload[f'{case.mass}.shape'] = np.array(output.shape)
-        if case.expect == DIVERGENT:
-            payload[f'{case.mass}.samples'] = output
     FIXTURE.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(FIXTURE, **payload)
     return payload

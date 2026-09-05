@@ -779,7 +779,12 @@ def _bessel(k, mu, points=20001):
     w = np.linspace(0, np.pi / 2, points)
     integrand = (np.cos(k_bar * np.pi / 2 + mu * np.sin(w))
                  * np.cos(k_bar * np.pi / 2 + k * w))
-    return (2 / np.pi) * np.trapezoid(integrand, w)
+    # The trapezoid rule written out: np.trapezoid is NumPy 2.0 and the
+    # package supports 1.26, where it is np.trapz and deprecated in the one
+    # after. Three lines cost less than a version branch.
+    widths = np.diff(w)
+    areas = widths * (integrand[:-1] + integrand[1:]) / 2
+    return (2 / np.pi) * float(np.sum(areas))
 
 
 def _at(freqs, magnitude, target, width=12.0):

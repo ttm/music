@@ -318,3 +318,71 @@ def test_the_flat_namespace_holds_only_the_api_and_the_submodules():
     missing = [name for name in music.__all__ if not hasattr(music, name)]
     assert not missing, f'__all__ names {missing}, which do not exist'
     assert importlib.import_module('music.core') is music.core
+
+
+def _autosummary_entries():
+    """The names docs/api.rst actually lists, not words in its prose.
+
+    A substring search over the file would count `scale` as documented
+    because the word "Scales" heads a section, so the entries are parsed.
+    """
+    import pathlib
+    import re
+
+    reference = pathlib.Path(music.__file__).parent.parent / "docs" / "api.rst"
+    if not reference.is_file():   # pragma: no cover - a source checkout only
+        return None
+
+    entries, in_summary = [], False
+    for line in reference.read_text().splitlines():
+        if line.strip().startswith(".. autosummary::"):
+            in_summary = True
+            continue
+        if not in_summary:
+            continue
+        if line.strip().startswith(":") or not line.strip():
+            continue
+        if re.fullmatch(r"\s{3}[A-Za-z_][A-Za-z0-9_]*", line):
+            entries.append(line.strip())
+        else:
+            in_summary = False
+    return entries
+
+
+def test_every_export_appears_in_the_published_api_reference():
+    """A routine nobody can find in the docs is undocumented in practice.
+
+    `docs/api.rst` is a hand-written `autosummary` listing, and Sphinx does
+    not complain about an export it was never told to include: the docs
+    build clean under `-W` while four modules' worth of routines are
+    missing from the reference at <https://ttm.github.io/music/>. That is
+    the same silent staleness `tools/assessment_figures.py` exists to stop,
+    so this is the check for it.
+    """
+    listed = _autosummary_entries()
+    if listed is None:            # pragma: no cover - a source checkout only
+        pytest.skip("docs/api.rst is missing")
+
+    # `__version__` is a string, and the tables the theory module exports
+    # are named in prose rather than given pages of their own.
+    tables = {name for name in music.__all__ if name.isupper()}
+    undocumented = [name for name in music.__all__
+                    if name != "__version__" and name not in tables
+                    and name not in listed]
+
+    assert not undocumented, (
+        f"{undocumented} are exported but absent from docs/api.rst, so they "
+        f"do not appear in the published reference. Add them to the section "
+        f"they belong in.")
+
+
+def test_the_api_reference_lists_nothing_the_package_does_not_export():
+    """And the other way, so a removed export takes its page with it."""
+    entries = _autosummary_entries()
+    if entries is None:           # pragma: no cover - a source checkout only
+        pytest.skip("docs/api.rst is missing")
+    assert entries, "no autosummary entries found; has api.rst changed shape?"
+    stale = sorted({name for name in entries} - set(music.__all__))
+    assert not stale, (
+        f"docs/api.rst lists {stale}, which the package does not export; "
+        f"Sphinx will fail to document them or will document nothing.")

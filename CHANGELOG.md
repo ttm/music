@@ -1,5 +1,12 @@
 ## [Unreleased]
 ### Added
+- **Three examples for the new modules**: `scales_and_chords.py` renders the
+  seven modes, a cadence and the harmonic series over its own fundamental;
+  `filtered_noise.py` puts each of the four filter designs on white noise
+  and sweeps a low pass across five octaves; `bonds.py` plays one line
+  three times, changing only how its characteristics are bound to its
+  pitch. `tools/run_examples.py` runs all thirteen on every release.
+
 - **`music.bonds`**, the place `eq:vinculos` describes. That equation is a
   schema: it says the vibrato rate, the tremolo rate and their depths may
   each be a function of the note's frequency, and then says of those
@@ -136,6 +143,15 @@
   from when the file was wrong, which it has to keep quoting.
 
 ### Fixed
+- **Twenty-four exports were missing from the published API reference.**
+  `docs/api.rst` is a hand-written `autosummary` listing and nothing
+  checked it, so Sphinx built clean under `-W` while four modules' worth of
+  documented routines had no page at <https://ttm.github.io/music/>. Two of
+  them, `mix2` and `mix_with_offset_`, had been missing for longer than
+  this release. `tests/test_public_api.py` now fails in both directions: an
+  export absent from the reference, and a reference entry the package does
+  not export.
+
 - **`music.profile` now does what its docstring says.** It was exported and
   documented as returning a dictionary while its body was a commented-out
   sketch, so it first returned `None` and then raised

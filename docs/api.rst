@@ -113,6 +113,23 @@ Spectral and spatial
    localize_linear
    stretches
 
+Filter design
+~~~~~~~~~~~~~
+
+``iir`` applies coefficients; these compute them, from the four designs the
+MASS article specifies. Cutoff, centre and bandwidth are fractions of the
+sample rate, which ``fraction_of`` converts a frequency in Hertz into.
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   low_pass
+   high_pass
+   band_pass
+   band_reject
+   fraction_of
+
 Input and output
 ----------------
 
@@ -155,6 +172,44 @@ Permutations, algebraic groups and change-ringing peals.
    PlainChanges
    print_peal
 
+Music theory
+------------
+
+Scales, chords and the harmonic series, counted in semitones from a tonic or
+root of zero -- which is what ``pitch_to_freq`` takes, so any of these
+becomes frequencies and then sound in two steps.
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   scale
+   mode_by_rotation
+   harmonic_series
+   chord
+   add_seventh
+   invert
+
+The tables these read from are exported too: ``SCALES``, ``MODES``,
+``MINOR_SCALES`` and ``DIATONIC_STEPS`` for the scales, ``CHORDS``,
+``TRIADS`` and ``SEVENTHS`` for the chords, and
+``HARMONIC_SERIES_AS_PRINTED`` for the article's own table of partials.
+
+Bonds
+-----
+
+Relations tying a note's vibrato and tremolo to its frequency, so that a
+piece decides once how its notes behave rather than note by note.
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   Bonds
+   proportional
+   inversely_proportional
+   stepped
+
 Utilities
 ---------
 
@@ -182,10 +237,12 @@ Combining sonic vectors
 
    horizontal_stack
    mix
+   mix2
    mix_many
    mix_many_with_offsets
    mix_stereo
    mix_with_offset
+   mix_with_offset_
    convert_to_stereo
    resolve_stereo
    pan_transitions

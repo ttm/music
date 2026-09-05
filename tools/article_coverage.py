@@ -34,11 +34,7 @@ TESTS = Path(__file__).resolve().parent.parent / 'tests'
 #: outstanding work.
 UNIMPLEMENTED = {
     'intervalos': 'interval nomenclature; the package counts semitones and '
-                  'does not name intervals',
-    'escalas': 'the scale degrees; the package has no scales',
-    'relacaoDia': 'the diatonic step pattern, as above',
-    'escalasMenores': 'the minor scales, as above',
-    'serieHarmonica': 'the harmonic series as a scale, as above',
+                  'names no intervals',
 }
 
 #: Statements the article makes that no test could settle.

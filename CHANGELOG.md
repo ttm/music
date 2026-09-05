@@ -1,5 +1,19 @@
 ## [Unreleased]
 ### Added
+- **`music.theory`**, the scales, chords and harmonic series of the MASS
+  companion paper. `notesInMusic.tex` states the seven diatonic modes, the
+  one step pattern every one of them is a rotation of, the three minor
+  scales, the first twenty partials of the harmonic series, and the four
+  triads with the thirds that extend them into tetrads. The package
+  implemented none of it; it implements all of that now, exported as
+  `scale`, `mode_by_rotation`, `harmonic_series`, `chord`, `add_seventh`
+  and `invert`, with the tables beside them.
+
+  Everything counts semitones from a tonic of zero, so `pitch_to_freq`
+  turns a scale or a chord into frequencies and `note` turns those into
+  sound. What the companion paper still describes and this does not is
+  harmonic expansion, chromatic mediants, modulation and counterpoint.
+
 - **Four IIR filter designs**, in `music.core.filters.design` and exported
   as `low_pass`, `high_pass`, `band_pass`, `band_reject` and
   `fraction_of`. `iir` applied coefficients a caller had to bring; these

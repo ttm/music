@@ -98,6 +98,10 @@ from .stimulation import (
 from .singing import get_engine, make_test_song, setup_engine
 from .legacy import Being, CanonicalSynth, IteratorSynth
 from .sequencer import Sequencer
+from .theory import (CHORDS, DIATONIC_STEPS, HARMONIC_SERIES_AS_PRINTED,
+                     MINOR_SCALES, MODES, SCALES, SEVENTHS, TRIADS,
+                     add_seventh, chord, harmonic_series, invert,
+                     mode_by_rotation, scale)
 
 # The permutation and change-ringing structures are reached through
 # ``__getattr__`` rather than imported here, because importing them means
@@ -163,6 +167,20 @@ def __dir__() -> list[str]:
 
 
 __all__ = [
+    'CHORDS',
+    'DIATONIC_STEPS',
+    'HARMONIC_SERIES_AS_PRINTED',
+    'MINOR_SCALES',
+    'MODES',
+    'SCALES',
+    'SEVENTHS',
+    'TRIADS',
+    'add_seventh',
+    'chord',
+    'harmonic_series',
+    'invert',
+    'mode_by_rotation',
+    'scale',
     'band_pass',
     'band_reject',
     'fraction_of',

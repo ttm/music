@@ -115,6 +115,21 @@ The routine's docstring used to say its calculations were "as described in
 refinement as a rule of thumb; a full treatment needs an HRTF, which
 nothing here has.
 
+### `eq:serieHarmonica` — the sixth partial
+
+The article tabulates the first twenty partials in semitones. Nineteen of
+them are `12 log2(n)` to within the two decimals they are printed at. The
+sixth is printed as **`31 + 0.2`** where the exact value is **31.02**,
+which `31 + 0.02` would give — and the same `+0.02` appears at the third
+partial, an octave below it. A typo rather than a different claim.
+
+**This package computes `12 log2(n)`.**
+`music.theory.scales.HARMONIC_SERIES_AS_PRINTED` keeps the table as the
+paper prints it so the two can be compared, and
+`tests/test_theory.py::test_the_printed_table_is_the_computed_series_but_for_one_digit`
+asserts that the sixth is the only one that differs — so if this is ever
+corrected upstream, the test says so.
+
 ## The reference implementation and the article disagree
 
 These are defects in `src/aux/functions.py` that the article's own
@@ -135,12 +150,12 @@ Not disagreements: scope. `tools/article_coverage.py` lists these as `[-]`
 and reports them separately from what is merely unchecked, so that "100 %
 of the equations" is never mistaken for the target.
 
-What remains outside the package is the scale, interval and harmonic
-material of `notesInMusic.tex`: `eq:intervalos`, `eq:escalas`,
-`eq:relacaoDia`, `eq:escalasMenores` and `eq:serieHarmonica`. The four IIR
-designs of `body.tex` were on this list until `music.core.filters.design`
-implemented them. Run the tool for the current list rather than trusting
-this paragraph.
+What remains is `eq:intervalos`, the interval nomenclature: the package
+counts semitones and names no intervals. The four IIR designs of `body.tex`
+were on this list until `music.core.filters.design` implemented them, and
+the scales, minor scales and harmonic series of `notesInMusic.tex` were
+until `music.theory` did. Run the tool for the current list rather than
+trusting this paragraph.
 
 ## What no test could settle
 

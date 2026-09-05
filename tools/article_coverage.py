@@ -37,10 +37,13 @@ UNIMPLEMENTED = {
                   'names no intervals',
 }
 
-#: Statements the article makes that no test could settle.
+#: Statements the article makes that no test could settle as written.
 NOT_A_CHECK = {
     'vinculos': 'a schema rather than a formula: it says a vibrato rate may '
-                'be a function of the note frequency, without fixing which',
+                'be a function of the note frequency, without fixing which. '
+                '`music.bonds` is where such a function goes, and '
+                '`tests/test_bonds.py` checks that place rather than a '
+                'formula the article does not give',
 }
 #: The article's own sources, in the order a reader meets them.
 SOURCES = ('body.tex', 'spectra.tex', 'notesInMusic.tex')
@@ -82,7 +85,10 @@ def main() -> int:
     if not found:
         print(f'no article sources under {doc}')
         return 1
-    checked = cited()
+    # A test may discuss an equation no test could settle -- test_bonds.py
+    # names eq:vinculos to say what it is checking instead of it -- so a
+    # mention is not a citation for those.
+    checked = cited() - set(NOT_A_CHECK)
 
     by_source: OrderedDict = OrderedDict()
     for label, (source, section) in found.items():
@@ -118,10 +124,10 @@ def main() -> int:
           f'of the ones a test could settle '
           f'({100 * total_hits / reachable:.0f} %)')
 
-    for label in sorted(set(UNIMPLEMENTED) | set(NOT_A_CHECK)):
+    for label in sorted(UNIMPLEMENTED):
         if label in checked:
-            print(f'\neq:{label} is listed as unreachable but a test cites '
-                  f'it; move it out of the map')
+            print(f'\neq:{label} is listed as not implemented here but a '
+                  f'test cites it; move it out of the map')
             return 1
 
     stray = checked - set(found)

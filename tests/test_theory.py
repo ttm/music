@@ -238,3 +238,69 @@ def test_a_chord_renders_as_the_sum_of_its_notes():
     sounded = music.mix_many(notes)
     assert len(sounded) == len(notes[0])
     assert np.allclose(sounded, sum(notes))
+
+
+# --------------------------------------------------------------------------
+# eq:rhythmicUnit -- addressing a unit by its grouping level
+# --------------------------------------------------------------------------
+
+def test_a_nested_rhythm_is_the_addressing_equation_rhythmicunit_writes():
+    """P^{j_k}_{i_k}: a unit is a level j and an index i within it.
+
+    The article's example is ``P^{-1,0,1}_{3,2,2}``, "the third subdivision
+    of the second pulse and of the second pulse group". `rhythm_to_durations`
+    takes that hierarchy as nesting: a list is a unit at one level, its
+    first element that unit's own duration and the rest the subdivision of
+    it. So an address is a path through the nesting, and what the equation
+    asserts of it is that the subdivisions of a unit fill exactly that
+    unit -- P^{j-1} partitions P^{j}, rather than adding to it.
+    """
+    unit = 0.25
+
+    # One level: four units, the pulse P^0_i.
+    level_zero = music.rhythm_to_durations([4, 2, 2, 4], duration=unit)
+    assert level_zero == pytest.approx([1.0, 0.5, 0.5, 1.0])
+
+    # A level down: the third pulse becomes a group of three subdivisions,
+    # P^-1_1 through P^-1_3, which share its duration exactly.
+    level_minus_one = music.rhythm_to_durations(
+        [4, 2, [2, 1, 1, 1], 4], duration=unit)
+    parent = level_zero[2]
+    children = level_minus_one[2:5]
+    assert sum(children) == pytest.approx(parent)
+    assert children == pytest.approx([parent / 3] * 3)
+
+    # So the whole sequence is the same length however deeply it is
+    # grouped, which is what makes the nesting a subdivision.
+    assert sum(level_minus_one) == pytest.approx(sum(level_zero))
+
+
+def test_a_group_of_three_is_ternary_and_of_two_is_binary():
+    """"When i has three different values ... there is a perfect relation".
+
+    The article distinguishes compound from simple grouping by how many
+    units a level holds, and that is readable off the durations: three
+    equal parts of a pulse against two.
+    """
+    unit = 0.25
+    ternary = music.rhythm_to_durations([4, [4, 1, 1, 1]], duration=unit)
+    binary = music.rhythm_to_durations([4, [4, 1, 1]], duration=unit)
+
+    assert len(ternary) - 1 == 3
+    assert len(binary) - 1 == 2
+    # The same span, divided three ways against two.
+    assert sum(ternary[1:]) == pytest.approx(sum(binary[1:]))
+    assert ternary[1] == pytest.approx(binary[1] * 2 / 3)
+
+
+def test_the_subdivisions_of_a_unit_are_unequal_when_the_figures_are():
+    """The units of a level need not be equal; the article's own example
+    has ``[4, 1, 1, .5, .5]``, two halves of one of them."""
+    durations = music.rhythm_to_durations([4, [4, 1, 1, .5, .5]],
+                                          duration=0.25)
+    group = durations[1:]
+    assert len(group) == 4
+    assert group[0] == pytest.approx(group[1])
+    assert group[2] == pytest.approx(group[3])
+    assert group[0] == pytest.approx(2 * group[2])
+    assert sum(group) == pytest.approx(durations[0])

@@ -1,5 +1,21 @@
 ## [Unreleased]
 ### Added
+- **`music.bonds`**, the place `eq:vinculos` describes. That equation is a
+  schema: it says the vibrato rate, the tremolo rate and their depths may
+  each be a function of the note's frequency, and then says of those
+  functions only that they "are arbitrary and dependent on musical
+  intentions". No routine can implement a function the article declines to
+  name, and no test can settle a claim like that. What can be built is
+  where such a construction goes.
+
+  `Bonds` takes any callable of the frequency -- or a constant -- for each
+  of the four characteristics, and renders a sequence with every note bound
+  at its own pitch. `proportional`, `inversely_proportional` and `stepped`
+  are the two relations the article names as examples and one more for
+  deciding by register. The tests check the place rather than a formula:
+  that a bond is applied to every note, that it reads the note's own
+  frequency, and that binding nothing gives the plain note.
+
 - **`music.theory`**, the scales, chords and harmonic series of the MASS
   companion paper. `notesInMusic.tex` states the seven diatonic modes, the
   one step pattern every one of them is a rotation of, the three minor

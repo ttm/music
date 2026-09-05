@@ -97,6 +97,8 @@ from .stimulation import (
 )
 from .singing import get_engine, make_test_song, setup_engine
 from .legacy import Being, CanonicalSynth, IteratorSynth
+from .bonds import (Bonds, inversely_proportional, proportional,
+                    stepped)
 from .sequencer import Sequencer
 from .theory import (CHORDS, DIATONIC_STEPS, HARMONIC_SERIES_AS_PRINTED,
                      MINOR_SCALES, MODES, SCALES, SEVENTHS, TRIADS,
@@ -167,6 +169,10 @@ def __dir__() -> list[str]:
 
 
 __all__ = [
+    'Bonds',
+    'inversely_proportional',
+    'proportional',
+    'stepped',
     'CHORDS',
     'DIATONIC_STEPS',
     'HARMONIC_SERIES_AS_PRINTED',

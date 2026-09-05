@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-04**,
-`music` 1.4.0: 44 modules, 10,348 LOC package + 8,041 LOC tests, 109 names
+`music` 1.4.0: 45 modules, 10,679 LOC package + 8,295 LOC tests, 113 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -35,17 +35,17 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **2077 passed**, 16 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,502 stmts, 0 missed) |
+| Test suite | `pytest -q` | **2147 passed**, 16 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,560 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 1,840 findings |
-| Annotation coverage | AST scan | **75 / 181 functions (41 %)**; 50 / 81 exported (62 %) |
-| Docstring coverage | AST scan | **151 / 159 public defs (95 %)** |
+| Lint, extended rule set | `ruff check --select ALL music` | 1,900 findings |
+| Annotation coverage | AST scan | **86 / 192 functions (45 %)**; 54 / 85 exported (64 %) |
+| Docstring coverage | AST scan | **158 / 169 public defs (93 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **26 of 35 routines sample-exact**; 5 divergent with a stated reason, 4 where the reference does not run |
-| Article coverage | `tools/article_coverage.py` | **26 of 47 labelled equations** cited by a test; **26 of the 36** a test could settle |
+| Article coverage | `tools/article_coverage.py` | **45 of 47 labelled equations** cited by a test; **all 45** a test could settle |
 | Docstring examples | `pytest --doctest-modules` | **62 examples run**, 1 skipped |
 | Examples | `python tools/run_examples.py` | **10 pass**, 1 skipped for the external singing engine |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
@@ -65,7 +65,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; CI across Python 3.10–3.14 including a job pinned to the declared lower bounds |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 41 %; the `legacy/` subpackage |
+| **Needs work** | Annotation coverage at 45 %; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -82,47 +82,23 @@ either documented in the code or tracked in the issue list.
   now asserts that they do, so adding an HRTF will announce itself by
   breaking it. This is the largest genuine gap in the package, and it is
   research-scale work rather than a fix.
-- **A quarter of the article's equations are still unchecked, and a fifth
-  describe things this package does not implement.**
-  `tests/test_article.py` checks routines against the article's numbered
-  equations, citing each by the label its LaTeX source gives it, and
-  `tools/article_coverage.py` measures the result across `body.tex`,
-  `spectra.tex` and `notesInMusic.tex`: 26 of 47 checked, 10 outstanding,
-  10 that this package has nothing to check against, and one that no test
-  could settle. **100 % is not the target** — the four IIR filter designs
-  and the scales, intervals and harmonic series of `notesInMusic.tex` are
-  article content with no counterpart here, and `eq:vinculos` is a schema
-  rather than a formula. What is outstanding and reachable: the ADSR
-  envelope, reverberation, the Bessel expansion of an FM spectrum, and the
-  rhythmic unit.
-- **The package has no filter design.** `iir` applies coefficients a caller
-  brings; the article gives one-pole low-pass, high-pass, band-pass and
-  band-reject designs (`eq:passa-baixas` and its neighbours) and nothing
-  here computes them. This is the largest piece of `body.tex` the package
-  leaves out.
-- **The package implements none of the theory in the companion paper.**
-  `notesInMusic.tex` gives scales, intervals, chords, harmonic expansion,
-  modulation and counterpoint. Of it, the package has the tuning equation
-  — in `hz_to_midi`, `midi_to_hz`, `midi_to_hz_interval` and
-  `pitch_to_freq` — the group axioms its permutation structures satisfy,
-  and `rhythm_to_durations`. Everything else is unimplemented, which is a
-  scope boundary rather than a defect, but nothing said so before.
-- **`localize2` implements a model the article does not specify.** The
-  frequency-dependent ITD and IID it uses — the 4 kHz crossover between two
-  delay coefficients, and a head shadow growing as `(f/1000) ** .8` —
-  appear in none of the article's sources, which give the geometric ITD and
-  IID that `localize` implements and one qualitative sentence about low
-  frequencies diffracting. Its docstring claimed the calculations were "as
-  described in [1]"; it now says what the article does and does not
-  support. This is a rule of thumb that sounds better than the geometric
-  model, and it should not be read as a published result.
-- **Rendering is not verified against the mathematics it documents** for
-  the routines outside both files, only against shape and against
-  regressions already found. Issue #76 asks for artifact detection a
-  listener could not catch.
-
-### Claims the metadata makes that the code cannot
-
+- **Two of the article's equations are not checked, and neither could be.**
+  `tests/test_article.py`, `tests/test_theory.py`, `tests/test_bonds.py` and
+  `tests/test_filter_design.py` check routines against the article's
+  numbered equations, citing each by the label its LaTeX source gives it,
+  and `tools/article_coverage.py` measures the result across `body.tex`,
+  `spectra.tex` and `notesInMusic.tex`: 45 of 47, which is **all 45 that a
+  test could settle**. The two left are `eq:intervalos`, the interval
+  nomenclature, which is naming rather than sounding and which this package
+  does not do; and `eq:vinculos`, which is a schema rather than a formula.
+  `music.bonds` is where such a formula would go, and its tests check that
+  place rather than a function the article declines to name.
+- **Nothing here says the article is right.** The tests establish that the
+  package computes what the paper writes. Where the paper and the reference
+  implementation disagree with each other, or where the paper disagrees
+  with itself, `DISCREPANCIES.md` records which one the package follows and
+  why. Six such disagreements are on that list, two of them typographic
+  errors in the paper found by reconstructing what it specifies.
 - **The stimulation toolkit renders stimuli; it does not demonstrate that
   they do anything.** Every routine in `music.stimulation` is tested against
   the property that defines it — a binaural beat has no beat in either
@@ -163,7 +139,7 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 41 %**, and 62 % across the exported API. The
+- **Annotation coverage is 45 %**, and 64 % across the exported API. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones
@@ -172,7 +148,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 1,840 findings** on `music/`, almost all
+- **The extended lint set reports 1,900 findings** on `music/`, almost all
   stylistic: 345 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their

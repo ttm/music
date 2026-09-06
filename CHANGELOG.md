@@ -38,6 +38,14 @@
   `music.bonds` is the place for.
 
 ### Fixed
+- **The Zenodo record carried the whole changelog.** 1.5.0 put fourteen
+  thousand characters of it on the archival landing page, which is the
+  right shape for a file a maintainer reads and the wrong one for a record
+  someone lands on. `tools/zenodo_sync.py` now sends the headline of each
+  entry -- the summary this changelog has already written -- with the
+  upgrade note kept whole and a link to the rest. Four thousand characters
+  rather than fourteen.
+
 - **The source distribution shipped tests that could not run.** It carried
   thirty-eight test files and none of `conftest.py`, `pytest.ini`,
   `tools/`, `docs/` or `tests/fixtures/`, so unpacking the 1.5.0 tarball

@@ -68,3 +68,77 @@ def test_subjects_carry_a_scheme_and_a_resolvable_identifier(metadata):
     for entry in metadata.get("subjects", []):
         assert entry["scheme"] and entry["term"]
         assert entry["identifier"].startswith("http"), entry
+
+
+# --------------------------------------------------------------------------
+# The release notes that go onto the archival record
+# --------------------------------------------------------------------------
+
+def test_the_release_notes_are_summarised_rather_than_reproduced():
+    """The record gets the headlines; the changelog keeps the reasoning.
+
+    1.5.0 put fourteen thousand characters of changelog on its Zenodo
+    landing page. This repository writes an entry as a bolded headline and
+    then several paragraphs of why, which is right for a file a maintainer
+    reads and wrong for a record someone lands on.
+    """
+    from tools.zenodo_sync import changelog_section, summarise
+
+    notes = changelog_section("1.5.0")
+    assert notes is not None
+    summary = summarise(notes)
+
+    assert len(summary) < len(notes) / 3
+    assert "CHANGELOG.md" in summary          # the rest is a link away
+
+
+def test_a_wrapped_headline_survives_the_summary_whole():
+    """A bullet runs over several source lines, and must not be cut at one.
+
+    Reading the changelog a line at a time truncates a headline wherever
+    the paragraph happened to wrap, which is what the first version of
+    this did: it produced "the scales, chords and harmonic series of the
+    MASS" and stopped.
+    """
+    from tools.zenodo_sync import summarise
+
+    notes = (
+        "### Added\n"
+        "- **A thing**, which is described across\n"
+        "  more than one line of the source file.\n"
+        "\n"
+        "  And then a paragraph of reasoning that should not appear.\n"
+    )
+    summary = summarise(notes)
+
+    assert "described across more than one line" in summary
+    assert "reasoning that should not appear" not in summary
+
+
+def test_the_upgrade_note_is_kept_whole():
+    """It is the part a reader of the record needs in front of them."""
+    from tools.zenodo_sync import summarise
+
+    notes = (
+        "### Note for anyone upgrading\n"
+        "**Something changed.** Here is exactly what, at length, because a\n"
+        "caller needs it before they upgrade rather than after.\n"
+        "\n"
+        "### Added\n"
+        "- **A routine**, with paragraphs of reasoning below it.\n"
+        "\n"
+        "  The reasoning, which is dropped.\n"
+    )
+    summary = summarise(notes)
+
+    assert "at length" in summary
+    assert "before they upgrade" in summary
+    assert "The reasoning, which is dropped" not in summary
+
+
+def test_summarising_a_section_with_no_bullets_says_nothing_extra():
+    from tools.zenodo_sync import summarise
+
+    summary = summarise("### Added\n\nProse with no entries in it.\n")
+    assert "Prose with no entries" not in summary
+    assert "CHANGELOG.md" in summary

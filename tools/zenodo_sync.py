@@ -185,6 +185,79 @@ def resolve_subject(term, scheme):
 # The changelog entry, as an additional description
 # ---------------------------------------------------------------------
 
+def _logical_lines(notes):
+    """The changelog, with each wrapped bullet joined into one line.
+
+    A bullet in this file runs over several source lines, so reading it a
+    line at a time gets a headline cut wherever the paragraph happened to
+    wrap.
+    """
+    joined, current = [], None
+    for line in notes.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("### ") or not stripped:
+            if current is not None:
+                joined.append(current)
+                current = None
+            joined.append(line)
+        elif stripped.startswith("- "):
+            if current is not None:
+                joined.append(current)
+            current = stripped
+        elif current is not None:
+            current = f"{current} {stripped}"
+        else:
+            joined.append(line)
+    if current is not None:
+        joined.append(current)
+    return joined
+
+
+def summarise(notes, repository="https://github.com/ttm/music"):
+    """The lead of each changelog entry, and a pointer to the rest.
+
+    This repository's changelog explains itself: an entry is a bolded
+    headline and then several paragraphs of why. That is the right shape
+    for a file a maintainer reads and the wrong one for an archival record,
+    where 1.5.0 put fourteen thousand characters of it on the landing page.
+
+    The headline is the summary already written, so this keeps that and
+    drops the reasoning. The `Note for anyone upgrading` section is kept
+    whole: it is the part someone reading the record needs in front of
+    them rather than behind a link.
+    """
+    kept, keep_whole = [], False
+    for line in _logical_lines(notes):
+        stripped = line.strip()
+        if stripped.startswith("### "):
+            keep_whole = "upgrad" in stripped.lower()
+            kept.append(f"\n{stripped}\n")
+            continue
+        if keep_whole:
+            kept.append(line)
+            continue
+        if not stripped.startswith("- **"):
+            continue
+        # The headline runs to the end of the bolded run, and then to the
+        # end of that sentence if the bold ended mid-way through one.
+        head = stripped[2:]
+        end = head.find("**", 2)
+        if end == -1:
+            kept.append(f"- {head}")
+            continue
+        headline = head[:end + 2]
+        rest = head[end + 2:].lstrip()
+        if rest[:1] in (",", ":"):
+            stop = rest.find(". ")
+            headline += rest if stop == -1 else rest[:stop + 1]
+        kept.append(f"- {headline}".rstrip())
+
+    summary = "\n".join(kept).strip()
+    return (f"{summary}\n\nThe full entry, with the reasoning for each of "
+            f"these, is in [CHANGELOG.md]({repository}/blob/master/"
+            f"CHANGELOG.md).")
+
+
 def changelog_section(version, path=None):
     """The changelog's entry for ``version``, as markdown.
 
@@ -311,7 +384,7 @@ def build_metadata(config, *, with_description=False, release_notes=None):
         metadata["description"] = f"<p>{config['description']}</p>"
     if release_notes:
         metadata["additional_descriptions"] = [{
-            "description": markdown_to_html(release_notes),
+            "description": markdown_to_html(summarise(release_notes)),
             "type": {"id": "technical-info"},
         }]
 

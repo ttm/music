@@ -22,6 +22,43 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
 @pytest.fixture(autouse=True)
+def _no_network(request, monkeypatch):
+    """Fail a test that reaches the network instead of letting it.
+
+    `setup_hrtf` has a default for every argument, so the zero-argument
+    sweep in `test_public_api.py` called it on six CI runners and each of
+    them downloaded the KEMAR measurements from MIT. It passed, because it
+    returns a path. Nothing in this suite should reach out, and the way to
+    keep that true is to make reaching out fail rather than to remember.
+
+    A test that genuinely needs the network -- there are none today --
+    marks itself ``@pytest.mark.network``.
+    """
+    if request.node.get_closest_marker("network"):
+        yield
+        return
+
+    import urllib.request
+
+    real_urlopen = urllib.request.urlopen
+
+    def refuse(url, *args, **kwargs):
+        target = str(getattr(url, "full_url", url))
+        # A file:// URL is how these tests hand a routine a local archive,
+        # which is the point: the code path under test is the real one and
+        # only the transport is local.
+        if target.startswith("file:"):
+            return real_urlopen(url, *args, **kwargs)
+        raise AssertionError(
+            f"this test tried to open {target}. The suite does not use the "
+            f"network: give the routine a local path or a file:// URL, or "
+            f"mark the test @pytest.mark.network if it truly needs one")
+
+    monkeypatch.setattr(urllib.request, "urlopen", refuse)
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _doctest_namespace(request, doctest_namespace, tmp_path):
     """Give every docstring example the namespace a reader would have.
 

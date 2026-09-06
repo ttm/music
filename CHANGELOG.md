@@ -27,6 +27,21 @@
   the four cardinal directions, and another asserts that a source at
   azimuth 0 really is louder in the right ear.
 
+### Fixed
+- **The test suite downloaded from the internet.** `setup_hrtf` has a
+  default for every argument, so the zero-argument sweep in
+  `test_public_api.py` called it, and six CI runners each fetched the
+  KEMAR measurements from MIT. It passed -- the call returns a path -- and
+  only `hrir` failing on a runner that had not got there yet made any of
+  it visible.
+
+  `conftest.py` now refuses any non-local URL for the whole suite, so a
+  test that reaches out fails instead of succeeding quietly. A `file://`
+  URL still works, which is how the fetching path is tested against a
+  local archive. Both routines are excluded from the sweep, and a test
+  fails if that exclusion ever names something the package no longer
+  exports.
+
 ### Changed
 - **The per-user cache directory is decided in one place**, `utils.cache_root`,
   rather than inside `music.singing.paths`. Two features now keep a large

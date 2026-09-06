@@ -17,6 +17,13 @@ import music
 
 #: Exports whose defaults touch the filesystem, an audio device, the network
 #: or an external binary, and so cannot run unattended.
+#:
+#: `setup_hrtf` earned its place the expensive way. It has a default for
+#: every argument, so the sweep below called it on six CI runners, each of
+#: which quietly downloaded the KEMAR measurements from MIT. It passed --
+#: it returns a path -- and only `hrir` failing on the runner that had not
+#: got there yet made any of it visible. Anything added here that reaches
+#: the network or the filesystem on its defaults belongs in this set.
 SIDE_EFFECTING = {
     "write_audio",
     "read_audio",
@@ -28,6 +35,10 @@ SIDE_EFFECTING = {
     "setup_engine",
     "make_test_song",
     "print_peal",
+    # Downloads about 1.3 MB from MIT.
+    "setup_hrtf",
+    # Reads a dataset that is not shipped and may not be installed.
+    "hrir",
 }
 
 
@@ -386,3 +397,27 @@ def test_the_api_reference_lists_nothing_the_package_does_not_export():
     assert not stale, (
         f"docs/api.rst lists {stale}, which the package does not export; "
         f"Sphinx will fail to document them or will document nothing.")
+
+
+def test_no_export_reaches_the_network_on_its_own_defaults():
+    """The sweep above must stay unattended, and this is what proves it.
+
+    `setup_hrtf` has a default for every argument, so it was swept, and
+    six CI runners downloaded the KEMAR measurements before anyone noticed
+    -- the call succeeds, so only a *different* test failing made it
+    visible. `conftest.py` refuses any non-local URL for the whole suite
+    now; this asserts the refusal is in force here, where the sweep runs.
+    """
+    import urllib.request
+
+    with pytest.raises(AssertionError, match="does not use the network"):
+        urllib.request.urlopen("https://example.invalid/")
+
+
+def test_the_side_effecting_set_names_things_that_exist():
+    """A stale exclusion silently stops testing an export."""
+    unknown = sorted(name for name in SIDE_EFFECTING
+                     if name not in music.__all__)
+    assert not unknown, (
+        f"{unknown} are excluded from the zero-argument sweep but are not "
+        f"exported; the exclusion no longer excludes anything")

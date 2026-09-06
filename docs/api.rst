@@ -111,6 +111,7 @@ Spectral and spatial
    localize
    localize2
    localize_linear
+   localize_hrtf
    stretches
 
 Filter design

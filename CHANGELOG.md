@@ -1,5 +1,19 @@
 ## [Unreleased]
 ### Added
+- **`localize_hrtf`**, which applies a pair of head-related impulse
+  responses to a mono sound. The article says the complete localization --
+  height, and front against back -- is given by an HRTF, and that applying
+  one is a convolution; this is that convolution, once per ear.
+
+  **It is not an HRTF and does not close the gap `ASSESSMENT.md` records.**
+  The package ships no impulse responses, and where one comes from -- a
+  measured database such as CIPIC, an interpolation between measured
+  directions, a synthesised generic head -- is the research rather than the
+  signal processing. A test asserts that no measured data is vendored, and
+  the test that pins `localize` rendering 90 degrees and -90 degrees alike
+  still passes, which is what would notice if this entry ever stopped
+  being true.
+
 - **Intervals by their traditional names**, in `music.theory.intervals` and
   exported as `interval`, `interval_names`, `interval_between` and
   `consonance`. `notesInMusic.tex` tabulates the simple intervals against

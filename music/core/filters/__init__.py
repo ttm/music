@@ -5,12 +5,14 @@ from .fade import cross_fade, fade
 from .design import (band_pass, band_reject, fraction_of, high_pass,
                      low_pass)
 from .impulse_response import fir, iir
-from .localization import localize, localize2, localize_linear
+from .localization import (localize, localize2, localize_hrtf,
+                           localize_linear)
 from .loud import loud, louds
 from .reverb import reverb
 from .stretches import stretches
 
 __all__ = [
+    'localize_hrtf',
     'band_pass',
     'band_reject',
     'fraction_of',

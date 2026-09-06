@@ -24,6 +24,7 @@ from .filters import (
     band_reject,
     fraction_of,
     high_pass,
+    localize_hrtf,
     low_pass,
     adsr,
     adsr_stereo,
@@ -65,6 +66,7 @@ from .synths import (
 )
 
 __all__ = [
+    'localize_hrtf',
     'band_pass',
     'band_reject',
     'fraction_of',

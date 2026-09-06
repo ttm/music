@@ -41,6 +41,7 @@ from .core import (
     band_reject,
     fraction_of,
     high_pass,
+    localize_hrtf,
     low_pass,
     adsr_stereo,
     adsr_vibrato,
@@ -173,6 +174,7 @@ def __dir__() -> list[str]:
 
 __all__ = [
     'Bonds',
+    'localize_hrtf',
     'CONSONANCE',
     'SIMPLE_INTERVALS',
     'consonance',

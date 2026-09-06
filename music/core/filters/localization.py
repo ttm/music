@@ -2,6 +2,7 @@
 
 import numpy as np
 import warnings
+from numpy.typing import ArrayLike, NDArray
 from music.core.synths.notes import note, note_with_phase
 from music.utils import WAVEFORM_SINE
 
@@ -600,3 +601,106 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
     # energy2 = np.sum(s**2)
     # s = s*(energy1/energy2)**.5
     return s
+
+
+def localize_hrtf(sonic_vector: ArrayLike,
+                  left_hrir: ArrayLike,
+                  right_hrir: ArrayLike,
+                  sample_rate: int = 44100) -> NDArray[np.float64]:
+    """Place a mono sound with a measured pair of impulse responses.
+
+    A head-related transfer function is the filtering a particular head,
+    pinnae and torso apply to a sound arriving from a particular direction,
+    and it is the thing that carries the cues :func:`localize` and
+    :func:`localize2` do not: the height of a source, and whether it is in
+    front of the listener or behind. Applying one is a convolution, which
+    is what the article says of it and what this does -- once per ear, with
+    the impulse response measured for that ear from that direction.
+
+    **This package ships no impulse responses, and this routine is not an
+    HRTF.** It is the step that uses one. Where the response comes from --
+    a measured database such as CIPIC, a set interpolated for a direction
+    between measured ones, or one synthesised for a generic head -- is the
+    part that is research rather than signal processing, and none of it
+    happens here. `ASSESSMENT.md` still lists the absence of an HRTF as the
+    largest gap in this package, and this does not close it.
+
+    Parameters
+    ----------
+    sonic_vector : array_like
+        The mono sound to place.
+    left_hrir, right_hrir : array_like
+        The head-related impulse responses for the two ears, from the
+        direction the source is to come from. They need not be the same
+        length as each other; the difference between them across the two
+        ears is what carries the direction.
+    sample_rate : integer
+        The sample rate. It has to be the rate the responses were measured
+        at, and nothing here can check that, so it is taken on trust and
+        only used to report the delay the convolution adds.
+
+    Returns
+    -------
+    ndarray
+        A stereo array of shape ``(2, len(sonic_vector) + len(hrir) - 1)``,
+        longer than the input by the tail of the response, as a
+        convolution is. Trim it if a fixed length matters.
+
+    Raises
+    ------
+    ValueError
+        If the sound is not one-dimensional, or either response is empty.
+
+    See Also
+    --------
+    localize : the geometric model, from interaural time and intensity
+               difference alone.
+    localize2 : the same cues per frequency band.
+    fir : convolution with an impulse response, for one channel.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> left, right = np.array([1.0, 0.3]), np.array([0.0, 0.6, 0.2])
+    >>> placed = localize_hrtf(note(duration=0.1), left, right)
+    >>> placed.shape[0]
+    2
+
+    Notes
+    -----
+    An HRTF is measured per listener, and one measured on another head is
+    an approximation whose error is itself a research subject. A response
+    measured at one sample rate and applied at another places the source
+    somewhere else, because the interaural delay it encodes is a number of
+    samples.
+
+    Cite the following article whenever you use this function.
+
+    References
+    ----------
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+    """
+    samples = np.asarray(sonic_vector, dtype=np.float64)
+    if samples.ndim != 1:
+        raise ValueError(
+            f'localize_hrtf places a mono sound; got an array of shape '
+            f'{samples.shape}. Convolve each channel separately, or mix '
+            f'them down first')
+
+    responses = []
+    for ear, response in (('left', left_hrir), ('right', right_hrir)):
+        impulse = np.asarray(response, dtype=np.float64)
+        if impulse.ndim != 1 or impulse.size == 0:
+            raise ValueError(
+                f'the {ear} impulse response must be a non-empty '
+                f'one-dimensional array; got shape {impulse.shape}')
+        responses.append(impulse)
+
+    left, right = responses
+    length = samples.size + max(left.size, right.size) - 1
+    placed = np.zeros((2, length), dtype=np.float64)
+    for channel, impulse in enumerate(responses):
+        convolved = np.convolve(samples, impulse)
+        placed[channel, :convolved.size] = convolved
+    return placed

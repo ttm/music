@@ -100,9 +100,12 @@ from .legacy import Being, CanonicalSynth, IteratorSynth
 from .bonds import (Bonds, inversely_proportional, proportional,
                     stepped)
 from .sequencer import Sequencer
-from .theory import (CHORDS, DIATONIC_STEPS, HARMONIC_SERIES_AS_PRINTED,
-                     MINOR_SCALES, MODES, SCALES, SEVENTHS, TRIADS,
-                     add_seventh, chord, harmonic_series, invert,
+from .theory import (CHORDS, CONSONANCE, DIATONIC_STEPS,
+                     HARMONIC_SERIES_AS_PRINTED,
+                     MINOR_SCALES, MODES, SCALES, SEVENTHS,
+                     SIMPLE_INTERVALS, TRIADS, add_seventh, chord,
+                     consonance, harmonic_series, interval,
+                     interval_between, interval_names, invert,
                      mode_by_rotation, scale)
 
 # The permutation and change-ringing structures are reached through
@@ -170,6 +173,12 @@ def __dir__() -> list[str]:
 
 __all__ = [
     'Bonds',
+    'CONSONANCE',
+    'SIMPLE_INTERVALS',
+    'consonance',
+    'interval',
+    'interval_between',
+    'interval_names',
     'inversely_proportional',
     'proportional',
     'stepped',

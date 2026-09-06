@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-04**,
-`music` 1.4.0: 45 modules, 10,679 LOC package + 8,446 LOC tests, 113 names
+`music` 1.4.0: 46 modules, 11,009 LOC package + 8,615 LOC tests, 119 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -35,17 +35,17 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **2150 passed**, 16 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,560 stmts, 0 missed) |
+| Test suite | `pytest -q` | **2229 passed**, 16 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,630 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 1,900 findings |
-| Annotation coverage | AST scan | **86 / 192 functions (45 %)**; 54 / 85 exported (64 %) |
-| Docstring coverage | AST scan | **158 / 169 public defs (93 %)** |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,002 findings |
+| Annotation coverage | AST scan | **91 / 197 functions (46 %)**; 58 / 89 exported (65 %) |
+| Docstring coverage | AST scan | **162 / 173 public defs (94 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **26 of 35 routines sample-exact**; 5 divergent with a stated reason, 4 where the reference does not run |
-| Article coverage | `tools/article_coverage.py` | **45 of 47 labelled equations** cited by a test; **all 45** a test could settle |
+| Article coverage | `tools/article_coverage.py` | **46 of 47 labelled equations** cited by a test; **all 46** a test could settle |
 | Docstring examples | `pytest --doctest-modules` | **62 examples run**, 1 skipped |
 | Examples | `python tools/run_examples.py` | **10 pass**, 1 skipped for the external singing engine |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
@@ -65,7 +65,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; CI across Python 3.10–3.14 including a job pinned to the declared lower bounds |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 45 %; the `legacy/` subpackage |
+| **Needs work** | Annotation coverage at 46 %; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -150,7 +150,7 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 45 %**, and 64 % across the exported API. The
+- **Annotation coverage is 46 %**, and 65 % across the exported API. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones
@@ -159,7 +159,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 1,900 findings** on `music/`, almost all
+- **The extended lint set reports 2,002 findings** on `music/`, almost all
   stylistic: 345 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their

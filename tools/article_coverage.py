@@ -32,10 +32,7 @@ TESTS = Path(__file__).resolve().parent.parent / 'tests'
 #: things this package does not implement, and a test for those would be a
 #: test of nothing. Anything absent from this map and uncited is simply
 #: outstanding work.
-UNIMPLEMENTED = {
-    'intervalos': 'interval nomenclature; the package counts semitones and '
-                  'names no intervals',
-}
+UNIMPLEMENTED: dict[str, str] = {}
 
 #: Statements the article makes that no test could settle as written.
 NOT_A_CHECK = {

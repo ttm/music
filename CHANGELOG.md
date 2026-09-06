@@ -1,4 +1,28 @@
 ## [Unreleased]
+### Added
+- **Intervals by their traditional names**, in `music.theory.intervals` and
+  exported as `interval`, `interval_names`, `interval_between` and
+  `consonance`. `notesInMusic.tex` tabulates the simple intervals against
+  their semitone counts and states the rules that generate the rest: a
+  degree is one more than the steps it spans, a compound interval is the
+  simple one plus a multiple of seven degrees, a major interval lowered by
+  a semitone is minor, and a perfect or major one raised by a semitone is
+  augmented. All of it is implemented and checked, including the article's
+  own three worked examples -- `7 + P4 = P11`, `M9`, `m16` -- and its
+  statement that `aug3` has five semitones.
+
+  The two intervals the article declines to settle are recorded as
+  unsettled rather than forced into a category: the perfect fourth, "a
+  perfect consonance when considered as an inversion of the perfect fifth
+  and a dissonance or an imperfect consonance otherwise", and the tritone,
+  which is "consonant in some cultures".
+
+  This was the last equation of the article that the package did not
+  implement. `tools/article_coverage.py` now reports 46 of 47 cited by a
+  test, which is all 46 that a test could settle; the one left is
+  `eq:vinculos`, which is a schema rather than a formula and which
+  `music.bonds` is the place for.
+
 ### Fixed
 - **The source distribution shipped tests that could not run.** It carried
   thirty-eight test files and none of `conftest.py`, `pytest.ini`,

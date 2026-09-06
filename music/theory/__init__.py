@@ -12,12 +12,20 @@ not here. See `ASSESSMENT.md`.
 """
 
 from .chords import (CHORDS, SEVENTHS, TRIADS, add_seventh, chord, invert)
+from .intervals import (CONSONANCE, SIMPLE_INTERVALS, consonance, interval,
+                        interval_between, interval_names)
 from .scales import (DIATONIC_STEPS, HARMONIC_SERIES_AS_PRINTED,
                      MINOR_SCALES, MODES, SCALES, harmonic_series,
                      mode_by_rotation, scale)
 
 __all__ = [
     'CHORDS',
+    'CONSONANCE',
+    'SIMPLE_INTERVALS',
+    'consonance',
+    'interval',
+    'interval_between',
+    'interval_names',
     'DIATONIC_STEPS',
     'HARMONIC_SERIES_AS_PRINTED',
     'MINOR_SCALES',

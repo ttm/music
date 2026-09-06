@@ -304,3 +304,172 @@ def test_the_subdivisions_of_a_unit_are_unequal_when_the_figures_are():
     assert group[2] == pytest.approx(group[3])
     assert group[0] == pytest.approx(2 * group[2])
     assert sum(group) == pytest.approx(durations[0])
+
+
+# --------------------------------------------------------------------------
+# eq:intervalos -- the intervals, by their traditional names
+# --------------------------------------------------------------------------
+
+@pytest.mark.parametrize("name, semitones", [
+    ("P1", 0), ("m2", 1), ("M2", 2), ("m3", 3), ("M3", 4), ("P4", 5),
+    ("aug4", 6), ("dim5", 6), ("TT", 6), ("P5", 7), ("m6", 8), ("M6", 9),
+    ("m7", 10), ("M7", 11), ("P8", 12),
+])
+def test_the_simple_intervals_are_the_table_of_equation_intervalos(
+        name, semitones):
+    assert music.interval(name) == semitones
+
+
+@pytest.mark.parametrize("name, semitones", [
+    ("P11", 17),   # "P11 is an octave plus a forth (7 + P4 = P11)"
+    ("M9", 14),    # "M9 is an octave plus a major second"
+    ("m16", 25),   # "m16 is two octaves and a minor second"
+])
+def test_a_compound_interval_adds_multiples_of_seven_degrees(name, semitones):
+    """The article's own three worked examples, verbatim."""
+    assert music.interval(name) == semitones
+
+
+def test_a_degree_is_one_more_than_the_steps_it_spans():
+    """"a third is an interval with two steps"."""
+    major = music.scale("major")
+    for degree in range(1, 8):
+        assert music.interval_between(
+            220.0, 220.0 * 2 ** (major[degree - 1] / 12)) == major[degree - 1]
+    # The third is the scale's index two, which is two steps up.
+    assert major[2] == music.interval("M3")
+
+
+def test_augmenting_adds_a_semitone_and_diminishing_takes_one_away():
+    """"aug3 has five semitones", and dim5 is the tritone."""
+    assert music.interval("aug3") == music.interval("M3") + 1 == 5
+    assert music.interval("dim5") == music.interval("P5") - 1 == 6
+    assert music.interval("aug4") == music.interval("P4") + 1
+    assert music.interval("dim3") == music.interval("m3") - 1
+    assert music.interval("A5") == music.interval("aug5")
+    assert music.interval("d4") == music.interval("dim4")
+
+
+def test_a_major_interval_lowered_by_a_semitone_is_the_minor_one():
+    for degree in (2, 3, 6, 7):
+        assert music.interval(f"M{degree}") - 1 == music.interval(
+            f"m{degree}")
+
+
+def test_the_perfect_degrees_take_no_major_or_minor():
+    """"unison, fourth, fifth and octave -- are 'perfect'"."""
+    for degree in (1, 4, 5, 8):
+        with pytest.raises(ValueError, match="perfect, not major or minor"):
+            music.interval(f"M{degree}")
+    for degree in (2, 3, 6, 7):
+        with pytest.raises(ValueError, match="not perfect"):
+            music.interval(f"P{degree}")
+
+
+def test_the_tritone_has_the_three_names_the_article_gives_it():
+    """"(A4 or aug4, d5 or dim5, tri or TT)"."""
+    assert music.interval_names(6) == ("aug4", "dim5", "TT")
+    for name in ("aug4", "dim5", "TT", "tri", "A4", "d5"):
+        assert music.interval(name) == 6
+
+
+@pytest.mark.parametrize("semitones, names", [
+    (0, ("P1",)), (4, ("M3",)), (7, ("P5",)), (12, ("P8",)),
+    (14, ("M9",)), (17, ("P11",)), (24, ("P15",)),
+])
+def test_naming_an_interval_is_the_inverse_of_measuring_one(
+        semitones, names):
+    assert music.interval_names(semitones) == names
+    for name in names:
+        assert music.interval(name) == semitones
+
+
+def test_an_interval_is_measured_upward():
+    with pytest.raises(ValueError, match="measured upward"):
+        music.interval_names(-1)
+    with pytest.raises(ValueError, match="measured upward"):
+        music.interval_between(440.0, 220.0)
+    with pytest.raises(ValueError, match="must be positive"):
+        music.interval_between(0.0, 220.0)
+
+
+def test_something_that_is_not_an_interval_is_refused():
+    with pytest.raises(ValueError, match="is not an interval"):
+        music.interval("a fifth")
+    with pytest.raises(ValueError, match="no degree"):
+        music.interval("P0")
+
+
+# --- The classification the table makes ------------------------------------
+
+@pytest.mark.parametrize("names, kind", [
+    (("P1", "P5", "P8"), "perfect consonance"),
+    (("m3", "M3", "m6", "M6"), "imperfect consonance"),
+    (("m2", "M7"), "strong dissonance"),
+    (("M2", "m7"), "weak dissonance"),
+])
+def test_the_consonances_and_dissonances_are_the_table_s(names, kind):
+    """The four rows of eq:intervalos, each with its semitone counts."""
+    for name in names:
+        assert music.consonance(name) == kind
+        assert music.consonance(music.interval(name)) == kind
+
+
+def test_the_two_special_cases_are_recorded_as_unsettled():
+    """The fourth and the tritone, which the article declines to settle.
+
+    "Perfect fourth is a special case", a consonance as an inversion of the
+    fifth and otherwise not; the tritone is a dissonance in Western music
+    and "consonant in some cultures". Forcing either into one of the four
+    rows would be a claim the article does not make.
+    """
+    assert music.consonance("P4") == "context dependent"
+    assert music.consonance("TT") == "context dependent"
+    assert music.consonance(5) == music.consonance(6) == "context dependent"
+
+
+def test_a_compound_interval_is_classified_as_its_simple_one():
+    """"classified in terms of the simple interval between the same notes"."""
+    assert music.consonance("M9") == music.consonance("M2")
+    assert music.consonance("P12") == music.consonance("P5")
+    assert music.consonance("P15") == music.consonance("P8")
+
+
+def test_the_interval_between_two_frequencies_names_itself():
+    octave = music.interval_between(220.0, 440.0)
+    assert octave == 12
+    assert music.interval_names(octave) == ("P8",)
+
+    fifth = music.interval_between(220.0, 220.0 * 2 ** (7 / 12))
+    assert music.interval_names(fifth) == ("P5",)
+    # A just fifth is 2 cents from the tempered one and still a fifth.
+    assert music.interval_between(220.0, 220.0 * 3 / 2) == 7
+
+
+def test_a_compound_tritone_keeps_only_the_names_that_carry_a_degree():
+    """TT names an interval, not a degree, so it cannot be raised.
+
+    An octave above the tritone is an augmented eleventh or a diminished
+    twelfth. There is no "TT11": the abbreviation stands for the interval
+    itself rather than for a degree with a quality on it, so raising it by
+    seven degrees would produce a name nobody writes.
+    """
+    assert music.interval_names(18) == ("aug11", "dim12")
+    assert music.interval("aug11") == music.interval("dim12") == 18
+    assert music.consonance(18) == music.consonance("TT")
+
+
+def test_a_negative_interval_is_refused_by_the_classification_too():
+    with pytest.raises(ValueError, match="not negative"):
+        music.consonance(-1)
+
+
+def test_an_interval_becomes_a_sound():
+    """The point of naming them: a chord written as intervals, rendered."""
+    triad = [music.interval(name) for name in ("P1", "M3", "P5")]
+    assert triad == list(music.chord("major"))
+    freqs = music.pitch_to_freq(start_freq=220.0, semitones=triad)
+    assert freqs[0] == pytest.approx(220.0)
+    assert len(music.mix_many(
+        [music.note(freq=f, duration=0.05) for f in freqs])) == int(
+            0.05 * 44100)

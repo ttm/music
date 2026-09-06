@@ -189,11 +189,16 @@ becomes frequencies and then sound in two steps.
    chord
    add_seventh
    invert
+   interval
+   interval_names
+   interval_between
+   consonance
 
 The tables these read from are exported too: ``SCALES``, ``MODES``,
 ``MINOR_SCALES`` and ``DIATONIC_STEPS`` for the scales, ``CHORDS``,
 ``TRIADS`` and ``SEVENTHS`` for the chords, and
-``HARMONIC_SERIES_AS_PRINTED`` for the article's own table of partials.
+``HARMONIC_SERIES_AS_PRINTED`` for the article's own table of partials, and
+``SIMPLE_INTERVALS`` and ``CONSONANCE`` for the intervals.
 
 Bonds
 -----

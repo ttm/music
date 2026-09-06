@@ -38,9 +38,10 @@ with the equation it implements and the article it comes from.
   permutation groups, change-ringing peals and plain changes.
 * **Music theory** as the MASS companion paper states it: the seven diatonic
   modes and the single step pattern each is a rotation of, the three minor
-  scales, the triads and the tetrads that extend them, and the harmonic
-  series. All in semitones from a tonic of zero, so a scale becomes
-  frequencies and then sound in two steps.
+  scales, the triads and the tetrads that extend them, the intervals and
+  their traditional names, and the harmonic series. All in semitones from
+  a tonic of zero, so a scale becomes frequencies and then sound in two
+  steps.
 * **Filter design.** `iir` applies coefficients; `low_pass`, `high_pass`,
   `band_pass` and `band_reject` compute them, from the four designs the
   article specifies.
@@ -124,7 +125,7 @@ Durations are in seconds, envelope stages in milliseconds, levels in decibels
 and pitch deviations in semitones — each parameter in the unit it is usually
 thought about in.
 
-### Scales and chords
+### Scales, chords and intervals
 
 Everything is counted in semitones from a tonic of zero, which is what
 `pitch_to_freq` takes:
@@ -137,7 +138,14 @@ music.write_wav_mono(music.mix_many(
 ```
 
 The seven modes are one step pattern read from seven places, and
-`mode_by_rotation` reaches them that way rather than by name.
+`mode_by_rotation` reaches them that way rather than by name. Intervals
+can be written the way a musician writes them:
+
+```python
+music.interval("M3"), music.interval("P11")     # (4, 17)
+music.interval_names(6)                         # ('aug4', 'dim5', 'TT')
+music.consonance("P4")                          # 'context dependent'
+```
 
 ### Filters, designed
 
@@ -257,9 +265,12 @@ The modules are:
 
 Concrete things the code itself is waiting for, rather than a wish list:
 
-* **A head-related transfer function.** Both `localize` and `localize2` say so
-  in their own notes: the height of a source, and whether it is in front of or
-  behind the listener, are cues an HRTF carries and neither of them models.
+* **A head-related transfer function this package computes.** `music.hrtf`
+  reads Gardner and Martin's KEMAR measurements, which closes the gap for
+  anyone willing to fetch them, but the package models no head of its own:
+  a direction nobody measured is answered with the nearest one somebody
+  did. (`localize` and `localize2` still carry neither elevation nor
+  front-against-back, and say so in their own notes.)
 * **`Being.walk`'s `perm-walk` method**, which was never restored from its
   predecessor and is currently a reconstruction. (`Peals.twenty_all_over` and
   `Peals.an_eight_and_forty` no longer raise; this entry used to say they did.)

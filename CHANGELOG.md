@@ -1,4 +1,14 @@
-## [Unreleased]
+## [1.7.0] - 2026-09-06
+### Note for anyone upgrading
+**Nothing that imports from `music` breaks, and no routine that existed in
+1.6.0 returns anything different.** Six names are added -- `setup_hrtf`,
+`hrir`, `available_azimuths`, `hrtf_dir`, and the `ELEVATIONS` and
+`KEMAR_URL` constants -- and none is removed or renamed.
+
+`music.singing.paths._cache_root` still resolves; the function moved to
+`music.utils.cache_root`, because two features now keep a large external
+resource in the per-user cache and neither is a singing concept.
+
 ### Added
 - **`music.hrtf`**, which fetches and reads real head-related impulse
   responses. `localize_hrtf` arrived in 1.6.0 as the step that applies a

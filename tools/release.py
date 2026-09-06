@@ -139,6 +139,13 @@ def run_gate():
         # committed during a release.
         ("figures", (sys.executable, str(ROOT / "tools"
                                          / "assessment_figures.py"))),
+        # The sdist ships tests/. Every other check here runs against the
+        # working tree, where conftest.py, pytest.ini, tools/ and docs/
+        # are present; 1.5.0 shipped thirty-eight test files that could
+        # not collect without them. This runs the suite from inside the
+        # unpacked tarball, which is the only place that shows.
+        ("sdist", (sys.executable, str(ROOT / "tools"
+                                       / "check_sdist.py"))),
     ]
     for name, command in checks:
         run(*command)
@@ -147,7 +154,10 @@ def run_gate():
 
 def build():
     """Build the artifacts, from nothing, and validate them."""
-    for stale in ("dist", "build"):
+    # The egg-info too: setuptools reads the SOURCES.txt it left there
+    # rather than re-reading MANIFEST.in, so a build "from nothing" that
+    # keeps it is not from nothing.
+    for stale in ("dist", "build", "music.egg-info"):
         shutil.rmtree(ROOT / stale, ignore_errors=True)
     run(sys.executable, "-m", "build")
     run(sys.executable, "-m", "twine", "check",

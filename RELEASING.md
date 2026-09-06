@@ -10,9 +10,21 @@ python tools/release.py publish    # upload, tag, release
 `check` refuses to go on unless the version in `pyproject.toml`,
 `CITATION.cff` and `CHANGELOG.md` agree, master is clean and in sync with
 origin, the tag does not exist, PyPI does not already have that version,
-lint, types, tests and docs all pass, and `ASSESSMENT.md` still describes
-the package it ships with. Then it builds from scratch and runs
-`twine check`.
+lint, types, tests and docs all pass, `ASSESSMENT.md` still describes the
+package it ships with, and the source distribution passes its own tests
+from inside itself. Then it builds from scratch and runs `twine check`.
+
+That last check is `tools/check_sdist.py`, and it is there because the
+sdist ships `tests/` while every other check in this repository runs
+against the working tree. Up to and including 1.5.0 it shipped
+thirty-eight test files without `conftest.py`, `pytest.ini`, `tools/`,
+`docs/` or the fixture, so none of them collected and nothing said so.
+`MANIFEST.in` is what it checks.
+
+It clears `music.egg-info` before building, and so does `build`. setuptools
+reuses the `SOURCES.txt` it left there rather than re-reading
+`MANIFEST.in`, so a file dropped from the manifest goes on being shipped
+and a build "from scratch" that keeps the egg-info is not from scratch.
 
 That last one is there because the file went stale four times in two days
 when it depended on someone remembering, once with the wrong test count

@@ -1,0 +1,47 @@
+# What the source distribution carries beyond the package itself.
+#
+# setuptools guesses, and its guess shipped `tests/` while leaving out
+# everything the tests need: an sdist of 1.5.0 has thirty-eight test files
+# and collects none of them, because conftest.py, pytest.ini, tools/,
+# docs/ and the fixture are all absent. A redistributor who builds from
+# source and runs the suite -- which is the point of shipping it -- got two
+# collection errors.
+#
+# So this lists what the suite reads. `tools/check_sdist.py` builds the
+# sdist, unpacks it and runs its tests, which is the only way to know this
+# file is still right.
+
+# Run the tests at all.
+include conftest.py
+include pytest.ini
+recursive-include tests *.py
+recursive-include tests/fixtures *.npz
+
+# tests/test_mass_reconciliation.py imports the register from here, and
+# tools/mass_reference.py is what it reads a MASS checkout with.
+recursive-include tools *.py
+
+# tests/test_tutorial.py runs the tutorial's code blocks; three tests in
+# test_public_api.py read the API reference.
+include docs/api.rst
+include docs/tutorial.rst
+include docs/index.rst
+include docs/conf.py
+
+# tests/test_zenodo_metadata.py reads the archival metadata.
+include .zenodo.json
+
+# The prose a reader of the tarball should have.
+include CHANGELOG.md
+include ASSESSMENT.md
+include RECONCILIATION.md
+include DISCREPANCIES.md
+include CITATION.cff
+include RELEASING.md
+
+# Never: the generated API pages, the built docs, the example renders.
+prune docs/generated
+prune docs/_build
+recursive-exclude examples *.wav
+global-exclude *.pyc
+global-exclude __pycache__

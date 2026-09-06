@@ -1,3 +1,25 @@
+## [Unreleased]
+### Fixed
+- **The source distribution shipped tests that could not run.** It carried
+  thirty-eight test files and none of `conftest.py`, `pytest.ini`,
+  `tools/`, `docs/` or `tests/fixtures/`, so unpacking the 1.5.0 tarball
+  and running `pytest` gave two collection errors and no tests. Anyone
+  building from source to verify it -- a distribution packager, or anyone
+  doing `pip download --no-binary` -- got that. It has been true of every
+  release, not just this one: `tests/test_tutorial.py` has always needed
+  `docs/tutorial.rst` and `docs/` has never been in the tarball.
+
+  There is a `MANIFEST.in` now, and `tools/check_sdist.py` builds the
+  sdist, unpacks it and runs the suite from inside it. That check is part
+  of the release gate, since every other check in the repository runs
+  against the working tree, where the missing files are present.
+
+  Both it and `tools/release.py` clear `music.egg-info` before building.
+  setuptools reuses the `SOURCES.txt` it left there rather than re-reading
+  the manifest, so a file dropped from `MANIFEST.in` keeps being shipped --
+  which is how the new check passed the first time it was pointed at a
+  deliberately broken manifest.
+
 ## [1.5.0] - 2026-09-05
 ### Note for anyone upgrading
 **Two exported routines now produce different samples.**

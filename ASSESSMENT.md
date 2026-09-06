@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-04**,
-`music` 1.4.0: 46 modules, 11,119 LOC package + 8,855 LOC tests, 120 names
+`music` 1.4.0: 47 modules, 11,508 LOC package + 9,225 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -35,13 +35,13 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **2251 passed**, 16 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,648 stmts, 0 missed) |
+| Test suite | `pytest -q` | **2338 passed**, 16 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,738 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,018 findings |
-| Annotation coverage | AST scan | **92 / 198 functions (46 %)**; 59 / 90 exported (66 %) |
-| Docstring coverage | AST scan | **163 / 174 public defs (94 %)** |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,103 findings |
+| Annotation coverage | AST scan | **101 / 207 functions (49 %)**; 63 / 94 exported (67 %) |
+| Docstring coverage | AST scan | **169 / 180 public defs (94 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **26 of 35 routines sample-exact**; 5 divergent with a stated reason, 4 where the reference does not run |
@@ -65,7 +65,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; CI across Python 3.10–3.14 including a job pinned to the declared lower bounds |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 46 %; the `legacy/` subpackage |
+| **Needs work** | Annotation coverage at 49 %; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -74,29 +74,35 @@ either documented in the code or tracked in the issue list.
 
 ### Gaps the code names about itself
 
-- **No head-related transfer function.** `localize`, `localize2`,
-  `localize_linear` and `spatial_motion` all say so in their own notes: the
-  height of a source, and whether it is in front of or behind the listener,
-  are cues an HRTF carries and none of them models. Concretely, azimuths of
-  90° and −90° — ahead and behind — render the same two channels, and a test
-  now asserts that they do, so adding an HRTF will announce itself by
-  breaking it. This is the largest genuine gap in the package, and it is
-  research-scale work rather than a fix.
+- **The head-related transfer function is a dataset the user fetches, not
+  something the package models.** `localize`, `localize2`,
+  `localize_linear` and `spatial_motion` say in their own notes that they
+  carry neither the elevation of a source nor whether it is in front or
+  behind: they model a head as two points on an axis, so azimuths of 90
+  and -90 degrees render the same two channels, and a test asserts that
+  they still do.
 
-  `localize_hrtf` applies a pair of impulse responses a caller supplies,
-  which is the step the article describes -- "it is possible to apply such
-  transfer functions in a sonic signal by convolution". It does not close
-  this gap and is not an HRTF: the package ships no responses, and where
-  one comes from, whether a measured database or a head model, is the
-  research. A test asserts that no measured data is vendored, and the
-  cone-of-confusion test above still passes, which is the check that this
-  entry has not quietly become false.
-- **Two of the article's equations are not checked, and neither could be.**
+  `music.hrtf` closes that for callers who want it. `setup_hrtf()` fetches
+  Gardner and Martin's KEMAR measurements -- 710 directions, freely
+  redistributable, about 1.3 MB -- into the user's cache, `hrir()` reads
+  one direction out of them, and `localize_hrtf` convolves a sound with
+  the pair. A source in front and one behind differ by 0.37 in the impulse
+  response and an elevation of 40 degrees by 0.54, both measured rather
+  than asserted.
+
+  What it is not is a model. The package computes no transfer function of
+  its own, so a direction MIT did not measure is answered with the nearest
+  one they did -- ten degrees of elevation, and five of azimuth at best.
+  The measurements are of a mannequin, an approximation for any listener
+  whose own ears differ. And the geometric routines are untouched, so
+  anything that used them before is unchanged.
+
+- **One of the article's equations is not checked, and could not be.**
   `tests/test_article.py`, `tests/test_theory.py`, `tests/test_bonds.py` and
   `tests/test_filter_design.py` check routines against the article's
   numbered equations, citing each by the label its LaTeX source gives it,
   and `tools/article_coverage.py` measures the result across `body.tex`,
-  `spectra.tex` and `notesInMusic.tex`: 45 of 47, which is **all 45 that a
+  `spectra.tex` and `notesInMusic.tex`: 46 of 47, which is **all 46 that a
   test could settle**. The two left are `eq:intervalos`, the interval
   nomenclature, which is naming rather than sounding and which this package
   does not do; and `eq:vinculos`, which is a schema rather than a formula.
@@ -159,7 +165,7 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 46 %**, and 66 % across the exported API. The
+- **Annotation coverage is 49 %**, and 67 % across the exported API. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones
@@ -168,7 +174,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,018 findings** on `music/`, almost all
+- **The extended lint set reports 2,103 findings** on `music/`, almost all
   stylistic: 345 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their

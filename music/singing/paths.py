@@ -8,8 +8,9 @@ user's cache directory instead.
 
 import os
 import shutil
-import sys
 from pathlib import Path
+
+from ..utils import cache_root
 
 #: Set this to put the engine somewhere specific.
 ENV_VAR = "MUSIC_ECANTORIX_DIR"
@@ -42,13 +43,9 @@ def is_engine(directory) -> bool:
     return directory.is_dir() and (directory / ENGINE_MARKER).is_file()
 
 
-def _cache_root() -> Path:
-    """The platform's per-user cache directory."""
-    if sys.platform == "darwin":
-        return Path.home() / "Library" / "Caches"
-    if os.name == "nt":
-        return Path(os.environ.get("LOCALAPPDATA") or Path.home())
-    return Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
+#: Kept as a name here because this module has always had one; the
+#: decision it makes is shared with `music.hrtf` and lives in `utils`.
+_cache_root = cache_root
 
 
 def engine_dir() -> Path:

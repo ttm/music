@@ -1,3 +1,37 @@
+## [Unreleased]
+### Added
+- **`music.hrtf`**, which fetches and reads real head-related impulse
+  responses. `localize_hrtf` arrived in 1.6.0 as the step that applies a
+  pair; this is where a pair comes from. `setup_hrtf()` fetches Gardner
+  and Martin's KEMAR measurements -- 710 directions on a mannequin at MIT,
+  freely redistributable, about 1.3 MB -- into the user's cache, the same
+  arrangement `music.singing` uses for eCantorix and for the same reason.
+  `hrir()` reads the direction nearest the one asked for, and reports
+  which one that was.
+
+  This is what `ASSESSMENT.md` has listed since the file existed as the
+  largest gap in the package: the geometric routines carry neither
+  elevation nor front-against-back, because they model a head as two
+  points on an axis. A measured ear has no such symmetry. Front and behind
+  differ by 0.37 in the impulse response and 40 degrees of elevation by
+  0.54, both measured in the tests rather than asserted in prose.
+
+  It closes that gap by reading someone else's measurements, not by
+  modelling a head: a direction MIT did not measure is answered with the
+  nearest one they did, and a mannequin is an approximation for any
+  listener whose own ears differ. The geometric routines are untouched.
+
+  The two azimuth conventions are the trap here. MIT measures from
+  straight ahead, clockwise; this package measures from the ear axis,
+  counter-clockwise, with 0 to the right. A test checks the conversion at
+  the four cardinal directions, and another asserts that a source at
+  azimuth 0 really is louder in the right ear.
+
+### Changed
+- **The per-user cache directory is decided in one place**, `utils.cache_root`,
+  rather than inside `music.singing.paths`. Two features now keep a large
+  external resource there and neither is a singing concept.
+
 ## [1.6.0] - 2026-09-06
 ### Note for anyone upgrading
 **Nothing that imports from `music` breaks, and nothing returns anything

@@ -114,6 +114,23 @@ Spectral and spatial
    localize_hrtf
    stretches
 
+Head-related transfer functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``localize_hrtf`` applies a pair of impulse responses; these are where a
+measured pair comes from. The package ships none: ``setup_hrtf`` fetches
+the KEMAR measurements into the user's cache, once, and ``hrir`` reads one
+direction out of them.
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   setup_hrtf
+   hrir
+   available_azimuths
+   hrtf_dir
+
 Filter design
 ~~~~~~~~~~~~~
 

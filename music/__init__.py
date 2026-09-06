@@ -100,6 +100,8 @@ from .singing import get_engine, make_test_song, setup_engine
 from .legacy import Being, CanonicalSynth, IteratorSynth
 from .bonds import (Bonds, inversely_proportional, proportional,
                     stepped)
+from .hrtf import (ELEVATIONS, KEMAR_URL, available_azimuths, hrir,
+                   hrtf_dir, setup_hrtf)
 from .sequencer import Sequencer
 from .theory import (CHORDS, CONSONANCE, DIATONIC_STEPS,
                      HARMONIC_SERIES_AS_PRINTED,
@@ -174,6 +176,12 @@ def __dir__() -> list[str]:
 
 __all__ = [
     'Bonds',
+    'ELEVATIONS',
+    'KEMAR_URL',
+    'available_azimuths',
+    'hrir',
+    'hrtf_dir',
+    'setup_hrtf',
     'localize_hrtf',
     'CONSONANCE',
     'SIMPLE_INTERVALS',

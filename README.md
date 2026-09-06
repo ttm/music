@@ -44,6 +44,11 @@ with the equation it implements and the article it comes from.
 * **Filter design.** `iir` applies coefficients; `low_pass`, `high_pass`,
   `band_pass` and `band_reject` compute them, from the four designs the
   article specifies.
+* **Head-related transfer functions.** `setup_hrtf()` fetches the KEMAR
+  measurements into your cache and `hrir()` reads a direction out of them,
+  so a source can be placed above you or behind you -- cues the geometric
+  `localize` cannot carry. The package ships no measurements and models no
+  head; it reads someone else's.
 * **Bonds between a note's characteristics**, so a piece decides once how its
   notes behave rather than note by note -- a vibrato that speeds up as the
   line rises, a tremolo that only appears above middle C.
@@ -153,6 +158,18 @@ voice = music.Bonds(vibrato_freq=music.proportional(1 / 40),
                     max_pitch_dev=music.inversely_proportional(400))
 music.write_wav_mono(voice.render([220, 277, 330, 440], duration=0.5),
                      "bound.wav")
+```
+
+### Placing a source with measured ears
+
+`localize` puts a source on the ear axis from its geometry alone, so it
+cannot tell front from back. A measured response can:
+
+```python
+music.setup_hrtf()                       # once; about 1.3 MB into your cache
+_, _, left, right = music.hrir(elevation=30, azimuth=270)   # above, behind
+music.write_wav_stereo(music.localize_hrtf(music.note(duration=2),
+                                           left, right), "behind.wav")
 ```
 
 ### Change ringing

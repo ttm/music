@@ -84,32 +84,51 @@ def _fake_os(name, environ):
     return types.SimpleNamespace(name=name, environ=environ)
 
 
+def test_the_singing_cache_root_is_the_shared_one():
+    """It moved to `music.utils` when `music.hrtf` needed it too.
+
+    The name stays bound here because this module has always had it, and
+    the tests below patch `utils`, which is where the decision now is.
+    """
+    from music import utils
+
+    assert paths._cache_root is utils.cache_root
+
+
 def test_cache_root_on_macos(monkeypatch):
     """Patched rather than left to the host: otherwise this branch is only
     covered when the tests happen to run on a Mac, and the Linux and
     Windows ones only when they do not."""
+    from music import utils
+
     monkeypatch.setattr(sys, "platform", "darwin")
-    assert paths._cache_root() == Path.home() / "Library" / "Caches"
+    assert utils.cache_root() == Path.home() / "Library" / "Caches"
 
 
 def test_cache_root_on_linux(monkeypatch):
+    from music import utils
+
     monkeypatch.setattr(sys, "platform", "linux")
-    monkeypatch.setattr(paths, "os", _fake_os("posix", {}))
-    assert paths._cache_root().name == ".cache"
+    monkeypatch.setattr(utils, "os", _fake_os("posix", {}))
+    assert utils.cache_root().name == ".cache"
 
 
 def test_cache_root_honours_xdg(monkeypatch, tmp_path):
+    from music import utils
+
     monkeypatch.setattr(sys, "platform", "linux")
-    monkeypatch.setattr(paths, "os",
+    monkeypatch.setattr(utils, "os",
                         _fake_os("posix", {"XDG_CACHE_HOME": str(tmp_path)}))
-    assert paths._cache_root() == tmp_path
+    assert utils.cache_root() == tmp_path
 
 
 def test_cache_root_on_windows(monkeypatch, tmp_path):
+    from music import utils
+
     monkeypatch.setattr(sys, "platform", "win32")
-    monkeypatch.setattr(paths, "os",
+    monkeypatch.setattr(utils, "os",
                         _fake_os("nt", {"LOCALAPPDATA": str(tmp_path)}))
-    assert paths._cache_root() == tmp_path
+    assert utils.cache_root() == tmp_path
 
 
 # --------------------------------------------------------------------------

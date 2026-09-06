@@ -164,6 +164,7 @@ correctness.
 | `noises` | `c_i = e^{jx} α_i`, a complex coefficient (`eq:rosa`) | builds the coefficient array with a real dtype, discarding the imaginary part of every randomised phase |
 | `Tr` | a triangle reaching full amplitude | `hstack((ramp, ramp[::-1]))`, which duplicates the peak and tops out at `1 − 2/8192` |
 | `Sa` | a table that tiles | `linspace(-1, 1, Lt)` including the endpoint, so the wrap is a jump of 2.0 |
+| `readHRTF` | the KEMAR responses, read from disk | reads them with a `data_type` that is defined in neither `HRTF.py` nor `functions.py`, so it raises `NameError` on every call and has never run |
 
 ## What the article states that this package does not implement
 

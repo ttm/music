@@ -1,13 +1,32 @@
 """Utility functions shared across the package."""
 
 import logging
+import os
+import sys
 import warnings
+from pathlib import Path
 from typing import Any, cast
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 LAMBDA_TILDE = 1024 * 16
+
+
+def cache_root() -> Path:
+    """The platform's per-user cache directory.
+
+    Two features here need somewhere to keep a large external resource
+    that is not shipped with the package -- the eCantorix engine and the
+    KEMAR impulse responses -- and neither belongs inside `site-packages`,
+    which an upgrade replaces and a system install may not let you write
+    to. This is the one place that decides where such a thing goes.
+    """
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Caches"
+    if os.name == "nt":
+        return Path(os.environ.get("LOCALAPPDATA") or Path.home())
+    return Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
 
 #: The waveforms :func:`waveform_table` knows how to build.
 WAVEFORMS = ("sine", "sawtooth", "square", "triangle")

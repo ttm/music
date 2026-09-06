@@ -22,6 +22,12 @@ true.
 
 ## The article and the code disagree
 
+> **A patch for the three typographic ones** is in `errata-proposal/` in
+> the `ttm/mass` checkout: `mass-errata.patch`, against `e516b08`, with a
+> note explaining each. Nothing is applied — whether the paper wants an
+> erratum, a quiet fix to the LaTeX, or neither is a judgment about the
+> paper rather than about this package.
+
 ### `eq:reconsCompleta` — the phase sign
 
 `spectra.tex` writes the reconstruction of a real signal as
@@ -33,6 +39,21 @@ it in the same source gives the sum as `a_k cos(ω_k i) − b_k sin(ω_k i)`,
 and `a cos x − b sin x = R cos(x + arctan2(b, a))`: matching
 `R cos φ = a` against `R sin φ = b` fixes the sign. With the minus, a known
 spectrum does not come back.
+
+All four readings were checked on a known spectrum, since the article's own
+gloss names the arguments `arctan(x, y)` and so admits more than one:
+
+| phase term | reconstruction error |
+|---|---|
+| `− arctan(b_k, a_k)`, as typeset | 1.2e-01 |
+| **`+ arctan(b_k, a_k)`** | **5.8e-15** |
+| `− arctan(a_k, b_k)` | 1.4e-01 |
+| `+ arctan(a_k, b_k)` | 1.4e-01 |
+
+Only the plus reconstructs. Separately, and not a defect in the equation:
+that gloss names its arguments in the opposite order to the way the
+equation uses them, since `arctan(b_k, a_k)` must mean the angle of the
+point `(a_k, b_k)`.
 
 **This package follows the derivation, not the typesetting.**
 `tests/test_article.py::test_a_real_signal_is_the_cosine_sum_equation_reconscompleta_writes`

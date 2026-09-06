@@ -1,4 +1,16 @@
-## [Unreleased]
+## [1.6.0] - 2026-09-06
+### Note for anyone upgrading
+**Nothing that imports from `music` breaks, and nothing returns anything
+different.** Seven names are added -- `localize_hrtf`, `interval`,
+`interval_names`, `interval_between`, `consonance`, and the
+`SIMPLE_INTERVALS` and `CONSONANCE` tables -- and none is removed or
+renamed. Every routine that existed in 1.5.0 renders the same samples.
+
+The one thing worth knowing is what `localize_hrtf` is not: it applies a
+pair of head-related impulse responses that the caller supplies, and the
+package ships none. It is the convolution step, not an HRTF, and the gap
+`ASSESSMENT.md` records is still open.
+
 ### Added
 - **`localize_hrtf`**, which applies a pair of head-related impulse
   responses to a mono sound. The article says the complete localization --

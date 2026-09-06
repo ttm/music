@@ -421,3 +421,32 @@ def test_the_side_effecting_set_names_things_that_exist():
     assert not unknown, (
         f"{unknown} are excluded from the zero-argument sweep but are not "
         f"exported; the exclusion no longer excludes anything")
+
+
+def test_nothing_binds_urlopen_at_import_time():
+    """The network guard patches an attribute, so this must stay true.
+
+    `conftest.py` refuses network access by replacing
+    `urllib.request.urlopen`. A module that did
+    `from urllib.request import urlopen` would hold the real function and
+    the guard would not see it -- silently, and only when something
+    downloaded. Every caller in this repository goes through the attribute,
+    and this is what says so.
+    """
+    import ast
+    import pathlib
+
+    root = pathlib.Path(music.__file__).parent.parent
+    offenders = []
+    for path in list((root / "music").rglob("*.py")) + \
+            list((root / "tools").rglob("*.py")):
+        for node in ast.walk(ast.parse(path.read_text())):
+            if isinstance(node, ast.ImportFrom) and \
+                    (node.module or "").startswith("urllib"):
+                offenders.append(f"{path.relative_to(root)}: "
+                                 f"{[a.name for a in node.names]}")
+
+    assert not offenders, (
+        f"{offenders} import from urllib directly, which the network guard "
+        f"in conftest.py cannot see. Use `import urllib.request` and call "
+        f"`urllib.request.urlopen`.")

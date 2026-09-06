@@ -23,6 +23,7 @@ References
 """
 from __future__ import annotations
 
+import math
 import re
 
 __all__ = ['SIMPLE_INTERVALS', 'CONSONANCE', 'interval', 'interval_names',
@@ -301,8 +302,6 @@ def interval_between(lower: float, upper: float) -> int:
     >>> interval_names(interval_between(220.0, 440.0))
     ('P8',)
     """
-    import math
-
     if lower <= 0 or upper <= 0:
         raise ValueError(
             f'frequencies must be positive; got {lower} and {upper}')

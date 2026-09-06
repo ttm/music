@@ -186,3 +186,19 @@ def test_a_bound_render_is_finite_and_peaks_where_the_deepest_bond_says():
     assert np.abs(rendered).max() == pytest.approx(
         music.db_to_amp(deepest), rel=0.02)
     assert np.abs(music.normalize_mono(rendered)).max() == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize("duration", [
+    0.1, np.float64(0.1), np.float32(0.1), np.int64(1),
+])
+def test_a_duration_out_of_an_array_is_one_duration(duration):
+    """`numpy.float64` subclasses `float` and `numpy.int64` does not.
+
+    Testing for `(int, float)` therefore sent an integer duration taken
+    from an array to the sequence branch, which iterated over a scalar and
+    raised. `numbers.Real` is what the rest of this package tests against
+    for the same reason.
+    """
+    bonds = music.Bonds(vibrato_freq=4.0, max_pitch_dev=1.0)
+    rendered = bonds.render([220, 330], duration=duration)
+    assert len(rendered) == 2 * int(float(duration) * 44100)

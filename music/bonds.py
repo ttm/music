@@ -26,6 +26,8 @@ References
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from numbers import Real
+from typing import cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -312,10 +314,15 @@ class Bonds:
         freqs = list(freqs)
         if not freqs:
             raise ValueError('render needs at least one frequency')
-        if isinstance(duration, (int, float)):
+        # Real rather than (int, float): numpy's float64 subclasses float
+        # but its int64 does not, so a duration straight out of an array
+        # went to the sequence branch and was iterated over.
+        if isinstance(duration, Real):
             durations = [float(duration)] * len(freqs)
         else:
-            durations = [float(d) for d in duration]
+            # mypy narrows `Real` no further than the union it started
+            # with, so the sequence branch needs saying explicitly.
+            durations = [float(d) for d in cast(Sequence[float], duration)]
             if len(durations) != len(freqs):
                 raise ValueError(
                     f'{len(durations)} durations for {len(freqs)} '

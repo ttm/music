@@ -14,7 +14,10 @@
   elevation nor front-against-back, because they model a head as two
   points on an axis. A measured ear has no such symmetry. Front and behind
   differ by 0.37 in the impulse response and 40 degrees of elevation by
-  0.54, both measured in the tests rather than asserted in prose.
+  0.54, measured in tests that run only where the measurements are
+  installed and skip in CI. What CI checks is the reading, the two azimuth
+  conventions and the nearest-angle search, against a synthetic dataset in
+  MIT's layout.
 
   It closes that gap by reading someone else's measurements, not by
   modelling a head: a direction MIT did not measure is answered with the
@@ -41,6 +44,12 @@
   local archive. Both routines are excluded from the sweep, and a test
   fails if that exclusion ever names something the package no longer
   exports.
+
+- **`Bonds.render` refused an integer duration taken from an array.**
+  `numpy.float64` subclasses `float` and `numpy.int64` does not, so
+  testing for `(int, float)` sent it to the sequence branch, which
+  iterated over a scalar and raised. It tests against `numbers.Real` now,
+  which is what the rest of the package does and for the same reason.
 
 ### Changed
 - **The per-user cache directory is decided in one place**, `utils.cache_root`,

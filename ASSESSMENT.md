@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-04**,
-`music` 1.4.0: 47 modules, 11,508 LOC package + 9,260 LOC tests, 126 names
+`music` 1.4.0: 47 modules, 11,514 LOC package + 9,311 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -35,11 +35,11 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **2338 passed**, 16 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,738 stmts, 0 missed) |
+| Test suite | `pytest -q` | **2343 passed**, 16 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,740 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,103 findings |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,101 findings |
 | Annotation coverage | AST scan | **101 / 207 functions (49 %)**; 63 / 94 exported (67 %) |
 | Docstring coverage | AST scan | **169 / 180 public defs (94 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
@@ -87,8 +87,13 @@ either documented in the code or tracked in the issue list.
   redistributable, about 1.3 MB -- into the user's cache, `hrir()` reads
   one direction out of them, and `localize_hrtf` convolves a sound with
   the pair. A source in front and one behind differ by 0.37 in the impulse
-  response and an elevation of 40 degrees by 0.54, both measured rather
-  than asserted.
+  response and an elevation of 40 degrees by 0.54 -- measured, but only
+  where the measurements are installed. Those tests skip otherwise, so CI
+  never runs them: what CI checks is the reading, the two azimuth
+  conventions and the nearest-angle search, against a synthetic dataset in
+  MIT's layout. The two figures above are the weakest claims in this file,
+  and they are weak in a way nothing here can fix without shipping the
+  data.
 
   What it is not is a model. The package computes no transfer function of
   its own, so a direction MIT did not measure is answered with the nearest
@@ -174,7 +179,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,103 findings** on `music/`, almost all
+- **The extended lint set reports 2,101 findings** on `music/`, almost all
   stylistic: 345 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their

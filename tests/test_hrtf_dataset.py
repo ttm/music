@@ -112,11 +112,17 @@ def test_an_azimuth_is_rounded_to_the_nearest_measured_one(dataset):
     Taking the nearest by plain subtraction sends anything just below a
     full turn to the other end of the circle.
     """
+    # Straight ahead is MIT's zero, and comes back as itself.
     _, at_zero, _, _ = music.hrir(0, 90, directory=dataset)
-    _, wrapped, _, _ = music.hrir(0, 90 - 358, directory=dataset)
     assert at_zero == 90
-    # 358 degrees the other way is two degrees short of the same place.
-    assert abs(((wrapped - 90 + 180) % 360) - 180) <= 3
+
+    # Two degrees short of a full turn from it. In MIT's convention that
+    # is 358, whose nearest measurement is 0 -- two degrees away -- and
+    # not 355, which is three. Subtracting without wrapping picks 355,
+    # and this comes back as 95 instead of 90.
+    _, wrapped, _, _ = music.hrir(0, 90 - 358, directory=dataset)
+    assert wrapped == 90
+    assert wrapped != 95
 
 
 def test_the_direction_actually_measured_comes_back(dataset):

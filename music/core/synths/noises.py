@@ -65,11 +65,11 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
 
     Examples
     --------
-    >>> hiss = noise("white", duration=0.5)
+    >>> hiss = noise("white", duration=0.5)     # flat, 0 dB per octave
     >>> len(hiss)
     22050
-    >>> steeper = noise("brown", duration=0.5)   # -6 dB per octave
-    >>> tilted = noise(-9, duration=0.5)         # or any slope you name
+    >>> darker = noise("brown", duration=0.5)   # -6 dB per octave
+    >>> tilted = noise(-9, duration=0.5)        # or any slope you name
     """
     if number_of_samples:
         length = number_of_samples

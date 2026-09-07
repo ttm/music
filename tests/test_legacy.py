@@ -383,3 +383,79 @@ def test_perm_walk_ignores_domain_because_a_walk_is_not_a_stay():
     being.domain = [100, 200, 300, 400]
     being.walk(8, method='perm-walk')
     assert being.f_ == [1, 0, 3, 2, 7, 6, 5, 4]
+
+
+# --------------------------------------------------------------------------
+# What three "TTM" markers in Being were asking
+# --------------------------------------------------------------------------
+
+def _being(pointer=0, seqsize=3, grid_size=10):
+    """A Being set up the way setPar documents: the caller assigns the grid."""
+    being = music.Being()
+    being.seqsize = seqsize
+    being.curseq = "f_"
+    being.f_ = []
+    being.fgrid = np.arange(float(grid_size))
+    being.fpointer = pointer
+    being.setPar("f")
+    return being
+
+
+def test_a_straight_walk_runs_off_the_end_of_the_grid_and_says_so():
+    """`walk` is the method that moves the ground, and it does not wrap.
+
+    `stay` and `walk(method='perm-walk')` both wrap; this one does not,
+    which is the inconsistency the `# ** TTM` marker beside it was asking
+    about. It is left as it is -- wrapping would change what an existing
+    caller gets -- and documented in the docstring's Raises section, with
+    this to keep that true.
+    """
+    being = _being(pointer=8)
+    with pytest.raises(IndexError):
+        being.walk(4, "straight")
+
+    # Within the grid it is simply consecutive elements.
+    being = _being(pointer=0)
+    being.walk(3, "straight")
+    assert [float(x) for x in being.f_] == [0.0, 1.0, 2.0]
+
+
+def test_a_straight_stay_wraps_where_a_walk_does_not():
+    """The comparison that makes the line above a decision, not a slip."""
+    being = _being(pointer=8)
+    being.stay(4, "straight")
+    assert len(being.f_) == 4
+    assert [float(x) for x in being.f_] == [2.0, 0.0, 1.0, 2.0]
+
+
+def test_a_domain_given_as_a_list_permutes_like_one_given_as_an_array():
+    """The other thing the markers asked, and the answer is that it does.
+
+    `stay(method='perm')` converted a list domain with `np.array` under a
+    `logging.debug("Implemented OK?? TTM")`. It is: the two produce the
+    same sequence, sample for sample.
+    """
+    from sympy.combinatorics import Permutation
+
+    def prepared(domain):
+        being = _being()
+        being.perms = [Permutation([1, 2, 0]), Permutation([2, 0, 1])]
+        being.domain = domain
+        being.stay(6, "perm")
+        return [float(x) for x in being.f_]
+
+    as_list = prepared([100.0, 200.0, 300.0])
+    as_array = prepared(np.array([100.0, 200.0, 300.0]))
+
+    assert as_list == as_array
+    assert as_list == [200.0, 300.0, 100.0, 300.0, 100.0, 200.0]
+
+
+def test_without_a_domain_the_grid_window_is_permuted_instead():
+    from sympy.combinatorics import Permutation
+
+    being = _being()
+    being.perms = [Permutation([1, 2, 0]), Permutation([2, 0, 1])]
+    being.domain = None
+    being.stay(6, "perm")
+    assert [float(x) for x in being.f_] == [1.0, 2.0, 0.0, 2.0, 0.0, 1.0]

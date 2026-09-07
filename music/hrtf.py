@@ -84,11 +84,11 @@ def hrtf_dir() -> Path:
     --------
     >>> str(hrtf_dir()).endswith("kemar")
     True
-    >>> import os
-    >>> os.environ["MUSIC_HRTF_DIR"] = "/somewhere/else"
-    >>> str(hrtf_dir())
-    '/somewhere/else'
-    >>> del os.environ["MUSIC_HRTF_DIR"]
+
+    Setting ``$MUSIC_HRTF_DIR`` overrides it, which is how to use a copy
+    of the measurements from somewhere else. This example does not set it,
+    because a docstring that changes the environment changes it for
+    whatever runs next.
     """
     override = os.environ.get(ENV_VAR)
     if override:

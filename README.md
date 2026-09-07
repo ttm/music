@@ -303,7 +303,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 2,375 tests, 100% coverage
+pytest                                       # 2,379 tests, 100% coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html
@@ -311,9 +311,12 @@ python tools/run_examples.py                 # run every example
 python tools/assessment_figures.py           # the docs' figures vs the package
 ```
 
-All six run in CI on Python 3.10 through 3.14 for every push and pull
-request, and both `pytest` and `sphinx-build` are configured to fail on
-anything less than full coverage or a docstring numpydoc cannot parse.
+All six run on every push and every pull request. Lint, types and tests run on **Python 3.10 through 3.14**; a further job
+installs the exact lower bounds `pyproject.toml` declares and runs the
+tests against those, so the floors cannot drift into fiction. The docs
+build, the examples and the figures check run once each. `pytest` and
+`sphinx-build` are configured to fail on anything less than full coverage
+or a docstring numpydoc cannot parse.
 
 `run_examples.py` is there because the other four look at the package and
 none of them looks at a caller. The examples are the only callers this

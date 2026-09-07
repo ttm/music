@@ -9,9 +9,8 @@ first. What follows is the part that is harder to guess.
 
 ## What a change has to survive
 
-Six checks run in CI on Python 3.10 through 3.14, for every push and every
-pull request. Four of them look at the package, one looks at the
-documentation, and one looks at a caller:
+Six checks run in CI for every push and every pull request. Four look at
+the package, one looks at the documentation, and one looks at a caller:
 
 ```console
 pytest                    # tests, doctests, and 100% line coverage
@@ -21,6 +20,13 @@ sphinx-build -W ...       # docs, with warnings as errors
 python tools/run_examples.py         # every example in examples/
 python tools/assessment_figures.py   # the figures in the docs vs the package
 ```
+
+Lint, types and tests run on **Python 3.10 through 3.14**; a further job
+installs the exact lower bounds `pyproject.toml` declares and runs the
+tests against those, so the floors cannot drift into fiction. The docs
+build, the examples and the figures check run once each. `pytest` and
+`sphinx-build` are configured to fail on anything less than full coverage
+or a docstring numpydoc cannot parse.
 
 Coverage is at 100% and the gate fails below it. That is not a claim that
 every routine is correct — it is a claim that no line is unreached, which is

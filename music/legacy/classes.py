@@ -3,7 +3,6 @@
 from typing import Any
 
 import numpy as n
-import logging
 
 from music.legacy import tables
 from music.utils import horizontal_stack
@@ -174,6 +173,13 @@ class Being:
         ------
         ValueError
             If ``method`` is not one of the three above.
+        IndexError
+            If ``'straight'`` walks past the end of the grid. Walking is
+            the method that moves the ground, and this one does not wrap:
+            ``stay`` and ``'perm-walk'`` both do, so this is the odd one
+            of the three. It is left as it is because changing it would
+            change what an existing caller gets; a walk that must not run
+            out needs a grid long enough, or ``stay``.
 
         Notes
         -----
@@ -195,7 +201,6 @@ class Being:
 
         """
         if method == 'straight':
-            # ** TTM
             sequence = [self.grid[self.pointer + i] for i in range(n)]
             self.pointer += n
         elif method == 'low-high':
@@ -306,15 +311,16 @@ class Being:
             sequence = [self.grid[(self.pointer + i) % self.seqsize]
                         for i in range(n)]
         elif method == 'perm':
-            # ** TTM
             sequence = []
             if not isinstance(self.domain, n_.ndarray):
                 if not self.domain:
                     domain = self.grid[self.pointer: self.pointer +
                                        self.seqsize]
                 else:
+                    # A domain given as a list, which is the same as one
+                    # given as an array once it is one: the two produce
+                    # identical sequences, which test_legacy.py asserts.
                     domain = n_.array(self.domain)
-                    logging.debug("Implemented OK?? TTM")
             else:
                 domain = self.domain
             # nel = self.perms[0].size  # should match self.seqsize ?

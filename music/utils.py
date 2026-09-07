@@ -506,8 +506,9 @@ def resolve_stereo(afunction, argdict, stereo_vars=('sonic_vector',)):
     Examples
     --------
     >>> stereo = convert_to_stereo(note(440, 0.1))
+    >>> # `loud` takes one channel; this runs it on each of the two.
     >>> both = resolve_stereo(loud, {"sonic_vector": stereo, "trans_dev": 6})
-    >>> both.shape[0]          # one channel in, one channel out, twice
+    >>> both.shape[0]
     2
     """
     ag1 = argdict.copy()

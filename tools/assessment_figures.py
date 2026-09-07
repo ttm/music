@@ -41,6 +41,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).parent.parent
 ASSESSMENT = ROOT / "ASSESSMENT.md"
+README = ROOT / "README.md"
 
 
 def package_files():
@@ -104,6 +105,18 @@ def scan():
 
 def measured_by_running():
     """The figures that need pytest, coverage and ruff to answer."""
+    # Collected rather than passed. Some tests skip when an optional
+    # external resource is absent -- the KEMAR measurements, the singing
+    # engine -- so the number that passes depends on the machine, and a
+    # figure that does is not a figure. Collection is the same everywhere.
+    collected = subprocess.run(
+        [sys.executable, "-m", "pytest", "--collect-only", "-q"],
+        cwd=ROOT, capture_output=True, text=True)
+    count = re.search(r"(\d+) tests? collected", collected.stdout)
+    if not count:
+        raise SystemExit("could not read the collection:\n"
+                         + collected.stdout[-2000:])
+
     tests = subprocess.run(
         [sys.executable, "-m", "pytest", "-q", "--cov=music",
          "--cov-report=term"],
@@ -121,7 +134,8 @@ def measured_by_running():
     found = re.search(r"Found (\d+) error", lint.stdout)
 
     return {
-        "tests": int(passed.group(1)),
+        "tests": int(count.group(1)),
+        "passed": int(passed.group(1)),
         "statements": int(total_line.group(1)),
         "missed": int(total_line.group(2)),
         "coverage_pct": int(total_line.group(3)),
@@ -134,7 +148,12 @@ def thousands(n):
 
 
 def expectations(figures):
-    """Each figure, as (label, regex over ASSESSMENT.md, wanted text).
+    """Each figure, as (label, regex, wanted text, file).
+
+    Most are in ASSESSMENT.md. The README carries one too -- the test count
+    in its Contributing section -- which said 1556 for three releases after
+    it stopped being true, because this script only ever looked at one
+    file.
 
     The regexes are anchored on enough surrounding words to miss the
     opening history, which quotes figures from when this file was wrong
@@ -175,8 +194,11 @@ def expectations(figures):
     ]
     if "tests" in figures:
         wanted += [
-            ("test count", r"(?<=\| \*\*)\d+(?= passed\*\*)",
+            ("test count", r"(?<=\| \*\*)\d+(?= tests\*\*)",
              str(figures["tests"])),
+            ("README test count",
+             r"(?<=pytest {39}# )[\d,]+(?= tests, 100% coverage)",
+             thousands(figures["tests"]), README),
             ("coverage", r"(?<=\| \*\*)\d+ %(?=\*\* \([\d,]+ stmts)",
              f"{figures['coverage_pct']} %"),
             ("statements", r"(?<=\*\* \()[\d,]+(?= stmts)",
@@ -190,7 +212,9 @@ def expectations(figures):
              r"(?<=extended lint set reports )[\d,]+(?= findings\*\*)",
              thousands(figures["ruff_all"])),
         ]
-    return wanted
+    # Most figures live in ASSESSMENT.md; a few name their own file.
+    return [entry if len(entry) == 4 else (*entry, ASSESSMENT)
+            for entry in wanted]
 
 
 def main(argv=None):
@@ -205,28 +229,30 @@ def main(argv=None):
     if not args.fast:
         figures |= measured_by_running()
 
-    text = ASSESSMENT.read_text()
+    checks = expectations(figures)
+    texts = {path: path.read_text() for _l, _p, _w, path in checks}
     drifted = []
-    for label, pattern, want in expectations(figures):
-        found = re.findall(pattern, text)
+    for label, pattern, want, path in checks:
+        found = re.findall(pattern, texts[path])
         if not found:
             raise SystemExit(
                 f"the {label} figure is not where this script looks for it. "
-                "ASSESSMENT.md has been rewritten around it; fix the "
+                f"{path.name} has been rewritten around it; fix the "
                 "pattern in tools/assessment_figures.py rather than "
                 "deleting the check.")
         for have in set(found):
             if have != want:
                 drifted.append((label, have, want))
         if args.write:
-            text = re.sub(pattern, want, text)
+            texts[path] = re.sub(pattern, want, texts[path])
 
     if args.write:
-        ASSESSMENT.write_text(text)
+        for path, text in texts.items():
+            path.write_text(text)
 
     if not drifted:
-        print(f"ASSESSMENT.md agrees with the package, on "
-              f"{len(expectations(figures))} figures.")
+        files = ", ".join(sorted({path.name for *_x, path in checks}))
+        print(f"{files} agree with the package, on {len(checks)} figures.")
         return 0
 
     for label, have, want in drifted:

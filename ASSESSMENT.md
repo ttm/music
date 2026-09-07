@@ -29,13 +29,19 @@ property of the machine rather than of the package, and neither is the
 history in the paragraph above, which quotes figures from when this file
 was wrong and has to keep quoting them.
 
+The test-suite row counts what `pytest` collects rather than what passes.
+A few tests skip when an optional external resource is absent -- the KEMAR
+measurements `music.hrtf` reads, the eCantorix engine `music.singing`
+drives -- so the number that passes depends on the machine it ran on, and
+a figure that does is not a figure. Everything collected that runs, passes.
+
 ## How this was measured
 
 Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **2343 passed**, 16 s |
+| Test suite | `pytest -q` | **2347 tests**, 16 s |
 | Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,740 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |

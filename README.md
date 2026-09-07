@@ -298,22 +298,37 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 1556 tests, 100% coverage
+pytest                                       # 2,347 tests, 100% coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html
 python tools/run_examples.py                 # run every example
-python tools/assessment_figures.py           # ASSESSMENT.md vs the package
+python tools/assessment_figures.py           # the docs' figures vs the package
 ```
 
-All five run in CI on Python 3.10 through 3.14 for every push and pull
+All six run in CI on Python 3.10 through 3.14 for every push and pull
 request, and both `pytest` and `sphinx-build` are configured to fail on
 anything less than full coverage or a docstring numpydoc cannot parse.
 
-The last one is there because the other four look at the package and none
-of them looks at a caller. The examples are the only callers this
+`run_examples.py` is there because the other four look at the package and
+none of them looks at a caller. The examples are the only callers this
 repository has, and a change that broke three of them once passed every
-other check.
+other check. `assessment_figures.py` is there because the numbers in
+`ASSESSMENT.md` and this file went stale four times in two days when
+keeping them current was a habit rather than a check.
+
+Four more run at release time rather than on every push, being slower or
+needing something the runner does not have:
+
+```console
+python tools/check_sdist.py         # build the sdist, unpack it, run its tests
+python tools/article_coverage.py    # which of the article's equations are checked
+python tools/mass_reconcile.py      # this package against the MASS reference
+python tools/verify_subjects.py     # the archival subjects resolve to their terms
+```
+
+The last three need a [MASS](https://github.com/ttm/mass) checkout or the
+network; `RECONCILIATION.md` and `DISCREPANCIES.md` are what they produce.
 
 Docstrings are [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html)
 style throughout, and the code follows

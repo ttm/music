@@ -290,6 +290,11 @@ Concrete things the code itself is waiting for, rather than a wish list:
 
 ## Contributing
 
+[`CONTRIBUTING.md`](CONTRIBUTING.md) is the longer version: what a change has
+to survive, why a test that checks the shape of the output is worth little
+here, and how to report something that sounds wrong. Participation is under
+the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 The test, type-check, lint and documentation tooling comes with the `dev` and
 `docs` extras:
 

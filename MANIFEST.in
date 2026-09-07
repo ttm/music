@@ -38,6 +38,8 @@ include RECONCILIATION.md
 include DISCREPANCIES.md
 include CITATION.cff
 include RELEASING.md
+include CONTRIBUTING.md
+include CODE_OF_CONDUCT.md
 
 # Never: the generated API pages, the built docs, the example renders.
 prune docs/generated

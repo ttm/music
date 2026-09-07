@@ -1,0 +1,26 @@
+name: Something the package should do and does not
+description: A routine, a musical structure, or a capability that is missing
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        `ASSESSMENT.md` lists what the package is known not to do. If what you
+        want is already there, saying you want it is still useful -- it is how
+        an entry becomes a priority.
+  - type: textarea
+    id: want
+    attributes:
+      label: What you want to be able to do
+      description: The musical or acoustic result, rather than the API.
+    validations:
+      required: true
+  - type: textarea
+    id: grounding
+    attributes:
+      label: Where it is specified, if it is
+      description: >-
+        An equation in the MASS article, a paper, a standard, an existing
+        implementation. This package prefers implementing something stated
+        somewhere over inventing it, and a citation makes the result
+        checkable.

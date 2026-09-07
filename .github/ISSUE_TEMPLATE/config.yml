@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: How the package works
+    url: https://ttm.github.io/music/tutorial.html
+    about: The tutorial goes from one note to a short stereo piece.
+  - name: What the package does not do
+    url: https://github.com/ttm/music/blob/master/ASSESSMENT.md
+    about: The known limitations, kept current by a check rather than a habit.

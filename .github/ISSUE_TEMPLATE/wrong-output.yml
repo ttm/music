@@ -1,0 +1,46 @@
+name: A routine computes the wrong thing
+description: The samples are not what the equation, the article, or your ears say they should be
+labels: ["defect"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the most valuable kind of report here, and most of this
+        package's real defects were found this way rather than by a crash.
+        A routine that returns an array of the right shape full of the wrong
+        numbers passes every shape assertion ever written.
+  - type: textarea
+    id: code
+    attributes:
+      label: The code that produced it
+      description: Short enough to run as written.
+      render: python
+      placeholder: |
+        import music
+        s = music.note_with_vibrato(freq=220, duration=2, vibrato_freq=6)
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and why
+      description: >-
+        An equation, a section of the MASS article, another implementation, or
+        your ears. "It sounds wrong" is a legitimate answer -- say what it
+        sounds like.
+    validations:
+      required: true
+  - type: textarea
+    id: got
+    attributes:
+      label: What you got
+      description: A number, a shape, a spectrum, or a description of the sound.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "`python -c 'import music; print(music.__version__)'`"
+    validations:
+      required: true

@@ -1,0 +1,27 @@
+name: Something raises, hangs, or will not install
+description: A crash, a traceback, or an installation that does not work
+labels: ["defect"]
+body:
+  - type: textarea
+    id: code
+    attributes:
+      label: What you ran
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: traceback
+    attributes:
+      label: The traceback, or what happened instead
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version and platform
+      description: >-
+        `python -c 'import music, sys; print(music.__version__, sys.version)'`
+        and your operating system.
+    validations:
+      required: true

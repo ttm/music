@@ -165,6 +165,12 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
     fade : the fade in or out on its own.
     music.StimulationSession : crossfades that preserve total duration.
 
+
+    Examples
+    --------
+    >>> joined = cross_fade(note(220, 1), note(330, 1), duration=200)
+    >>> len(joined) / 44100    # the overlap is 200 ms of the two seconds
+    1.8
     """
     ns = int(duration * sample_rate / 1000)
     if len(sonic_vector_1.shape) != len(sonic_vector_2.shape):

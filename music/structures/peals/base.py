@@ -30,6 +30,22 @@ class GenericPeal:
     act_all
         Acts all peals on the specified domain.
 
+
+    Examples
+    --------
+    >>> peal = GenericPeal()
+    >>> peal.peals = {"rows": PlainChanges(4).peal_direct[:4]}
+    >>> rows = peal.act("rows", domain=[220, 275, 330, 440])
+    >>> len(rows), len(rows[0])
+    (4, 4)
+
+    `nelements` is what a default domain would be built from, so a bare
+    `GenericPeal` needs the domain passed:
+
+    >>> peal.act("rows")               # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+        ...
+    ValueError: nelements has not been set, ...
     """
 
     #: name -> list of permutations. Empty rather than None: a collection

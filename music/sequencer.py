@@ -44,6 +44,15 @@ class Sequencer:
     --------
     music.StimulationSession : phases in sequence rather than notes at
                                offsets, for stimulation protocols.
+
+    Examples
+    --------
+    >>> seq = Sequencer()
+    >>> for i, freq in enumerate([440, 550, 660]):
+    ...     seq.add_note(freq, start=i * 0.25, duration=1.0)
+    >>> len(seq.events)
+    3
+    >>> seq.write("chord.wav")
     """
 
     sample_rate: int = 44100

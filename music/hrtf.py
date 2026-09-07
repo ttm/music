@@ -79,6 +79,16 @@ def hrtf_dir() -> Path:
     See Also
     --------
     setup_hrtf : puts them there.
+
+    Examples
+    --------
+    >>> str(hrtf_dir()).endswith("kemar")
+    True
+    >>> import os
+    >>> os.environ["MUSIC_HRTF_DIR"] = "/somewhere/else"
+    >>> str(hrtf_dir())
+    '/somewhere/else'
+    >>> del os.environ["MUSIC_HRTF_DIR"]
     """
     override = os.environ.get(ENV_VAR)
     if override:
@@ -233,6 +243,13 @@ def available_azimuths(elevation: int,
     See Also
     --------
     hrir : reads one of them.
+
+    Examples
+    --------
+    >>> available_azimuths(0)[:4]           # doctest: +SKIP
+    (0, 5, 10, 15)
+    >>> len(available_azimuths(90))         # doctest: +SKIP
+    1
     """
     root = _dataset(directory)
     if elevation not in ELEVATIONS:

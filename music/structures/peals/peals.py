@@ -23,6 +23,14 @@ def print_peal(peal, hunts=(0, 1)):
         The indices of hunted elements. Defaults to
         [0, 1].
 
+
+    Examples
+    --------
+    >>> peal = PlainChanges(4)
+    >>> print_peal(peal.peal_direct[:2], hunts=(0, 1))
+    0123
+    1023
+    <BLANKLINE>
     """
     colors = 'yellow', 'magenta', 'green', 'red', 'blue', 'white', 'grey', \
         'cyan'
@@ -54,6 +62,12 @@ class Peals(InterestingPermutations, GenericPeal):
     Also check peal rules, such as conditions for trueness.
     - Wikipedia seemed ok last time.
 
+
+    Examples
+    --------
+    >>> peals = Peals(nelements=4)
+    >>> len(peals.twenty_all_over())   # twelve rows on four bells
+    12
     """
 
     def __init__(self, nelements=4, method="dimino"):

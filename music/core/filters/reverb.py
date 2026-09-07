@@ -58,6 +58,15 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
+
+    Examples
+    --------
+    >>> impulse = reverb(duration=1.9, first_phase_duration=0.15, decay=-50)
+    >>> round(float(impulse[0]), 3)     # the direct sound
+    1.0
+    >>> wet = reverb(sonic_vector=note(440, 1), duration=0.5)
+    >>> len(wet) > 44100                # longer than the note by its tail
+    True
     """
     lambda_r = int(duration * sample_rate)
     lambda1 = int(first_phase_duration * sample_rate)

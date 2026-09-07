@@ -62,6 +62,14 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
+
+    Examples
+    --------
+    >>> hiss = noise("white", duration=0.5)
+    >>> len(hiss)
+    22050
+    >>> steeper = noise("brown", duration=0.5)   # -6 dB per octave
+    >>> tilted = noise(-9, duration=0.5)         # or any slope you name
     """
     if number_of_samples:
         length = number_of_samples
@@ -140,6 +148,14 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
     -------
     array
         An array for the gaussian noise
+
+    Examples
+    --------
+    >>> grains = gaussian_noise(mean=1, std=0.5, duration=0.5)
+    >>> len(grains)
+    22050
+    >>> gaussian_noise(duration=0.3).shape       # a fractional duration
+    (13230,)
     """
 
     # int(): the length indexes arrays and sets a sample count, so a
@@ -184,6 +200,13 @@ def silence(duration: float = 1.0,
     -------
     array
         An array with no sound
+
+    Examples
+    --------
+    >>> gap = silence(duration=0.25)
+    >>> len(gap), float(abs(gap).max())
+    (11025, 0.0)
+    >>> phrase = horizontal_stack(note(220, 0.2), silence(0.1), note(330, 0.2))
     """
 
     return np.zeros(int(duration * sample_rate))

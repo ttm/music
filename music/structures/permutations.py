@@ -62,6 +62,15 @@ class InterestingPermutations:
     get_full_symmetry
         Generates permutations with full symmetry.
 
+
+    Examples
+    --------
+    >>> structures = InterestingPermutations(nelements=4)
+    >>> len(structures.rotations), len(structures.dihedral)
+    (4, 8)
+    >>> rows = [p(list("abcd")) for p in structures.rotations]
+    >>> ["".join(row) for row in rows]
+    ['abcd', 'bcda', 'cdab', 'dabc']
     """
     # Populated by the get_* methods that __init__ calls. vertex_mirrors and
     # edge_mirrors stay None for an odd number of elements, which have

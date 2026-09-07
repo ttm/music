@@ -134,6 +134,12 @@ def read_audio(filename: str) -> NDArray[np.float64]:
         ADPCM and companded formats happily, but they have no full scale
         the normalization is defined against, so being decodable is not
         the same as being supported.
+
+    Examples
+    --------
+    >>> write_audio(note(freq=440, duration=0.5), "tone.flac")
+    >>> read_audio("tone.flac").shape      # any format libsndfile reads
+    (22050,)
     """
     with sf.SoundFile(str(filename)) as handle:
         subtype = handle.subtype
@@ -197,6 +203,13 @@ def write_wav_mono(
                      them as soundfile.write.
     write_wav_stereo : Write a stereo file.
 
+
+    Examples
+    --------
+    >>> write_wav_mono(note(freq=440, duration=0.5), "tone.wav")
+    >>> read_wav("tone.wav").shape
+    (22050,)
+    >>> write_wav_mono(note(), "faded.wav", fades=(50, 200))   # ms in, ms out
     """
     # Reject a bad depth, and a container that cannot hold it, before
     # doing the work of rendering anything.
@@ -254,6 +267,13 @@ def write_wav_stereo(
     normalize_stereo : Normalizes a stereo array to [-1,1]
     write_wav_mono : Write a mono file.
 
+
+    Examples
+    --------
+    >>> placed = localize(note(freq=440, duration=0.5), theta=30)
+    >>> write_wav_stereo(placed, "placed.wav")
+    >>> read_wav("placed.wav").shape[0]
+    2
     """
     audio_format = _audio_format(filename)
     subtype = _subtype(bit_depth, audio_format)
@@ -375,6 +395,10 @@ def play_audio(
     -----
     If the ``sounddevice`` module is not installed, this function logs a
     warning and returns without playing anything.
+
+    Examples
+    --------
+    >>> play_audio(note(freq=440, duration=0.5))   # doctest: +SKIP
     """
 
     try:

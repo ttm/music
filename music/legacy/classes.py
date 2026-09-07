@@ -79,6 +79,13 @@ class Being:
     ``perms``, ``domain``, ``curseq`` and the parameter sequences directly
     before calling ``walk`` or ``render``. They are declared here so that
     surface is discoverable rather than implicit.
+
+    Examples
+    --------
+    >>> being = Being()
+    >>> being.f_ = [220, 330, 440]
+    >>> being.d_ = [0.3, 0.3, 0.3]
+    >>> being.render(3, "being.wav")
     """
 
     # startBeing seeds these as lists; mkArray replaces them with arrays.

@@ -383,6 +383,14 @@ def mix(first_sonic_vector: np.ndarray,
     mix_many : the same sum over a list of sounds of any lengths, with
                per-sound offsets and a choice of aligning their starts
                or their ends.
+
+    Examples
+    --------
+    >>> both = mix(note(freq=220, duration=1), note(freq=330, duration=1))
+    >>> len(both) == len(note(freq=220, duration=1))
+    True
+    >>> float(abs(both).max()) > 1.0   # two notes sum past full scale
+    True
     """
     l1 = len(first_sonic_vector)
     l2 = len(second_sonic_vector)
@@ -430,6 +438,15 @@ def mix_stereo(
     -----
     If `second_sonic_vector` is not provided, the `end` parameter is ignored.
 
+
+    Examples
+    --------
+    >>> left = horizontal_stack(note(220, 0.5), silence(0.5))
+    >>> right = horizontal_stack(silence(0.5), note(330, 0.5))
+    >>> together = mix_stereo(convert_to_stereo(left),
+    ...                       convert_to_stereo(right))
+    >>> together.shape
+    (2, 44100)
     """
     # ndim, not len: a two-sample mono vector also has len() == 2, and was
     # taken for a stereo pair whose channels were then indexed as scalars.
@@ -485,6 +502,13 @@ def resolve_stereo(afunction, argdict, stereo_vars=('sonic_vector',)):
     -------
     numpy.ndarray
         Stereo output of the function.
+
+    Examples
+    --------
+    >>> stereo = convert_to_stereo(note(440, 0.1))
+    >>> both = resolve_stereo(loud, {"sonic_vector": stereo, "trans_dev": 6})
+    >>> both.shape[0]          # one channel in, one channel out, twice
+    2
     """
     ag1 = argdict.copy()
     ag2 = argdict.copy()
@@ -658,6 +682,12 @@ def mix_with_offset(
                             offset from the mix built so far.
     mix_many : a list of sounds aligned at their starts or their ends.
 
+
+    Examples
+    --------
+    >>> late = mix_with_offset(note(220, 1), note(330, 1), duration=0.5)
+    >>> len(late) / 44100      # the second note starts half a second in
+    1.5
     """
     first_sonic_vector = np.array(first_sonic_vector)
     second_sonic_vector = np.array(second_sonic_vector)
@@ -733,6 +763,13 @@ def mix_many_with_offsets(*args: ArrayLike) -> NDArray[np.float64]:
     mix_with_offset : two sounds and a single offset.
     mix_many : a list of sounds aligned at their starts or their ends.
 
+
+    Examples
+    --------
+    >>> chord = mix_many_with_offsets(note(220, 1), 0.25, note(277, 1),
+    ...                               0.25, note(330, 1))
+    >>> len(chord) / 44100     # each offset is from the mix so far
+    1.25
     """
     i = 0
     s: NDArray[np.float64] = np.array([])

@@ -14,6 +14,17 @@ import warnings
 class PlainChanges:
     """
     Presents plain changes as swaps and acts in domains to make peals.
+
+    Examples
+    --------
+    >>> peal = PlainChanges(4)
+    >>> len(peal.peal_direct)          # every permutation of four bells, once
+    24
+    >>> rows = peal.act([220, 275, 330, 440])
+    >>> len(rows), len(rows[0])
+    (24, 4)
+    >>> notes = [note(freq, duration=0.15) for row in rows for freq in row]
+    >>> write_wav_mono(horizontal_stack(*notes), "peal.wav")
     """
 
     def __init__(self, nelements=4, nhunts=None, hunts=None):

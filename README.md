@@ -298,7 +298,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 2,347 tests, 100% coverage
+pytest                                       # 2,375 tests, 100% coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

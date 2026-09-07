@@ -67,6 +67,20 @@ class StimulusPhase:
         in the session's ``repr``.
     parameters : dict
         Keyword arguments passed to ``stimulus`` when it is a callable.
+
+    Examples
+    --------
+    >>> phase = StimulusPhase(stimulus=binaural_beats, duration=0.2,
+    ...                       ramp=0.05, gain=0.5)
+    >>> phase.duration, phase.ramp, phase.gain
+    (0.2, 0.05, 0.5)
+
+    A session builds these for you, so one is rarely written by hand:
+
+    >>> session = StimulationSession()
+    >>> session.add(binaural_beats, duration=0.2, ramp=0.05, beat_freq=10)
+    >>> session.phases[0].duration
+    0.2
     """
 
     stimulus: Stimulus

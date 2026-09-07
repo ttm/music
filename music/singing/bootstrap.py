@@ -27,6 +27,11 @@ def get_engine():
     See Also
     --------
     setup_engine : clones the engine.
+
+    Examples
+    --------
+    >>> get_engine()                        # doctest: +SKIP
+    PosixPath('.../music/ecantorix')
     """
     directory = engine_dir()
     if not is_engine(directory):
@@ -61,6 +66,11 @@ def setup_engine(method="http"):
         If `method` is not 'http' or 'ssh'.
     RuntimeError
         If a required external program is missing, or the clone fails.
+
+    Examples
+    --------
+    >>> setup_engine()                      # doctest: +SKIP
+    PosixPath('.../music/ecantorix')
     """
     directory = engine_dir()
     if is_engine(directory):
@@ -90,6 +100,10 @@ def make_test_song():
     -------
     ndarray
         The PCM samples of the sung phrase.
+
+    Examples
+    --------
+    >>> make_test_song()                    # doctest: +SKIP
     """
     whole = 1
     half = .5

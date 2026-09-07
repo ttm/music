@@ -80,6 +80,16 @@ def normalize_stereo(sonic_vector: ArrayLike, remove_bias: bool = True,
     sv_normalized : ndarray
         A numpy array with values between -1 and 1.
 
+
+    Examples
+    --------
+    >>> quiet = np.vstack([note(220, 0.1) * 0.1, note(330, 0.1) * 0.4])
+    >>> loudest = float(abs(normalize_stereo(quiet)).max())
+    >>> round(loudest, 6)
+    1.0
+    >>> apart = normalize_stereo(quiet, normalize_sep=True)
+    >>> [round(float(abs(channel).max()), 6) for channel in apart]
+    [1.0, 1.0]
     """
     sv_copy = np.array(sonic_vector, dtype=np.float64)
     if sv_copy.ndim == 1:

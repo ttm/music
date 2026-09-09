@@ -1,7 +1,8 @@
 # The MASS reconciliation
 
-*Measured **2026-09-04**, `music` 1.4.0 against
-[ttm/mass](https://github.com/ttm/mass) at `e516b08`.*
+*Run on **2026-09-04** against [ttm/mass](https://github.com/ttm/mass) at
+`e516b08`. The register it produced is re-checked against `music` 1.7.0
+on every push.*
 
 This package's central claim is fidelity to the MASS framework. Until this
 file existed, the claim rested on the docstrings: every routine named the
@@ -33,7 +34,9 @@ down so the fixture stays small.
 table disagrees with what it measures, so a divergence cannot appear or
 widen without someone writing down why.
 `tests/test_mass_reconciliation.py` checks the same register on every push,
-reading the recorded outputs rather than the reference itself.
+reading the recorded outputs rather than the reference itself, and
+`tools/assessment_figures.py` checks the version stamped at the top, so this
+file cannot go on naming a release the package has left behind.
 
 ## The reference is GPL-3; this package is MIT
 

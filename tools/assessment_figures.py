@@ -24,16 +24,24 @@ Usage
 to run, and checks only the ones an AST scan can settle. The others take
 about a minute between them.
 
+It also checks the version each of the three living documents stamps
+itself with, in ASSESSMENT.md, RECONCILIATION.md and DISCREPANCIES.md.
+All three still said 1.4.0 at 1.7.0, with every number around them
+correct: the stamp was the one figure nothing read.
+
 What is deliberately not checked: the wall-clock time in the test-suite
-row, which is a property of the machine rather than of the package, and
-the history in the opening paragraphs, which is about how the file went
-wrong once and must not be rewritten to match the present.
+row, which is a property of the machine rather than of the package; the
+history in the opening paragraphs, which is about how the file went
+wrong once and must not be rewritten to match the present; and the
+measurement dates, which are written rather than checked, for the reason
+`stamp_the_date` gives.
 """
 
 from __future__ import annotations
 
 import argparse
 import ast
+import datetime
 import pathlib
 import re
 import subprocess
@@ -42,6 +50,48 @@ import sys
 ROOT = pathlib.Path(__file__).parent.parent
 ASSESSMENT = ROOT / "ASSESSMENT.md"
 README = ROOT / "README.md"
+RECONCILIATION = ROOT / "RECONCILIATION.md"
+DISCREPANCIES = ROOT / "DISCREPANCIES.md"
+
+
+def declared_version():
+    """The version in pyproject.toml, which is the one that counts.
+
+    `tools/release.py` says the same of it, and refuses to publish while
+    CITATION.cff or the changelog disagrees. The living documents stamp a
+    version too, and nothing read theirs.
+    """
+    match = re.search(r"^version = '([^']+)'",
+                      (ROOT / "pyproject.toml").read_text(), re.MULTILINE)
+    if not match:
+        raise SystemExit("no version found in pyproject.toml")
+    return match.group(1)
+
+
+def stamp_the_date(text):
+    """Set ASSESSMENT.md's measurement date to today.
+
+    Written, never checked. A date that is not today is not drift: it is
+    a file nothing has had to correct since. So there is nothing here to
+    fail on, and the only claim worth keeping true is that the date names
+    a run that happened -- which is why only a full run writes it.
+    `--fast` leaves the pytest, coverage and ruff rows unmeasured, and a
+    run that did not measure them cannot say the file was measured today.
+
+    It stops when the stamp is not there. Every other write here is
+    guarded by a check that has already found its anchor; this one is
+    not, so without this it would quietly rewrite nothing and report a
+    file it had corrected.
+    """
+    stamped, written = re.subn(r"(?<=Last measured \*\*)\d{4}-\d\d-\d\d",
+                               datetime.date.today().isoformat(), text)
+    if written != 1:
+        raise SystemExit(
+            "the measurement date is not where this script looks for it. "
+            "ASSESSMENT.md has been rewritten around it; fix the pattern "
+            "in tools/assessment_figures.py rather than dropping the "
+            "stamp.")
+    return stamped
 
 
 def package_files():
@@ -155,11 +205,28 @@ def expectations(figures):
     it stopped being true, because this script only ever looked at one
     file.
 
+    RECONCILIATION.md and DISCREPANCIES.md are here for their version
+    stamp alone. Neither is measured from here -- the reconciliation needs
+    a MASS checkout -- but each is re-established against whatever the
+    package currently is on every push, by `tests/test_mass_reconciliation.py`
+    and by the tests each discrepancy names. So the version they stamp is
+    the current one, and the date they carry is not: that belongs to the
+    run against the checkout, and stays where it is.
+
     The regexes are anchored on enough surrounding words to miss the
     opening history, which quotes figures from when this file was wrong
     and must keep quoting them.
     """
+    version = declared_version()
     wanted = [
+        ("version stamp", r"(?<=`music` )\d+\.\d+\.\d+(?=: \d+ modules)",
+         version),
+        ("version stamp, RECONCILIATION.md",
+         r"(?<=`music` )\d+\.\d+\.\d+(?=\s+on every push)",
+         version, RECONCILIATION),
+        ("version stamp, DISCREPANCIES.md",
+         r"(?<=`music` )\d+\.\d+\.\d+(?=\s+on every push)",
+         version, DISCREPANCIES),
         ("modules", r"(?<=: )\d+(?= modules,)", str(figures["modules"])),
         ("package LOC", r"(?<=modules, )[\d,]+(?= LOC package)",
          thousands(figures["package_loc"])),
@@ -247,6 +314,8 @@ def main(argv=None):
             texts[path] = re.sub(pattern, want, texts[path])
 
     if args.write:
+        if not args.fast:
+            texts[ASSESSMENT] = stamp_the_date(texts[ASSESSMENT])
         for path, text in texts.items():
             path.write_text(text)
 
@@ -256,7 +325,7 @@ def main(argv=None):
         return 0
 
     for label, have, want in drifted:
-        print(f"  {label}: says {have}, measures {want}")
+        print(f"  {label}: says {have}, should say {want}")
     if args.write:
         print(f"\ncorrected {len(drifted)}.")
         return 0

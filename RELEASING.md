@@ -38,7 +38,13 @@ which is what triggers Zenodo.
 
 So before either, bump `version` in `pyproject.toml` and in `CITATION.cff`,
 set `date-released` in `CITATION.cff`, and move the changelog's entries under
-the new heading. The script will tell you if you missed one.
+the new heading. Then run `python tools/assessment_figures.py --write`,
+which carries the bump into the version stamped at the top of
+`ASSESSMENT.md`, `RECONCILIATION.md` and `DISCREPANCIES.md` and re-measures
+the figures while it is there. The script will tell you if you missed one:
+the gate runs that check too, so a release cannot ship documents naming the
+version before it. All three named 1.4.0 while the package was 1.7.0, which
+is what added the check.
 
 Uploading needs a PyPI token in `~/.pypirc`; the GitHub release needs `gh`
 logged in.

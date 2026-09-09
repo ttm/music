@@ -17,8 +17,10 @@ include pytest.ini
 recursive-include tests *.py
 recursive-include tests/fixtures *.npz
 
-# tests/test_mass_reconciliation.py imports the register from here, and
-# tools/mass_reference.py is what it reads a MASS checkout with.
+# tests/test_mass_reconciliation.py imports the register from here,
+# tools/mass_reference.py is what it reads a MASS checkout with, and
+# tests/test_assessment_figures.py imports the expectations that say
+# where every measured figure lives.
 recursive-include tools *.py
 
 # tests/test_tutorial.py runs the tutorial's code blocks; three tests in
@@ -31,7 +33,9 @@ include docs/conf.py
 # tests/test_zenodo_metadata.py reads the archival metadata.
 include .zenodo.json
 
-# The prose a reader of the tarball should have.
+# The prose a reader of the tarball should have. The first three are
+# also read by tests/test_assessment_figures.py, which checks that each
+# still stamps the version it describes.
 include CHANGELOG.md
 include ASSESSMENT.md
 include RECONCILIATION.md

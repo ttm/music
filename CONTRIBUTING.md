@@ -85,6 +85,10 @@ attached.
 `ASSESSMENT.md` records what the package does *not* do. It is meant to be
 uncomfortable and it is kept current by `tools/assessment_figures.py`, which
 fails when a number in it — or in the README — disagrees with the package.
+The same tool checks the version each of the three living documents stamps
+itself with, `RECONCILIATION.md` and `DISCREPANCIES.md` included. If you
+reword a row rather than a number, `tests/test_assessment_figures.py` is
+what tells you the script can no longer find the figure that row carried.
 
 If your change moves one of those numbers, run:
 

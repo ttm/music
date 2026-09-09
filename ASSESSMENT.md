@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
-*A living record, not a point-in-time audit. Last measured **2026-09-04**,
-`music` 1.4.0: 47 modules, 11,741 LOC package + 9,387 LOC tests, 126 names
+*A living record, not a point-in-time audit. Last measured **2026-09-09**,
+`music` 1.7.0: 47 modules, 11,741 LOC package + 9,477 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -24,10 +24,25 @@ python tools/assessment_figures.py           # report any drift
 python tools/assessment_figures.py --write   # correct it
 ```
 
+The version in the stamp above is checked too, against `pyproject.toml`,
+here and in `RECONCILIATION.md` and `DISCREPANCIES.md`. All three still
+said 1.4.0 at 1.7.0, with every number around them correct and current,
+because a stamp was the one figure the script never read.
+
+`tests/test_assessment_figures.py` checks the other half of it: that every
+figure is still *where* the script looks for it. These checks are regexes
+over prose that people rewrite, and one that no longer matches is a check
+that no longer runs. The seven needing `pytest` and `ruff` to answer were
+built only by a full run, so until that test existed a reflowed table row
+could have gone from one release to the next without anyone learning the
+figure had stopped being read.
+
 The wall-clock time in the test-suite row is not checked, being a
 property of the machine rather than of the package, and neither is the
 history in the paragraph above, which quotes figures from when this file
-was wrong and has to keep quoting them.
+was wrong and has to keep quoting them. The date in the stamp is written
+by a full run rather than checked, since a date that is not today is not
+drift -- it is a file nothing has had to correct since.
 
 The test-suite row counts what `pytest` collects rather than what passes.
 A few tests skip when an optional external resource is absent -- the KEMAR
@@ -41,7 +56,7 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **2379 tests**, 16 s |
+| Test suite | `pytest -q` | **2384 tests**, 16 s |
 | Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,738 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |

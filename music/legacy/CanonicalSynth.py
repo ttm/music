@@ -129,15 +129,20 @@ class CanonicalSynth:
         fundamental_frequency : float, optional
             The fundamental frequency of the note in Hertz, by default 220.
         """
-        if not table:
+        # `is None` rather than a truth test: a wavetable is a numpy
+        # array, and `if not table` on one raises "the truth value of an
+        # array with more than one element is ambiguous" -- so the three
+        # parameters here could not be given the thing they exist to take.
+        # Only the default path had ever run.
+        if table is None:
             table = self.tables.triangle
         # The tables are filled in either way. rawRender and tremoloEnvelope
         # read them unconditionally, so leaving them None when the effect is
         # off made switching it off a TypeError -- and a depth of zero
         # already makes the modulation a no-op: 2 ** 0 and 10 ** 0 are 1.
-        if not vibrato_table:
+        if vibrato_table is None:
             vibrato_table = self.tables.sine
-        if not tremolo_table:
+        if tremolo_table is None:
             tremolo_table = self.tables.sine
         vibrato = bool(vibrato_depth and vibrato_frequency)
         tremolo = bool(tremolo_depth and tremolo_frequency)

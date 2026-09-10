@@ -331,6 +331,13 @@ class Being:
                 sequence.extend(seq)
                 count += 1
             sequence = sequence[:n]
+        else:
+            # Anything else left `sequence` unbound and reached
+            # addSeq as an UnboundLocalError, which names the line that
+            # gave up rather than the argument that was wrong. The same
+            # rough edge `fade` had.
+            raise ValueError(
+                f'method must be "straight" or "perm"; got {method!r}')
         self.addSeq(sequence)
         self.total_notes += n
 

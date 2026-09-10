@@ -13,7 +13,7 @@ Six checks run in CI for every push and every pull request. Four look at
 the package, one looks at the documentation, and one looks at a caller:
 
 ```console
-pytest                    # tests, doctests, and 100% line coverage
+pytest                    # tests, doctests, and 100% line and branch coverage
 mypy music                # types, with function bodies inspected
 ruff check ...            # lint, at PEP 8's 79 columns
 sphinx-build -W ...       # docs, with warnings as errors

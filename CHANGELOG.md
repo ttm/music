@@ -57,6 +57,21 @@
   with a message about broadcasting shapes -- naming neither the argument
   nor the mistake. It refuses now, and points at `mix_stereo`. The same
   defect `iir` had.
+- **`CanonicalSynth.synthSetup` could not be given a wavetable.** Its
+  three table parameters were guarded with `if not table`, and a
+  wavetable is a numpy array, so passing one raised "the truth value of
+  an array with more than one element is ambiguous". Only the path that
+  fills in a default had ever run. They test `is None` now.
+- **`Being.stay` raised `UnboundLocalError` for a method it does not
+  have.** 'straight' and 'perm' bind a sequence and anything else bound
+  nothing, so the failure was reported from the line that tried to use
+  the name rather than from the argument that was wrong -- the same rough
+  edge `fade` had. It refuses by name now.
+- **`InterestingPermutations.even_odd` guarded a cycle length that cannot
+  be zero.** The loop it counts is entered only when the point is
+  unvisited and its body runs before the condition is tested again, so
+  the guard was always true. Removed, which an exhaustive check over all
+  720 permutations of six elements confirms is safe.
 - **Both noise routines were broken for an odd number of samples.** Each
   builds a spectrum and inverts it, and a real signal's spectrum has
   `X[N - k] = conj(X[k])` -- which needs `(N - 1) // 2` conjugate pairs
@@ -185,6 +200,19 @@
   it with its inverse is exact silence -- no phase error anywhere. But
   `mix_with_offset` truncates its offset to whole samples, so half a
   sample is no offset at all and a finely swept offset is a staircase.
+
+- **The coverage gate counts branches, not just lines.** It read 100%
+  while twelve conditions had only ever gone one way, and three of the
+  defects above were sitting in them: a truth test on an array, an
+  unbound name, and a guard that could not be false. `--cov-branch` is
+  now in CI and in the release gate, and the suite covers 848 of 848
+  branches as well as 2,782 of 2,782 lines.
+
+  `tests/test_branches.py` exists for exactly this and said so in its
+  own docstring -- "the suite reached only the default of each" -- so the
+  new cases went there. Reaching a branch is not the same as covering
+  it: the first eleven tests took the side that was already covered, and
+  it took reading which *exit* was missing to write the ones that count.
 
 - **`tests/test_theory_properties.py`**, the same treatment for the half
   of the API that is not sound: conversions between units, names for

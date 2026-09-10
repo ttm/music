@@ -523,7 +523,9 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
                 anglesl[i] += delay
                 normsr[i] *= iid
 
-    elif method == "brute":
+    # No false exit: the method is validated on the way in, so by here it
+    # is "ifft" or "brute", and "ifft" was taken by the branch above.
+    elif method == "brute":  # pragma: no branch
         warnings.warn("This can take a long time...")
         for i in range(ncoeffs):
             if i == 0:

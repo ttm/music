@@ -128,8 +128,10 @@ def run_gate():
         ("lint", (sys.executable, "-m", "ruff", "check", "music", "tests",
                   "examples", "tools", "conftest.py")),
         ("types", (sys.executable, "-m", "mypy", "music")),
+        # --cov-branch: 100% of lines left twelve conditions that had
+        # only ever gone one way, and three defects were in them.
         ("tests", (sys.executable, "-m", "pytest", "-q", "--cov=music",
-                   "--cov-fail-under=100")),
+                   "--cov-branch", "--cov-fail-under=100")),
         ("docs", (sys.executable, "-m", "sphinx", "-b", "html", "-W",
                   "docs", "docs/_build/html")),
         # ASSESSMENT.md goes out with the release and is the file that

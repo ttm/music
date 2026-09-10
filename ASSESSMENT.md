@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-10**,
-`music` 1.7.0: 47 modules, 11,991 LOC package + 11,883 LOC tests, 126 names
+`music` 1.7.0: 47 modules, 12,009 LOC package + 12,050 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -56,11 +56,11 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **3400 tests**, 16 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,782 stmts, 0 missed) |
+| Test suite | `pytest -q` | **3412 tests**, 16 s |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,782 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,138 findings |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,140 findings |
 | Annotation coverage | AST scan | **101 / 209 functions (48 %)**; 63 / 94 exported (67 %) |
 | Docstring coverage | AST scan | **169 / 180 public defs (94 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
@@ -372,7 +372,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,138 findings** on `music/`, almost all
+- **The extended lint set reports 2,140 findings** on `music/`, almost all
   stylistic: 345 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
@@ -384,7 +384,7 @@ either documented in the code or tracked in the issue list.
   now says so, and a test pins it, so implementing the three laws is a
   deliberate change rather than a discovery. The same routine's legs are
   fixed -- see the changelog.
-- **`legacy/` is 1,170 LOC** kept for `CanonicalSynth`, `IteratorSynth` and
+- **`legacy/` is 1,182 LOC** kept for `CanonicalSynth`, `IteratorSynth` and
   the `Being` class. It is covered and type-checked, but it is not where new
   work should go.
 

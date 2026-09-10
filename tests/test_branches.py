@@ -309,3 +309,170 @@ def test_generic_peal_needs_nelements_for_a_default_domain():
         holder.act("p")
     with pytest.raises(ValueError, match="nelements has not been set"):
         holder.act_all()
+
+
+# ---------------------------------------------------------------------
+# The last twelve, found by measuring branches rather than lines
+# ---------------------------------------------------------------------
+#
+# The suite reports 100% coverage, which is 100% of *lines*. Turning on
+# `--cov-branch` showed twelve conditions that had only ever gone one
+# way. One of them turned out to be dead code -- `even_odd` guarded a
+# cycle length that cannot be zero, since the loop it counts is entered
+# only when the point is unvisited and its body runs before the condition
+# is tested again, which an exhaustive check over all 720 permutations of
+# six elements confirmed. That guard is gone. These cover the other
+# eleven.
+
+def test_tremolos_pads_a_sound_shorter_than_its_envelope():
+    """Its envelope is as long as the longest tremolo in the sequence, and
+    a shorter sound is zero-padded to meet it rather than truncating the
+    envelope."""
+    short = music.note(440, 0.5)
+    out = np.asarray(music.tremolos(sonic_vector=short), dtype=float)
+
+    assert out.size > short.size
+    assert _finite(out)
+    # What was padded is silent, since the padding is zeros and the
+    # envelope multiplies into it.
+    assert np.abs(out[short.size:]).max() == 0.0
+
+
+def test_localize2_takes_the_brute_force_path():
+    """`method="brute"` computes the filter coefficients one at a time
+    instead of by inverse transform, and warns that it is slow. Nothing
+    had run it."""
+    with pytest.warns(UserWarning, match="long time"):
+        placed = np.asarray(music.localize2(
+            sonic_vector=music.note(440, 0.05), method="brute"),
+            dtype=float)
+
+    assert placed.shape[0] == 2
+    assert _finite(placed)
+
+
+def test_profile_calls_a_short_off_centre_array_a_parametrisation():
+    """`profile` guesses what an array is for. A long array centred on
+    zero is samples; a short one with an offset mean is a list of
+    parameters, and that second guess had never been made."""
+    from music.utils import profile
+
+    guesses = profile({"tuning": np.array([5.0, 5.1, 5.2])})["guesses"]
+    assert any(kind == "parametrisation"
+               for kind, _why in guesses["tuning"])
+
+
+def test_a_peal_acts_on_the_domain_and_peal_it_is_given():
+    """Both arguments default to None and both defaults were all that had
+    ever been used, so passing either was untested."""
+    changes = music.PlainChanges(4)
+
+    named = changes.act(domain=list("abcd"))
+    assert named[0] == list("abcd")
+    assert all(sorted(row) == sorted("abcd") for row in named)
+
+    one_peal = changes.act(peal=changes.peal_direct[:3])
+    assert len(one_peal) == 3
+
+
+def test_a_peal_acts_all_of_them_on_a_domain_it_is_given():
+    """`act_all` records the result on the object rather than returning
+    it, which is worth pinning as well as reaching."""
+    changes = music.PlainChanges(4)
+    changes.act_all(domain=list("wxyz"))
+
+    assert changes.domain == list("wxyz")
+    assert changes.acted_peals
+    for rows in changes.acted_peals.values():
+        assert all(sorted(row) == sorted("wxyz") for row in rows)
+
+
+def test_a_generic_peal_acts_all_on_a_domain_it_is_given():
+    """The same on the base class, which `PlainChanges` does not use."""
+    peal = music.GenericPeal()
+    peal.peals = {"p": [Permutation([1, 0, 2]), Permutation([0, 2, 1])]}
+    peal.act_all(domain=list("abc"))
+
+    assert peal.acted_peals
+    for rows in peal.acted_peals.values():
+        assert all(sorted(row) == sorted("abc") for row in rows)
+
+
+def test_a_canonical_synth_sets_up_with_the_tables_it_is_given():
+    """Three `if not table` guards in `synthSetup`, one per table, and
+    every one had only ever filled in a default."""
+    synth = music.CanonicalSynth()
+    synth.synthSetup(table=synth.tables.sine,
+                     vibrato_table=synth.tables.triangle,
+                     tremolo_table=synth.tables.square)
+
+    assert synth.table is synth.tables.sine
+    assert _finite(synth.render(duration=0.05))
+
+
+def test_a_canonical_synth_keeps_tables_it_was_constructed_with():
+    """`__init__` fills in tables and a sample rate when the state it
+    absorbed did not bring them. Given them, it must leave them alone --
+    the branch nothing had taken, since nobody had passed any."""
+    tables = music.legacy.tables.Basic()
+    synth = music.CanonicalSynth(tables=tables, samplerate=22050)
+
+    assert synth.tables is tables
+    assert synth.samplerate == 22050
+
+
+def test_a_being_can_sequence_by_permutation():
+    """`stay` has a `method` and only 'straight' had been used. 'perm'
+    walks the permutations in `perms` over the domain instead of the grid
+    in order."""
+    being = music.Being()
+    being.curseq = "f_"
+    being.f_ = []
+    being.domain = [220.0, 330.0, 440.0]
+    being.perms = [Permutation([1, 0, 2]), Permutation([2, 1, 0])]
+
+    being.stay(6, method="perm")
+
+    assert being.total_notes == 6
+    assert len(being.f_) == 6
+    # Every frequency comes from the domain, permuted rather than walked
+    # in order, so the set is the domain and the order is not.
+    assert set(being.f_) == set(being.domain)
+    assert being.f_[:3] != list(being.domain)
+
+
+def test_a_being_refuses_a_way_of_sequencing_it_does_not_have():
+    """It used to leave `sequence` unbound and reach `addSeq` as an
+    UnboundLocalError, which is the rough edge `fade` had: a name the
+    routine never bound, reported from the line that tried to use it
+    rather than from the argument that was wrong."""
+    being = music.Being()
+    being.curseq = "f_"
+    being.f_ = []
+
+    with pytest.raises(ValueError, match="straight"):
+        being.stay(2, method="nonsense")
+
+
+def test_tremolos_leaves_a_sound_at_least_as_long_as_its_envelope_alone():
+    """The other side of the padding: a sound already long enough is
+    multiplied in as it is."""
+    envelope = np.asarray(music.tremolos(), dtype=float)
+    long_enough = music.note(440, len(envelope) / 44100)
+
+    out = np.asarray(music.tremolos(sonic_vector=long_enough), dtype=float)
+
+    assert out.size == len(envelope)
+    assert _finite(out)
+
+
+def test_profile_does_not_call_a_long_off_centre_array_a_parametrisation():
+    """The false side of that guess: long enough to be samples, but with
+    an offset mean, so neither guess above it applies."""
+    from music.utils import profile
+
+    offset = np.linspace(0.0, 1.0, 5000) + 3.0
+    guesses = profile({"ramp": offset})["guesses"]
+
+    assert not any(kind == "parametrisation"
+                   for kind, _why in guesses["ramp"])

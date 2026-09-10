@@ -34,7 +34,10 @@ jobs:
         run: mypy music
 
       - name: Test
-        run: pytest -q --cov=music --cov-report=term-missing --cov-fail-under=100
+        # --cov-branch, because 100% of lines is not 100% of branches:
+        # the gate read 100 while twelve conditions had only ever gone
+        # one way, and three defects were sitting in them.
+        run: pytest -q --cov=music --cov-branch --cov-report=term-missing --cov-fail-under=100
 
   examples:
     name: Examples

@@ -207,8 +207,12 @@ class InterestingPermutations:
                     x = sequence[x]
                     cycle_length += 1
 
-                if cycle_length > 0:
-                    parity += cycle_length - 1
+                # At least one, always: the loop above is entered only
+                # when visited[x] is False and its body runs before the
+                # condition is tested again. The guard that used to be
+                # here could not be False, which is why coverage never
+                # reached its other side.
+                parity += cycle_length - 1
 
         return 'even' if parity % 2 == 0 else 'odd'
 

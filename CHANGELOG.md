@@ -57,6 +57,20 @@
   with a message about broadcasting shapes -- naming neither the argument
   nor the mistake. It refuses now, and points at `mix_stereo`. The same
   defect `iir` had.
+- **Both noise routines were broken for an odd number of samples.** Each
+  builds a spectrum and inverts it, and a real signal's spectrum has
+  `X[N - k] = conj(X[k])` -- which needs `(N - 1) // 2` conjugate pairs
+  whatever the parity. Both sliced at `N // 2` instead. `gaussian_noise`
+  raised "could not broadcast input array from shape (5511,) into shape
+  (5512,)"; `noise` wrote every conjugate one position early, left the
+  last bin at zero, and inverted a spectrum that was not Hermitian --
+  so the inverse transform came back complex and `.real` discarded an
+  imaginary part worth 8.7 % of the signal, silently. An odd-length noise
+  was not the noise its spectrum described.
+
+  Half a second at 22,050 Hz is 11,025 samples, which is how this
+  surfaced. Even lengths, including every default, are unchanged.
+
 - **`gaussian_noise` refused a band reaching below 0 Hz by giving up on
   a negative array length.** `mean` and `std` name a band in units of
   3000 Hz, so `mean=0` asks for -750 to 750 Hz and `mean=1, std=3` for
@@ -171,6 +185,30 @@
   it with its inverse is exact silence -- no phase error anywhere. But
   `mix_with_offset` truncates its offset to whole samples, so half a
   sample is no offset at all and a finely swept offset is a staircase.
+
+- **`tests/test_properties.py`**, for the range between a routine's
+  defaults and the edge of its parameters -- ordinary values that are
+  simply not the default ones, and routines used together rather than
+  alone. It is what found the odd-length noise defect above.
+
+  *Parameters.* Every timed routine is held to rendering exactly
+  `duration * sample_rate` samples, at four rates from 8 kHz to 48 kHz
+  and three durations; 24 of the 26 are exact to the sample, and the two
+  that are not are registered with the reason. A note reads as the
+  frequency it was asked for across two decades of pitch at every rate.
+
+  *Analyses.* The same render read more than one way, because a defect
+  that hides from one measure usually does not hide from three: a
+  spectrum for where the partials are, an autocorrelation for where the
+  period is, Parseval for whether the two agree about the energy, and
+  monotonicity for a fade, which no spectral measure would notice.
+
+  *Combinations.* Algebraic laws over composed routines -- two
+  multiplicative shapers commute, mixing associates and commutes,
+  stacking associates, every designed filter is linear and homogeneous --
+  and two round trips through the disk, a stacked mono piece and a
+  localised stereo one, checked by correlation rather than by level so
+  that a swapped channel or a doubled fade would show.
 
 - **`tests/test_degenerate.py`**, the sweep that found eight of the
   defects above -- the rest came from probing the same edges by hand

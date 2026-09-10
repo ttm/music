@@ -127,12 +127,18 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
     attenuation_factors = factor ** (np.log2(freqs / denom))
     coeffs[first_coeff:last_coeff] *= attenuation_factors
 
-    if length % 2 == 0:
-        high_freq_conj_coeffs = np.conj(coeffs[1:length // 2][::-1])
-        coeffs[length // 2 + 1:] = high_freq_conj_coeffs
-    else:
-        high_freq_conj_coeffs = np.conj(coeffs[1:length // 2][::-1])
-        coeffs[length // 2 + 1:-1] = high_freq_conj_coeffs
+    # A real signal has X[N - k] = conj(X[k]). There are (N - 1) // 2
+    # such pairs whatever the parity, and one expression places them all:
+    # the even case additionally has a Nyquist bin, which is set to a real
+    # value above and is its own conjugate.
+    #
+    # The odd branch used to write the same conjugates one position early
+    # and leave the last bin at zero, so the spectrum was not Hermitian
+    # and the inverse transform came back complex. `.real` below then
+    # discarded an imaginary part worth 8.7% of the signal, silently: an
+    # odd-length noise was not the noise its spectrum described.
+    paired = (length - 1) // 2
+    coeffs[length - paired:] = np.conj(coeffs[1:paired + 1][::-1])
 
     noise_vector = np.fft.ifft(coeffs).real
     return music.core.normalize_mono(noise_vector)
@@ -197,8 +203,12 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
         return np.array([])
     freq_res = sample_rate / float(length)
     coeffs = np.exp(1j * np.random.uniform(0, 2 * np.pi, length))
-    coeffs[length // 2 + 1:] = np.real(coeffs[1:length // 2])[::-1] - 1j * \
-        np.imag(coeffs[1:length // 2])[::-1]
+    # As in `noise` above: (N - 1) // 2 conjugate pairs whatever the
+    # parity. Slicing at length // 2 assumed an even length, so an odd one
+    # -- half a second at 22,050 Hz, say -- raised "could not broadcast
+    # input array from shape (5511,) into shape (5512,)".
+    paired = (length - 1) // 2
+    coeffs[length - paired:] = np.conj(coeffs[1:paired + 1][::-1])
     coeffs[0] = 0.  # sem bias
     if length % 2 == 0:
         coeffs[length // 2] = 0.

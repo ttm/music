@@ -654,3 +654,179 @@ def test_an_offset_is_truncated_to_whole_samples(offset, samples):
     rendered = music.note(440, 0.5)
     mixed = music.mix_with_offset(rendered, rendered, duration=offset)
     assert len(mixed) == len(rendered) + samples
+
+
+# ---------------------------------------------------------------------
+# Filters: the artifact that is silent until it is not
+# ---------------------------------------------------------------------
+
+def poles(feedback):
+    """The poles of a filter as `iir` means its coefficients.
+
+    `iir` implements ``b0 y[n] = sum_k a_k x[n-k] + sum_{j>=1} b_j y[n-j]``
+    -- note the plus on the feedback sum, which is not the usual
+    convention -- so the characteristic polynomial is
+    ``[b0, -b1, -b2, ...]`` and not `b` itself. Getting that backwards
+    reads a stable filter as unstable, which is how this measure was
+    written the first time.
+    """
+    feedback = np.atleast_1d(np.asarray(feedback, dtype=float))
+    if feedback.size < 2:
+        return np.zeros(1)          # no feedback, so nothing to diverge
+    return np.roots(np.concatenate([[feedback[0]], -feedback[1:]]))
+
+
+#: Cutoffs across the useful band, including both ends of it.  The designs
+#: refuse 0 and 0.5 themselves, which `test_filter_design.py` covers.
+CUTOFFS = [1e-6, 1e-4, 0.001, 0.01, 0.1, 0.25, 0.4, 0.49, 0.4999]
+
+
+@pytest.mark.parametrize("design", ["low_pass", "high_pass"])
+@pytest.mark.parametrize("cutoff", CUTOFFS)
+def test_a_one_pole_design_is_stable_at_any_cutoff(design, cutoff):
+    """A pole on or outside the unit circle is a filter that does not
+    settle: it rings for ever, or it grows without bound and takes the
+    render with it. Nothing about the coefficients says so on inspection,
+    and nothing in the sound says so until it does. The narrowest cutoff
+    here puts the pole at 0.999994, which is as close as this design comes
+    and still inside."""
+    _feedforward, feedback = getattr(music, design)(cutoff)
+    assert np.abs(poles(feedback)).max() < 1.0
+
+
+@pytest.mark.parametrize("design", ["band_pass", "band_reject"])
+@pytest.mark.parametrize("centre", [0.001, 0.05, 0.25, 0.45, 0.499])
+@pytest.mark.parametrize("bandwidth", [0.001, 0.01, 0.1, 0.4])
+def test_a_two_pole_design_is_stable_anywhere_in_its_grid(design, centre,
+                                                          bandwidth):
+    """The two-pole designs put their poles at 1 - bandwidth, so the
+    narrowest band is the closest call: 0.997 at a bandwidth of 0.001."""
+    _feedforward, feedback = getattr(music, design)(centre, bandwidth)
+    assert np.abs(poles(feedback)).max() < 1.0
+
+
+@pytest.mark.parametrize("design,args", [
+    ("low_pass", (0.1,)), ("low_pass", (0.001,)),
+    ("high_pass", (0.1,)), ("high_pass", (0.49,)),
+    ("band_pass", (0.1, 0.05)), ("band_reject", (0.4, 0.01)),
+])
+def test_a_designed_filter_settles_rather_than_ringing_on(design, args):
+    """Stability says the ringing dies; this says how fast.
+
+    Driven by an impulse, every one of these is below a millionth of its
+    own peak within four thousand samples -- a tenth of a second, and less
+    than the shortest note anyone writes.
+    """
+    feedforward, feedback = getattr(music, design)(*args)
+    impulse = np.zeros(4096)
+    impulse[0] = 1.0
+    response = np.asarray(music.iir(impulse, feedforward, feedback),
+                          dtype=float)
+
+    assert np.isfinite(response).all()
+    peak = np.abs(response).max()
+    assert np.abs(response[-256:]).max() < 1e-6 * peak
+
+
+# ---------------------------------------------------------------------
+# Intermodulation: the partials a modulation puts where it was not asked
+# ---------------------------------------------------------------------
+
+def partials(samples, floor=0.02):
+    """The frequencies carrying more than `floor` of the strongest one.
+
+    In Hz, since `SECOND` samples put one bin at one hertz.
+    """
+    assert len(samples) == SECOND, "the bins only line up at one second"
+    magnitude = np.abs(np.fft.rfft(samples))
+    magnitude[0] = 0.0
+    strongest = magnitude.max()
+    return sorted(int(bin_) for bin_
+                  in np.flatnonzero(magnitude > floor * strongest))
+
+
+def test_amplitude_modulation_puts_its_sidebands_where_it_should():
+    """A carrier at 5 kHz modulated at 300 Hz is 4700, 5000 and 5300, and
+    nothing else. Anything else would be intermodulation the model does
+    not predict."""
+    modulated = music.amplitude_modulation(
+        carrier_freq=5000, modulation_freq=300, duration=1.0,
+        waveform_table=TABLES["sine"])
+    assert partials(modulated) == [4700, 5000, 5300]
+
+
+def test_frequency_modulation_puts_its_sidebands_where_it_should():
+    """FM spreads into a comb at the carrier plus and minus multiples of
+    the modulator, with Bessel amplitudes. Every partial should be one of
+    those and none should be anywhere else."""
+    modulated = music.note_with_fm(
+        freq=5000, number_of_samples=SECOND, fm=300, max_fm_deviation=300,
+        waveform_table=TABLES["sine"], fm_waveform_table=TABLES["sine"])
+    expected = {5000 + k * 300 for k in range(-4, 5)}
+    assert set(partials(modulated)) <= expected
+
+
+def test_frequency_modulation_folds_when_its_sidebands_pass_nyquist():
+    """The measured half of the same thing.
+
+    A carrier at 18 kHz swung by 8 kHz puts sidebands well past 22,050 Hz,
+    and they come back down: partials appear below 10 kHz, which is the
+    lowest frequency the modulation could legitimately reach. It is the
+    aliasing measured further up, arriving by a different route, and it is
+    what a caller gets for asking for a bright sound near the top of the
+    band.
+    """
+    modulated = music.note_with_fm(
+        freq=18000, number_of_samples=SECOND, fm=2000, max_fm_deviation=8000,
+        waveform_table=TABLES["sine"], fm_waveform_table=TABLES["sine"])
+    lowest_legitimate = 18000 - 8000
+    assert [f for f in partials(modulated) if f < lowest_legitimate]
+
+
+def test_a_glissando_through_nyquist_folds_rather_than_breaking():
+    """Sweeping to 40 kHz at a 44.1 kHz rate asks for what cannot exist.
+
+    What comes out stays finite and inside the band -- the sweep folds at
+    the top and comes back down -- rather than producing infinities or a
+    silent render. Nobody should write this; it is here because the
+    routine accepts it and the result should at least be a sound.
+    """
+    swept = music.note_with_glissando(start_freq=10000, end_freq=40000,
+                                      number_of_samples=SECOND,
+                                      waveform_table=TABLES["sine"])
+    assert np.isfinite(swept).all()
+    assert np.abs(swept).max() <= 1.0
+
+    second_half = swept[SECOND // 2:]
+    spectrum = np.abs(np.fft.rfft(second_half))
+    spectrum[0] = 0.0
+    freqs = np.fft.rfftfreq(len(second_half), 1 / SECOND)
+    strongest = freqs[spectrum.argmax()]
+    assert strongest < SECOND / 2
+
+
+# ---------------------------------------------------------------------
+# The rail: where two's complement is one code short
+# ---------------------------------------------------------------------
+
+def test_the_positive_rail_costs_a_whole_lsb_at_eight_bits():
+    """Why an 8-bit round trip misses the half-step a quantiser should
+    cost, and why 16-bit does not.
+
+    A PCM integer runs from -2**(b-1) to 2**(b-1) - 1, one code shorter on
+    the positive side, so a sample above (rail - 0.5) / rail rounds to a
+    code that does not exist and is clipped to the one below it. At eight
+    bits that band is the top 0.4% of the range and a note lands in it;
+    at sixteen it is the top 0.0015% and nothing does. It is the reason
+    the 8-bit row above reads 48 dB where its theory says 50.
+    """
+    rail = 128
+    just_over = (rail - 0.4) / rail      # rounds to 128, which is no code
+    quantized = _quantize(np.array([just_over]), 8)
+    assert quantized[0] == (rail - 1) * 256   # clipped to 127, shifted
+
+    cost = abs(just_over - (rail - 1) / rail) * rail
+    assert cost == pytest.approx(0.6, abs=0.01)
+
+    # The same sample at sixteen bits is nowhere near the rail.
+    assert _quantize(np.array([just_over]), 16)[0] == round(just_over * 32768)

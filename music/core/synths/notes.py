@@ -6,6 +6,27 @@ from ...utils import (WAVEFORM_SINE, WAVEFORM_TRIANGULAR,
 from ..filters.adsr import adsr
 
 
+def _require_a_ratio(start_freq, end_freq, linear_option=False):
+    """Refuse a glissando that has no ratio to sweep by.
+
+    An exponential glissando is ``start * (end / start) ** t``. A start of
+    zero divides by zero, and a negative frequency raised to a fractional
+    power is NaN -- which was then cast to an integer table index and read
+    out of the waveform table, so the render came back finite, plausible
+    and meaningless rather than failing. Three routines sweep this way and
+    all three refused differently, which is to say two of them did not
+    refuse at all.
+    """
+    if start_freq > 0 and end_freq > 0:
+        return
+    hint = ('. Use method="lin" to sweep through or from zero'
+            if linear_option else "")
+    raise ValueError(
+        "an exponential glissando sweeps by a constant ratio, so both "
+        f"frequencies must be positive; got start_freq={start_freq}, "
+        f"end_freq={end_freq}{hint}")
+
+
 def note(freq: float = 220, duration: float = 2,
          waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
          number_of_samples: int = 0,
@@ -113,6 +134,13 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     s : ndarray
         The PCM samples of the resulting sound.
 
+    Raises
+    ------
+    ValueError
+        If the duration is shorter than one sample. The routine divides
+        by the length it was asked for, so a duration of zero reached a
+        warning about dividing by zero rather than a refusal.
+
     See Also
     --------
     note_with_vibrato_seq_localization : a note with arbitrary vibratos,
@@ -140,6 +168,10 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     waveform_table = np.array(waveform_table)
     if not number_of_samples:
         number_of_samples = int(duration * sample_rate)
+    if number_of_samples < 1:
+        raise ValueError(
+            f"a sound needs at least one sample; duration={duration} at "
+            f"{sample_rate} Hz gives {number_of_samples}")
     #  samples = np.arange(number_of_samples)
     length = len(waveform_table)
     speed = 331.3 + .606 * air_temp
@@ -399,6 +431,16 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
     s : ndarray
         A numpy array where each value is a PCM sample of the sound.
 
+    Raises
+    ------
+    ValueError
+        If an exponential glissando is asked to start or end at a
+        frequency that is not positive. It sweeps by a constant ratio,
+        and there is no ratio from zero: a start of zero divided, and a
+        negative frequency raised to a fractional power gave NaN, which
+        was then cast to an integer table index and read as a sound. A
+        linear glissando has no such restriction.
+
     See Also
     --------
     note : A basic musical note without vibrato or pitch transition.
@@ -423,6 +465,7 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
         lambda_p = int(sample_rate * duration)
     samples = np.arange(lambda_p)
     if method == "exp":
+        _require_a_ratio(start_freq, end_freq, linear_option=True)
         if alpha != 1:
             f = start_freq * (end_freq / start_freq) ** \
                 ((samples / (lambda_p - 1)) ** alpha)
@@ -499,6 +542,7 @@ def note_with_glissando_vibrato(
     >>> write_wav_mono(s)  # writes a file with glissandi and vibratos
 
     """
+    _require_a_ratio(start_freq, end_freq)
     waveform_table = np.array(waveform_table)
     vibrato_waveform_table = np.array(vibrato_waveform_table)
     if number_of_samples:
@@ -937,6 +981,7 @@ def note_with_two_vibratos_glissando(
     >>> write_wav_mono(s)
 
     """
+    _require_a_ratio(start_freq, end_freq)
     waveform_table = np.array(waveform_table)
     tabv1 = np.array(tabv1)
     tabv2 = np.array(tabv2)
@@ -1344,6 +1389,13 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
     s : ndarray
         The PCM samples of the resulting sound.
 
+    Raises
+    ------
+    ValueError
+        If ``notes_per_second`` is not positive. Each note of the trill
+        lasts ``sample_rate / notes_per_second`` samples, so a rate of
+        zero divided.
+
     Examples
     --------
     >>> write_wav_mono(trill())
@@ -1363,6 +1415,10 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
     # rendered two seconds of audio for every one it was asked for, at
     # half the note rate. The same defect number_of_samples had until
     # 1.3.0 -- an argument honoured in one place and ignored in another.
+    if notes_per_second <= 0:
+        raise ValueError(
+            "notes_per_second sets how long each note of the trill lasts "
+            f"and must be positive; got {notes_per_second}")
     number_of_samples = sample_rate / notes_per_second
     pointer = 0
     i = 0

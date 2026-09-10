@@ -48,6 +48,14 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
         sonic_vector is input, ai is the sonic vector with the fade applied to
         it.
 
+    Raises
+    ------
+    ValueError
+        If ``perc`` is outside [0, 100], or if ``method`` names neither
+        "lin" nor "exp". A percentage over 100 used to reach an
+        ``IndexError`` from inside the routine, and an unknown method an
+        ``UnboundLocalError``, neither of which says what the caller did.
+
     See Also
     --------
     adsr : An ADSR envelope.
@@ -77,6 +85,13 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    if not 0 <= perc <= 100:
+        raise ValueError(
+            "perc is the percentage of the fade that is linear and must lie "
+            f"in [0, 100]; got {perc}")
+    if "lin" not in method and "exp" not in method:
+        raise ValueError(
+            f'method must name "lin" or "exp"; got {method!r}')
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
         if len(sonic_vector.shape) == 2:
@@ -94,21 +109,28 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
     if 'exp' in method:
         n0 = int(n*perc/100)
         n1 = n - n0
+        # `loud` reads number_of_samples=0 as "use the default duration",
+        # so an empty part has to be built here rather than asked for. At
+        # perc=100 the whole fade is the linear part, and asking for zero
+        # exponential samples returned two seconds of them: a fade over
+        # half a second came back 110,250 samples long instead of 22,050,
+        # which is the default length added to the one requested. The n0
+        # side was already guarded; this is the other one.
         if fade_out:
-            ai1 = loud(trans_dev=db, alpha=alpha, number_of_samples=n1)
-            if n0:
-                ai0 = loud(method="linear", trans_dev=0,
-                           number_of_samples=n0) * ai1[-1]
-            else:
-                ai0 = []
+            ai1 = (loud(trans_dev=db, alpha=alpha, number_of_samples=n1)
+                   if n1 else np.array([]))
+            # Where the linear part picks up. With no exponential part it
+            # starts at full amplitude, which is what perc=100 means.
+            joins_at = ai1[-1] if n1 else 1.0
+            ai0 = (loud(method="linear", trans_dev=0,
+                        number_of_samples=n0) * joins_at if n0 else [])
             ai = np.hstack((ai1, ai0))
         else:
-            ai1 = loud(trans_dev=db, to=0, alpha=alpha, number_of_samples=n1)
-            if n0:
-                ai0 = loud(method="linear", to=0, trans_dev=0,
-                           number_of_samples=n0) * ai1[0]
-            else:
-                ai0 = []
+            ai1 = (loud(trans_dev=db, to=0, alpha=alpha,
+                        number_of_samples=n1) if n1 else np.array([]))
+            joins_at = ai1[0] if n1 else 1.0
+            ai0 = (loud(method="linear", to=0, trans_dev=0,
+                        number_of_samples=n0) * joins_at if n0 else [])
             ai = np.hstack((ai0, ai1))
     if sonic_vector is not None:
         return ai*sonic_vector

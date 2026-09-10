@@ -75,6 +75,10 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
         length = number_of_samples
     else:
         length = int(duration * sample_rate)
+    if length < 1:
+        raise ValueError(
+            f"a noise needs at least one sample; duration={duration} at "
+            f"{sample_rate} Hz gives {length}")
     prog: float
     if noise_type == "white":
         prog = 0
@@ -149,6 +153,15 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
     array
         An array for the gaussian noise
 
+    Raises
+    ------
+    ValueError
+        If the duration is shorter than one sample, or if ``mean`` and
+        ``std`` name a band that holds no frequency at the resolution the
+        length gives. A band of no width zeroed every coefficient, and
+        normalizing an all-zero spectrum divides by its own zero range:
+        the caller got an array of NaN behind a warning.
+
     Examples
     --------
     >>> grains = gaussian_noise(mean=1, std=0.5, duration=0.5)
@@ -162,6 +175,10 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
     # fractional duration raised TypeError out of np.random.uniform
     # rather than rendering the half second it was asked for.
     length = int(duration * sample_rate)
+    if length < 1:
+        raise ValueError(
+            f"a noise needs at least one sample; duration={duration} at "
+            f"{sample_rate} Hz gives {length}")
     freq_res = sample_rate / float(length)
     coeffs = np.exp(1j * np.random.uniform(0, 2 * np.pi, length))
     coeffs[length // 2 + 1:] = np.real(coeffs[1:length // 2])[::-1] - 1j * \
@@ -173,6 +190,15 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
     f2 = (mean + std / 2) * 3000
     first_coeff = int(np.floor(f1 / freq_res))
     last_coeff = int(np.floor(f2 / freq_res))
+    if last_coeff <= first_coeff:
+        # Every coefficient is about to be zeroed, and normalizing an
+        # all-zero spectrum divides by its own zero range: the caller got
+        # an array of NaN behind a warning. A band of no width holds no
+        # frequency to draw from.
+        raise ValueError(
+            f"mean={mean} and std={std} give a band from {f1:.1f} Hz to "
+            f"{f2:.1f} Hz, which holds no frequency at a resolution of "
+            f"{freq_res:.1f} Hz. Widen std, or lengthen the noise")
     coeffs[:first_coeff] = np.zeros(first_coeff)
     coeffs[last_coeff:] = np.zeros(len(coeffs[last_coeff:]))
 

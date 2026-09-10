@@ -378,8 +378,19 @@ def mix(first_sonic_vector: np.ndarray,
     ndarray
         A mixed sonic vector containing the sum of the input sonic vectors.
 
+    Raises
+    ------
+    ValueError
+        If either sound is not one-dimensional. This pads to the longer of
+        the two, and ``len()`` of a stereo array counts its channels
+        rather than its samples, so a stereo argument reached numpy as a
+        two-element length and failed there with a message about
+        broadcasting. Mix the channels separately, or use
+        :func:`mix_stereo`.
+
     See Also
     --------
+    mix_stereo : the same sum for two-channel sounds.
     mix_many : the same sum over a list of sounds of any lengths, with
                per-sound offsets and a choice of aligning their starts
                or their ends.
@@ -392,6 +403,14 @@ def mix(first_sonic_vector: np.ndarray,
     >>> float(abs(both).max()) > 1.0   # two notes sum past full scale
     True
     """
+    for name, vector in (("first_sonic_vector", first_sonic_vector),
+                         ("second_sonic_vector", second_sonic_vector)):
+        if np.ndim(vector) != 1:
+            raise ValueError(
+                f"{name} has {np.ndim(vector)} dimensions; mix takes mono "
+                "sounds, since it pads to the longer of the two and a "
+                "stereo array's length is its channel count. Mix the "
+                "channels separately, or use mix_stereo")
     l1 = len(first_sonic_vector)
     l2 = len(second_sonic_vector)
     if l1 < l2:
@@ -1173,6 +1192,13 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
     -------
     durs : List of durations in seconds.
 
+    Raises
+    ------
+    ValueError
+        If nothing given fixes a duration. A ``duration`` of zero reads as
+        "not supplied" here, the same as ``bpm`` and ``total_duration``
+        being absent, and the routine then divided ``None`` by a sum.
+
     Examples
     --------
     >>> dt = [4, 2, 2, 4, 1,1,1,1, 2, 2, 4]
@@ -1241,6 +1267,11 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
         dur = bpm / 60
     else:
         dur = None
+    if not dur and total_duration is None:
+        raise ValueError(
+            "nothing here gives a duration: pass a positive duration, a "
+            f"bpm, or a total_duration; got duration={duration}, bpm={bpm}, "
+            "total_duration=None")
     durs = []
     if freqs:
         if not dur:  # obtain from total_dur

@@ -1,6 +1,40 @@
 ## [Unreleased]
 
 ### Fixed
+- **A wholly linear `fade` came back longer than it was asked for.**
+  `perc` is how much of the fade is linear, and at 100 the exponential
+  part is zero samples long -- but `loud` reads `number_of_samples=0` as
+  "use the default duration", so it returned two seconds of envelope
+  instead of none. A half-second fade came back 110,250 samples rather
+  than 22,050: the default length added to the one requested. The other
+  side of the same split was already guarded. `fade(perc=100)` is now
+  exactly `fade(method="linear")`, which is what it always meant.
+- **Two of the three exponential glissandos rendered NaN as a sound.**
+  They sweep by `start * (end / start) ** t`, so a start of zero divides
+  and a negative frequency raised to a fractional power is NaN -- and the
+  frequency contour is cast to an integer table index, so the NaN became
+  some index and the render came back finite, plausible and meaningless.
+  `note_with_glissando` refused this; `note_with_glissando_vibrato` and
+  `note_with_two_vibratos_glissando` did not. One helper now refuses for
+  all three, and a linear glissando may still sweep from zero.
+- **`mix` read a stereo sound's two channels as its length.** It pads to
+  the longer of its two arguments, and `len()` of a `(2, n)` array is 2,
+  so a stereo argument reached numpy as a length of two and failed there
+  with a message about broadcasting shapes -- naming neither the argument
+  nor the mistake. It refuses now, and points at `mix_stereo`. The same
+  defect `iir` had.
+- **Five routines stopped somewhere unhelpful on a degenerate argument**,
+  and each now refuses with a `ValueError` that names it: `noise` and
+  `gaussian_noise` given a duration shorter than one sample (an
+  `IndexError` and a division by zero), `gaussian_noise` given a `std` of
+  zero, which zeroed every coefficient and then normalized an all-zero
+  spectrum into NaN behind a warning, `note_with_doppler` given the same
+  zero duration, `trill` given no notes per second, and
+  `rhythm_to_durations` given nothing that fixes a duration, which divided
+  `None` by a sum.
+- **`fade` refuses a percentage outside [0, 100] and a method it does not
+  have.** They reached an `IndexError` from inside the routine and an
+  `UnboundLocalError` on a name it never bound.
 - **`pan_transitions` interpolated every leg of a pan from the first
   position rather than from the one the leg before it reached.** The
   loop assigned its running start point once, before the loop, and never
@@ -70,6 +104,40 @@
   it with its inverse is exact silence -- no phase error anywhere. But
   `mix_with_offset` truncates its offset to whole samples, so half a
   sample is no offset at all and a finely swept offset is a staircase.
+
+- **`tests/test_degenerate.py`**, the sweep that found eight of the
+  defects above -- the rest came from probing the same edges by hand
+  before it existed, which is the argument for having it.
+  It sets every numeric parameter of every export that renders on its own
+  defaults to zero -- 155 pairs -- and holds each to one of two answers:
+  it works, returning finite samples, or it refuses with a `ValueError`
+  that says what the caller did. Never a `ZeroDivisionError`, an
+  `IndexError`, an `UnboundLocalError` or a message about broadcasting,
+  since those name the line that gave up rather than the argument that
+  was wrong; and never a warning, because a warning here means the
+  routine carried on and returned something built out of NaN.
+
+- **Filter stability, across the whole parameter range.** An unstable
+  filter is silent about it until it is not: nothing in the coefficients
+  says so on inspection and nothing in the sound says so until it rings
+  for ever or grows without bound. Every design's poles are now checked
+  inside the unit circle at every cutoff, centre and bandwidth worth
+  asking for -- the closest call is 0.999994, from a one-pole design at a
+  cutoff of a millionth -- and every impulse response is under a millionth
+  of its peak within a tenth of a second.
+
+  Measuring this needs the package's own convention: `iir` puts a plus on
+  the feedback sum, so the characteristic polynomial is
+  `[b0, -b1, -b2, ...]` rather than `b`. Reading it the usual way reports
+  a stable filter as unstable, which is how the measure was written the
+  first time.
+
+- **Intermodulation.** Amplitude and frequency modulation put their
+  sidebands exactly where the model says -- a 5 kHz carrier modulated at
+  300 Hz is 4700, 5000 and 5300 and nothing else -- and a carrier near the
+  top of the band swung wide folds, which is the aliasing above arriving
+  by a second route. A glissando swept past Nyquist stays finite and
+  inside the band rather than breaking.
 
 ### Changed
 - **The README's scale and the tutorial's melody shape their notes before

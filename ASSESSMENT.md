@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-10**,
-`music` 1.7.0: 47 modules, 11,752 LOC package + 10,133 LOC tests, 126 names
+`music` 1.7.0: 47 modules, 11,887 LOC package + 10,536 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -56,12 +56,12 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **2548 tests**, 16 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,739 stmts, 0 missed) |
+| Test suite | `pytest -q` | **2804 tests**, 16 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,764 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,112 findings |
-| Annotation coverage | AST scan | **101 / 207 functions (49 %)**; 63 / 94 exported (67 %) |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,139 findings |
+| Annotation coverage | AST scan | **101 / 208 functions (49 %)**; 63 / 94 exported (67 %) |
 | Docstring coverage | AST scan | **169 / 180 public defs (94 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
@@ -73,6 +73,8 @@ Every figure below came from running the code, not from reading it.
 | Rendering artifacts | `tests/test_artifacts.py` | every render swept for clicks and DC offset; the steps that remain are registered with a reason |
 | Aliasing | `tests/test_artifacts.py` | a sine strays **1.2e-08** of its energy off the harmonics at any frequency; a sawtooth strays **24 %** at 10 kHz |
 | Round-trip noise | `tests/test_artifacts.py` | **48 dB** at 8-bit, **121** at 16, **145** at 24, against what was written |
+| Filter stability | `tests/test_artifacts.py` | every design's poles inside the unit circle across its whole parameter range |
+| Degenerate parameters | `tests/test_degenerate.py` | **155** (routine, parameter) pairs set to zero: each works or is refused with a `ValueError` |
 | Import cost | `import music`, warm, 3.12 | **~185-290 ms**, and no sympy in `sys.modules` |
 | Archival subjects | `tools/verify_subjects.py` | **15 of 17** resolve to the term they declare; 2 unconfirmable, EuroSciVoc serving an empty graph |
 
@@ -219,6 +221,15 @@ either documented in the code or tracked in the issue list.
   harmonics. A sawtooth at 100 Hz reads as clean as arithmetic allows and
   is not clean. A test keeps that written down.
 
+  The same folding reaches a caller by a second route. Amplitude and
+  frequency modulation put their sidebands exactly where the model says --
+  a 5 kHz carrier modulated at 300 Hz is 4700, 5000 and 5300 and nothing
+  else -- but a carrier near the top of the band swung wide puts sidebands
+  past Nyquist, and those come back down too: an 18 kHz carrier swung by
+  8 kHz shows partials below 10 kHz, which is the lowest the modulation
+  could legitimately reach. Measured, not fixed; it is the same wavetable
+  read.
+
 - **Writing normalizes, so a file's level is not the render's level.**
   `write_wav_mono` runs `normalize_mono` over everything it is given: a
   passage at a hundredth of full scale and one at twenty-six times it both
@@ -274,7 +285,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,112 findings** on `music/`, almost all
+- **The extended lint set reports 2,139 findings** on `music/`, almost all
   stylistic: 345 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their

@@ -57,6 +57,20 @@
   with a message about broadcasting shapes -- naming neither the argument
   nor the mistake. It refuses now, and points at `mix_stereo`. The same
   defect `iir` had.
+- **`gaussian_noise` refused a band reaching below 0 Hz by giving up on
+  a negative array length.** `mean` and `std` name a band in units of
+  3000 Hz, so `mean=0` asks for -750 to 750 Hz and `mean=1, std=3` for
+  -1500 to 7500. The negative index reached `np.zeros(-1500)`, which is
+  "negative dimensions are not allowed" -- numpy giving up on a line that
+  was trying to do something else. The band is now read as the positive
+  part of itself, and one lying entirely below zero is refused with the
+  message that already existed for a band holding no frequency.
+
+  Its `mean` and `std` also had `_description_` where their descriptions
+  should be, which is the placeholder a docstring generator leaves. They
+  name a band rather than a distribution, despite the routine's name and
+  theirs, and now say so.
+
 - **Five routines stopped somewhere unhelpful on a degenerate argument**,
   and each now refuses with a `ValueError` that names it: `noise` and
   `gaussian_noise` given a duration shorter than one sample (an

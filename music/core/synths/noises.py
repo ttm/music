@@ -145,9 +145,19 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
     Parameters
     ----------
     mean : int, optional
-        _description_, by default 1
+        The centre of the band the noise occupies, in units of 3000 Hz,
+        by default 1 -- so 3000 Hz.
     std : float, optional
-        _description_, by default 0.5
+        The width of that band, in the same units, by default 0.5 -- so
+        1500 Hz wide, running from 2250 to 3750 Hz.
+
+        These name a band rather than a distribution, despite the
+        routine's name and theirs. What is Gaussian here is the shape of
+        the samples that come out, which is what a sum of many
+        random-phase partials tends to; the samples' own mean and
+        standard deviation are set by the normalization at the end and
+        have nothing to do with these two. A band reaching below 0 Hz is
+        read as the positive part of itself.
     duration : int, optional
         How long in seconds will the noise be, by default 2
     sample_rate : int, optional
@@ -194,7 +204,14 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
         coeffs[length // 2] = 0.
     f1 = (mean - std / 2) * 3000
     f2 = (mean + std / 2) * 3000
-    first_coeff = int(np.floor(f1 / freq_res))
+    # A band reaching below 0 Hz is the positive part of itself: mean=1
+    # with std=3 asks for -1500 to 7500 Hz, and the sensible reading is 0
+    # to 7500. Without the clamp the negative index reached
+    # np.zeros(-1500), which is "negative dimensions are not allowed" --
+    # numpy giving up on a line that was trying to do something else. A
+    # band lying entirely below zero has nothing left after the clamp and
+    # is refused below.
+    first_coeff = max(0, int(np.floor(f1 / freq_res)))
     last_coeff = int(np.floor(f2 / freq_res))
     if last_coeff <= first_coeff:
         # Every coefficient is about to be zeroed, and normalizing an

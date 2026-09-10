@@ -201,11 +201,50 @@ def _render(name):
 RENDERS = sorted(name for name in ZERO_ARG_EXPORTS
                  if _render(name) is not None)
 
+#: Everything the sweep leaves out, and what it is instead.  A count on
+#: its own would let a real render drop quietly out of the sweep -- six
+#: could go before `>= 30` noticed -- so this names them, and the test
+#: below asserts the two sets between them account for every export.
+NOT_A_RENDER = {
+    "band_pass": "filter coefficients",
+    "band_reject": "filter coefficients",
+    "high_pass": "filter coefficients",
+    "low_pass": "filter coefficients, as a pair of arrays",
+    "chord": "semitones",
+    "harmonic_series": "ratios",
+    "mode_by_rotation": "semitones",
+    "pitch_to_freq": "frequencies",
+    "scale": "semitones",
+    "rhythm_to_durations": "durations in seconds",
+    "proportional": "a bond, which is a function",
+    "inversely_proportional": "a bond, which is a function",
+}
+
 
 def test_the_sweep_finds_the_renders():
     """Guard the sweep itself, the way test_public_api.py guards its own."""
     assert len(RENDERS) >= 30
     assert "note" in RENDERS and "silence" in RENDERS
+
+
+def test_every_export_is_either_swept_or_named_as_not_a_render():
+    """So nothing can leave the sweep without someone saying why.
+
+    The sweep takes what comes back as a float array of at least 512
+    samples, which is a rule about shape rather than about meaning: a
+    routine that started returning something shorter, or an array of
+    something else, would drop out of it in silence.
+    """
+    unaccounted = set(ZERO_ARG_EXPORTS) - set(RENDERS) - set(NOT_A_RENDER)
+    assert not unaccounted, (
+        f"{sorted(unaccounted)} are neither swept for artifacts nor "
+        "registered as something other than a render. If one of them is a "
+        "render, find out why the sweep stopped seeing it.")
+
+    stale = set(NOT_A_RENDER) & set(RENDERS)
+    assert not stale, (
+        f"{sorted(stale)} are registered as not being renders and are "
+        "being swept as renders; delete the entries.")
 
 
 @pytest.mark.parametrize("name", sorted(set(CONTROL_SIGNALS)
@@ -452,7 +491,11 @@ def stray_energy(samples, freq):
     A wavetable is read at whatever rate the frequency asks for and
     nothing band-limits it, so a partial above the Nyquist frequency folds
     back down to `sample_rate - k * freq` and lands somewhere it does not
-    belong.  This measures how much of the render is that.
+    belong.  This measures the energy that is not at a multiple of the
+    fundamental, which is that plus anything else off the harmonics --
+    the table read's own error, mostly. The sine row is what separates
+    them: it carries no partial that can fold, and reads 1.2e-08, so
+    everything above that in the rich tables is folding.
 
     The measure is blind whenever the sample rate is a whole multiple of
     the frequency, because then the folded partials land on multiples of
@@ -988,3 +1031,38 @@ def test_the_dc_measure_flags_an_offset_worth_flagging():
     tone = music.note(440, 0.5)
     assert dc_offset(tone + 0.02) < DC_LIMIT
     assert dc_offset(tone + 0.05) > DC_LIMIT
+
+
+def test_the_alias_measure_reads_a_spectrum_built_to_order():
+    """A positive control, which is what the click measure lacked.
+
+    Every use of `stray_energy` above asks whether a render is clean, and
+    a measure that answered "clean" to everything would satisfy all of
+    them. So: a pure tone at a bin frequency, then the same tone with a
+    partial of known energy planted somewhere that is not a multiple of
+    the fundamental. What comes back should be the fraction planted.
+    """
+    samples = np.arange(SECOND)
+    fundamental = np.sin(2 * np.pi * 1000 * samples / SECOND)
+    assert stray_energy(fundamental, 1000) < 1e-20
+
+    for fraction in (0.5, 0.1, 0.01):
+        # An amplitude a carries energy a**2, so a**2 / (1 + a**2) of the
+        # total is the planted partial's share.
+        amplitude = np.sqrt(fraction / (1 - fraction))
+        planted = fundamental + amplitude * np.sin(
+            2 * np.pi * 1300 * samples / SECOND)
+        assert stray_energy(planted, 1000) == pytest.approx(fraction,
+                                                            abs=1e-6)
+
+
+def test_the_partial_finder_reads_a_signal_built_to_order():
+    """The same for `partials`, which the modulation tests lean on."""
+    samples = np.arange(SECOND)
+    built = (np.sin(2 * np.pi * 700 * samples / SECOND)
+             + 0.5 * np.sin(2 * np.pi * 2100 * samples / SECOND)
+             + 0.1 * np.sin(2 * np.pi * 5000 * samples / SECOND))
+
+    assert partials(built) == [700, 2100, 5000]
+    # And the floor is a floor: raised above the quietest, it drops it.
+    assert partials(built, floor=0.2) == [700, 2100]

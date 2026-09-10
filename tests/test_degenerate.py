@@ -35,6 +35,7 @@ something anyone can act on.
 import inspect
 import pathlib
 import re
+import traceback
 import warnings
 
 import numpy as np
@@ -111,6 +112,28 @@ def test_assessment_md_says_how_many_edges_there_are():
         f"and the sweep covers {len(EDGES)}")
 
 
+def _was_raised_deliberately(error):
+    """Whether the package refused, or numpy gave up where it stood.
+
+    Every failure this file was written to forbid is a `ValueError`:
+    numpy raises one for a broadcasting mismatch and another for
+    concatenating nothing. So catching `ValueError` and calling it a
+    refusal accepted exactly the failures the contract forbids -- and it
+    did, for as long as this test existed. `amplitude_modulation`,
+    `isochronic_tones` and `modulated_noise` failed on broadcasting at a
+    zero duration and passed this sweep the whole time; the zero-duration
+    sweep further down caught them, which is the only reason they were
+    ever found.
+
+    What separates the two is where the exception was raised. A refusal
+    this package means is a `raise ValueError` on the frame that raised;
+    numpy's comes from an arithmetic line that was trying to do something
+    else.
+    """
+    frame = traceback.extract_tb(error.__traceback__)[-1]
+    return "raise ValueError" in (frame.line or "")
+
+
 @pytest.mark.parametrize("name,parameter", EDGES,
                          ids=lambda value: str(value))
 def test_a_parameter_at_zero_works_or_is_refused_clearly(name, parameter):
@@ -122,8 +145,14 @@ def test_a_parameter_at_zero_works_or_is_refused_clearly(name, parameter):
             # carried on, which is the failure that looks like success.
             warnings.simplefilter("error")
             result = function(**{parameter: 0})
-    except ValueError:
-        return                      # a deliberate refusal, which is fine
+    except ValueError as refusal:
+        assert _was_raised_deliberately(refusal), (
+            f"{name}({parameter}=0) raised ValueError from "
+            f"{traceback.extract_tb(refusal.__traceback__)[-1].filename}"
+            f":{traceback.extract_tb(refusal.__traceback__)[-1].lineno}, "
+            f"which is arithmetic giving up rather than a refusal: "
+            f"{refusal}")
+        return
     except Exception as unexpected:  # pragma: no cover - the failure path
         pytest.fail(
             f"{name}({parameter}=0) raised {type(unexpected).__name__}: "

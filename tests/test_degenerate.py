@@ -16,7 +16,7 @@ message about broadcasting -- those name the line that gave up rather than
 the argument that was wrong. And never a warning, because a warning here
 means the routine carried on and returned something built out of NaN.
 
-Seven routines failed this when it was first written. `fade` returned an
+Nine routines failed this when it was first written. `fade` returned an
 envelope 88,200 samples longer than the one asked for; two of the three
 glissandos cast a NaN frequency contour to an integer table index and read
 a sound out of it; `mix` counted a stereo array's two channels as its
@@ -124,6 +124,13 @@ def test_a_wholly_linear_fade_is_as_long_as_it_was_asked_for(duration):
     assert len(music.fade(duration=duration, perc=100)) == expected
     assert len(music.fade(duration=duration, perc=100,
                           fade_out=False)) == expected
+
+    # Applied rather than returned, which failed differently: the
+    # envelope came out longer than the sound it was cut for, so the
+    # multiplication raised a broadcast error instead of returning
+    # something wrong.
+    sound = music.note(440, duration)
+    assert len(music.fade(sonic_vector=sound, perc=100)) == len(sound)
 
 
 def test_a_wholly_linear_fade_is_the_linear_fade():
@@ -251,10 +258,15 @@ def test_a_zero_duration_renders_nothing(name):
     """Zero samples, keeping the shape the routine would have returned.
 
     This is the package's convention and it was never written down, so it
-    drifted: twenty-four routines answered a zero duration with an empty
-    array, two -- `binaural_beats` and `monaural_beats` -- returned two
-    seconds of audio, and four failed with a numpy message about
-    broadcasting or about concatenating nothing.
+    drifted. Of the twenty-seven routines that take a duration, sixteen
+    answered a zero one with an empty array, five refused, four failed
+    with a numpy message about broadcasting or about concatenating
+    nothing, and two -- `binaural_beats` and `monaural_beats` -- returned
+    two seconds of audio. Only one of the five refusals was about a zero
+    duration at all: `reverb` conflicts with its own
+    `first_phase_duration`, and the other four had been added the commit
+    before this one, by me, guessing at a convention rather than looking
+    for the one already here.
 
     The two-second answer is the interesting one. Every routine in
     `music.stimulation` sizes itself with `_sample_count`, which returns

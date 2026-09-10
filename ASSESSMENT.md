@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-10**,
-`music` 1.7.0: 47 modules, 11,960 LOC package + 10,635 LOC tests, 126 names
+`music` 1.7.0: 47 modules, 11,956 LOC package + 10,705 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -56,7 +56,7 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **2838 tests**, 16 s |
+| Test suite | `pytest -q` | **2839 tests**, 16 s |
 | Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,782 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
@@ -240,11 +240,30 @@ either documented in the code or tracked in the issue list.
   and nothing warns. Stack the phrases and write once, or scale by hand.
   Both tested.
 
+- **The round-trip figures are not the ones the textbook formula gives,
+  and the reason is the waveform rather than the file.** `6.02b + 1.76`
+  is the signal-to-noise of a quantised full-scale *sine*; the default
+  wavetable is triangular, whose RMS is `1/sqrt(3)` rather than
+  `1/sqrt(2)`, which is 1.77 dB less signal for the same peak. Measured
+  against the triangular figure instead, 8-bit lands at 48.1 against 48.2
+  predicted and 24-bit at 144.6 against 144.5. Only 16-bit is an outlier,
+  for the reason below.
+
+  A separate and much smaller cost: a PCM integer is one code shorter on
+  the positive side, so a sample above `(rail - 0.5) / rail` rounds to a
+  code that does not exist and is clipped, losing up to a whole least
+  significant bit. At eight bits that band is the top 0.4 % of the range
+  and a note lands in it. It is worth knowing and it is not worth much:
+  zeroing every rail-clipped error in a one-second note moves the 8-bit
+  measurement by 0.06 dB. An earlier version of this file said it was
+  what made that row read 48 dB, which it is not.
+
 - **A note carries thirteen bits of amplitude, whatever the file says.**
   The default wavetable holds 16,384 entries but only 8,193 distinct
   values, every one a multiple of 1/4096. So a 16-bit file cannot lose
-  anything a bare note has -- the round trip measures 121 dB where the
-  format's theory says 98 -- and a 24-bit file buys nothing at all.
+  anything a bare note has -- the round trip measures 121 dB where this
+  waveform at this depth predicts 96 -- and a 24-bit file buys nothing at
+  all.
   Anything that shapes a note afterwards, an envelope or a mix, leaves the
   grid behind; a bare note does not.
 
@@ -267,12 +286,13 @@ either documented in the code or tracked in the issue list.
   than samples.
 
   This was a convention rather than a decision until it was written down,
-  and it had drifted: twenty-four routines rendered nothing, two rendered
-  **two seconds of audio**, and four failed with a numpy message. The two
-  are the interesting ones -- every routine in `music.stimulation` sizes
-  itself correctly and then renders with `note(number_of_samples=count)`,
-  where a count of zero means "not supplied", so an honest zero was
-  laundered into the default on the way past.
+  and it had drifted. Of the twenty-seven routines that take a duration,
+  sixteen rendered nothing, five refused, four failed with a numpy
+  message, and two rendered **two seconds of audio**. The two are the
+  interesting ones -- every routine in `music.stimulation` sizes itself
+  correctly and then renders with `note(number_of_samples=count)`, where a
+  count of zero means "not supplied", so an honest zero was laundered into
+  the default on the way past.
 
 - **An offset below one sample is discarded rather than rounded.**
   `mix_with_offset` takes seconds and delays by `int(seconds * rate)`, so

@@ -76,13 +76,13 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
     else:
         length = int(duration * sample_rate)
     if length < 1:
-        # Zero samples is zero samples. Sixteen routines here already
-        # answer a zero duration with an empty array, and the sequence
-        # operations treat one as the identity it is: horizontal_stack
-        # and mix pass it through, adsr shapes it into itself. Refusing
-        # would make every caller that computes durations filter them
-        # first. Where an empty sound stops being meaningful is at the
-        # sinks, and normalize_mono says so there.
+        # Zero samples is zero samples, which is what every routine
+        # here answers a zero duration with. The sequence operations
+        # treat one as the identity it is: horizontal_stack and mix pass
+        # it through, adsr shapes it into itself. Refusing would make
+        # every caller that computes durations filter them first. Where
+        # an empty sound stops being meaningful is at the sinks, and
+        # normalize_mono says so there.
         return np.array([])
     prog: float
     if noise_type == "white":
@@ -182,13 +182,8 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
     # rather than rendering the half second it was asked for.
     length = int(duration * sample_rate)
     if length < 1:
-        # Zero samples is zero samples. Sixteen routines here already
-        # answer a zero duration with an empty array, and the sequence
-        # operations treat one as the identity it is: horizontal_stack
-        # and mix pass it through, adsr shapes it into itself. Refusing
-        # would make every caller that computes durations filter them
-        # first. Where an empty sound stops being meaningful is at the
-        # sinks, and normalize_mono says so there.
+        # As in `noise` above: a zero duration renders nothing, and
+        # normalize_mono is where an empty sound is refused.
         return np.array([])
     freq_res = sample_rate / float(length)
     coeffs = np.exp(1j * np.random.uniform(0, 2 * np.pi, length))

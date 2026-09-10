@@ -1,11 +1,13 @@
 ## [Unreleased]
 
 ### Fixed
-- **A zero duration renders nothing, everywhere.** It always did in
-  twenty-four routines; in `binaural_beats` and `monaural_beats` it
-  rendered **two seconds of audio**, and in `amplitude_modulation`,
-  `isochronic_tones`, `modulated_noise` and `trill` it failed with a numpy
-  message about broadcasting or about concatenating nothing.
+- **A zero duration renders nothing, everywhere.** Of the twenty-seven
+  routines that take a duration, sixteen always did; in `binaural_beats`
+  and `monaural_beats` it rendered **two seconds of audio**, and in
+  `amplitude_modulation`, `isochronic_tones`, `modulated_noise` and
+  `trill` it failed with a numpy message about broadcasting or about
+  concatenating nothing. The remaining five refused, only one of them
+  about the duration itself.
 
   The two-second answer is the one worth explaining. Every routine in
   `music.stimulation` sizes itself with a helper that returns zero
@@ -124,8 +126,9 @@
   *Quantisation.* The default wavetable holds 16,384 entries but only
   8,193 distinct values, each a multiple of 1/4096, so a bare note carries
   thirteen bits of amplitude however wide the file is. The 16-bit round
-  trip measures 121 dB where the format's own theory says 98, for that
-  reason and no other. The quantiser clips rather than wraps at the rails,
+  trip measures 121 dB where this waveform at this depth predicts 96, for
+  that reason and no other -- and the prediction is for a triangle, not
+  the sine `6.02b + 1.76` assumes, which is the point above. The quantiser clips rather than wraps at the rails,
   which is now tested directly rather than only through the normalization
   that would hide it.
 

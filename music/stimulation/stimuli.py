@@ -38,13 +38,14 @@ def _nothing(channels=1):
     means "not supplied" and gives back the two-second default. So a
     zero-length request came out of ``binaural_beats`` and
     ``monaural_beats`` as two seconds of audio, and out of the three that
-    multiply a tone by an envelope built from the same count as a numpy
-    message about broadcasting. The count was honest; passing it on is
+    multiply a rendered sound -- a tone, or a bed of noise -- by an
+    envelope built from the same count, as a numpy message about
+    broadcasting. The count was honest; passing it on is
     what laundered it.
 
-    A zero duration answers with nothing, which is what sixteen of the
-    synthesis routines already do and what the sequence operations treat
-    as the identity it is.
+    A zero duration answers with nothing, which is what every synthesis
+    routine here does and what the sequence operations treat as the
+    identity it is.
     """
     return np.zeros((channels, 0)) if channels > 1 else np.array([])
 

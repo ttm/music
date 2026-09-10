@@ -33,6 +33,8 @@ each registered below with the reason it is there.
 """
 
 import functools
+import pathlib
+import re
 
 import numpy as np
 import pytest
@@ -59,7 +61,14 @@ from test_public_api import ZERO_ARG_EXPORTS, _callable_with_defaults
 BLOCK = 129
 
 #: How far a step must stand out from its neighbourhood to be a click.
-#: The renders that pass sit at 1 to 2; the registered ones start at 48.
+#:
+#: Where the margin actually is, since a threshold is only as good as the
+#: gap it sits in: most renders that pass sit at 1 to 2, but `trill`
+#: reaches 6.1 and `localize2` 5.8 -- both concatenate or delay, and the
+#: joins show. The registered ones start at 47.7. So the gap is 6.1 to
+#: 47.7 and this sits nearer the bottom of it than the middle, which
+#: buys sensitivity at the cost of a routine drifting into a false
+#: positive. A failure here is a prompt to look, not proof of a click.
 CLICK_RATIO = 8.0
 
 #: And how large it must be against the render's peak, so that a step in a
@@ -308,26 +317,60 @@ def test_an_envelope_closes_the_seam():
             f"{step:.6f}, against {inside:.4f} inside the notes")
 
 
-def test_the_scale_the_readme_renders_does_not_click():
+#: The first fenced python block in the README, which is the first code
+#: anyone here runs.
+_README_BLOCK = re.compile(r"```python\n(.*?)```", re.S)
+
+
+def test_the_scale_the_readme_renders_does_not_click(tmp_path, monkeypatch):
     """The example a reader copies first, and it used to click nine times.
 
     Twelve joins, of which nine stepped by up to 1.88 out of a full scale
     of 2.0, because a chromatic scale from 440 Hz is whole cycles at the
-    root and mid-cycle nearly everywhere else. The README now shapes each
-    note before stacking them; this fails if that is reverted.
+    root and mid-cycle nearly everywhere else.
+
+    This runs the README's own block rather than a copy of it, so
+    dropping the `adsr` from the page fails here. An earlier version did
+    keep a copy, and said in this docstring that reverting the README
+    would fail it -- which it would not have, since the copy would have
+    gone on passing on its own.
     """
-    scale = [music.adsr(sonic_vector=music.note(440 * 2 ** (i / 12),
-                                                duration=0.25))
-             for i in range(13)]
-    assert not clicks(music.horizontal_stack(*scale))
+    readme = (pathlib.Path(__file__).parent.parent / "README.md").read_text()
+    block = _README_BLOCK.search(readme)
+    assert block, "the README no longer opens with a python block"
+
+    monkeypatch.chdir(tmp_path)          # the block writes scale.wav
+    namespace: dict = {}
+    exec(compile(block.group(1), "README.md[first block]", "exec"), namespace)
+
+    assert "scale" in namespace, (
+        "the README's block no longer binds `scale`; this test reads that "
+        "name to check what the page renders")
+    assert not clicks(music.horizontal_stack(*namespace["scale"]))
 
 
-def test_the_melody_the_tutorial_renders_does_not_click():
-    """The same, for the tutorial's first sequence of notes."""
-    freqs = [261.63, 293.66, 329.63, 349.23, 392.0]
-    melody = music.horizontal_stack(
-        *[music.adsr(sonic_vector=music.note(f, 0.35)) for f in freqs])
-    assert not clicks(melody)
+def test_the_melody_the_tutorial_renders_does_not_click(tmp_path,
+                                                        monkeypatch):
+    """The same, for the tutorial's first sequence of notes.
+
+    `tests/test_tutorial.py` already runs every block on the page in one
+    namespace; this borrows its extraction and checks what one of them
+    renders rather than only that it ran.
+    """
+    from test_tutorial import BLOCKS
+
+    monkeypatch.chdir(tmp_path)
+    namespace: dict = {}
+    for block in BLOCKS:
+        if block.lstrip().startswith(">>>"):
+            continue
+        exec(compile(block, "tutorial.rst", "exec"), namespace)
+        if "melody" in namespace:
+            break
+
+    assert "melody" in namespace, (
+        "no block in the tutorial binds `melody` any more")
+    assert not clicks(namespace["melody"])
 
 
 # ---------------------------------------------------------------------
@@ -564,8 +607,15 @@ def test_the_quantizer_clips_rather_than_wraps(bit_depth):
 
 #: Round-trip signal-to-noise, in dB, measured against the samples that
 #: were actually written -- which is the normalized signal, not the one
-#: handed in. 16-bit beats its own theoretical 98.1 dB because the source
-#: is coarser than the format: see the test below.
+#: handed in.
+#:
+#: The figure to compare these against is not 6.02b + 1.76. That assumes
+#: a full-scale *sine*, and the default wavetable is triangular, whose
+#: RMS is 1/sqrt(3) rather than 1/sqrt(2) -- 1.77 dB less signal for the
+#: same peak. Against the triangular figure, 8-bit and 24-bit land within
+#: a tenth of a decibel (48.2 and 144.5 predicted), and only 16-bit is an
+#: outlier: it beats its own prediction by 25 dB because the source is
+#: coarser than the format, which the test below is about.
 ROUND_TRIP_SNR = {8: 48.1, 16: 121.1, 24: 144.6}
 
 
@@ -594,8 +644,8 @@ def test_a_rendered_note_is_coarser_than_the_file_it_is_written_to():
     values, every one a multiple of 1/4096, and a note is a read out of it.
     So a note carries thirteen bits of amplitude resolution, a 16-bit file
     cannot lose anything it has -- which is why the round trip above
-    measures 121 dB where the format's own theory says 98 -- and a 24-bit
-    file buys nothing at all. Anything that shapes a note afterwards, an
+    measures 121 dB where this waveform at this depth predicts 96 -- and a
+    24-bit file buys nothing at all. Anything that shapes a note afterwards, an
     envelope or a mix, leaves this behind; a bare note does not.
     """
     rendered = music.note(440, 0.2)
@@ -809,24 +859,32 @@ def test_a_glissando_through_nyquist_folds_rather_than_breaking():
 # The rail: where two's complement is one code short
 # ---------------------------------------------------------------------
 
-def test_the_positive_rail_costs_a_whole_lsb_at_eight_bits():
-    """Why an 8-bit round trip misses the half-step a quantiser should
-    cost, and why 16-bit does not.
+@pytest.mark.parametrize("short_by,cost", [(0.4, 0.6), (0.01, 0.99)])
+def test_the_positive_rail_is_one_code_short(short_by, cost):
+    """A sample near full scale rounds to a code that does not exist.
 
     A PCM integer runs from -2**(b-1) to 2**(b-1) - 1, one code shorter on
-    the positive side, so a sample above (rail - 0.5) / rail rounds to a
-    code that does not exist and is clipped to the one below it. At eight
-    bits that band is the top 0.4% of the range and a note lands in it;
-    at sixteen it is the top 0.0015% and nothing does. It is the reason
-    the 8-bit row above reads 48 dB where its theory says 50.
+    the positive side, so a sample above (rail - 0.5) / rail rounds up to
+    a code there is no room for and is clipped to the one below. What that
+    costs runs up to a whole least significant bit, at a sample just under
+    full scale. At eight bits the affected band is the top 0.4% of the
+    range and a note lands in it; at sixteen it is the top 0.0015% and
+    nothing does.
+
+    What it does *not* explain is the 8-bit round-trip figure, which an
+    earlier version of this file claimed. Zeroing every rail-clipped error
+    in a one-second note moves that measurement by 0.06 dB. The 1.8 dB
+    that separates it from 6.02b + 1.76 is the waveform: see
+    `ROUND_TRIP_SNR` above.
     """
     rail = 128
-    just_over = (rail - 0.4) / rail      # rounds to 128, which is no code
-    quantized = _quantize(np.array([just_over]), 8)
+    near_full_scale = (rail - short_by) / rail
+    quantized = _quantize(np.array([near_full_scale]), 8)
     assert quantized[0] == (rail - 1) * 256   # clipped to 127, shifted
 
-    cost = abs(just_over - (rail - 1) / rail) * rail
-    assert cost == pytest.approx(0.6, abs=0.01)
+    lost = abs(near_full_scale - (rail - 1) / rail) * rail
+    assert lost == pytest.approx(cost, abs=0.01)
 
     # The same sample at sixteen bits is nowhere near the rail.
-    assert _quantize(np.array([just_over]), 16)[0] == round(just_over * 32768)
+    assert _quantize(np.array([near_full_scale]), 16)[0] == round(
+        near_full_scale * 32768)

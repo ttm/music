@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-10**,
-`music` 1.7.0: 47 modules, 11,752 LOC package + 9,857 LOC tests, 126 names
+`music` 1.7.0: 47 modules, 11,752 LOC package + 10,133 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -56,7 +56,7 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **2521 tests**, 16 s |
+| Test suite | `pytest -q` | **2548 tests**, 16 s |
 | Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,739 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
@@ -71,6 +71,8 @@ Every figure below came from running the code, not from reading it.
 | Examples | `python tools/run_examples.py` | **10 pass**, 1 skipped for the external singing engine |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
 | Rendering artifacts | `tests/test_artifacts.py` | every render swept for clicks and DC offset; the steps that remain are registered with a reason |
+| Aliasing | `tests/test_artifacts.py` | a sine strays **1.2e-08** of its energy off the harmonics at any frequency; a sawtooth strays **24 %** at 10 kHz |
+| Round-trip noise | `tests/test_artifacts.py` | **48 dB** at 8-bit, **121** at 16, **145** at 24, against what was written |
 | Import cost | `import music`, warm, 3.12 | **~185-290 ms**, and no sympy in `sys.modules` |
 | Archival subjects | `tools/verify_subjects.py` | **15 of 17** resolve to the term they declare; 2 unconfirmable, EuroSciVoc serving an empty graph |
 
@@ -193,6 +195,54 @@ either documented in the code or tracked in the issue list.
   package does not have is a routine that joins notes *without* an
   envelope -- no zero-crossing alignment, no automatic micro-fade at a
   seam. Issue #76.
+
+- **The synthesis aliases, and how much depends on the table and the
+  note.** A wavetable is read sample by sample with nothing band-limiting
+  it, so every partial above the Nyquist frequency folds back down and
+  lands where it does not belong. A sine has one partial and nothing to
+  fold: it strays 1.2e-08 of its energy off the fundamental at any
+  frequency, which is the table read itself. The rich tables carry
+  partials all the way up, and at 10 kHz a **sawtooth has 24 % of its
+  energy away from any harmonic of the note being played** -- a
+  triangular 1.5 %, a square 19 %. At 1 kHz the same three are 2.7 %,
+  0.0016 % and 1.8 %.
+
+  This is what the method costs rather than a defect in it. MASS
+  specifies a table read at every sample, and a band-limited table is a
+  different instrument. It is measured and pinned so that it cannot
+  change unnoticed, and so that anyone rendering high notes from a rich
+  table knows what they are getting.
+
+  Worth knowing about the measurement too: it is blind whenever the
+  sample rate is a whole multiple of the frequency, since then the folded
+  partials land on multiples of the fundamental and cannot be told from
+  harmonics. A sawtooth at 100 Hz reads as clean as arithmetic allows and
+  is not clean. A test keeps that written down.
+
+- **Writing normalizes, so a file's level is not the render's level.**
+  `write_wav_mono` runs `normalize_mono` over everything it is given: a
+  passage at a hundredth of full scale and one at twenty-six times it both
+  arrive at exactly full scale. The docstring says so. The consequence it
+  does not say is that **a piece written a phrase at a time is a piece
+  whose dynamics are gone** -- each phrase comes back at the same peak,
+  and nothing warns. Stack the phrases and write once, or scale by hand.
+  Both tested.
+
+- **A note carries thirteen bits of amplitude, whatever the file says.**
+  The default wavetable holds 16,384 entries but only 8,193 distinct
+  values, every one a multiple of 1/4096. So a 16-bit file cannot lose
+  anything a bare note has -- the round trip measures 121 dB where the
+  format's theory says 98 -- and a 24-bit file buys nothing at all.
+  Anything that shapes a note afterwards, an envelope or a mix, leaves the
+  grid behind; a bare note does not.
+
+- **An offset below one sample is discarded rather than rounded.**
+  `mix_with_offset` takes seconds and delays by `int(seconds * rate)`, so
+  half a sample is no offset at all, and a caller sweeping an offset finely
+  gets a staircase rather than a sweep. Honest for a routine that only
+  indexes, but it puts comb filtering and fractional delays out of reach
+  this way. Pinned rather than fixed: rounding would be a different
+  routine and resampling a much larger one.
 
 ### Scope and dependencies
 

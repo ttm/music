@@ -37,6 +37,40 @@
   Separately registered are the renders the measure cannot speak about:
   a random signal has no neighbourhood that explains anything.
 
+- **Four more artifact classes, measured**, in the same sweep. Each is a
+  property of the synthesis rather than a defect, and each is now a number
+  that cannot move without a test failing.
+
+  *Aliasing.* A wavetable is read sample by sample with nothing
+  band-limiting it, so every partial above Nyquist folds back down. A sine
+  has one partial and nothing to fold, straying 1.2e-08 of its energy off
+  the fundamental at any frequency. A sawtooth at 10 kHz has **24 % of its
+  energy away from any harmonic of the note being played**; a square 19 %,
+  a triangular 1.5 %. The measure is blind when the sample rate is a whole
+  multiple of the frequency -- the folded partials land on multiples of the
+  fundamental and hide behind the harmonics -- so a sawtooth at 100 Hz
+  reads as perfectly clean and is not. A test says so, because a blind
+  spot nobody wrote down is worse than no measure.
+
+  *Level on write.* `write_wav_mono` normalizes everything it is handed,
+  so a passage at a hundredth of full scale and one at twenty-six times it
+  both arrive at exactly full scale. The docstring said the first half;
+  the consequence is that a piece written a phrase at a time is a piece
+  whose dynamics are gone.
+
+  *Quantisation.* The default wavetable holds 16,384 entries but only
+  8,193 distinct values, each a multiple of 1/4096, so a bare note carries
+  thirteen bits of amplitude however wide the file is. The 16-bit round
+  trip measures 121 dB where the format's own theory says 98, for that
+  reason and no other. The quantiser clips rather than wraps at the rails,
+  which is now tested directly rather than only through the normalization
+  that would hide it.
+
+  *Mixing.* Summing a render with itself is exactly twice it and summing
+  it with its inverse is exact silence -- no phase error anywhere. But
+  `mix_with_offset` truncates its offset to whole samples, so half a
+  sample is no offset at all and a finely swept offset is a staircase.
+
 ### Changed
 - **The README's scale and the tutorial's melody shape their notes before
   stacking them**, and say why. A note ends wherever its phase lands and

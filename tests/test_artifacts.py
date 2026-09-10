@@ -38,6 +38,10 @@ import numpy as np
 import pytest
 
 import music
+from music.core.functions import normalize_mono
+from music.core.io import _quantize
+from music.utils import (WAVEFORM_SAWTOOTH, WAVEFORM_SINE, WAVEFORM_SQUARE,
+                         WAVEFORM_TRIANGULAR)
 from test_public_api import ZERO_ARG_EXPORTS, _callable_with_defaults
 
 #: The neighbourhood a step is judged against, in samples.  129 at 44.1 kHz
@@ -378,3 +382,275 @@ def test_pan_transitions_ignores_the_method_it_is_given():
                 for method in ("lin", "circ", "exp")]
     assert np.array_equal(rendered[0], rendered[1])
     assert np.array_equal(rendered[0], rendered[2])
+
+
+# ---------------------------------------------------------------------
+# Aliasing: partials that fold back down
+# ---------------------------------------------------------------------
+
+#: One second at 44.1 kHz.  At this length a partial at k Hz lands exactly
+#: on bin k, so nothing leaks into its neighbours -- and the partials that
+#: fold back land on bins too, which is what makes the two separable at
+#: all.
+SECOND = 44100
+
+
+def stray_energy(samples, freq):
+    """The share of the energy that is not at a multiple of `freq`.
+
+    A wavetable is read at whatever rate the frequency asks for and
+    nothing band-limits it, so a partial above the Nyquist frequency folds
+    back down to `sample_rate - k * freq` and lands somewhere it does not
+    belong.  This measures how much of the render is that.
+
+    The measure is blind whenever the sample rate is a whole multiple of
+    the frequency, because then the folded partials land on multiples of
+    `freq` as well and hide behind the harmonics they are being separated
+    from.  100 Hz at 44.1 kHz is such a frequency and reads as 1e-31,
+    which is not the same as clean; the test below keeps that written
+    down.  `samples` must be `SECOND` long for the bins to line up.
+    """
+    assert len(samples) == SECOND, "the bins only line up at one second"
+    energy = np.abs(np.fft.rfft(samples)) ** 2
+    energy[0] = 0.0                     # a bias is not a partial
+    bins = np.arange(energy.size)
+    harmonic = (bins > 0) & (bins % freq == 0)
+    return float(energy[~harmonic].sum() / energy.sum())
+
+
+#: The tables by name, so a tone can be cached on one.
+TABLES = {
+    "sine": WAVEFORM_SINE,
+    "triangular": WAVEFORM_TRIANGULAR,
+    "sawtooth": WAVEFORM_SAWTOOTH,
+    "square": WAVEFORM_SQUARE,
+}
+
+
+@functools.lru_cache(maxsize=None)
+def _tone(freq, table):
+    """A second of one table at one frequency, rendered once."""
+    return music.note(freq=freq, number_of_samples=SECOND,
+                      waveform_table=TABLES[table])
+
+
+#: What each table strays by at 1, 5 and 10 kHz, measured.  A sine has one
+#: partial and nothing to fold, so it is not here; the others carry
+#: partials all the way up and every one above Nyquist comes back down.
+#: This is what the synthesis method costs, not a defect in it: MASS
+#: specifies a table read sample by sample, and a band-limited table is a
+#: different instrument.
+ALIASING = {
+    "triangular": (1.55e-05, 2.30e-03, 1.45e-02),
+    "sawtooth": (2.68e-02, 1.35e-01, 2.40e-01),
+    "square": (1.83e-02, 9.93e-02, 1.89e-01),
+}
+
+
+@pytest.mark.parametrize("freq", [1000, 5000, 10000])
+def test_a_sine_table_has_nothing_to_fold(freq):
+    """One partial, so the only stray energy is the table read itself."""
+    stray = stray_energy(_tone(freq, "sine"), freq)
+    assert stray < 1e-6, (
+        f"a {freq} Hz sine strays {stray:.2e} of its energy off the "
+        "fundamental, where it used to stray 1.2e-08")
+
+
+@pytest.mark.parametrize("table,strays", sorted(ALIASING.items()))
+def test_a_rich_table_aliases_by_the_amount_it_always_has(table, strays):
+    """Measured, so that a change to the synthesis has to move a number."""
+    for freq, expected in zip((1000, 5000, 10000), strays):
+        assert stray_energy(_tone(freq, table), freq) == pytest.approx(
+            expected, rel=0.05)
+
+
+@pytest.mark.parametrize("table", sorted(ALIASING))
+def test_aliasing_grows_with_the_frequency(table):
+    """The higher the note, the more of it comes back down in the wrong
+    place: at 10 kHz a quarter of a sawtooth's energy is not at a harmonic
+    of the note being played."""
+    measured = [stray_energy(_tone(freq, table), freq)
+                for freq in (1000, 5000, 10000)]
+    assert measured[0] < measured[1] < measured[2]
+
+
+def test_the_alias_measure_is_blind_at_some_frequencies():
+    """Guard the measure, since a blind spot that nobody wrote down is
+    worse than no measure: 44100 / 100 is a whole number, so every folded
+    partial of a 100 Hz note lands on a multiple of 100 and cannot be told
+    from a harmonic. A sawtooth there reads as clean as arithmetic allows,
+    and it is not clean."""
+    assert stray_energy(_tone(100, "sawtooth"), 100) < 1e-20
+    assert stray_energy(_tone(1000, "sawtooth"), 1000) > 1e-2
+
+
+# ---------------------------------------------------------------------
+# What a write does to the level, and what it does at the rails
+# ---------------------------------------------------------------------
+
+@pytest.mark.parametrize("peak", [0.01, 1.0, 26.6])
+def test_writing_normalizes_whatever_it_is_handed(tmp_path, peak):
+    """A file's level is not the render's level.
+
+    `write_wav_mono` runs `normalize_mono` over everything it is given, so
+    a passage at a hundredth of full scale and one at twenty-six times it
+    both arrive at exactly full scale. It is in the docstring; it is here
+    because it is the sort of thing read once and not believed until a
+    quiet passage comes back loud.
+    """
+    path = tmp_path / "level.wav"
+    music.write_wav_mono(peak * music.note(440, 0.2), str(path))
+    assert np.abs(music.read_wav(str(path))).max() == pytest.approx(
+        1.0, abs=1e-4)
+
+
+def test_two_passages_written_separately_lose_their_relative_level(tmp_path):
+    """Which is what the normalization above costs, stated as a defect.
+
+    A piece written a phrase at a time is a piece whose dynamics are gone.
+    The way round it is to stack the phrases and write once, or to pass
+    `remove_bias=False` and scale by hand -- neither of which the caller
+    can know to do from a routine that just works.
+    """
+    loud, quiet = music.note(440, 0.2), 0.05 * music.note(440, 0.2)
+    peaks = []
+    for index, passage in enumerate((loud, quiet)):
+        path = tmp_path / f"passage{index}.wav"
+        music.write_wav_mono(passage, str(path))
+        peaks.append(float(np.abs(music.read_wav(str(path))).max()))
+
+    assert peaks[0] == pytest.approx(peaks[1], abs=1e-4), (
+        "a passage at a twentieth of the other's level came back at a "
+        "different level, which would mean the normalization documented "
+        "above had stopped happening")
+
+    together = music.horizontal_stack(loud, quiet)
+    path = tmp_path / "together.wav"
+    music.write_wav_mono(together, str(path))
+    both = music.read_wav(str(path))
+    half = len(loud)
+    assert np.abs(both[half:]).max() < 0.1 * np.abs(both[:half]).max(), (
+        "written in one pass, the quiet phrase should still be quiet")
+
+
+@pytest.mark.parametrize("bit_depth", [8, 16, 24])
+def test_the_quantizer_clips_rather_than_wraps(bit_depth):
+    """The failure this would otherwise be is not a distortion.
+
+    A sample past full scale that wraps comes back with its sign reversed
+    -- the loudest possible sample becomes the quietest -- and what that
+    sounds like is not a loud note but a detonation. `_quantize` clips,
+    and since `write_wav_mono` normalizes first, nothing should ever reach
+    it out of range anyway. This is the second of those two, tested
+    because the first would hide it.
+    """
+    rail = 2 ** (bit_depth - 1)
+    shift = 256 if bit_depth in (8, 24) else 1
+    quantized = _quantize(np.array([1.5, -1.5, 1.0, -1.0, 0.0]), bit_depth)
+
+    assert quantized[0] == (rail - 1) * shift
+    assert quantized[1] == -rail * shift
+    assert quantized[2] == (rail - 1) * shift
+    assert quantized[3] == -rail * shift
+    assert quantized[4] == 0
+    assert np.sign(quantized[:4]).tolist() == [1, -1, 1, -1], (
+        "a sample past full scale came back with its sign reversed, which "
+        "is what wrapping does and what clipping exists to prevent")
+
+
+# ---------------------------------------------------------------------
+# Quantisation: what a bit depth is worth here
+# ---------------------------------------------------------------------
+
+#: Round-trip signal-to-noise, in dB, measured against the samples that
+#: were actually written -- which is the normalized signal, not the one
+#: handed in. 16-bit beats its own theoretical 98.1 dB because the source
+#: is coarser than the format: see the test below.
+ROUND_TRIP_SNR = {8: 48.1, 16: 121.1, 24: 144.6}
+
+
+@pytest.mark.parametrize("bit_depth", sorted(ROUND_TRIP_SNR))
+def test_the_round_trip_is_as_quiet_as_this_format_gets(tmp_path,
+                                                        bit_depth):
+    """Measured against what was written, so normalization is not counted
+    as noise."""
+    rendered = music.note(440, 1.0)
+    written = normalize_mono(rendered, True)
+    path = tmp_path / f"depth{bit_depth}.wav"
+    music.write_wav_mono(rendered, str(path), bit_depth=bit_depth)
+    back = music.read_wav(str(path))
+
+    length = min(len(written), len(back))
+    error = back[:length] - written[:length]
+    snr = 10 * np.log10(np.sum(written[:length] ** 2)
+                        / max(float(np.sum(error ** 2)), 1e-300))
+    assert snr == pytest.approx(ROUND_TRIP_SNR[bit_depth], abs=1.0)
+
+
+def test_a_rendered_note_is_coarser_than_the_file_it_is_written_to():
+    """Thirteen bits, whatever the file says.
+
+    The default wavetable holds 16,384 entries but only 8,193 distinct
+    values, every one a multiple of 1/4096, and a note is a read out of it.
+    So a note carries thirteen bits of amplitude resolution, a 16-bit file
+    cannot lose anything it has -- which is why the round trip above
+    measures 121 dB where the format's own theory says 98 -- and a 24-bit
+    file buys nothing at all. Anything that shapes a note afterwards, an
+    envelope or a mix, leaves this behind; a bare note does not.
+    """
+    rendered = music.note(440, 0.2)
+    assert np.allclose(rendered * 4096, np.round(rendered * 4096), atol=1e-12)
+    assert not np.allclose(rendered * 2048, np.round(rendered * 2048),
+                           atol=1e-12), "thirteen bits, and not twelve"
+
+    shaped = music.adsr(sonic_vector=rendered)
+    assert not np.allclose(shaped * 4096, np.round(shaped * 4096), atol=1e-12)
+
+
+# ---------------------------------------------------------------------
+# Mixing: sounds summed rather than joined end to end
+# ---------------------------------------------------------------------
+
+def test_mixing_a_render_with_itself_is_exactly_twice_it():
+    """Sample-for-sample, with no phase error to cancel anything.
+
+    It reads as a triviality and it is the thing that would break first if
+    a render ever stopped being deterministic, or if `mix` padded at the
+    wrong end.
+    """
+    rendered = music.note(440, 0.5)
+    assert np.array_equal(music.mix(rendered, rendered), 2 * rendered)
+
+
+def test_mixing_a_render_with_its_inverse_is_exact_silence():
+    """The same statement from the other side, and a sharper one: any
+    phase error at all would leave a residue here."""
+    rendered = music.note(440, 0.5)
+    assert not np.any(music.mix(rendered, -rendered))
+
+
+def test_two_renders_of_the_same_note_are_the_same_samples():
+    """Nothing in a note is drawn at random, so mixing cannot beat."""
+    assert np.array_equal(music.note(440, 0.3), music.note(440, 0.3))
+
+
+@pytest.mark.parametrize("offset,samples", [
+    (0.25, 11025),              # a whole number of samples
+    (1 / 440, 100),             # 100.227 samples, and the fraction is lost
+    (0.5 / 44100, 0),           # half a sample, and all of it is lost
+])
+def test_an_offset_is_truncated_to_whole_samples(offset, samples):
+    """A sub-sample offset is discarded rather than rounded or resampled.
+
+    `mix_with_offset` takes seconds and delays by `int(seconds * rate)`, so
+    an offset of half a sample is an offset of none. That is the honest
+    thing for a routine that only indexes, but it means the comb filtering
+    and the fractional delays that live below one sample cannot be asked
+    for this way -- and a caller sweeping an offset finely gets a staircase
+    rather than a sweep, which is audible as a stepped rather than a smooth
+    effect. Pinned rather than fixed: rounding would be a different
+    routine, and resampling a much larger one.
+    """
+    rendered = music.note(440, 0.5)
+    mixed = music.mix_with_offset(rendered, rendered, duration=offset)
+    assert len(mixed) == len(rendered) + samples

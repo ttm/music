@@ -1,4 +1,43 @@
-## [Unreleased]
+## [1.8.0] - 2026-09-10
+
+### Note for anyone upgrading
+
+**Unlike 1.7.0, this one changes what some routines return.** Nothing is
+removed or renamed and no import breaks, but five things sound or measure
+differently, and six that used to fail confusingly now refuse by name.
+
+*Renders that differ.* `pan_transitions` moves between the points it was
+given rather than interpolating every leg from the first, so anyone
+passing more than two pan positions was getting a different sound from
+the one they asked for and now gets theirs. `fade` returns the length it
+was asked for at `perc=100` and with `method="linear"`, where it used to
+return that plus two seconds. `trill` renders its last note when the note
+length divides the duration exactly, where it used to drop it -- at
+48 kHz that was a quarter of a half-second trill. `noise` and
+`gaussian_noise` are correct for an odd number of samples, where one
+raised and the other silently discarded an imaginary part worth 8.7 % of
+the signal. `binaural_beats` and `monaural_beats` render nothing for a
+zero duration, where they rendered two seconds of audio.
+
+If you have rendered audio you need to reproduce bit-for-bit, those five
+are the ones to check. Everything else in the package returns what it
+returned in 1.7.0.
+
+*Refusals where there was nonsense.* `mix` names a stereo argument
+instead of failing inside numpy about broadcasting. The two exponential
+glissandos that took no ratio -- `note_with_glissando_vibrato` and
+`note_with_two_vibratos_glissando` -- refuse a non-positive frequency
+rather than casting a NaN contour to a table index and rendering the
+result. `fade` refuses a percentage outside [0, 100] and a method it does
+not have. `normalize_mono`, `normalize_stereo` and both `write_wav`
+routines say when there is nothing to normalize. `Being.stay` refuses a
+way of sequencing it does not have. None of these was working before; all
+of them were failing in a way that named the wrong thing.
+
+*One thing that used to raise and now works:*
+`CanonicalSynth.synthSetup` accepts the wavetables its three table
+parameters are for. Passing one raised an ambiguous-truth-value error.
+
 
 ### Fixed
 - **A zero duration renders nothing, everywhere.** Of the twenty-seven

@@ -1,7 +1,7 @@
 # The MASS reconciliation
 
 *Run on **2026-09-04** against [ttm/mass](https://github.com/ttm/mass) at
-`e516b08`. The register it produced is re-checked against `music` 1.7.0
+`e516b08`. The register it produced is re-checked against `music` 1.8.0
 on every push.*
 
 This package's central claim is fidelity to the MASS framework. Until this

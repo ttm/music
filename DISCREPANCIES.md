@@ -2,7 +2,7 @@
 
 *Run on **2026-09-05** against [ttm/mass](https://github.com/ttm/mass) at
 `e516b08`. Every entry below has a test that re-checks it against
-`music` 1.7.0 on every push.*
+`music` 1.8.0 on every push.*
 
 Three things claim to describe the same synthesis: the **article**
 (`doc/body.tex`, `doc/spectra.tex` and `doc/notesInMusic.tex` in ttm/mass,

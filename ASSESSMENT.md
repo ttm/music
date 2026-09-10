@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-10**,
-`music` 1.7.0: 47 modules, 12,016 LOC package + 12,091 LOC tests, 126 names
+`music` 1.8.0: 47 modules, 12,016 LOC package + 12,091 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -215,6 +215,30 @@ either documented in the code or tracked in the issue list.
   offset that only appears for some input was outside it. The sweep over
   degenerate parameters now checks the mean as well, with these seven
   registered, so the class has somewhere to be recorded.
+
+- **Nothing has asked the suite the question mutation testing asks.**
+  Two measures of the tests themselves have been applied here, and each
+  found defects the tests were carrying rather than catching: branch
+  coverage, which showed twelve conditions that had only ever gone one
+  way and three defects sitting in them; and an audit of every
+  `pytest.approx` tolerance against the error it actually sees, which
+  found five assertions passing by the whole of their margin and one of
+  those calibrated to an off-by-one in `trill`.
+
+  Both measure the same thing indirectly: whether a test could fail.
+  Mutation testing asks it directly -- change the code, deliberately and
+  one edit at a time, and see whether anything goes red. A surviving
+  mutant is a line the suite executes without depending on. Neither
+  measure above can see that: a branch can be taken by a test that
+  asserts nothing about what it did, and an exact assertion can be exact
+  about the wrong quantity.
+
+  It has not been run here, so how much of this suite is load-bearing is
+  unmeasured. Given what the two cheaper measures turned up, the
+  expectation should not be zero. `mutmut` or `cosmic-ray` over
+  `music/` would settle it; the cost is that a full run is hours rather
+  than the ninety seconds the suite takes now, which is why this is
+  written down rather than done. Issue #113.
 
 - **The click measure is relative, so it is blind in fast passages.** A
   step counts as a click when it stands eight times over the median step

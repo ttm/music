@@ -264,7 +264,7 @@ def expectations(figures):
             ("test count", r"(?<=\| \*\*)\d+(?= tests\*\*)",
              str(figures["tests"])),
             ("README test count",
-             r"(?<=pytest {39}# )[\d,]+(?= tests, 100% coverage)",
+             r"(?<=pytest {39}# )[\d,]+(?= tests, 100% line and branch)",
              thousands(figures["tests"]), README),
             ("coverage", r"(?<=\| \*\*)\d+ %(?=\*\* \([\d,]+ stmts)",
              f"{figures['coverage_pct']} %"),

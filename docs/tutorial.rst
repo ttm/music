@@ -57,7 +57,20 @@ A melody is notes concatenated:
 .. code-block:: python
 
    freqs = [261.63, 293.66, 329.63, 349.23, 392.0]   # C D E F G
-   melody = music.horizontal_stack(*[music.note(f, 0.35) for f in freqs])
+   notes = [music.note(f, 0.35) for f in freqs]
+   melody = music.horizontal_stack(*[music.adsr(sonic_vector=n)
+                                     for n in notes])
+
+Each note is shaped before the notes are stacked, and that is not a
+flourish. A note ends wherever its phase happens to land, and the next one
+opens at the bottom of its wavetable, so two raw notes joined end to end
+step from one to the other -- by up to the full scale, which is a click.
+Whether it happens at all depends on the frequency and the duration
+multiplying out to a whole number of cycles, so a melody can click on some
+notes and not others, which makes it sound like an articulation rather
+than a defect. :func:`music.adsr`, the next section, runs each note to
+silence at both ends and the joins go quiet. `tests/test_artifacts.py`
+measures both.
 
 If you would rather write rhythm in note values than in seconds,
 :func:`music.rhythm_to_durations` converts them. Its ``durations`` are

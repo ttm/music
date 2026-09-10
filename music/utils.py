@@ -831,6 +831,12 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
     Each pan transition i starts and ends amplitude envelope
     of channel c in p[i][c] and p[i+1][c].
 
+    ``method`` is accepted and not read. The three laws below say what
+    each would do; the body interpolates linearly whatever it is given,
+    so 'lin', 'circ' and 'exp' all render the same ramp.
+    ``tests/test_artifacts.py`` pins that, so implementing them is a
+    deliberate change rather than a surprise.
+
     Consider only one of such fades
     to understand the pan transition methods::
 
@@ -880,14 +886,19 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
     t0_ = []
     t1_ = []
     for i, pp in enumerate(p[1:]):
-        # t0 = pp[0] - pp_[0]
-        # t1 = pp[1] - pp_[1]
         di = d[i] * sample_rate
         di_ = np.arange(di) / di
         t0 = pp_[0] * (1 - di_) + pp[0] * di_
         t1 = pp_[1] * (1 - di_) + pp[1] * di_
         t0_.append(t0)
         t1_.append(t1)
+        # Each leg starts where the one before it ended. Without this the
+        # loop interpolated every leg from p[0], so the third leg of the
+        # defaults ran (1,1) -> (1,1) instead of (0,1) -> (1,1): a channel
+        # that should have risen from silence sat at full amplitude, and
+        # the leg before it dropped to zero, leaving a full-scale step at
+        # the join. tests/test_artifacts.py is what found it.
+        pp_ = pp
     t0__ = horizontal_stack(*t0_)
     t1__ = horizontal_stack(*t1_)
     t = np.array((t0__, t1__))

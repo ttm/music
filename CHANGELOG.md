@@ -1,3 +1,55 @@
+## [Unreleased]
+
+### Fixed
+- **`pan_transitions` interpolated every leg of a pan from the first
+  position rather than from the one the leg before it reached.** The
+  loop assigned its running start point once, before the loop, and never
+  updated it, so with the defaults -- `p=((1,1),(1,0),(0,1),(1,1))` --
+  the third leg ran `(1,1)` to `(1,1)` instead of `(0,1)` to `(1,1)`: a
+  channel that should have risen from silence over two seconds sat at
+  full amplitude for them, and the join before it stepped by the full
+  scale, which is a click. Each leg now starts where the one before it
+  ended, and the largest step anywhere in the default render falls from
+  1.0 to 1.1e-5, which is the ramp's own step size.
+
+  The docstring always said what it should do -- "each pan transition i
+  starts and ends amplitude envelope of channel c in `p[i][c]` and
+  `p[i+1][c]`" -- so this is the routine agreeing with its own
+  documentation. It has no counterpart in the MASS reference, so nothing
+  in `RECONCILIATION.md` moves. Anyone who was passing more than two pan
+  positions was getting a different sound than they asked for and will
+  now get the one they asked for.
+
+### Added
+- **`tests/test_artifacts.py`**, which sweeps every export that renders
+  on its own defaults for two defects of the rendering rather than of the
+  sound: a click, meaning a sample-to-sample step that the signal's own
+  neighbourhood does not explain and that is large against its peak; and
+  a DC offset, meaning a mean far from zero relative to RMS. Both are
+  measured rather than eyeballed. The `pan_transitions` defect above is
+  what it found. Issue #76.
+
+  The steps that are not defects are registered with the reason each is
+  there -- a gate is a step twice per pulse, an impulse response is an
+  impulse, the far ear of a localisation is the near ear delayed and so
+  begins with zeros -- and a test fails if a registered routine stops
+  stepping, so the register cannot rot into a list of stale excuses.
+  Separately registered are the renders the measure cannot speak about:
+  a random signal has no neighbourhood that explains anything.
+
+### Changed
+- **The README's scale and the tutorial's melody shape their notes before
+  stacking them**, and say why. A note ends wherever its phase lands and
+  the next one opens at the bottom of its wavetable, so raw notes joined
+  end to end step by up to the full scale -- on nine of the twelve joins
+  in the scale the README opens with. `adsr` runs each note to silence at
+  both ends and the joins fall to 1e-4. Nothing about `note` or
+  `horizontal_stack` changed; the examples did.
+- **`pan_transitions` says in its docstring that it does not read
+  `method`.** 'lin', 'circ' and 'exp' all render the same linear ramp.
+  `ASSESSMENT.md` lists it, and a test pins it, so implementing the three
+  laws is a deliberate change rather than a surprise.
+
 ## [1.7.0] - 2026-09-06
 ### Note for anyone upgrading
 **Nothing that imports from `music` breaks, and no routine that existed in

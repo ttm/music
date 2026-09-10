@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
-*A living record, not a point-in-time audit. Last measured **2026-09-09**,
-`music` 1.7.0: 47 modules, 11,741 LOC package + 9,477 LOC tests, 126 names
+*A living record, not a point-in-time audit. Last measured **2026-09-10**,
+`music` 1.7.0: 47 modules, 11,752 LOC package + 9,857 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -56,11 +56,11 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **2384 tests**, 16 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,738 stmts, 0 missed) |
+| Test suite | `pytest -q` | **2521 tests**, 16 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,739 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,114 findings |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,112 findings |
 | Annotation coverage | AST scan | **101 / 207 functions (49 %)**; 63 / 94 exported (67 %) |
 | Docstring coverage | AST scan | **169 / 180 public defs (94 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
@@ -70,6 +70,7 @@ Every figure below came from running the code, not from reading it.
 | Docstring examples | `pytest --doctest-modules` | **62 examples run**, 1 skipped |
 | Examples | `python tools/run_examples.py` | **10 pass**, 1 skipped for the external singing engine |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
+| Rendering artifacts | `tests/test_artifacts.py` | every render swept for clicks and DC offset; the steps that remain are registered with a reason |
 | Import cost | `import music`, warm, 3.12 | **~185-290 ms**, and no sympy in `sys.modules` |
 | Archival subjects | `tools/verify_subjects.py` | **15 of 17** resolve to the term they declare; 2 unconfirmable, EuroSciVoc serving an empty graph |
 
@@ -170,6 +171,29 @@ either documented in the code or tracked in the issue list.
   can, the correspondence is documented rather than machine-checkable.
   Issue #75.
 
+- **Notes concatenated raw click at the join, and whether they do
+  depends on arithmetic rather than on anything musical.** A note ends
+  wherever its phase lands and the next one opens at the bottom of its
+  wavetable, so `horizontal_stack` of two raw notes steps -- by up to the
+  full scale, against a largest step of 0.04 within a note. It happens
+  only when the frequency and the duration do not multiply out to a whole
+  number of cycles, which is why it is so easy to miss: 440 Hz for a
+  quarter second is 110 cycles and joins cleanly, and 443 Hz for the same
+  quarter second steps by 1.04. A chromatic scale from 440 Hz is whole
+  cycles at the root and mid-cycle nearly everywhere else, so nine of its
+  twelve joins clicked in the example the README opens with, which is the
+  first code anyone here runs.
+
+  This is what a bare oscillator does rather than a defect, and the
+  envelopes are the answer: `adsr` runs a note to silence at both ends
+  and the join falls to 1e-4. The README and the tutorial now shape their
+  notes before stacking them and say why, and
+  `tests/test_artifacts.py` measures both the raw seam and the shaped one,
+  so neither can change without someone deciding to change it. What the
+  package does not have is a routine that joins notes *without* an
+  envelope -- no zero-crossing alignment, no automatic micro-fade at a
+  seam. Issue #76.
+
 ### Scope and dependencies
 
 - **Singing needs an external engine.** `music.singing` drives eCantorix,
@@ -200,11 +224,18 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,114 findings** on `music/`, almost all
+- **The extended lint set reports 2,112 findings** on `music/`, almost all
   stylistic: 345 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.
+- **`pan_transitions` accepts a `method` it does not read.** The
+  signature offers 'lin', 'circ' and 'exp', and the docstring explains
+  what each would do to a cross-fade; the body interpolates linearly
+  whatever it is given, so all three render the same ramp. The docstring
+  now says so, and a test pins it, so implementing the three laws is a
+  deliberate change rather than a discovery. The same routine's legs are
+  fixed -- see the changelog.
 - **`legacy/` is 1,170 LOC** kept for `CanonicalSynth`, `IteratorSynth` and
   the `Being` class. It is covered and type-checked, but it is not where new
   work should go.

@@ -18,9 +18,16 @@ equations and corresponding Python routines.
 import music
 
 # a chromatic scale, written to a WAV file
-scale = [music.note(440 * 2 ** (i / 12), duration=0.25) for i in range(13)]
+notes = [music.note(440 * 2 ** (i / 12), duration=0.25) for i in range(13)]
+scale = [music.adsr(sonic_vector=n) for n in notes]   # so the joins are silent
 music.write_wav_mono(music.horizontal_stack(*scale), "scale.wav")
 ```
+
+The `adsr` is not decoration. A note ends wherever its phase lands and the
+next one opens at the bottom of its wavetable, so concatenating them raw
+steps -- by up to the full scale, and on nine of this scale's twelve joins.
+An envelope runs each note to silence at both ends, which is what makes the
+joins joins rather than clicks.
 
 📖 **[Tutorial](https://ttm.github.io/music/tutorial.html)** — from a single
 note to a short stereo piece.
@@ -303,7 +310,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 2,384 tests, 100% coverage
+pytest                                       # 2,521 tests, 100% coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

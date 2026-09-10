@@ -1419,7 +1419,14 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
     pointer = 0
     i = 0
     s = []
-    while pointer + number_of_samples < duration * sample_rate:
+    # `<=`, not `<`: when the note length divides the duration exactly
+    # the last note lands on the boundary, and a strict comparison
+    # rejected it. A trill of half a second at 8 notes a second is four
+    # notes, and at 48,000 Hz -- where 48000/8 is a whole 6,000 samples --
+    # it rendered three, a quarter of the duration missing. At 44,100 the
+    # note length is 5512.5 and the accumulated pointer landed just under
+    # the bound, so the same call was right there and nothing noticed.
+    while pointer + number_of_samples <= duration * sample_rate:
         ns = int(number_of_samples * (i + 1) - pointer)
         note_ = note(freqs[i % len(freqs)], number_of_samples=ns,
                      waveform_table=WAVEFORM_TRIANGULAR,

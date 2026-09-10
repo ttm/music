@@ -126,8 +126,17 @@ def test_isochronic_tones_gates_for_the_requested_fraction(duty_cycle):
 
 def test_isochronic_tones_pulses_at_the_requested_rate():
     out = music.isochronic_tones(pulse_rate=10, duty_cycle=0.5, duration=2)
-    onsets = np.count_nonzero(np.diff(gate_of(out).astype(int)) > 0)
-    assert onsets == pytest.approx(20, abs=1)
+    gate = gate_of(out).astype(int)
+    onsets = np.count_nonzero(np.diff(gate) > 0)
+
+    # Nineteen, exactly, and not "twenty give or take one". Ten pulses a
+    # second for two seconds is twenty, and the render opens with the gate
+    # already open, so the first has no rising edge in front of it for
+    # `diff` to find. That is a fact about counting edges rather than
+    # about the stimulus, and `abs=1` was hiding which of the two the
+    # number came from.
+    assert gate[0] == 1
+    assert onsets == 19
 
 
 def test_isochronic_tones_rejects_a_duty_cycle_outside_the_unit_interval():

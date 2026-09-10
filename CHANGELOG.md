@@ -57,6 +57,22 @@
   with a message about broadcasting shapes -- naming neither the argument
   nor the mistake. It refuses now, and points at `mix_stereo`. The same
   defect `iir` had.
+- **A trill dropped its last note whenever the note length divided the
+  duration exactly.** The loop that lays the notes down stopped when the
+  next one would not fit, and tested `<` where it meant `<=`, so a note
+  landing precisely on the boundary was rejected. Half a second at eight
+  notes a second is four notes; at 48,000 Hz it rendered three, a quarter
+  of the duration missing. At 44,100 the note length is 5512.5 and the
+  accumulated pointer landed just under the bound, so the same call was
+  right and nothing noticed.
+
+  Two tests recorded the defect as intended behaviour rather than
+  catching it. One asserted three notes for a duration holding four, with
+  a comment saying "the loop stops when the next one would not fit" -- it
+  did fit. The other allowed the length to be wrong by `sample_rate / 8`,
+  which is one whole note: a tolerance the size of the thing being counted
+  cannot tell a right answer from a wrong one. Both now assert exactly.
+
 - **`CanonicalSynth.synthSetup` could not be given a wavetable.** Its
   three table parameters were guarded with `if not table`, and a
   wavetable is a numpy array, so passing one raised "the truth value of
@@ -200,6 +216,23 @@
   it with its inverse is exact silence -- no phase error anywhere. But
   `mix_with_offset` truncates its offset to whole samples, so half a
   sample is no offset at all and a finely swept offset is a staircase.
+
+- **The tolerances were audited the way the branches were.** Wrapping
+  `pytest.approx` for one run and recording every scalar comparison gives,
+  for each assertion, how wide its tolerance is against the quantity
+  measured and how much of that width the real error uses. Thirteen sites
+  allowed more than 5 % of the value; five used more than 90 % of what
+  they allowed. That second number is the interesting one -- an assertion
+  passing by the whole of its margin is either fragile or calibrated to a
+  defect, and the trill was the second.
+
+  Four are now exact rather than approximate: the trill's length, the
+  count of pulse onsets in an isochronic tone (nineteen, because the gate
+  opens on the first sample and `diff` finds no rising edge in front of
+  it -- a fact about counting edges that `abs=1` was hiding), the length
+  of an offset mix, and what a sample at +1.0 comes back as after a write
+  (the rail, exactly one least significant bit under). A fifth, the gap
+  between 3 dB and 10 log10 2, is deliberately pinned and stays.
 
 - **The coverage gate counts branches, not just lines.** It read 100%
   while twelve conditions had only ever gone one way, and three of the

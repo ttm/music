@@ -59,11 +59,13 @@ LENGTH_IS_NOT_THE_DURATION = {
         "the far ear is delayed and the render is as long as the delayed "
         "channel, so it runs up to 29 samples over"),
     "trill": (
-        "it renders whole notes and stops before one that would not fit, "
-        "so a duration that is not a whole number of notes comes up short "
-        "-- by 1,412 samples of a second at 17 notes per second, which is "
-        "most of a note. `test_fidelity.py` allows a whole note of slack "
-        "for this; here is the size of it"),
+        "it renders whole notes, so a duration that is not a whole number "
+        "of them comes up short -- by 1,412 samples of a second at 17 "
+        "notes per second. A duration that *is* a whole number of notes "
+        "now renders all of them: it used to drop the last one whenever "
+        "the note length divided the duration exactly, which a tolerance "
+        "of one whole note in test_fidelity.py could not tell from a "
+        "right answer"),
 }
 
 

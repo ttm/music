@@ -230,7 +230,17 @@ def test_wav_round_trip_is_unity_gain(bit_depth, tmp_path):
     restored = music.read_wav(str(path))
 
     assert np.array_equal(restored[:4], levels[:4])
-    assert restored[4] == pytest.approx(1.0, abs=1.0 / 2 ** (bit_depth - 1))
+
+    # A sample at exactly +1.0 does not survive, and by exactly how much
+    # is worth stating rather than tolerating: a PCM integer runs one
+    # code shorter on the positive side, so +1.0 rounds to a code that
+    # does not exist and is clipped to the one below. That is the
+    # largest single value the format can carry, and it is a whole least
+    # significant bit under what was written. The assertion used to allow
+    # one LSB of slack and the error used all of it, which cannot tell a
+    # rail from a rounding.
+    rail = 2 ** (bit_depth - 1)
+    assert restored[4] == (rail - 1) / rail
 
 
 def test_stereo_wav_round_trip_preserves_channel_balance(tmp_path):
@@ -560,10 +570,17 @@ def test_trill_lasts_the_time_it_was_asked_for_at_any_rate(sample_rate):
     audio came back.
     """
     duration = 0.5
-    out = music.trill(freqs=[400, 500], notes_per_second=8,
+    notes_per_second = 8
+    out = music.trill(freqs=[400, 500], notes_per_second=notes_per_second,
                       duration=duration, sample_rate=sample_rate)
-    assert len(out) == pytest.approx(duration * sample_rate,
-                                     abs=sample_rate / 8)
+
+    # Half a second at eight notes a second is four notes exactly, so
+    # this is not approximate at all. The tolerance used to be
+    # `sample_rate / 8`, which is one whole note -- and at 48,000 Hz the
+    # render was one whole note short, using every bit of it. A tolerance
+    # the size of the thing being counted cannot tell a right answer from
+    # a wrong one.
+    assert len(out) == int(duration * sample_rate)
 
 
 def test_trill_alternates_between_the_frequencies_it_was_given():
@@ -572,10 +589,13 @@ def test_trill_alternates_between_the_frequencies_it_was_given():
     notes_per_second = 4
     out = music.trill(freqs=[400, 1200], notes_per_second=notes_per_second,
                       duration=1.0)
-    # Only whole notes are rendered, so the trill is three notes rather
-    # than four: the loop stops when the next one would not fit.
+    # A second at four notes a second is four notes, and the fourth fits
+    # exactly. This used to assert three, and the comment here used to say
+    # the loop "stops when the next one would not fit" -- but it did fit,
+    # and a strict `<` on the loop bound rejected it anyway. The defect and
+    # the test that recorded it as intended went together.
     note_length = SAMPLE_RATE // notes_per_second
-    assert len(out) == 3 * note_length
+    assert len(out) == 4 * note_length
 
     def peak(signal):
         spectrum = np.abs(np.fft.rfft(signal))
@@ -583,12 +603,15 @@ def test_trill_alternates_between_the_frequencies_it_was_given():
             np.argmax(spectrum)]
 
     # A window inside each note, clear of the ADSR release at its end.
+    # The window is 5,512 samples, so the transform resolves 8 Hz, and
+    # the peaks land within 0.11 Hz of where they belong. The tolerance
+    # used to be 40 and 60 Hz, five to seven bins, which is room for the
+    # peak to move to a different partial without failing.
     window = note_length // 2
     peaks = [peak(out[i * note_length:i * note_length + window])
-             for i in range(3)]
-    assert peaks[0] == pytest.approx(400, abs=40)
-    assert peaks[1] == pytest.approx(1200, abs=60)
-    assert peaks[2] == pytest.approx(400, abs=40)
+             for i in range(4)]
+    for index, wanted in enumerate((400, 1200, 400, 1200)):
+        assert peaks[index] == pytest.approx(wanted, abs=SAMPLE_RATE / window)
 
 
 # --------------------------------------------------------------------------

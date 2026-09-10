@@ -77,7 +77,14 @@ def test_mix_many_with_offsets_sums_vectors_given_without_offsets():
 def test_mix_many_with_offsets_reads_a_scalar_between_vectors_as_a_delay():
     """The arguments alternate vector, offset-in-seconds, vector..."""
     out = mix_many_with_offsets(np.ones(5), 0.5, np.ones(3) * 2)
-    assert out.shape[0] == pytest.approx(0.5 * 44100 + 3, abs=2)
+
+    # Exactly: the second vector starts at sample 22,050 and is three
+    # long, so the result is 22,053 -- except that it is 22,055, because
+    # the offset is rounded up to a whole sample twice over. The
+    # assertion used to allow two samples either way, which is enough to
+    # hide the difference between those two numbers without saying which
+    # one it found.
+    assert out.shape[0] == 22055
 
 
 def test_mix_many_with_offsets_accepts_any_sequence():

@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-10**,
-`music` 1.7.0: 47 modules, 11,981 LOC package + 11,000 LOC tests, 126 names
+`music` 1.7.0: 47 modules, 11,981 LOC package + 11,101 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -56,7 +56,7 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **2861 tests**, 16 s |
+| Test suite | `pytest -q` | **3014 tests**, 16 s |
 | Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,784 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
@@ -198,6 +198,20 @@ either documented in the code or tracked in the issue list.
   package does not have is a routine that joins notes *without* an
   envelope -- no zero-crossing alignment, no automatic micro-fade at a
   seam. Issue #76.
+
+- **An oscillator asked for no frequency renders full-scale DC.** It
+  never advances through its table, so it holds the value the table
+  starts at, which for a bare note is the bottom of it: a constant -1.
+  That is a DC offset of 1.0 against RMS, the worst there is. Seven
+  routines do it -- `note` and its variants, and
+  `frequency_modulation` -- and it is arithmetic rather than a defect: a
+  frequency of zero has no cycle to advance through.
+
+  It is listed because nothing looked at it for most of this work. The DC
+  sweep examines what each routine renders on its *defaults*, so an
+  offset that only appears for some input was outside it. The sweep over
+  degenerate parameters now checks the mean as well, with these seven
+  registered, so the class has somewhere to be recorded.
 
 - **The click measure is relative, so it is blind in fast passages.** A
   step counts as a click when it stands eight times over the median step

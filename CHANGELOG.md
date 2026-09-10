@@ -123,6 +123,14 @@
   property of the synthesis rather than a defect, and each is now a number
   that cannot move without a test failing.
 
+  *What a zero frequency renders.* An oscillator asked for no frequency
+  never advances through its table and holds the value it starts at,
+  which for a bare note is the bottom: a constant -1, a DC offset at full
+  scale. Seven routines do it, and it is arithmetic rather than a defect.
+  It is recorded because the DC sweep looks only at what a routine
+  renders on its defaults, so this whole class of input was unexamined;
+  the sweep over degenerate parameters now checks the mean too.
+
   *What the click measure cannot see.* It is relative -- a step counts
   when it stands eight times over the median step around it -- so how
   large a click must be depends on how fast the signal already moves. In

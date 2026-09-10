@@ -42,6 +42,8 @@ import numpy as np
 import pytest
 
 import music
+from test_artifacts import (CONTROL_SIGNALS, DC_LIMIT, DC_WHEN_ZEROED,
+                           dc_offset)
 from test_public_api import ZERO_ARG_EXPORTS, _callable_with_defaults
 
 #: Parameters the sweep leaves alone.  `sample_rate` at zero is a question
@@ -453,3 +455,52 @@ def test_a_zero_duration_renders_nothing_down_every_branch(name, parameter,
     assert rendered.size == 0, (
         f"{name}({parameter}={value!r}, duration=0) rendered "
         f"{rendered.shape}")
+
+
+# ---------------------------------------------------------------------
+# What a degenerate parameter does to the mean
+# ---------------------------------------------------------------------
+
+@pytest.mark.parametrize("name,parameter", EDGES,
+                         ids=lambda value: str(value))
+def test_a_parameter_at_zero_does_not_quietly_add_a_bias(name, parameter):
+    """The DC sweep in `test_artifacts.py` looks only at defaults.
+
+    So a routine could render a mean far from zero for some input and
+    nothing would say. One class does: an oscillator asked for no
+    frequency never advances through its table and holds the value the
+    table starts at, which for a bare note is the bottom of it -- a
+    constant -1, a DC offset at full scale. Seven (routine, parameter)
+    pairs do this and are registered; the rest must not.
+    """
+    if name in CONTROL_SIGNALS or (name, parameter) in DC_WHEN_ZEROED:
+        return
+    function = _callable_with_defaults(name)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            result = function(**{parameter: 0})
+    except Exception:
+        return                      # covered by the sweep above
+
+    if callable(result):
+        return
+    samples = np.asarray(result, dtype=float)
+    if samples.dtype.kind != "f" or samples.size < 512:
+        return
+
+    offset = dc_offset(samples)
+    assert offset < DC_LIMIT, (
+        f"{name}({parameter}=0) renders a mean {offset:.3f} of its own "
+        "RMS. If that is what the routine should do, register the pair in "
+        "DC_WHEN_ZEROED with the reason.")
+
+
+@pytest.mark.parametrize("name,parameter", sorted(DC_WHEN_ZEROED),
+                         ids=lambda value: str(value))
+def test_a_registered_bias_is_still_there(name, parameter):
+    """So the register cannot rot into an excuse for something fixed."""
+    rendered = np.asarray(_callable_with_defaults(name)(**{parameter: 0}),
+                          dtype=float)
+    assert dc_offset(rendered) >= DC_LIMIT, (
+        f"{name}({parameter}=0) no longer carries a bias; delete the entry.")

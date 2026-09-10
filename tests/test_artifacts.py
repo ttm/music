@@ -166,12 +166,18 @@ DELIBERATE_STEPS = {
         "tests/test_stimulation.py checks that it does -- and what is "
         "left is 2.8% of peak rather than 100%"),
     "localize": (
-        "the far ear is the near ear delayed, so that channel begins with "
-        "zeros and then steps to the sound's opening sample. Every note "
-        "opens at the bottom of its wavetable, which is where that "
-        "opening sample is"),
-    "note_with_doppler": "the same delay, from the Doppler geometry",
-    "note_with_vibrato_seq_localization": "the same delay, per segment",
+        "delaying one ear lengthens the render, and the other channel is "
+        "zero-padded to match. So one channel steps *into* the sound at "
+        "the start -- zeros, then the sound's opening sample, which is "
+        "the bottom of the wavetable a note opens at -- and the other "
+        "steps *out* of it at the end, from wherever its last sample "
+        "landed down to the padding. The second is the larger: 0.98 "
+        "against 0.06, since the delayed channel is also attenuated"),
+    "note_with_doppler": "the same padding, from the Doppler geometry",
+    "note_with_vibrato_seq_localization": (
+        "the same padding again. An earlier version of this entry said "
+        "\"per segment\", which was a guess: there is one step per "
+        "channel, at the two ends, exactly as above"),
     "tremolos": (
         "its two envelope groups are 12 and 16 seconds long, so the "
         "shorter one ends inside the render and the envelope steps back "
@@ -1066,3 +1072,47 @@ def test_the_partial_finder_reads_a_signal_built_to_order():
     assert partials(built) == [700, 2100, 5000]
     # And the floor is a floor: raised above the quietest, it drops it.
     assert partials(built, floor=0.2) == [700, 2100]
+
+
+def test_the_pole_measure_reads_a_filter_built_to_order():
+    """The positive control `poles` never had.
+
+    Every use of it above asserts a design is stable, which a measure
+    that reported everything as stable would satisfy. `iir` puts a plus
+    on its feedback sum, so `b = [1, r]` is a single pole at exactly `r`
+    -- a fact `test_filters_response.py` already leans on, since it
+    checks that such a filter's impulse response is `r ** n`.
+    """
+    for radius in (0.0, 0.5, 0.99, 1.0, 1.05):
+        assert float(np.abs(poles([1.0, radius])).max()) == pytest.approx(
+            radius, abs=1e-12)
+
+    # And the one that matters: a pole outside the circle diverges, which
+    # is the thing being ruled out for every design in this file.
+    impulse = np.zeros(600)
+    impulse[0] = 1.0
+    runaway = np.asarray(music.iir(impulse, [1.0], [1.0, 1.05]), dtype=float)
+    assert np.abs(runaway[-1]) > 1e6
+    settled = np.asarray(music.iir(impulse, [1.0], [1.0, 0.99]), dtype=float)
+    assert np.abs(settled[-1]) < 1.0
+
+
+#: Where zeroing one parameter renders a mean far from zero, and why.
+#:
+#: All seven are the same thing: an oscillator asked for no frequency
+#: never advances through its table, so it holds whatever value the table
+#: starts at. For a bare note that is the bottom of it -- a constant -1,
+#: which is a DC offset at full scale, the worst there is.
+#:
+#: It is arithmetic rather than a defect, and it is here because the DC
+#: sweep looks only at what a routine renders on its defaults, so this
+#: whole class of input went unexamined until someone asked.
+DC_WHEN_ZEROED = {
+    ("frequency_modulation", "carrier_freq"),
+    ("note", "freq"),
+    ("note_with_doppler", "freq"),
+    ("note_with_fm", "freq"),
+    ("note_with_phase", "freq"),
+    ("note_with_two_vibratos", "freq"),
+    ("note_with_vibrato", "freq"),
+}

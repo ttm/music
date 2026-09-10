@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-10**,
-`music` 1.7.0: 47 modules, 11,956 LOC package + 10,705 LOC tests, 126 names
+`music` 1.7.0: 47 modules, 11,964 LOC package + 10,893 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -56,8 +56,8 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **2839 tests**, 16 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,782 stmts, 0 missed) |
+| Test suite | `pytest -q` | **2858 tests**, 16 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,784 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
 | Lint, extended rule set | `ruff check --select ALL music` | 2,139 findings |
@@ -70,11 +70,11 @@ Every figure below came from running the code, not from reading it.
 | Docstring examples | `pytest --doctest-modules` | **62 examples run**, 1 skipped |
 | Examples | `python tools/run_examples.py` | **10 pass**, 1 skipped for the external singing engine |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
-| Rendering artifacts | `tests/test_artifacts.py` | every render swept for clicks and DC offset; the steps that remain are registered with a reason |
+| Rendering artifacts | `tests/test_artifacts.py` | every render swept for clicks and DC offset; the steps that remain are registered with a reason, and the measures' blind spots are measured |
 | Aliasing | `tests/test_artifacts.py` | a sine strays **1.2e-08** of its energy off the harmonics at any frequency; a sawtooth strays **24 %** at 10 kHz |
 | Round-trip noise | `tests/test_artifacts.py` | **48 dB** at 8-bit, **121** at 16, **145** at 24, against what was written |
 | Filter stability | `tests/test_artifacts.py` | every design's poles inside the unit circle across its whole parameter range |
-| Degenerate parameters | `tests/test_degenerate.py` | **155** (routine, parameter) pairs set to zero: each works or is refused with a `ValueError` |
+| Degenerate parameters | `tests/test_degenerate.py` | **145** (routine, parameter) pairs set to zero: each works or is refused with a `ValueError` |
 | Zero durations | `tests/test_degenerate.py` | every routine that takes a duration renders nothing for a zero one, in the shape it would otherwise have |
 | Import cost | `import music`, warm, 3.12 | **~185-290 ms**, and no sympy in `sys.modules` |
 | Archival subjects | `tools/verify_subjects.py` | **15 of 17** resolve to the term they declare; 2 unconfirmable, EuroSciVoc serving an empty graph |
@@ -198,6 +198,29 @@ either documented in the code or tracked in the issue list.
   package does not have is a routine that joins notes *without* an
   envelope -- no zero-crossing alignment, no automatic micro-fade at a
   seam. Issue #76.
+
+- **The click measure is relative, so it is blind in fast passages.** A
+  step counts as a click when it stands eight times over the median step
+  of the block around it, which means how large a click must be depends
+  on how fast the signal already moves. In silence any step is found; in
+  a 110 Hz note it takes 9 % of full scale; in a 440 Hz note 36 %; and in
+  a 4 kHz note **nothing is detectable at all**, since a sine there
+  advances about 0.57 per sample and eight times that is past the ±1 a
+  sample can hold. No threshold fixes the last case: where the signal's
+  own steps are the largest steps available, a relative measure has
+  nothing to compare against.
+
+  So the sweep coming back clean means no render carries a seam-like or
+  gate-like step -- which is what it was built to find, and what it did
+  find: a full-scale step at a pan join, a delayed channel opening out of
+  zeros, nine clicking joins in the README's own example, all of them
+  standing 47 times or more over their neighbours. A click buried in a
+  bright, fast passage it would not see. The figures above are measured
+  by bisection and pinned, so the blind spot is a known quantity rather
+  than an assumption.
+
+  The DC measure has a smaller one: an offset below about 3 % of peak
+  passes, since a shorter render's mean wanders on its own.
 
 - **The synthesis aliases, and how much depends on the table and the
   note.** A wavetable is read sample by sample with nothing band-limiting

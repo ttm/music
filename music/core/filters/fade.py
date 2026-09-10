@@ -101,6 +101,14 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
         n = number_of_samples
     else:
         n = int(sample_rate * duration)
+    if n < 1:
+        # Both branches below hand `n` to `loud`, where a
+        # number_of_samples of zero means "not supplied" and gives back
+        # two seconds. The exponential branch was guarded when its split
+        # was fixed; this catches the linear one, which the zero-duration
+        # sweep never reached because it only ever calls the default
+        # method.
+        return np.array([])
     if 'lin' in method:
         if fade_out:
             ai = loud(method="linear", trans_dev=0, number_of_samples=n)

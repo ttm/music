@@ -25,6 +25,14 @@ It costs headroom, it moves a speaker cone off centre, and it is exactly
 the sort of thing no one hears until two sounds are mixed and the sum
 clips early.
 
+Both measures are relative, and the last section of this file is what that
+costs. A click has to stand out from what the signal is already doing, so
+in silence any step is found, in a 110 Hz note it takes 9% of full scale,
+in a 440 Hz note 36%, and at 4 kHz nothing is detectable at all -- eight
+times the local median is past the ±1 a sample can hold. The sweep
+passing therefore means no render carries a seam-like or gate-like step,
+which is what it was built to find, and not that no render clicks.
+
 What the sweep found, and what came of it, is in ASSESSMENT.md.  The short
 version: one defect in `pan_transitions`, which interpolated every leg of a
 pan from the first point rather than from the previous one and so rendered
@@ -490,13 +498,19 @@ ALIASING = {
 }
 
 
+#: What a sine strays, which is the table read and nothing else. Pinned
+#: rather than merely bounded, because ASSESSMENT.md quotes it and a
+#: figure a document quotes should have somewhere it comes from.
+SINE_STRAY = 1.2e-08
+
+
 @pytest.mark.parametrize("freq", [1000, 5000, 10000])
 def test_a_sine_table_has_nothing_to_fold(freq):
     """One partial, so the only stray energy is the table read itself."""
     stray = stray_energy(_tone(freq, "sine"), freq)
-    assert stray < 1e-6, (
+    assert stray == pytest.approx(SINE_STRAY, rel=0.1), (
         f"a {freq} Hz sine strays {stray:.2e} of its energy off the "
-        "fundamental, where it used to stray 1.2e-08")
+        f"fundamental, where it strayed {SINE_STRAY:.1e}")
 
 
 @pytest.mark.parametrize("table,strays", sorted(ALIASING.items()))
@@ -812,8 +826,15 @@ def test_frequency_modulation_puts_its_sidebands_where_it_should():
     modulated = music.note_with_fm(
         freq=5000, number_of_samples=SECOND, fm=300, max_fm_deviation=300,
         waveform_table=TABLES["sine"], fm_waveform_table=TABLES["sine"])
-    expected = {5000 + k * 300 for k in range(-4, 5)}
-    assert set(partials(modulated)) <= expected
+    found = set(partials(modulated))
+
+    # Both halves, because a subset alone would pass on an empty set --
+    # which is what this assertion said before, and a render that came
+    # back silent would have satisfied it.
+    assert {4700, 5000, 5300} <= found, (
+        "the carrier and its first sidebands should all be here")
+    assert found <= {5000 + k * 300 for k in range(-4, 5)}, (
+        "and nothing should be outside the comb")
 
 
 def test_frequency_modulation_folds_when_its_sidebands_pass_nyquist():
@@ -888,3 +909,82 @@ def test_the_positive_rail_is_one_code_short(short_by, cost):
     # The same sample at sixteen bits is nowhere near the rail.
     assert _quantize(np.array([near_full_scale]), 16)[0] == round(
         near_full_scale * 32768)
+
+
+# ---------------------------------------------------------------------
+# What the measures can and cannot see
+# ---------------------------------------------------------------------
+
+#: The smallest planted step `clicks` finds, as a fraction of the render's
+#: peak, in a few contexts.  Measured by bisection, and the point of the
+#: table is the last row.
+CLICK_SENSITIVITY = {
+    "silence": 0.0,
+    "note at 110 Hz": 0.090,
+    "note at 440 Hz": 0.358,
+    "note at 4000 Hz": None,        # nothing inside the representable range
+}
+
+
+def _smallest_step_found(signal, at=10000):
+    """Bisect for the smallest step at `at` that `clicks` reports."""
+    peak = float(np.max(np.abs(signal))) or 1.0
+    low, high = 0.0, 4.0
+    for _ in range(40):
+        middle = (low + high) / 2
+        hurt = np.array(signal, dtype=float)
+        hurt[at:] += middle
+        low, high = (low, middle) if clicks(hurt) else (middle, high)
+    return high / peak
+
+
+@pytest.mark.parametrize("label,expected", sorted(CLICK_SENSITIVITY.items()))
+def test_what_the_click_measure_can_and_cannot_see(label, expected):
+    """The measure is relative, and this is what that costs.
+
+    A step counts when it stands `CLICK_RATIO` times over the median step
+    of its block, so how large a click has to be depends entirely on how
+    fast the signal around it is already moving. In silence any step is
+    found. In a 110 Hz note it takes 9% of full scale. In a 440 Hz note,
+    36%. At 4 kHz a sine advances about 0.57 per sample, so eight times
+    that is 4.5 -- past the ±1 a sample can hold -- and **no click is
+    detectable at all**, whatever the threshold, because no threshold
+    makes a relative measure work where the signal's own steps are the
+    largest steps available.
+
+    So the sweep passing means no render carries a seam-like or gate-like
+    step, not that no render clicks. It found what it was built to find --
+    a full-scale step at a join, a delay opening out of zeros -- and the
+    README's scale, whose joins stood 47 times over their neighbours. A
+    click buried in a bright, fast passage it would not see.
+
+    Nothing above tested the measure against a click anyone planted, which
+    is how this went unwritten: every check was that clicks are *absent*,
+    and absence is what a blind measure reports too.
+    """
+    signals = {
+        "silence": music.silence(0.5),
+        "note at 110 Hz": music.note(110, 0.5),
+        "note at 440 Hz": music.note(440, 0.5),
+        "note at 4000 Hz": music.note(4000, 0.5),
+    }
+    found = _smallest_step_found(signals[label])
+    if expected is None:
+        assert found > 1.0, (
+            f"{label}: a step of {found:.2f} of peak was detected, so the "
+            "measure is no longer blind here and this row should say so")
+    else:
+        assert found == pytest.approx(expected, abs=0.02)
+
+
+def test_the_dc_measure_flags_an_offset_worth_flagging():
+    """And what it lets past: below about 3% of peak, nothing is said.
+
+    A tone biased by 2% of its peak passes the sweep. That is a real
+    offset and it is not nothing -- it is a fortieth of the headroom --
+    but it is well inside what an unlucky mean over a short render can
+    produce on its own, which is what `DC_LIMIT` is set against.
+    """
+    tone = music.note(440, 0.5)
+    assert dc_offset(tone + 0.02) < DC_LIMIT
+    assert dc_offset(tone + 0.05) > DC_LIMIT

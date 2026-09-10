@@ -32,11 +32,14 @@
   `write_wav_mono` and `write_wav_stereo` report too, and it is one call
   from wherever the zero was computed.
 
-- **A wholly linear `fade` came back longer than it was asked for.**
-  `perc` is how much of the fade is linear, and at 100 the exponential
-  part is zero samples long -- but `loud` reads `number_of_samples=0` as
-  "use the default duration", so it returned two seconds of envelope
-  instead of none. A half-second fade came back 110,250 samples rather
+- **A wholly linear `fade` came back longer than it was asked for**, in
+  two separate ways. `perc` is how much of the fade is linear, and at 100
+  the exponential part is zero samples long -- but `loud` reads
+  `number_of_samples=0` as "use the default duration", so it returned two
+  seconds of envelope instead of none. `method="linear"` handed the whole
+  sample count to `loud` the same way, so a fade of zero duration came
+  back two seconds long down that branch too. Three routines in this
+  release fell into the same trap, in three different files. A half-second fade came back 110,250 samples rather
   than 22,050: the default length added to the one requested. The other
   side of the same split was already guarded. `fade(perc=100)` is now
   exactly `fade(method="linear")`, which is what it always meant.
@@ -105,6 +108,16 @@
 - **Four more artifact classes, measured**, in the same sweep. Each is a
   property of the synthesis rather than a defect, and each is now a number
   that cannot move without a test failing.
+
+  *What the click measure cannot see.* It is relative -- a step counts
+  when it stands eight times over the median step around it -- so how
+  large a click must be depends on how fast the signal already moves. In
+  silence any step is found, in a 110 Hz note it takes 9 % of full scale,
+  in a 440 Hz note 36 %, and in a 4 kHz note nothing is detectable at
+  all, since eight times the local median is past the ±1 a sample can
+  hold. The sweep coming back clean means no render carries a seam-like
+  or gate-like step, not that no render clicks. Measured by bisection and
+  pinned, so the blind spot is a known quantity.
 
   *Aliasing.* A wavetable is read sample by sample with nothing
   band-limiting it, so every partial above Nyquist folds back down. A sine

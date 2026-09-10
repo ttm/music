@@ -33,6 +33,8 @@ something anyone can act on.
 """
 
 import inspect
+import pathlib
+import re
 import warnings
 
 import numpy as np
@@ -59,8 +61,14 @@ def _numeric_parameters(function):
         default = parameter.default
         if name in NOT_AN_EDGE or isinstance(default, bool):
             continue
-        if isinstance(default, (int, float)):
-            yield name
+        if not isinstance(default, (int, float)):
+            continue
+        # Ten pairs defaulted to zero already, so setting them to zero
+        # re-ran the default call -- which `test_public_api.py` sweeps
+        # anyway. They inflated the count without testing an edge.
+        if default == 0:
+            continue
+        yield name
 
 
 EDGES = sorted(
@@ -75,6 +83,32 @@ def test_the_sweep_finds_the_edges():
     assert len(EDGES) >= 120
     assert ("note", "freq") in EDGES
     assert ("fade", "perc") in EDGES
+
+
+def test_assessment_md_says_how_many_edges_there_are():
+    """The count in that file is a figure like any other in it.
+
+    `tools/assessment_figures.py` measures the figures it knows how to
+    run; this one is a property of a test module, so the test module is
+    where it is checked -- the same arrangement
+    `test_public_api.py` uses for the API reference. Without this the row
+    would drift the moment an export gained a numeric parameter, which is
+    the failure the whole file-checking arrangement exists to stop, and
+    the row went in at 155 while the sweep covered 145.
+    """
+    assessment = (pathlib.Path(__file__).parent.parent
+                  / "ASSESSMENT.md")
+    if not assessment.exists():      # pragma: no cover - an sdist only
+        pytest.skip("ASSESSMENT.md is missing")
+
+    stated = re.search(r"\*\*(\d+)\*\* \(routine, parameter\) pairs",
+                       assessment.read_text())
+    assert stated, (
+        "ASSESSMENT.md no longer states the pair count where this test "
+        "looks for it; fix the pattern rather than deleting the check")
+    assert int(stated.group(1)) == len(EDGES), (
+        f"ASSESSMENT.md says {stated.group(1)} (routine, parameter) pairs "
+        f"and the sweep covers {len(EDGES)}")
 
 
 @pytest.mark.parametrize("name,parameter", EDGES,
@@ -336,3 +370,57 @@ def test_writing_nothing_says_there_is_nothing(tmp_path, write, empty):
     """
     with pytest.raises(ValueError, match="nothing here to normalize"):
         getattr(music, write)(empty, str(tmp_path / "nothing.wav"))
+
+
+#: Every (routine, string parameter, value) the zero-duration sweep above
+#: cannot reach, discovered from the quoted values in each docstring.
+#:
+#: The sweep varies numbers, so a branch chosen by a string is a branch it
+#: never enters -- and `fade` had one. Its linear path handed the sample
+#: count straight to `loud`, where zero means "not supplied", so
+#: `fade(duration=0, method="linear")` returned two seconds of envelope
+#: while `method="exp"`, the default and the only one swept, returned
+#: nothing.
+#:
+#: Discovery rather than a list, so this cannot go stale as routines gain
+#: methods; a value the docstring quotes that is not really a method is
+#: refused with a ValueError and skipped, which costs nothing.
+def _string_branches():
+    quoted = re.compile(r"[\"']([a-z_]{2,12})[\"']")
+    for name in DURATIONS:
+        function = _callable_with_defaults(name)
+        documentation = inspect.getdoc(function) or ""
+        for parameter, spec in inspect.signature(
+                function).parameters.items():
+            if not isinstance(spec.default, str):
+                continue
+            for value in sorted(set(quoted.findall(documentation))
+                                | {spec.default}):
+                yield name, parameter, value
+
+
+STRING_BRANCHES = sorted(_string_branches())
+
+
+def test_the_string_sweep_finds_branches():
+    """Guard the discovery, so it cannot quietly find nothing."""
+    assert len(STRING_BRANCHES) >= 20
+    assert ("fade", "method", "linear") in STRING_BRANCHES
+
+
+@pytest.mark.parametrize("name,parameter,value", STRING_BRANCHES,
+                         ids=lambda value: str(value))
+def test_a_zero_duration_renders_nothing_down_every_branch(name, parameter,
+                                                           value):
+    """The same contract, along the paths a string chooses."""
+    function = _callable_with_defaults(name)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            rendered = np.asarray(function(duration=0, **{parameter: value}),
+                                  dtype=float)
+    except ValueError:
+        return                      # not a real value for this parameter
+    assert rendered.size == 0, (
+        f"{name}({parameter}={value!r}, duration=0) rendered "
+        f"{rendered.shape}")

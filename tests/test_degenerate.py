@@ -23,6 +23,13 @@ a sound out of it; `mix` counted a stereo array's two channels as its
 length; `noise`, `gaussian_noise`, `note_with_doppler`, `trill` and
 `rhythm_to_durations` each stopped somewhere unhelpful. They are fixed,
 and the sweep is what keeps them fixed.
+
+The second half of the file is about one particular edge, the zero
+duration, where "it works" and "it refuses" were both being answered and
+neither was written down. It renders nothing. The reasoning is in
+`test_a_zero_duration_renders_nothing`, and the refusal that used to sit
+in the routines now sits at the sinks, where an empty sound stops being
+something anyone can act on.
 """
 
 import inspect
@@ -192,26 +199,12 @@ def test_mix_still_sums_two_mono_sounds():
     assert len(summed) == len(music.note(440, 0.1))
 
 
-def test_a_noise_refuses_to_be_no_samples_long():
-    """It reached `IndexError: index 0 is out of bounds` instead."""
-    with pytest.raises(ValueError, match="at least one sample"):
-        music.noise(duration=0)
-    with pytest.raises(ValueError, match="at least one sample"):
-        music.gaussian_noise(duration=0)
-
-
 def test_a_gaussian_noise_refuses_a_band_with_nothing_in_it():
     """A width of zero zeroed every coefficient, and normalizing an
     all-zero spectrum divides by its own zero range: the caller got an
     array of NaN behind a RuntimeWarning."""
     with pytest.raises(ValueError, match="no frequency"):
         music.gaussian_noise(std=0)
-
-
-def test_a_doppler_note_refuses_to_be_no_samples_long():
-    """It divided by the length it did not have."""
-    with pytest.raises(ValueError, match="at least one sample"):
-        music.note_with_doppler(duration=0)
 
 
 def test_a_trill_refuses_a_rate_of_no_notes_per_second():
@@ -225,3 +218,109 @@ def test_rhythm_to_durations_refuses_when_nothing_gives_a_duration():
     total: the routine then divided None by a sum."""
     with pytest.raises(ValueError, match="gives a duration"):
         music.rhythm_to_durations(duration=0)
+
+
+# ---------------------------------------------------------------------
+# What a zero duration answers with
+# ---------------------------------------------------------------------
+
+#: The routines that take a duration and do not answer a zero one with an
+#: empty array, and why. Both are deliberate and neither is a render.
+NOT_A_ZERO_LENGTH_RENDER = {
+    "reverb": (
+        "its first_phase_duration is a share of the total, so a total of "
+        "zero is a conflict between two parameters rather than a request "
+        "for nothing, and it says which two"),
+    "rhythm_to_durations": (
+        "it returns durations rather than samples, and a zero duration "
+        "with no bpm and no total leaves nothing to divide"),
+}
+
+
+def _takes_a_duration(name):
+    function = _callable_with_defaults(name)
+    return "duration" in inspect.signature(function).parameters
+
+
+DURATIONS = sorted(name for name in ZERO_ARG_EXPORTS
+                   if _takes_a_duration(name))
+
+
+@pytest.mark.parametrize("name", DURATIONS)
+def test_a_zero_duration_renders_nothing(name):
+    """Zero samples, keeping the shape the routine would have returned.
+
+    This is the package's convention and it was never written down, so it
+    drifted: twenty-four routines answered a zero duration with an empty
+    array, two -- `binaural_beats` and `monaural_beats` -- returned two
+    seconds of audio, and four failed with a numpy message about
+    broadcasting or about concatenating nothing.
+
+    The two-second answer is the interesting one. Every routine in
+    `music.stimulation` sizes itself with `_sample_count`, which returns
+    zero honestly, and then renders with `note(number_of_samples=count)`,
+    where zero means "not supplied" and gives back the default. The count
+    was right; passing it on is what laundered it. So asking for no sound
+    got two seconds of it, which is the one answer nobody could want.
+    """
+    function = _callable_with_defaults(name)
+    if name in NOT_A_ZERO_LENGTH_RENDER:
+        with pytest.raises(ValueError):
+            function(duration=0)
+        return
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        rendered = np.asarray(function(duration=0), dtype=float)
+
+    assert rendered.size == 0, (
+        f"{name}(duration=0) rendered {rendered.shape}. A zero duration is "
+        "zero samples; if this routine cannot answer that, register it in "
+        "NOT_A_ZERO_LENGTH_RENDER with the reason.")
+
+    # And in the shape it would otherwise have had, so an empty stereo
+    # render still stacks and mixes with stereo ones.
+    full = np.asarray(function(duration=0.1), dtype=float)
+    assert rendered.ndim == full.ndim, (
+        f"{name}(duration=0) has {rendered.ndim} dimensions where a real "
+        f"render has {full.ndim}; an empty stereo sound is (2, 0)")
+
+
+@pytest.mark.parametrize("name", sorted(NOT_A_ZERO_LENGTH_RENDER))
+def test_the_register_names_something_that_still_refuses(name):
+    """So it cannot rot into an excuse for something long since fixed."""
+    with pytest.raises(ValueError):
+        _callable_with_defaults(name)(duration=0)
+
+
+def test_an_empty_render_carries_through_the_sequence_operations():
+    """Which is the argument for empty over a refusal.
+
+    Zero is the identity and these treat it as one, so a caller building
+    notes from computed durations does not have to filter the zeros out
+    before stacking them -- and the filtering is the part that goes wrong.
+    """
+    sound = music.note(440, 0.1)
+    nothing = music.note(440, 0)
+
+    assert len(music.horizontal_stack(sound, nothing, sound)) == 2 * len(sound)
+    assert len(music.mix(sound, nothing)) == len(sound)
+    assert len(music.adsr(sonic_vector=nothing)) == 0
+
+
+@pytest.mark.parametrize("write,empty", [
+    ("write_wav_mono", np.array([])),
+    ("write_wav_stereo", np.zeros((2, 0))),
+])
+def test_writing_nothing_says_there_is_nothing(tmp_path, write, empty):
+    """Where an empty sound stops being meaningful, and so where it is
+    refused.
+
+    The refusal belongs here rather than in the twenty-four routines that
+    can legitimately render nothing: an empty array reaching a file means
+    a duration computed as zero somewhere upstream, and this is one call
+    from wherever that was. numpy used to report it as a zero-size
+    reduction, which names the line rather than the mistake.
+    """
+    with pytest.raises(ValueError, match="nothing here to normalize"):
+        getattr(music, write)(empty, str(tmp_path / "nothing.wav"))

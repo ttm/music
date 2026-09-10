@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-10**,
-`music` 1.7.0: 47 modules, 11,887 LOC package + 10,536 LOC tests, 126 names
+`music` 1.7.0: 47 modules, 11,960 LOC package + 10,635 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -56,12 +56,12 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **2804 tests**, 16 s |
-| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,764 stmts, 0 missed) |
+| Test suite | `pytest -q` | **2838 tests**, 16 s |
+| Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,782 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
 | Lint, extended rule set | `ruff check --select ALL music` | 2,139 findings |
-| Annotation coverage | AST scan | **101 / 208 functions (49 %)**; 63 / 94 exported (67 %) |
+| Annotation coverage | AST scan | **101 / 209 functions (48 %)**; 63 / 94 exported (67 %) |
 | Docstring coverage | AST scan | **169 / 180 public defs (94 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
@@ -75,6 +75,7 @@ Every figure below came from running the code, not from reading it.
 | Round-trip noise | `tests/test_artifacts.py` | **48 dB** at 8-bit, **121** at 16, **145** at 24, against what was written |
 | Filter stability | `tests/test_artifacts.py` | every design's poles inside the unit circle across its whole parameter range |
 | Degenerate parameters | `tests/test_degenerate.py` | **155** (routine, parameter) pairs set to zero: each works or is refused with a `ValueError` |
+| Zero durations | `tests/test_degenerate.py` | every routine that takes a duration renders nothing for a zero one, in the shape it would otherwise have |
 | Import cost | `import music`, warm, 3.12 | **~185-290 ms**, and no sympy in `sys.modules` |
 | Archival subjects | `tools/verify_subjects.py` | **15 of 17** resolve to the term they declare; 2 unconfirmable, EuroSciVoc serving an empty graph |
 
@@ -91,7 +92,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; CI across Python 3.10–3.14 including a job pinned to the declared lower bounds |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 49 %; the `legacy/` subpackage |
+| **Needs work** | Annotation coverage at 48 %; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -247,6 +248,32 @@ either documented in the code or tracked in the issue list.
   Anything that shapes a note afterwards, an envelope or a mix, leaves the
   grid behind; a bare note does not.
 
+- **A zero duration renders nothing, and the refusal lives at the
+  sinks.** Asking for no sound gives an empty array, in the shape the
+  routine would otherwise have returned -- `(0,)` from a mono routine,
+  `(2, 0)` from a stereo one -- and the sequence operations carry one
+  through as the identity it is: `horizontal_stack` and `mix` pass it by,
+  `adsr` shapes it into itself. So a caller building notes from computed
+  durations need not filter the zeros out first, which is the part that
+  goes wrong.
+
+  Where an empty sound stops being something anyone can act on is at the
+  sinks, and that is where it is refused: `normalize_mono` and
+  `normalize_stereo` say there is nothing to normalize, which is what
+  `write_wav_mono` and `write_wav_stereo` report too. Two routines are
+  registered as refusing earlier and say why -- `reverb`, whose
+  `first_phase_duration` makes a zero total a conflict between two
+  parameters, and `rhythm_to_durations`, which returns durations rather
+  than samples.
+
+  This was a convention rather than a decision until it was written down,
+  and it had drifted: twenty-four routines rendered nothing, two rendered
+  **two seconds of audio**, and four failed with a numpy message. The two
+  are the interesting ones -- every routine in `music.stimulation` sizes
+  itself correctly and then renders with `note(number_of_samples=count)`,
+  where a count of zero means "not supplied", so an honest zero was
+  laundered into the default on the way past.
+
 - **An offset below one sample is discarded rather than rounded.**
   `mix_with_offset` takes seconds and delays by `int(seconds * rate)`, so
   half a sample is no offset at all, and a caller sweeping an offset finely
@@ -276,7 +303,7 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 49 %**, and 67 % across the exported API. The
+- **Annotation coverage is 48 %**, and 67 % across the exported API. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones

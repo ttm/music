@@ -30,6 +30,25 @@ def _sample_count(duration, number_of_samples, sample_rate):
     return int(duration * sample_rate)
 
 
+def _nothing(channels=1):
+    """Zero samples, in the shape the routine would otherwise return.
+
+    Every routine here sizes itself with :func:`_sample_count` and then
+    renders with ``note(number_of_samples=count)``, where a count of zero
+    means "not supplied" and gives back the two-second default. So a
+    zero-length request came out of ``binaural_beats`` and
+    ``monaural_beats`` as two seconds of audio, and out of the three that
+    multiply a tone by an envelope built from the same count as a numpy
+    message about broadcasting. The count was honest; passing it on is
+    what laundered it.
+
+    A zero duration answers with nothing, which is what sixteen of the
+    synthesis routines already do and what the sequence operations treat
+    as the identity it is.
+    """
+    return np.zeros((channels, 0)) if channels > 1 else np.array([])
+
+
 def _oscillator(waveform_table, freq, count, sample_rate):
     """One period-indexed lookup of ``waveform_table`` at ``freq``.
 
@@ -119,6 +138,8 @@ def binaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
 
     """
     count = _sample_count(duration, number_of_samples, sample_rate)
+    if count < 1:
+        return _nothing(2)
     left = note(freq=carrier_freq - beat_freq / 2,
                 waveform_table=waveform_table,
                 number_of_samples=count, sample_rate=sample_rate)
@@ -193,6 +214,8 @@ def monaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
 
     """
     count = _sample_count(duration, number_of_samples, sample_rate)
+    if count < 1:
+        return _nothing(1)
     lower = note(freq=carrier_freq - beat_freq / 2,
                  waveform_table=waveform_table,
                  number_of_samples=count, sample_rate=sample_rate)
@@ -289,6 +312,8 @@ def isochronic_tones(carrier_freq: float = 200.0, pulse_rate: float = 10.0,
         raise ValueError(
             f"ramp_duration cannot be negative, got {ramp_duration}")
     count = _sample_count(duration, number_of_samples, sample_rate)
+    if count < 1:
+        return _nothing(1)
     tone = note(freq=carrier_freq, waveform_table=waveform_table,
                 number_of_samples=count, sample_rate=sample_rate)
 
@@ -388,6 +413,8 @@ def amplitude_modulation(
         raise ValueError(
             f"modulation_depth must be in [0, 1], got {modulation_depth}")
     count = _sample_count(duration, number_of_samples, sample_rate)
+    if count < 1:
+        return _nothing(1)
     tone = note(freq=carrier_freq, waveform_table=waveform_table,
                 number_of_samples=count, sample_rate=sample_rate)
     modulator = _oscillator(modulation_waveform_table, modulation_freq,
@@ -591,6 +618,8 @@ def modulated_noise(noise_type: str | float = 'pink',
         raise ValueError(
             f"modulation_freq cannot be negative, got {modulation_freq}")
     count = _sample_count(duration, number_of_samples, sample_rate)
+    if count < 1:
+        return _nothing(1)
     bed = noise(noise_type=noise_type, min_freq=min_freq,
                 max_freq=max_freq, number_of_samples=count,
                 sample_rate=sample_rate)

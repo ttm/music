@@ -1,6 +1,35 @@
 ## [Unreleased]
 
 ### Fixed
+- **A zero duration renders nothing, everywhere.** It always did in
+  twenty-four routines; in `binaural_beats` and `monaural_beats` it
+  rendered **two seconds of audio**, and in `amplitude_modulation`,
+  `isochronic_tones`, `modulated_noise` and `trill` it failed with a numpy
+  message about broadcasting or about concatenating nothing.
+
+  The two-second answer is the one worth explaining. Every routine in
+  `music.stimulation` sizes itself with a helper that returns zero
+  honestly, and then renders with `note(number_of_samples=count)`, where a
+  count of zero means "not supplied" and gives back the two-second
+  default. The count was right; passing it on is what laundered it. So
+  asking for no sound got two seconds of it, which is the one answer
+  nobody could want. The same falsy-zero trap as the `fade` defect below.
+
+  An empty render now keeps the shape the routine would otherwise have
+  returned -- `(0,)` from a mono routine, `(2, 0)` from a stereo one -- so
+  it still stacks and mixes with real sounds. `noise`, `gaussian_noise`
+  and `note_with_doppler` briefly refused a zero duration instead; they
+  render nothing again, which is what the other twenty-four always did.
+
+- **`normalize_mono` and `normalize_stereo` say when there is nothing to
+  normalize**, rather than letting numpy report a zero-size reduction.
+  This is the other half of the decision above: if a zero duration is a
+  legitimate request, the refusal belongs where an empty sound stops
+  being something anyone can act on, which is the sink rather than the
+  twenty-four routines that can legitimately render nothing. It is what
+  `write_wav_mono` and `write_wav_stereo` report too, and it is one call
+  from wherever the zero was computed.
+
 - **A wholly linear `fade` came back longer than it was asked for.**
   `perc` is how much of the fade is linear, and at 100 the exponential
   part is zero samples long -- but `loud` reads `number_of_samples=0` as

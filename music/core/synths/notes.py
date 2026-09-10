@@ -134,13 +134,6 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     s : ndarray
         The PCM samples of the resulting sound.
 
-    Raises
-    ------
-    ValueError
-        If the duration is shorter than one sample. The routine divides
-        by the length it was asked for, so a duration of zero reached a
-        warning about dividing by zero rather than a refusal.
-
     See Also
     --------
     note_with_vibrato_seq_localization : a note with arbitrary vibratos,
@@ -169,9 +162,12 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     if not number_of_samples:
         number_of_samples = int(duration * sample_rate)
     if number_of_samples < 1:
-        raise ValueError(
-            f"a sound needs at least one sample; duration={duration} at "
-            f"{sample_rate} Hz gives {number_of_samples}")
+        # Zero samples is zero samples, with this routine's own shape
+        # kept: adsr_stereo and spatial_motion already answer a zero
+        # duration with a (2, 0), and the mono generators with a (0,).
+        # See the note in music/core/synths/noises.py for why empty
+        # rather than a refusal.
+        return np.zeros((2, 0)) if stereo else np.array([])
     #  samples = np.arange(number_of_samples)
     length = len(waveform_table)
     speed = 331.3 + .606 * air_temp
@@ -1431,4 +1427,10 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
         s.append(adsr(sonic_vector=note_, release_duration=10))
         pointer += ns
         i += 1
+    if not s:
+        # A duration too short to hold one note of the trill leaves
+        # nothing to concatenate, and np.hstack of an empty list asks for
+        # at least one array. Zero notes is an empty trill, the same
+        # answer a zero duration gets everywhere else here.
+        return np.array([])
     return np.hstack(s)

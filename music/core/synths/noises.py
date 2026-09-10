@@ -76,9 +76,14 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
     else:
         length = int(duration * sample_rate)
     if length < 1:
-        raise ValueError(
-            f"a noise needs at least one sample; duration={duration} at "
-            f"{sample_rate} Hz gives {length}")
+        # Zero samples is zero samples. Sixteen routines here already
+        # answer a zero duration with an empty array, and the sequence
+        # operations treat one as the identity it is: horizontal_stack
+        # and mix pass it through, adsr shapes it into itself. Refusing
+        # would make every caller that computes durations filter them
+        # first. Where an empty sound stops being meaningful is at the
+        # sinks, and normalize_mono says so there.
+        return np.array([])
     prog: float
     if noise_type == "white":
         prog = 0
@@ -156,11 +161,12 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
     Raises
     ------
     ValueError
-        If the duration is shorter than one sample, or if ``mean`` and
-        ``std`` name a band that holds no frequency at the resolution the
-        length gives. A band of no width zeroed every coefficient, and
-        normalizing an all-zero spectrum divides by its own zero range:
-        the caller got an array of NaN behind a warning.
+        If ``mean`` and ``std`` name a band that holds no frequency at
+        the resolution the length gives. A band of no width zeroed every
+        coefficient, and normalizing an all-zero spectrum divides by its
+        own zero range: the caller got an array of NaN behind a warning.
+        A duration too short to hold a sample is not refused -- it
+        renders nothing, as everything here does.
 
     Examples
     --------
@@ -176,9 +182,14 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
     # rather than rendering the half second it was asked for.
     length = int(duration * sample_rate)
     if length < 1:
-        raise ValueError(
-            f"a noise needs at least one sample; duration={duration} at "
-            f"{sample_rate} Hz gives {length}")
+        # Zero samples is zero samples. Sixteen routines here already
+        # answer a zero duration with an empty array, and the sequence
+        # operations treat one as the identity it is: horizontal_stack
+        # and mix pass it through, adsr shapes it into itself. Refusing
+        # would make every caller that computes durations filter them
+        # first. Where an empty sound stops being meaningful is at the
+        # sinks, and normalize_mono says so there.
+        return np.array([])
     freq_res = sample_rate / float(length)
     coeffs = np.exp(1j * np.random.uniform(0, 2 * np.pi, length))
     coeffs[length // 2 + 1:] = np.real(coeffs[1:length // 2])[::-1] - 1j * \

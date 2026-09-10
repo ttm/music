@@ -38,6 +38,18 @@ def normalize_mono(sonic_vector: ArrayLike,
     s : ndarray
         A numpy array with values between -1 and 1.
 
+    Raises
+    ------
+    ValueError
+        If the sonic vector is empty. A zero duration renders zero
+        samples throughout this package and the sequence operations
+        carry one through as the identity it is, so an empty array
+        arriving here means a duration computed as zero upstream. This
+        is where an empty sound stops being something anyone can act on,
+        so this is where it is said; numpy used to report it as a
+        zero-size reduction, which names the line rather than the
+        mistake.
+
     Examples
     --------
     >>> normalize_mono([-1., -.5, 0., .5, 1.])  # already normalized
@@ -47,6 +59,15 @@ def normalize_mono(sonic_vector: ArrayLike,
 
     """
     t = np.array(sonic_vector, dtype=np.float64)
+    if t.size == 0:
+        raise ValueError(
+            "there is nothing here to normalize: the sonic vector is "
+            "empty. A zero duration renders zero samples throughout this "
+            "package, and the sequence operations carry one through as "
+            "the identity it is -- so an empty array reaching here means "
+            "a duration computed as zero somewhere upstream. numpy used "
+            "to report this as a zero-size reduction, which named the "
+            "line rather than the mistake.")
     if t.max() == t.min():
         # Constant, including all-zero: silence once the offset is gone.
         return np.zeros_like(t)
@@ -80,6 +101,12 @@ def normalize_stereo(sonic_vector: ArrayLike, remove_bias: bool = True,
     sv_normalized : ndarray
         A numpy array with values between -1 and 1.
 
+    Raises
+    ------
+    ValueError
+        If the sonic vector is empty; see :func:`normalize_mono` for what
+        an empty render means.
+
 
     Examples
     --------
@@ -92,6 +119,10 @@ def normalize_stereo(sonic_vector: ArrayLike, remove_bias: bool = True,
     [1.0, 1.0]
     """
     sv_copy = np.array(sonic_vector, dtype=np.float64)
+    if sv_copy.size == 0:
+        raise ValueError(
+            "there is nothing here to normalize: the sonic vector is "
+            "empty. See normalize_mono for what an empty render means.")
     if sv_copy.ndim == 1:
         # A mono vector: give it two identical channels. Indexing it as
         # though it were a channel pair read its first two *samples* as the

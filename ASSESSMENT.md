@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-10**,
-`music` 1.7.0: 47 modules, 11,991 LOC package + 11,455 LOC tests, 126 names
+`music` 1.7.0: 47 modules, 11,991 LOC package + 11,883 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -56,7 +56,7 @@ Every figure below came from running the code, not from reading it.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **3169 tests**, 16 s |
+| Test suite | `pytest -q` | **3400 tests**, 16 s |
 | Coverage | `pytest --cov=music --cov-fail-under=100` | **100 %** (2,782 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 40 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
@@ -78,6 +78,7 @@ Every figure below came from running the code, not from reading it.
 | Zero durations | `tests/test_degenerate.py` | every routine that takes a duration renders nothing for a zero one, in the shape it would otherwise have |
 | Length, rate and pitch | `tests/test_properties.py` | **24 of 26** timed routines render exactly `duration * sample_rate` at four rates; the other two are registered |
 | Composition | `tests/test_properties.py` | shapers commute, mixing associates, designed filters are linear; pieces survive a write and a read |
+| Theory and structures | `tests/test_theory_properties.py` | conversions invert, interval names round-trip, the modes are one pattern rotated, a peal on `n` bells is `n!` rows one adjacent swap apart |
 | Import cost | `import music`, warm, 3.12 | **~185-290 ms**, and no sympy in `sys.modules` |
 | Archival subjects | `tools/verify_subjects.py` | **15 of 17** resolve to the term they declare; 2 unconfirmable, EuroSciVoc serving an empty graph |
 

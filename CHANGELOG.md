@@ -186,6 +186,29 @@
   `mix_with_offset` truncates its offset to whole samples, so half a
   sample is no offset at all and a finely swept offset is a staircase.
 
+- **`tests/test_theory_properties.py`**, the same treatment for the half
+  of the API that is not sound: conversions between units, names for
+  intervals, sets of semitones, permutation groups, and the bonds. Before
+  these two files, 24 of 126 exports had a property or a combination
+  checked against them.
+
+  That half suits laws because almost all of it is exact, so none of
+  these tests carries a tolerance. A conversion has an inverse, and the
+  constants everyone knows -- A440 at MIDI 69, six decibels to a doubling
+  -- say the inverse is the right one rather than merely self-consistent.
+  A size in semitones has one set of names and each names it back. The
+  seven modes are one step pattern rotated seven ways, which is what the
+  README claims about them. A peal on `n` bells is `n!` rows, each a
+  permutation of the same bells, each differing from the last by exactly
+  one adjacent swap. The melodic minor rises as the natural minor with a
+  raised sixth and seventh and falls as the natural minor unraised. And
+  the two halves meet: a scale becomes frequencies becomes samples, and
+  the pitch that comes out is the pitch that went in.
+
+  It found no defect. Four laws failed on the way in and the code was
+  right every time, so each became a test of what the code does rather
+  than of what I assumed it did.
+
 - **`tests/test_properties.py`**, for the range between a routine's
   defaults and the edge of its parameters -- ordinary values that are
   simply not the default ones, and routines used together rather than

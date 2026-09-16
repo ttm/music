@@ -1,4 +1,4 @@
-## [Unreleased]
+## [1.8.1] - 2026-09-16
 
 ### Fixed
 
@@ -21,15 +21,28 @@
   phases retain their total requested duration; array phases keep their
   samples and contribute the time left after their effective overlaps.
 
+### Tests
+
+- **Targeted mutation testing strengthens normalization, export and
+  session assertions.** The selected tests detect 698 of 767 mutations,
+  up from 617 after adding 68 cases, strengthening existing assertions
+  and selecting two existing regression tests. All 69 survivors were
+  reviewed and accepted with stated reasons. `MUTATION_AUDIT.md` records
+  the scope, tool limitation and reproducible isolated runner. No further
+  production defect was found during this audit.
+
 ### Documentation
 
 - Record the September 2026 findings and prioritized follow-up work in
-  `ROADMAP.md`, with the correctness patch first and targeted mutation
-  testing next.
+  `ROADMAP.md`, with the correctness patch and mutation audit completed
+  and release-workflow checks next.
 - Correct stale assessment counts and claims about interval naming;
   describe which figures the automatic assessment actually checks.
 - Apply envelopes in the documentation landing-page example so adjacent
   notes do not click at the joins.
+- Correct the archival abstract's article coverage to 46/47 equations
+  (all 46 testable) and the assessment to 17/19 confirmed vocabulary
+  subjects. Align release guidance with the existing stimulation metadata.
 
 ## [1.8.0] - 2026-09-10
 

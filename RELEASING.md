@@ -152,8 +152,11 @@ caught us, and both are why the script exists:
 - **Edits are not live until Publish is pressed.** A record can sit with a
   draft full of changes while the public page still shows the old metadata.
 
-## Not part of the release
+## Metadata scope
 
-Music therapy terms. The package is not a music-therapy tool, and tagging it
-as one surfaces it in searches it cannot serve. If the sensory-stimulation
-work in the issue tracker becomes real, that is when the terms are earned.
+The sensory-stimulation toolkit now exists, and `.zenodo.json` includes
+Music Therapy subjects. These describe the intended audience and subject
+area, not evidence of clinical efficacy. The tests establish properties
+of rendered signals; `tools/verify_subjects.py` checks vocabulary labels
+and identifiers. Neither establishes a therapeutic effect. Keep metadata
+claims aligned with the implemented capabilities and `ASSESSMENT.md`.

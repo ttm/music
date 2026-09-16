@@ -271,7 +271,8 @@ The modules are:
 ## Plans
 
 See [the findings and prioritized roadmap](ROADMAP.md) for the September
-2026 review and the correctness patch being prepared for 1.8.1.
+2026 review, the 1.8.1 correctness patch, and the completed
+[targeted mutation audit](MUTATION_AUDIT.md).
 
 Concrete things the code itself is waiting for, rather than a wish list:
 
@@ -314,7 +315,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 3,497 tests, 100% line and branch coverage
+pytest                                       # 3,565 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

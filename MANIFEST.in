@@ -39,6 +39,7 @@ include .zenodo.json
 include CHANGELOG.md
 include ASSESSMENT.md
 include ROADMAP.md
+include MUTATION_AUDIT.md
 include RECONCILIATION.md
 include DISCREPANCIES.md
 include CITATION.cff

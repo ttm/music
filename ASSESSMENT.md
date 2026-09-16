@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-16**,
-`music` 1.8.0: 47 modules, 12,081 LOC package + 12,351 LOC tests, 126 names
+`music` 1.8.1: 47 modules, 12,081 LOC package + 12,608 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,7 +59,7 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **3497 tests**, 75 s with branch coverage |
+| Test suite | `pytest -q` | **3565 tests**, 75 s with branch coverage |
 | Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,807 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
@@ -83,7 +83,7 @@ figures described above are automatically compared with the checkout.
 | Composition | `tests/test_properties.py` | shapers commute, mixing associates, designed filters are linear; pieces survive a write and a read |
 | Theory and structures | `tests/test_theory_properties.py` | conversions invert, interval names round-trip, the modes are one pattern rotated, a peal on `n` bells is `n!` rows one adjacent swap apart |
 | Import cost | `import music`, warm, 3.12 | **~185-290 ms**, and no sympy in `sys.modules` |
-| Archival subjects | `tools/verify_subjects.py` | **15 of 17** resolve to the term they declare; 2 unconfirmable, EuroSciVoc serving an empty graph |
+| Archival subjects | `tools/verify_subjects.py` | **17 of 19** resolve to the term they declare; 2 unconfirmable, EuroSciVoc serving an empty graph |
 
 `mypy` runs with `check_untyped_defs = true`, so it inspects function bodies
 rather than skipping the unannotated ones — which is most of them. A clean
@@ -167,7 +167,7 @@ either documented in the code or tracked in the issue list.
 - **Two archival subjects cannot be confirmed from their identifiers.**
   `tools/verify_subjects.py` resolves each subject in `.zenodo.json`
   against its own vocabulary and compares the label that comes back:
-  fourteen MeSH terms and one GEMET concept agree with the file. The two
+  sixteen MeSH terms and one GEMET concept agree with the file. The two
   EuroSciVoc identifiers answer 200 at both `data.europa.eu` and
   `publications.europa.eu` and return an empty RDF graph with no
   `skos:prefLabel` in it, so nothing confirms them. That is a fact about
@@ -219,29 +219,20 @@ either documented in the code or tracked in the issue list.
   degenerate parameters now checks the mean as well, with these seven
   registered, so the class has somewhere to be recorded.
 
-- **Nothing has asked the suite the question mutation testing asks.**
-  Two measures of the tests themselves have been applied here, and each
-  found defects the tests were carrying rather than catching: branch
-  coverage, which showed twelve conditions that had only ever gone one
-  way and three defects sitting in them; and an audit of every
-  `pytest.approx` tolerance against the error it actually sees, which
-  found five assertions passing by the whole of their margin and one of
-  those calibrated to an off-by-one in `trill`.
+- **Mutation testing covers three selected files, not the whole package.**
+  The September 2026 audit deliberately changed normalization, audio I/O
+  and session code one operation at a time. Stronger sample-based tests
+  and two additional existing test selections detect 698 of 767 mutations,
+  up from 617. The 69 survivors were individually reviewed: diagnostic
+  text, equivalent supported behavior, and two explicitly accepted
+  one-sample changes to default noise length. No further production
+  defect was found.
 
-  Both measure the same thing indirectly: whether a test could fail.
-  Mutation testing asks it directly -- change the code, deliberately and
-  one edit at a time, and see whether anything goes red. A surviving
-  mutant is a line the suite executes without depending on. Neither
-  measure above can see that: a branch can be taken by a test that
-  asserts nothing about what it did, and an exact assertion can be exact
-  about the wrong quantity.
-
-  It has not been run here, so how much of this suite is load-bearing is
-  unmeasured. Given what the two cheaper measures turned up, the
-  expectation should not be zero. `mutmut` or `cosmic-ray` over
-  `music/` would settle it; the cost is that a full run is hours rather
-  than the ninety seconds the suite takes now, which is why this is
-  written down rather than done. Issue #113.
+  [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records the scope, assertions,
+  survivor IDs and reproduction command. The tool skips decorated classes,
+  so an isolated adapter was needed to reach session methods; properties
+  remain outside mutation scope. This is evidence about those three files,
+  not a measure of the whole suite. Expanding it remains issue #113.
 
 - **The click measure is relative, so it is blind in fast passages.** A
   step counts as a click when it stands eight times over the median step
@@ -425,10 +416,11 @@ worse than the code.
   September 2026 review found shared stereo normalization exceeding full
   scale for differently offset channels, export fades timed at 44.1 kHz
   regardless of the output rate, and session ramps that failed or lost
-  their closing fade when phases were short. The unreleased correctness
-  patch fixes these with tests of exported samples, fade timing, and
+  their closing fade when phases were short. Version 1.8.1
+  fixes these with tests of exported samples, fade timing, and
   competing ramps. [ROADMAP.md](ROADMAP.md) records the reproductions and
-  validation; targeted mutation testing remains the next testing task.
+  validation; [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records the completed
+  targeted audit and the test gaps it closed.
 
 - **`core/functions.py` was never the file the claim rested on.** This
   entry, and the roadmap in `README.md`, named a 123-line file holding three

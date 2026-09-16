@@ -98,6 +98,26 @@ Both uploaded artifact hashes match the local builds. GitHub CI and docs
 passed for the tagged commit, including Python 3.10–3.14 and minimum
 dependency versions.
 
+**Pending: Zenodo metadata sync.** The archive and DOI are registered,
+but on 2026-09-16 Zenodo's record and vocabulary APIs repeatedly returned
+HTTP 504, including an authenticated read. Its DataCite export also timed
+out. DataCite's own API confirms the 1.8.1 DOI, 45 free-text subjects and
+zero controlled subjects; only the abstract is present among descriptions.
+The citation has been updated. The failures occurred during reads, before
+any metadata draft was created.
+
+When Zenodo recovers, apply the required controlled subjects and changelog
+summary to this specific record, then verify its DataCite export:
+
+```console
+python tools/zenodo_sync.py --record 22802569 --description
+python tools/zenodo_sync.py --record 22802569 --description --write
+```
+
+The intended result is 19 controlled subjects alongside the 45 keywords,
+with the 1.8.1 release notes attached. This remaining archival step does
+not change the published package, Git tag or DOI.
+
 ## Completed: measure whether the tests detect wrong answers
 
 The targeted mutation audit covers normalization, export and session

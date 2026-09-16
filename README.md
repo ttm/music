@@ -270,6 +270,9 @@ The modules are:
 
 ## Plans
 
+See [the findings and prioritized roadmap](ROADMAP.md) for the September
+2026 review and the correctness patch being prepared for 1.8.1.
+
 Concrete things the code itself is waiting for, rather than a wish list:
 
 * **A head-related transfer function this package computes.** `music.hrtf`
@@ -288,9 +291,10 @@ Concrete things the code itself is waiting for, rather than a wish list:
   reference implementation routine by routine — 26 of 35 are reproduced sample
   for sample, and the rest diverge for reasons it states.
   [`tests/test_article.py`](tests/test_article.py) checks the article's
-  equations instead of its code, and covers all 45 of the 47 that a test could
-  settle. Both leave `music.stimulation`, `music.singing`, `music.structures`
-  and the sequencer with nothing to be measured against.
+  equations instead of its code, and covers 46 of 47 labelled equations:
+  all 46 that a test could settle. Routines without a MASS counterpart
+  also have signal-property and composition tests; the next step is to
+  measure whether those assertions detect deliberate implementation errors.
   [`DISCREPANCIES.md`](DISCREPANCIES.md) is where the article, the reference
   implementation and this package are recorded as disagreeing.
 * **An article describing the package**, as a companion to the MASS one.
@@ -310,7 +314,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 3,412 tests, 100% line and branch coverage
+pytest                                       # 3,497 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

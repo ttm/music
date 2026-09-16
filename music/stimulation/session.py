@@ -124,6 +124,19 @@ class StimulationSession:
     protocol past the length its author wrote down. A protocol that says
     ten minutes lasts ten minutes.
 
+    Ramps that cannot fit are shortened before rendering. Phases are
+    considered from first to last; each divides its available samples
+    between its requested incoming and outgoing ramps in proportion to
+    the space they need. Both neighbors use the same shortened transition.
+    This prevents overlapping crossfades around a short middle phase and
+    preserves both outer fades. Arrays keep their original samples and
+    give up only their share of the effective overlaps.
+
+    A callable phase whose duration rounds to zero samples contributes
+    nothing and is not called. At sample resolution, a one-sample closing
+    fade is silence; a one- or two-sample phase with both outer fades
+    therefore renders silence.
+
     Attributes
     ----------
     sample_rate : integer
@@ -220,7 +233,6 @@ class StimulationSession:
                  for phase in self.phases]
         ramps.append(int(round(self.end_ramp * self.sample_rate)))
 
-        layout = []
         # Each boundary is rounded from the elapsed time rather than
         # summed from per-phase roundings, which would drift by a sample
         # every few phases and leave a long protocol the wrong length --
@@ -228,7 +240,45 @@ class StimulationSession:
         # made until 1.3.0. Phases given as arrays contribute exact
         # sample counts, so they are carried separately.
         elapsed = 0.0
-        from_arrays = 0
+        capacities = []
+        for phase in self.phases:
+            if callable(phase.stimulus):
+                boundary = int(round(elapsed * self.sample_rate))
+                elapsed += phase.duration
+                capacities.append(
+                    int(round(elapsed * self.sample_rate)) - boundary)
+            else:
+                capacities.append(np.atleast_2d(phase.stimulus).shape[1])
+
+        # A callable can extend beyond its nominal span into its
+        # neighbors, so only the inward portions spend its budget.
+        # An array cannot grow: both complete ramps must fit inside it.
+        # Resolve shared lengths first; clipping envelopes independently
+        # after placement gives the two sides different transitions.
+        for index, (phase, capacity) in enumerate(zip(self.phases,
+                                                     capacities)):
+            if capacity == 0:
+                ramps[index] = ramps[index + 1] = 0
+                continue
+            shared_in = callable(phase.stimulus) and index > 0
+            shared_out = callable(phase.stimulus) and index < count - 1
+            rise = (ramps[index] + 1) // 2 if shared_in else ramps[index]
+            fall = ramps[index + 1] // 2 if shared_out else ramps[index + 1]
+            needed = rise + fall
+            if needed > capacity:
+                rise_budget = capacity * rise // needed
+                if rise and fall and capacity > 1:
+                    # Even a very short requested fade must survive an
+                    # unequal pair when there is room for both ends.
+                    rise_budget = max(1, min(rise_budget, capacity - 1))
+                fall_budget = capacity - rise_budget
+                ramps[index] = min(
+                    ramps[index], rise_budget * (2 if shared_in else 1))
+                ramps[index + 1] = min(
+                    ramps[index + 1], fall_budget * (2 if shared_out else 1))
+
+        layout = []
+        boundary = 0
         for index, phase in enumerate(self.phases):
             # The opening and closing ramps overlap nothing, so they are
             # carved out of the session rather than added to it, and the
@@ -236,17 +286,12 @@ class StimulationSession:
             half_in = 0 if index == 0 else ramps[index] // 2
             half_out = (0 if index == count - 1
                         else ramps[index + 1] - ramps[index + 1] // 2)
-            boundary = int(round(elapsed * self.sample_rate)) + from_arrays
-            if callable(phase.stimulus):
-                elapsed += phase.duration
-                span = (int(round(elapsed * self.sample_rate))
-                        + from_arrays - boundary)
-            else:
-                span = (len(np.atleast_2d(phase.stimulus)[0])
-                        - half_in - half_out)
-                from_arrays += span
+            span = capacities[index]
+            if not callable(phase.stimulus):
+                span -= half_in + half_out
             layout.append((boundary - half_in, span + half_in + half_out,
                            ramps[index], ramps[index + 1]))
+            boundary += span
         return layout
 
     def _render_phase(self, phase, length):
@@ -257,6 +302,10 @@ class StimulationSession:
         derived the phase's span from it -- so it is only converted.
         """
         if callable(phase.stimulus):
+            if length == 0:
+                # In synthesis routines zero often means "use the default
+                # duration", so it cannot be forwarded as a sample count.
+                return np.zeros(0)
             rendered = phase.stimulus(number_of_samples=length,
                                       sample_rate=self.sample_rate,
                                       **phase.parameters)
@@ -317,8 +366,6 @@ class StimulationSession:
 
         for sound, (start, length, rise, fall) in zip(rendered, layout):
             envelope = np.ones(length)
-            rise = min(rise, length)
-            fall = min(fall, length - rise)
             envelope[:rise] = _ramp_shape(rise, self.ramp_shape, True)
             if fall:
                 envelope[length - fall:] = _ramp_shape(
@@ -326,6 +373,17 @@ class StimulationSession:
             if stereo and sound.ndim == 1:
                 sound = convert_to_stereo(sound)
             mix[..., start:start + length] += sound * envelope
+        if (total and round(self.phases[0].ramp * self.sample_rate) > 0
+                and layout[0][2] == 0):
+            # A one-sample span cannot budget both requested edges. Keep
+            # its outer boundary quiet even when its ramp rounds away.
+            mix[..., 0] = 0
+        if (total and round(self.end_ramp * self.sample_rate) > 0
+                and layout[-1][3] <= 1):
+            # Half-open falling ramps of length one contain only their
+            # full-level start. At the outer endpoint there is no next
+            # phase, so that final sample must be silence instead.
+            mix[..., -1] = 0
         return mix
 
     def write(self, filename: str, bit_depth: int = 16) -> None:

@@ -1,3 +1,36 @@
+## [Unreleased]
+
+### Fixed
+
+- **Shared stereo normalization stays within full scale when the channels
+  have different offsets.** With `remove_bias=False` and
+  `normalize_sep=False`, the shared affine map now uses the range of the
+  whole signal. Previously `[[0, 1], [1, 2]]` normalized to
+  `[[-1, 1], [1, 3]]`, and writing it clipped the second channel flat.
+  Default mean-removing normalization is unchanged.
+- **File-export fades use the output sample rate.** Both writers now pass
+  `sample_rate` into their envelope generator. A requested 100 ms fade in
+  an 8 kHz file previously lasted about 551 ms; at 48 kHz it was about
+  8% short. This also fixes `write_audio` and FLAC output. A NumPy array
+  specifying the two fade durations is accepted by the writers as well
+  as by their argument helper.
+- **Session ramps are fitted before phases are placed.** Oversized and
+  competing ramps are shortened to the available phase lengths, using
+  the same effective crossfade for both neighbors. Short phases no longer
+  produce invalid overlaps or silently lose their ending fade. Callable
+  phases retain their total requested duration; array phases keep their
+  samples and contribute the time left after their effective overlaps.
+
+### Documentation
+
+- Record the September 2026 findings and prioritized follow-up work in
+  `ROADMAP.md`, with the correctness patch first and targeted mutation
+  testing next.
+- Correct stale assessment counts and claims about interval naming;
+  describe which figures the automatic assessment actually checks.
+- Apply envelopes in the documentation landing-page example so adjacent
+  notes do not click at the joins.
+
 ## [1.8.0] - 2026-09-10
 
 ### Note for anyone upgrading
@@ -1876,4 +1909,3 @@ version will not be byte-identical to one from 1.0.1:
 ### Changed
 - WAV reading now detects bit depth automatically.
 - Various bug fixes and documentation improvements.
-

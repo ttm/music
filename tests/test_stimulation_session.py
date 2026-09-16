@@ -154,6 +154,163 @@ def test_a_ramp_longer_than_its_phase_is_clipped_to_it():
     assert out.max() > 0
 
 
+@pytest.mark.parametrize('shape', ['linear', 'equal_power'])
+@pytest.mark.parametrize('stimulus', [constant, stereo_constant])
+def test_oversized_crossfade_preserves_the_two_phase_protocol(shape, stimulus):
+    session = music.StimulationSession(sample_rate=1000, ramp_shape=shape)
+    session.add(stimulus, duration=0.1)
+    session.add(stimulus, duration=0.1, ramp=1.0)
+    out = session.render()
+    assert out.shape == ((200,) if stimulus is constant else (2, 200))
+    assert session.duration == 0.2
+    if shape == 'linear':
+        np.testing.assert_allclose(out, 1.0, atol=1e-15)
+    else:
+        assert out.min() >= 1.0 - 1e-15
+        assert out.max() <= np.sqrt(2) + 1e-15
+
+
+@pytest.mark.parametrize('shape', ['linear', 'equal_power'])
+@pytest.mark.parametrize('stimulus', [constant, stereo_constant])
+@pytest.mark.parametrize('durations, ramp, rate', [
+    ([1.0, 0.1, 1.0], 1.0, 1000),
+    ([0.10, 0.03, 0.10], 0.09, 100),
+])
+def test_short_middle_phase_cannot_make_overlapping_crossfades(
+        shape, stimulus, durations, ramp, rate):
+    session = music.StimulationSession(sample_rate=rate, ramp_shape=shape)
+    for index, duration in enumerate(durations):
+        session.add(stimulus, duration=duration, ramp=ramp if index else 0)
+    out = session.render()
+    assert out.shape[-1] == round(sum(durations) * rate)
+    if shape == 'linear':
+        np.testing.assert_allclose(out, 1.0, atol=1e-15)
+    else:
+        assert out.min() >= 1.0 - 1e-15
+        assert out.max() <= np.sqrt(2) + 1e-15
+
+
+@pytest.mark.parametrize('shape', ['linear', 'equal_power'])
+@pytest.mark.parametrize('as_array', [False, True])
+def test_competing_outer_ramps_keep_both_ends_quiet(shape, as_array):
+    session = music.StimulationSession(sample_rate=1000, end_ramp=1.0,
+                                       ramp_shape=shape)
+    session.add(np.ones(100) if as_array else constant,
+                duration=0.1, ramp=1.0)
+    out = session.render()
+    assert out.shape == (100,)
+    assert out[0] == 0.0
+    assert out[-1] < 0.04
+    assert out.max() == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize('shape', ['linear', 'equal_power'])
+@pytest.mark.parametrize('lengths, ramp', [([10, 10], 25),
+                                        ([100, 10, 100], 100)])
+@pytest.mark.parametrize('stereo', [False, True])
+def test_short_array_phases_keep_their_samples_and_matching_ramps(
+        shape, lengths, ramp, stereo):
+    session = music.StimulationSession(sample_rate=100, ramp_shape=shape)
+    for index, length in enumerate(lengths):
+        sound = np.ones((2, length)) if stereo else np.ones(length)
+        session.add(sound, ramp=ramp / 100 if index else 0)
+    out = session.render()
+    # Two ten-sample arrays share ten samples; the three-array case
+    # shares five on each side of its short middle array.
+    expected = 10 if len(lengths) == 2 else 200
+    assert out.shape == ((2, expected) if stereo else (expected,))
+    assert session.duration == expected / 100
+    if shape == 'linear':
+        np.testing.assert_allclose(out, 1.0, atol=1e-15)
+    else:
+        assert out.min() >= 1.0 - 1e-15
+        assert out.max() <= np.sqrt(2) + 1e-15
+
+
+@pytest.mark.parametrize('rise, fall', [(0.01, 10), (10, 0.01)])
+@pytest.mark.parametrize('shape', ['linear', 'equal_power'])
+@pytest.mark.parametrize('as_array', [False, True])
+def test_unbalanced_outer_ramps_preserve_both_requested_fades(
+        rise, fall, shape, as_array):
+    session = music.StimulationSession(sample_rate=100, end_ramp=fall,
+                                       ramp_shape=shape)
+    session.add(np.ones(100) if as_array else constant,
+                duration=1, ramp=rise)
+    out = session.render()
+    assert out.shape == (100,)
+    assert out[0] == 0
+    assert out[-1] < 0.02
+    assert out.max() > 0.98
+
+
+def test_a_one_sample_opening_phase_keeps_its_fade_with_a_long_crossfade():
+    session = music.StimulationSession(sample_rate=100, ramp_shape='linear')
+    session.add(constant, duration=0.01, ramp=0.01)
+    session.add(constant, duration=1, ramp=10)
+    out = session.render()
+    assert out.shape == (101,)
+    assert out[0] == 0
+    np.testing.assert_allclose(out[1:], 1, atol=1e-15)
+
+
+@pytest.mark.parametrize('array_first', [False, True])
+def test_oversized_mixed_crossfade_uses_the_array_length(array_first):
+    session = music.StimulationSession(sample_rate=100, ramp_shape='linear')
+    stimuli = ([np.ones(10), constant] if array_first
+               else [constant, np.ones(10)])
+    for index, stimulus in enumerate(stimuli):
+        session.add(stimulus, duration=0.1, ramp=0.25 if index else 0)
+    # The ten-sample array lends five samples to the centred transition;
+    # the callable still contributes its requested ten-sample duration.
+    out = session.render()
+    assert out.shape == (15,)
+    assert session.duration == 0.15
+    np.testing.assert_allclose(out, 1.0, atol=1e-15)
+
+
+@pytest.mark.parametrize('shape', ['linear', 'equal_power'])
+@pytest.mark.parametrize('length', [1, 2])
+@pytest.mark.parametrize('as_array', [False, True])
+def test_one_or_two_samples_with_outer_fades_are_silent(
+        shape, length, as_array):
+    session = music.StimulationSession(sample_rate=100, end_ramp=1,
+                                       ramp_shape=shape)
+    session.add(np.ones(length) if as_array else constant,
+                duration=length / 100, ramp=1)
+    np.testing.assert_array_equal(session.render(), np.zeros(length))
+
+
+def test_a_phase_rounded_to_no_samples_does_not_call_a_generator():
+    def must_not_render(**parameters):
+        raise AssertionError('a zero-length phase called its generator')
+
+    session = music.StimulationSession(sample_rate=100, ramp_shape='linear')
+    session.add(constant, duration=0.1)
+    session.add(must_not_render, duration=0.001, ramp=1)
+    session.add(constant, duration=0.1, ramp=1)
+    assert session.duration == 0.2
+    np.testing.assert_array_equal(session.render(), np.ones(20))
+
+
+@pytest.mark.parametrize('shape', ['linear', 'equal_power'])
+def test_valid_odd_ramps_keep_their_original_sample_positions(shape):
+    session = music.StimulationSession(sample_rate=100, ramp_shape=shape)
+    session.add(constant, duration=0.1, level=1.0)
+    session.add(constant, duration=0.2, ramp=0.03, level=3.0)
+    session.add(constant, duration=0.1, ramp=0.05, level=0.5)
+    expected = np.r_[np.ones(9), np.full(19, 3.0), np.full(12, 0.5)]
+    for start, count, left, right in [(9, 3, 1.0, 3.0), (28, 5, 3.0, 0.5)]:
+        progress = np.arange(count) / count
+        if shape == 'linear':
+            expected[start:start + count] = (
+                left * (1 - progress) + right * progress)
+        else:
+            expected[start:start + count] = (
+                left * np.cos(progress * np.pi / 2)
+                + right * np.sin(progress * np.pi / 2))
+    np.testing.assert_allclose(session.render(), expected, atol=1e-15)
+
+
 def test_ramp_shape_endpoints_are_silence_and_full():
     rising = _ramp_shape(100, 'equal_power', True)
     falling = _ramp_shape(100, 'equal_power', False)

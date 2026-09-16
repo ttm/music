@@ -175,12 +175,13 @@ Not disagreements: scope. `tools/article_coverage.py` lists these as `[-]`
 and reports them separately from what is merely unchecked, so that "100 %
 of the equations" is never mistaken for the target.
 
-What remains is `eq:intervalos`, the interval nomenclature: the package
-counts semitones and names no intervals. The four IIR designs of `body.tex`
-were on this list until `music.core.filters.design` implemented them, and
-the scales, minor scales and harmonic series of `notesInMusic.tex` were
-until `music.theory` did. Run the tool for the current list rather than
-trusting this paragraph.
+No labelled, testable equation remains unimplemented. `eq:intervalos`, the
+interval nomenclature, is implemented by `music.theory.intervals` and
+checked in `tests/test_theory.py`. The four IIR designs of `body.tex` were
+on this list until `music.core.filters.design` implemented them, and the
+scales, minor scales and harmonic series of `notesInMusic.tex` were until
+`music.theory` did. `eq:vinculos` remains outside the set of testable
+equations for the reason below.
 
 ## What no test could settle
 

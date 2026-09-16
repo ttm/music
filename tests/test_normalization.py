@@ -59,6 +59,46 @@ def test_stereo_without_bias_removal_maps_the_range():
     assert out.max() == pytest.approx(1.0)
 
 
+@pytest.mark.parametrize("offset", [-4.0, -0.5, 0.5, 4.0])
+def test_shared_affine_normalization_preserves_offset_channel_excursions(
+        offset):
+    """Offset channel ranges still share one scale and fit full scale."""
+    signal = np.array([[0.0, 0.5, 1.0],
+                       [offset, offset + 0.25, offset + 0.5]])
+
+    out = normalize_stereo(signal, remove_bias=False)
+
+    assert out.min() == pytest.approx(-1.0)
+    assert out.max() == pytest.approx(1.0)
+    # One affine map must preserve the ratio of the channels' excursions,
+    # as well as every sample difference within each channel.
+    assert np.ptp(out[0]) / np.ptp(out[1]) == pytest.approx(2.0)
+    gains = np.diff(out, axis=1) / np.diff(signal, axis=1)
+    assert np.allclose(gains, gains[0, 0])
+
+
+def test_shared_affine_normalization_preserves_distinct_constant_channels():
+    out = normalize_stereo([[0.0, 0.0], [1.0, 1.0]], remove_bias=False)
+    assert np.array_equal(out, [[-1.0, -1.0], [1.0, 1.0]])
+
+
+@pytest.mark.parametrize("extension", ["wav", "flac"])
+def test_writing_offset_stereo_channels_preserves_both_excursions(
+        extension, tmp_path):
+    """The writer must not clip the higher channel into a flat line."""
+    import music
+
+    path = tmp_path / f"offset.{extension}"
+    music.write_wav_stereo([[0.0, 1.0], [1.0, 2.0]], filename=str(path),
+                           remove_bias=False)
+
+    restored = music.read_audio(str(path))
+    assert np.allclose(restored, [[-1.0, 0.0], [0.0, 1.0]],
+                       rtol=0, atol=1 / 32768)
+    assert np.allclose(np.ptp(restored, axis=1), [1.0, 1.0],
+                       rtol=0, atol=1 / 32768)
+
+
 def test_stereo_without_bias_removal_separately():
     out = normalize_stereo(_stereo(), remove_bias=False, normalize_sep=True)
     for channel in out:

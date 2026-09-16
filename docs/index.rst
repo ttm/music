@@ -12,8 +12,12 @@ musical elements expressed as equations and corresponding Python routines.
 
    import music
 
-   scale = [music.note(440 * 2 ** (i / 12), duration=0.4) for i in range(12)]
+   notes = [music.note(440 * 2 ** (i / 12), duration=0.4) for i in range(12)]
+   scale = [music.adsr(sonic_vector=note) for note in notes]
    music.write_wav_mono(music.horizontal_stack(*scale), "chromatic.wav")
+
+The envelope brings each note to silence at its ends so that joining
+different pitches does not introduce a click.
 
 New here? The :doc:`tutorial` walks from a single note to a short stereo
 piece, and explains what the sample-by-sample model actually buys you.

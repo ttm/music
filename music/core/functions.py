@@ -90,7 +90,10 @@ def normalize_stereo(sonic_vector: ArrayLike, remove_bias: bool = True,
         A (2, nsamples) shaped array. A one-dimensional array is taken as
         mono and given two identical channels.
     remove_bias : boolean
-        Whether to remove or not the bias (or offset)
+        If True (default), subtract each channel's mean before scaling.
+        If False, map the sample range affinely onto [-1, 1], using each
+        channel's range when ``normalize_sep`` is True and the combined
+        range otherwise.
     normalize_sep : boolean
         Set to True if each channel should be normalized separately.
         If False (default), the arrays will be rescaled in the same proportion
@@ -158,7 +161,9 @@ def normalize_stereo(sonic_vector: ArrayLike, remove_bias: bool = True,
                                  amplitude_ch_2)
             sv_normalized = sv_copy * 2 - 1
         else:
-            amplitude = max(amplitude_ch_1, amplitude_ch_2)
+            # A shared affine map needs the combined range: individually
+            # narrow channels can still have widely separated offsets.
+            amplitude = sv_copy.max() - sv_copy.min()
             sv_copy = _scaled(sv_copy - sv_copy.min(), amplitude)
             sv_normalized = sv_copy * 2 - 1
     return sv_normalized

@@ -49,6 +49,69 @@ def test_a_scalar_fade_is_applied_at_both_ends(stereo, tmp_path):
             < np.abs(channel(plain)[opening]).max())
 
 
+@pytest.mark.parametrize("sample_rate", [8000, 44100, 48000, 96000])
+@pytest.mark.parametrize("stereo", [False, True])
+@pytest.mark.parametrize("extension", ["wav", "flac"])
+def test_written_fade_durations_follow_the_file_sample_rate(
+        sample_rate, stereo, extension, tmp_path):
+    """Read an actual file's envelope at the requested time boundaries."""
+    tone = np.tile([-1.0, 1.0], sample_rate)
+    signal = np.vstack((tone, tone * 0.25)) if stereo else tone
+    writer = music.write_wav_stereo if stereo else music.write_wav_mono
+    if extension == "flac":
+        writer = music.write_audio
+    path = tmp_path / f"faded.{extension}"
+
+    writer(signal, filename=str(path), sample_rate=sample_rate,
+           fades=(100, 150))
+
+    restored = music.read_audio(str(path))
+    channel = restored[0] if stereo else restored
+    full_scale = np.flatnonzero(np.abs(channel) > 0.9999)
+    # The attack ends at full scale and the release starts there; the
+    # endpoint samples belong to their respective ramps.
+    assert full_scale[0] == sample_rate * 100 // 1000 - 1
+    assert full_scale[-1] == len(tone) - sample_rate * 150 // 1000
+    assert abs(channel[0]) < 0.001
+    assert abs(channel[-1]) < 0.001
+    assert sf.info(str(path)).samplerate == sample_rate
+    if stereo:
+        assert np.allclose(restored[1], restored[0] * 0.25,
+                           rtol=0, atol=1 / 32768)
+
+
+@pytest.mark.parametrize("stereo", [False, True])
+def test_numpy_fade_pair_writes_the_same_sound_as_a_tuple(stereo, tmp_path):
+    tone = np.tile([-1.0, 1.0], 8000)
+    signal = np.vstack((tone, tone)) if stereo else tone
+    writer = music.write_wav_stereo if stereo else music.write_wav_mono
+    tuple_path = tmp_path / "tuple.wav"
+    array_path = tmp_path / "array.wav"
+
+    writer(signal, filename=str(tuple_path), fades=(10, 30))
+    writer(signal, filename=str(array_path), fades=np.array([10, 30]))
+
+    assert np.array_equal(music.read_audio(str(array_path)),
+                          music.read_audio(str(tuple_path)))
+
+
+@pytest.mark.parametrize("stereo", [False, True])
+@pytest.mark.parametrize("fades", [0, False, np.int64(0), (0, 0), [0, 0],
+                                  np.zeros(2, dtype=int), []])
+def test_disabled_fades_leave_the_samples_untouched(stereo, fades, tmp_path):
+    tone = np.tile([-1.0, 1.0], 16)
+    signal = np.vstack((tone, tone)) if stereo else tone
+    writer = music.write_wav_stereo if stereo else music.write_wav_mono
+    plain_path = tmp_path / "plain.wav"
+    faded_path = tmp_path / "disabled.wav"
+
+    writer(signal, filename=str(plain_path))
+    writer(signal, filename=str(faded_path), fades=fades)
+
+    assert np.array_equal(music.read_audio(str(faded_path)),
+                          music.read_audio(str(plain_path)))
+
+
 # --------------------------------------------------------------------------
 # defaults
 # --------------------------------------------------------------------------

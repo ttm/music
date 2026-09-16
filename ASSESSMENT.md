@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
-*A living record, not a point-in-time audit. Last measured **2026-09-10**,
-`music` 1.8.0: 47 modules, 12,016 LOC package + 12,091 LOC tests, 126 names
+*A living record, not a point-in-time audit. Last measured **2026-09-16**,
+`music` 1.8.0: 47 modules, 12,081 LOC package + 12,351 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -12,12 +12,13 @@ places recent work improved. So this file is now kept current with the code,
 and the section that matters most is **Known limitations** — what the package
 does not do, stated by the people who know.
 
-Keeping it current is no longer a practice anyone has to remember.
-`tools/assessment_figures.py` measures every number below and fails when
-the file disagrees with the package; CI runs the cheap half of it on every
-push and the release gate runs all of it, so a release cannot go out
-describing a version that no longer exists. Issue #70 asked for the
-practice; this is the check that replaced it.
+`tools/assessment_figures.py` checks the package size, public API,
+annotation and docstring coverage, test count, line coverage, extended lint
+count and version stamps below. CI runs its fast checks on every push and
+the release gate runs the complete set. Other measurements and descriptive
+claims still need review: the September 2026 audit found stale example and
+type-check counts and an obsolete claim that interval naming was missing.
+[ROADMAP.md](ROADMAP.md) records that review and the follow-up work.
 
 ```console
 python tools/assessment_figures.py           # report any drift
@@ -52,15 +53,17 @@ a figure that does is not a figure. Everything collected that runs, passes.
 
 ## How this was measured
 
-Every figure below came from running the code, not from reading it.
+The figures below come from running the code. The table combines the
+latest suite checks with specialized measurements; only the selected
+figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **3412 tests**, 16 s |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,782 stmts, 0 missed) |
-| Type check | `mypy music` | **clean**, 40 files |
+| Test suite | `pytest -q` | **3497 tests**, 75 s with branch coverage |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,807 stmts, 0 missed) |
+| Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,140 findings |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,139 findings |
 | Annotation coverage | AST scan | **101 / 209 functions (48 %)**; 63 / 94 exported (67 %) |
 | Docstring coverage | AST scan | **169 / 180 public defs (94 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
@@ -68,7 +71,7 @@ Every figure below came from running the code, not from reading it.
 | MASS reconciliation | `tools/mass_reconcile.py` | **26 of 35 routines sample-exact**; 5 divergent with a stated reason, 4 where the reference does not run |
 | Article coverage | `tools/article_coverage.py` | **46 of 47 labelled equations** cited by a test; **all 46** a test could settle |
 | Docstring examples | `pytest --doctest-modules` | **62 examples run**, 1 skipped |
-| Examples | `python tools/run_examples.py` | **10 pass**, 1 skipped for the external singing engine |
+| Examples | `python tools/run_examples.py` | **13 pass**, 1 skipped for the external singing engine |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
 | Rendering artifacts | `tests/test_artifacts.py` | every render swept for clicks and DC offset; the steps that remain are registered with a reason, and the measures' blind spots are measured |
 | Aliasing | `tests/test_artifacts.py` | a sine strays **1.2e-08** of its energy off the harmonics at any frequency; a sawtooth strays **24 %** at 10 kHz |
@@ -138,9 +141,9 @@ either documented in the code or tracked in the issue list.
   numbered equations, citing each by the label its LaTeX source gives it,
   and `tools/article_coverage.py` measures the result across `body.tex`,
   `spectra.tex` and `notesInMusic.tex`: 46 of 47, which is **all 46 that a
-  test could settle**. The two left are `eq:intervalos`, the interval
-  nomenclature, which is naming rather than sounding and which this package
-  does not do; and `eq:vinculos`, which is a schema rather than a formula.
+  test could settle**. `eq:intervalos`, the interval nomenclature, is
+  implemented by `music.theory.intervals` and checked by `tests/test_theory.py`.
+  The remaining equation is `eq:vinculos`, a schema rather than a formula.
   `music.bonds` is where such a formula would go, and its tests check that
   place rather than a function the article declines to name.
 - **Nothing here says the article is right.** The tests establish that the
@@ -396,7 +399,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,140 findings** on `music/`, almost all
+- **The extended lint set reports 2,139 findings** on `music/`, almost all
   stylistic: 345 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
@@ -417,6 +420,15 @@ either documented in the code or tracked in the issue list.
 Items the previous version of this file listed as open, since closed. The
 CHANGELOG carries the detail; this is only so the record does not read as
 worse than the code.
+
+- **Three parameter combinations escaped the 1.8.0 suite.** The
+  September 2026 review found shared stereo normalization exceeding full
+  scale for differently offset channels, export fades timed at 44.1 kHz
+  regardless of the output rate, and session ramps that failed or lost
+  their closing fade when phases were short. The unreleased correctness
+  patch fixes these with tests of exported samples, fade timing, and
+  competing ramps. [ROADMAP.md](ROADMAP.md) records the reproductions and
+  validation; targeted mutation testing remains the next testing task.
 
 - **`core/functions.py` was never the file the claim rested on.** This
   entry, and the roadmap in `README.md`, named a 123-line file holding three

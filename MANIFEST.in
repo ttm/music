@@ -38,6 +38,7 @@ include .zenodo.json
 # still stamps the version it describes.
 include CHANGELOG.md
 include ASSESSMENT.md
+include ROADMAP.md
 include RECONCILIATION.md
 include DISCREPANCIES.md
 include CITATION.cff

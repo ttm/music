@@ -218,10 +218,11 @@ def write_wav_mono(
     if sonic_vector is None:
         sonic_vector = np.random.uniform(-1, 1, size=100000)
     result = normalize_mono(sonic_vector, remove_bias)
-    if fades:
+    if np.any(fades):
         f0, f1 = _fade_pair(fades)
         result = adsr(attack_duration=f0, sustain_level=0,
-                      release_duration=f1, sonic_vector=result)
+                      release_duration=f1, sonic_vector=result,
+                      sample_rate=sample_rate)
     sf.write(str(filename), _quantize(result, bit_depth), sample_rate,
              format=audio_format, subtype=subtype)
 
@@ -281,10 +282,11 @@ def write_wav_stereo(
         sonic_vector = np.random.uniform(-1, 1, size=(2, 100000))
     result = normalize_stereo(sonic_vector, remove_bias,
                               normalize_separately)
-    if fades:
+    if np.any(fades):
         f0, f1 = _fade_pair(fades)
         result = adsr_stereo(attack_duration=f0, sustain_level=0,
-                             release_duration=f1, sonic_vector=result)
+                             release_duration=f1, sonic_vector=result,
+                             sample_rate=sample_rate)
     sf.write(str(filename), _quantize(result, bit_depth).T, sample_rate,
              format=audio_format, subtype=subtype)
 

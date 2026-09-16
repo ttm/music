@@ -85,6 +85,19 @@ shapes, endpoint fades, short middle phases, and arrays.
   Version 1.8.1 carries the patch and the strengthened tests; publishing,
   tagging and updating its archival citation follow `RELEASING.md`.
 
+### Release verification
+
+Version 1.8.1 was published on 2026-09-16:
+[PyPI](https://pypi.org/project/music/1.8.1/),
+[GitHub](https://github.com/ttm/music/releases/tag/v1.8.1),
+[archival DOI](https://doi.org/10.5281/zenodo.22802569).
+The complete release gate passed, including 3,556 passing tests and nine
+skips, 100% line and branch coverage, and the unpacked sdist's tests.
+An installed wheel outside the checkout reproduced all three fixes.
+Both uploaded artifact hashes match the local builds. GitHub CI and docs
+passed for the tagged commit, including Python 3.10–3.14 and minimum
+dependency versions.
+
 ## Completed: measure whether the tests detect wrong answers
 
 The targeted mutation audit covers normalization, export and session

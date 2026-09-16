@@ -64,6 +64,28 @@ def test_wav_still_has_its_32_bit_form(tmp_path):
     assert sf.info(str(path)).subtype == "PCM_32"
 
 
+@pytest.mark.parametrize("extension, bit_depth, subtype", [
+    ("wav", 8, "PCM_U8"), ("wav", 16, "PCM_16"),
+    ("wav", 24, "PCM_24"), ("wav", 32, "PCM_32"),
+    ("flac", 8, "PCM_S8"), ("flac", 16, "PCM_16"),
+    ("flac", 24, "PCM_24"),
+])
+def test_stereo_files_keep_the_requested_encoding_and_precision(
+        extension, bit_depth, subtype, tmp_path):
+    """Each channel must retain its values at the requested PCM depth."""
+    signal = np.array([[-1.0, -0.123456789, 0.123456789, 1.0],
+                       [-0.5, -0.0617283945, 0.0617283945, 0.5]])
+    path = tmp_path / f"stereo.{extension}"
+
+    music.write_wav_stereo(signal, filename=str(path), bit_depth=bit_depth)
+
+    assert sf.info(str(path)).subtype == subtype
+    restored = music.read_audio(str(path))
+    assert restored.shape == signal.shape
+    assert np.allclose(restored, signal, rtol=0,
+                       atol=2.0 ** -(bit_depth - 1))
+
+
 def test_an_extension_we_do_not_write_is_refused(tmp_path):
     """Named, rather than written as a WAV with a misleading name."""
     with pytest.raises(ValueError, match="unsupported audio file extension"):

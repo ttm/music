@@ -20,10 +20,12 @@ def test_mono_centres_and_scales_by_the_larger_peak():
     assert np.allclose(normalize_mono([0.0, 1.0, 2.0]), [-1.0, 0.0, 1.0])
 
 
-def test_mono_without_bias_removal_maps_the_range_onto_the_full_scale():
+@pytest.mark.parametrize("signal", [[0.0, 1.0, 4.0], [1.0, 2.0, 4.0],
+                                    [-4.0, -1.0, 2.0]])
+def test_mono_without_bias_removal_maps_the_range_onto_the_full_scale(signal):
     """remove_bias=False is an affine map of [min, max] onto [-1, 1], which
     fills the range but stretches an asymmetric waveform."""
-    out = normalize_mono([0.0, 1.0, 4.0], remove_bias=False)
+    out = normalize_mono(signal, remove_bias=False)
     assert out.min() == pytest.approx(-1.0)
     assert out.max() == pytest.approx(1.0)
 
@@ -83,13 +85,14 @@ def test_shared_affine_normalization_preserves_distinct_constant_channels():
 
 
 @pytest.mark.parametrize("extension", ["wav", "flac"])
+@pytest.mark.parametrize("writer", ["write_wav_stereo", "write_audio"])
 def test_writing_offset_stereo_channels_preserves_both_excursions(
-        extension, tmp_path):
+        extension, writer, tmp_path):
     """The writer must not clip the higher channel into a flat line."""
     import music
 
     path = tmp_path / f"offset.{extension}"
-    music.write_wav_stereo([[0.0, 1.0], [1.0, 2.0]], filename=str(path),
+    getattr(music, writer)([[0.0, 1.0], [1.0, 2.0]], filename=str(path),
                            remove_bias=False)
 
     restored = music.read_audio(str(path))
@@ -155,6 +158,22 @@ def test_normalizing_never_produces_nan():
         assert np.isfinite(normalize_mono(signal)).all()
         stereo = np.vstack((signal, signal))
         assert np.isfinite(normalize_stereo(stereo)).all()
+
+
+@pytest.mark.parametrize("normalizer", [normalize_mono, normalize_stereo])
+@pytest.mark.parametrize("dtype", [np.int16, np.float32])
+@pytest.mark.parametrize("values", [[0, 1, 3], [2]])
+def test_normalizers_promote_input_precision_without_truncating_means(
+        normalizer, dtype, values):
+    """PCM integers need fractional means, and the result is float64."""
+    signal = np.array(values, dtype=dtype)
+    if normalizer is normalize_stereo:
+        signal = np.vstack((signal, signal * 2))
+
+    out = normalizer(signal)
+
+    assert out.dtype == np.float64
+    assert np.array_equal(out, normalizer(signal.astype(np.float64)))
 
 
 def test_a_mono_vector_given_to_the_stereo_normalizer_is_promoted():

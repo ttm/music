@@ -13,6 +13,7 @@ and neither is in the protocol either.
 
 import numpy as np
 import pytest
+import soundfile as sf
 
 import music
 from music.stimulation.session import _ramp_shape
@@ -311,6 +312,85 @@ def test_valid_odd_ramps_keep_their_original_sample_positions(shape):
     np.testing.assert_allclose(session.render(), expected, atol=1e-15)
 
 
+@pytest.mark.parametrize('shape', ['linear', 'equal_power'])
+@pytest.mark.parametrize('spans, ramps, transitions', [
+    ([10, 10], [0, 20], [(0, 20, 1, 3)]),
+    ([9, 10], [0, 19], [(0, 19, 1, 3)]),
+    ([10, 3, 10], [0, 9, 9], [(9, 2, 1, 3), (11, 4, 3, 0.5)]),
+    ([10, 1, 10], [0, 9, 9], [(10, 2, 3, 0.5)]),
+    ([10, 2, 10], [0, 1, 100], [(10, 1, 1, 3), (11, 2, 3, 0.5)]),
+    ([10, 3, 10], [0, 100, 2], [(8, 4, 1, 3), (12, 2, 3, 0.5)]),
+])
+def test_fitted_transitions_follow_the_requested_levels(
+        shape, spans, ramps, transitions):
+    """Constant unity phases hide a shortened or misplaced crossfade.
+
+    Distinct levels make each phase audible in the output. These small
+    sample grids have known transition locations after fitting, including
+    an odd full-length crossfade and an unequal pair around a short phase.
+    """
+    levels = [1.0, 3.0, 0.5][:len(spans)]
+    session = music.StimulationSession(sample_rate=100, ramp_shape=shape)
+    for span, ramp, level in zip(spans, ramps, levels):
+        session.add(constant, duration=span / 100, ramp=ramp / 100,
+                    level=level)
+    expected = np.repeat(levels, spans)
+    for start, count, left, right in transitions:
+        progress = np.arange(count) / count
+        if shape == 'linear':
+            transition = left * (1 - progress) + right * progress
+        else:
+            transition = (left * np.cos(progress * np.pi / 2)
+                          + right * np.sin(progress * np.pi / 2))
+        expected[start:start + count] = transition
+    np.testing.assert_allclose(session.render(), expected, rtol=0, atol=1e-15)
+
+
+@pytest.mark.parametrize('spans, ramps', [
+    ([10, 0.1, 10], [0, 0, 1]),
+    ([10, 0.1, 1, 10], [0, 0, 0, 100]),
+])
+def test_zero_sample_phases_do_not_supply_overlap_or_stop_later_fitting(
+        spans, ramps):
+    def must_not_render(**parameters):
+        raise AssertionError('a zero-length phase called its generator')
+
+    session = music.StimulationSession(sample_rate=100, ramp_shape='linear')
+    for span, ramp in zip(spans, ramps):
+        session.add(must_not_render if span < 1 else constant,
+                    duration=span / 100, ramp=ramp / 100)
+    np.testing.assert_allclose(session.render(), np.ones(round(sum(spans))),
+                               rtol=0, atol=1e-15)
+
+
+def test_duration_rounding_starts_at_the_session_origin():
+    session = music.StimulationSession(sample_rate=101)
+    session.add(constant, duration=0.5)
+    assert session.render().shape == (50,)
+
+
+def test_a_generator_receives_the_session_sample_rate():
+    session = music.StimulationSession(sample_rate=8000)
+    session.add(music.binaural_beats, duration=0.5)
+    expected = music.binaural_beats(duration=0.5, sample_rate=8000)
+    np.testing.assert_array_equal(session.render(), expected)
+
+
+def test_phase_gain_is_applied_with_float64_precision():
+    source = np.array([0.1, 0.3, -0.9], dtype=np.float32)
+    session = music.StimulationSession()
+    session.add(source, gain=1 / 3)
+    expected = source.astype(np.float64) / 3
+    np.testing.assert_allclose(session.render(), expected, rtol=0, atol=1e-16)
+
+
+def test_a_two_sample_closing_ramp_keeps_the_half_open_curve():
+    session = music.StimulationSession(sample_rate=100, end_ramp=0.02,
+                                       ramp_shape='linear')
+    session.add(constant, duration=0.1)
+    np.testing.assert_array_equal(session.render(), [1] * 9 + [0.5])
+
+
 def test_ramp_shape_endpoints_are_silence_and_full():
     rising = _ramp_shape(100, 'equal_power', True)
     falling = _ramp_shape(100, 'equal_power', False)
@@ -376,6 +456,26 @@ def test_an_array_phase_gives_up_its_share_of_the_ramps():
     out = session.render()
     assert len(out) == int(round(0.5 * SR)) + SR // 2 - int(round(0.05 * SR))
     assert session.duration == pytest.approx(len(out) / SR)
+
+
+@pytest.mark.parametrize('arrays', [
+    (True, True), (True, False), (False, True),
+])
+@pytest.mark.parametrize('shape', ['linear', 'equal_power'])
+def test_fitted_array_transitions_preserve_levels_and_placement(arrays, shape):
+    session = music.StimulationSession(sample_rate=100, ramp_shape=shape)
+    for index, (is_array, level) in enumerate(zip(arrays, (1, 3))):
+        stimulus = np.full(10, level) if is_array else constant
+        session.add(stimulus, duration=0.1, ramp=0.25 if index else 0,
+                    level=level)
+    progress = np.arange(10) / 10
+    transition = (1 + 2 * progress if shape == 'linear' else
+                  np.cos(progress * np.pi / 2)
+                  + 3 * np.sin(progress * np.pi / 2))
+    expected = np.concatenate((np.ones(0 if arrays[0] else 5), transition,
+                               np.full(0 if arrays[1] else 5, 3)))
+    np.testing.assert_allclose(session.render(), expected, rtol=0, atol=1e-15)
+    assert session.duration == len(expected) / 100
 
 
 def test_a_stereo_array_phase_is_measured_by_its_second_axis():
@@ -449,6 +549,25 @@ def test_write_produces_a_readable_wav(tmp_path, stimulus, channels):
     assert path.exists()
     data = np.asarray(music.read_wav(str(path)))
     assert (2 if data.ndim == 2 else 1) == channels
+
+
+@pytest.mark.parametrize('stereo', [False, True])
+def test_write_preserves_the_session_samples_rate_and_bit_depth(stereo,
+                                                               tmp_path):
+    signal = np.array([0.0, 0.25, 0.5, -0.5, 1.0, -0.25])
+    if stereo:
+        signal = np.vstack((signal, signal * 0.5))
+    session = music.StimulationSession(sample_rate=8000)
+    session.add(signal)
+    path = tmp_path / 'session.wav'
+    session.write(str(path), bit_depth=24)
+    metadata = sf.info(str(path))
+    assert metadata.samplerate == 8000
+    assert metadata.subtype == 'PCM_24'
+    expected = (music.normalize_stereo(signal) if stereo
+                else music.normalize_mono(signal))
+    np.testing.assert_allclose(music.read_audio(str(path)), expected,
+                               rtol=0, atol=1 / 2 ** 23)
 
 
 def test_repr_names_the_phases_for_a_reader():

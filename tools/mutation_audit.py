@@ -129,6 +129,7 @@ def main():
     with (tree / 'survivors.patch').open('w') as stream:
         for name, code in sorted(results.items()):
             if code == 0:
+                stream.write(f'# {name}\n')
                 stream.write(get_diff_for_mutant(name) + '\n')
     print(json.dumps(stats, indent=2))
     print(f'{elapsed:.1f} seconds; report and survivor diffs in {tree}')

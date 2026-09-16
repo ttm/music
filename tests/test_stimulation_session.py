@@ -320,6 +320,7 @@ def test_valid_odd_ramps_keep_their_original_sample_positions(shape):
     ([10, 1, 10], [0, 9, 9], [(10, 2, 3, 0.5)]),
     ([10, 2, 10], [0, 1, 100], [(10, 1, 1, 3), (11, 2, 3, 0.5)]),
     ([10, 3, 10], [0, 100, 2], [(8, 4, 1, 3), (12, 2, 3, 0.5)]),
+    ([10, 4, 10], [0, 4, 6], [(9, 2, 1, 3), (11, 6, 3, 0.5)]),
 ])
 def test_fitted_transitions_follow_the_requested_levels(
         shape, spans, ramps, transitions):
@@ -529,7 +530,10 @@ def test_a_stimulus_that_ignores_number_of_samples_is_caught():
 
     session = music.StimulationSession()
     session.add(wrong_length, duration=0.2)
-    with pytest.raises(ValueError, match='samples where'):
+    requested = int(0.2 * SR)
+    message = (f'a stimulus rendered {requested + 10} samples where '
+               f'{requested} were asked for')
+    with pytest.raises(ValueError, match=message):
         session.render()
 
 

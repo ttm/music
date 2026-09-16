@@ -63,7 +63,8 @@ shapes, endpoint fades, short middle phases, and arrays.
   forward the output sample rate and accept NumPy fade pairs.
 - Session ramps are shortened before placement, sharing one effective
   length between neighbors. Competing ramps retain both ends when there
-  are samples for them; one- and two-sample outer fades render silence.
+  are samples for them; one- or two-sample phases with both outer fades
+  render silence.
   Callable phases that round to zero samples are not invoked, avoiding
   the synthesis API's zero-count default-duration convention.
 - Independent review probed mixed array/callable and mono/stereo layouts,

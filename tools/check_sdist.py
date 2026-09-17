@@ -7,8 +7,8 @@ shipped them without ``conftest.py``, ``pytest.ini``, ``tools/``,
 collect: a redistributor building from source and running the suite --
 which is the reason to ship it -- got two collection errors and no tests.
 
-Nothing noticed, because every check in this repository runs against the
-working tree, where those files are present. This is the one that runs
+Nothing noticed, because the checks ran against the working tree, where
+those files were present. This is the one that runs
 against what actually leaves the machine.
 
     python tools/check_sdist.py            # build, unpack, test

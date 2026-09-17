@@ -3,20 +3,82 @@
 ## Cut it
 
 ```console
-python tools/release.py            # check and build; changes nothing
+python tools/release.py            # check and build; publish nothing
 python tools/release.py publish    # upload, tag, release
+python tools/release.py verify     # verify/build during development too
 ```
 
 `check` refuses to go on unless the version in `pyproject.toml`,
 `CITATION.cff` and `CHANGELOG.md` agree, master is clean and in sync with
 origin, the tag does not exist, PyPI does not already have that version,
-lint, types, tests and docs all pass, `ASSESSMENT.md` still describes the
-package it ships with, and the source distribution passes its own tests
-from inside itself. Then it builds from scratch and runs `twine check`.
+lint, types, tests, docs and examples all pass, `ASSESSMENT.md` still
+describes the package it ships with, and the source distribution passes
+its own tests from inside itself. The article, live MASS reference and
+archival subject checks run too. Then it builds from scratch, runs
+`twine check`, and smoke-tests the installed wheel outside the checkout.
 
-That last check is `tools/check_sdist.py`, and it is there because the
-sdist ships `tests/` while every other check in this repository runs
-against the working tree. Up to and including 1.5.0 it shipped
+Install the release tools and optional dependencies used by these checks:
+
+```console
+python -m pip install -e '.[dev,docs,plot]' build twine
+python tools/release.py verify --mass ../mass
+```
+
+`verify` runs the same gate and build checks on a working tree, including
+an already released version. It does not require a clean/pushed branch,
+an unused tag or an available PyPI version, and it cannot publish. Use it
+while changing release tooling; `check` and `publish` retain all release
+readiness requirements.
+
+### External checks
+
+`--mass PATH` accepts a MASS checkout or its `src/aux/functions.py`.
+Otherwise the tools use `MASS_SRC`, then the conventional `../mass`,
+`~/repos/mass` and `~/rep/mass` locations. An explicitly selected missing
+path fails; it does not silently select another checkout. The gate
+resolves the reference once and passes the same file to both checks:
+
+- `article_coverage.py --strict` requires all three article sources and
+  a test citation for every implemented, testable equation. The documented
+  schema exception remains visible in its report.
+- `mass_reconcile.py` compares the running reference with the package and
+  rejects any outcome that disagrees with its register. Registered
+  divergences and broken reference routines remain visible. Release
+  verification does not rewrite fixtures or the register.
+- `verify_subjects.py --strict` needs the network. Wrong labels and
+  unavailable lookups fail. Only the two explicitly registered EuroSciVoc
+  subjects may remain unconfirmed; they are printed as exceptions, not
+  counted as verified. An additional unresolved subject fails the gate.
+
+A missing checkout or an unavailable vocabulary service stops verification.
+The successful reports are printed so these limits remain visible.
+
+`--skip-gate` is an explicit bypass for reuse of a previously completed
+gate. It skips **all** source and external checks, including examples,
+article/MASS comparisons and subject lookups, and prints that verification
+is incomplete. It still checks release readiness for `check`/`publish`,
+rebuilds the artifacts, runs `twine check`, and tests the installed wheel.
+It is not an automatic fallback for failed checks.
+
+### Installed-wheel check
+
+```console
+python tools/check_wheel.py --wheel dist/music-1.8.1-py3-none-any.whl
+```
+
+The checker installs the selected wheel without dependencies or network
+access into a temporary directory. A separate Python process outside the
+checkout verifies that imports and distribution metadata came from that
+installation, checks its version and typing marker, then exercises
+normalization, mono/stereo WAV/FLAC fades at a nondefault rate, and short
+session transitions. Dependencies come from the current environment.
+The same check runs in CI after building the wheel.
+
+### Source distribution and assessment
+
+The source-distribution check is `tools/check_sdist.py`. The sdist ships
+`tests/`, but testing the working tree does not establish that those tests
+can run from the tarball. Up to and including 1.5.0 it shipped
 thirty-eight test files without `conftest.py`, `pytest.ini`, `tools/`,
 `docs/` or the fixture, so none of them collected and nothing said so.
 `MANIFEST.in` is what it checks.
@@ -26,17 +88,20 @@ reuses the `SOURCES.txt` it left there rather than re-reading
 `MANIFEST.in`, so a file dropped from the manifest goes on being shipped
 and a build "from scratch" that keeps the egg-info is not from scratch.
 
-That last one is there because the file went stale four times in two days
-when it depended on someone remembering, once with the wrong test count
-already committed during a release. `python tools/assessment_figures.py
---write` corrects it.
+The assessment check catches stale figures. They went stale four times in
+two days when updating them depended on someone remembering, once with the
+wrong test count already committed during a release.
+`python tools/assessment_figures.py --write` corrects them.
+
+### Prepare the release
 
 `publish` re-runs all of that and then does the three things that cannot be
 taken back: uploads to PyPI, which never releases a version number back; tags
 **the commit the artifacts were built from**; and creates the GitHub release,
 which is what triggers Zenodo.
 
-So before either, bump `version` in `pyproject.toml` and in `CITATION.cff`,
+Before `check` or `publish`, bump `version` in `pyproject.toml` and in
+`CITATION.cff`,
 set `date-released` in `CITATION.cff`, and move the changelog's entries under
 the new heading. Then run `python tools/assessment_figures.py --write`,
 which carries the bump into the version stamped at the top of

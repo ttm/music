@@ -1,3 +1,23 @@
+## [Unreleased]
+
+### Maintenance
+
+- **Release verification now runs the remaining manual checks.** Examples,
+  strict article coverage, live MASS reconciliation and strict vocabulary
+  checks run before publication. Unexpected missing evidence stops the
+  gate; the two known EuroSciVoc exceptions remain visible. Explicit
+  reference paths cannot silently fall back to a different checkout.
+- **Built wheels are tested outside the checkout.** Release builds and CI
+  install the selected wheel into a temporary directory and verify import
+  and metadata origins, version, typing marker and rendered audio. An
+  editable installation cannot make an incomplete wheel appear to work.
+- **The release gate can run during development.** `release.py verify`
+  checks and builds an already released version without publishing it.
+  `--skip-gate` explicitly reports skipped verification; wheel smoke checks
+  still run. Failed commands preserve both their reports and warnings.
+- Complete the 1.8.1 Zenodo metadata sync after its API recovered: 19
+  controlled subjects, 45 keywords and release notes verified in DataCite.
+
 ## [1.8.1] - 2026-09-16
 
 ### Fixed

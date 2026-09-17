@@ -315,25 +315,26 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 3,565 tests, 100% line and branch coverage
+pytest                                       # 3,622 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html
 python tools/run_examples.py                 # run every example
 python tools/assessment_figures.py           # the docs' figures vs the package
+python -m build --wheel
+python tools/check_wheel.py --wheel dist/*.whl # installed artifact, outside the checkout
 ```
 
-All six run on every push and every pull request. Lint, types and tests run on **Python 3.10 through 3.14**; a further job
+These checks run on every push and every pull request. Lint, types and tests run on **Python 3.10 through 3.14**; a further job
 installs the exact lower bounds `pyproject.toml` declares and runs the
 tests against those, so the floors cannot drift into fiction. The docs
-build, the examples and the figures check run once each. `pytest` and
-`sphinx-build` are configured to fail on anything less than full coverage
-or a docstring numpydoc cannot parse.
+build, examples, figures and installed-wheel checks run once each. CI runs
+pytest with `--cov=music --cov-branch --cov-fail-under=100`; Sphinx treats
+documentation warnings as errors.
 
-`run_examples.py` is there because the other four look at the package and
-none of them looks at a caller. The examples are the only callers this
-repository has, and a change that broke three of them once passed every
-other check. `assessment_figures.py` is there because the numbers in
+`run_examples.py` exercises the code readers copy. A change that broke
+three examples once passed every package check. `assessment_figures.py`
+is there because the numbers in
 `ASSESSMENT.md` and this file went stale four times in two days when
 keeping them current was a habit rather than a check.
 
@@ -342,13 +343,17 @@ needing something the runner does not have:
 
 ```console
 python tools/check_sdist.py         # build the sdist, unpack it, run its tests
-python tools/article_coverage.py    # which of the article's equations are checked
+python tools/article_coverage.py --strict # fail missing sources or test citations
 python tools/mass_reconcile.py      # this package against the MASS reference
-python tools/verify_subjects.py     # the archival subjects resolve to their terms
+python tools/verify_subjects.py --strict # fail unexpected unresolved subjects
 ```
 
 The last three need a [MASS](https://github.com/ttm/mass) checkout or the
-network; `RECONCILIATION.md` and `DISCREPANCIES.md` are what they produce.
+network. MASS comparisons are documented in `RECONCILIATION.md` and
+`DISCREPANCIES.md`; two known EuroSciVoc exceptions remain explicitly
+unverified. Run the complete workflow during development with
+`python tools/release.py verify --mass ../mass`. See
+[RELEASING.md](RELEASING.md) for prerequisites and release behavior.
 
 Docstrings are [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html)
 style throughout, and the code follows

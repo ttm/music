@@ -40,7 +40,7 @@ jobs:
         run: pytest -q --cov=music --cov-branch --cov-report=term-missing --cov-fail-under=100
 
   examples:
-    name: Examples
+    name: Examples and installed wheel
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +53,7 @@ jobs:
         # reason rather than for a missing optional dependency.
         run: |
           python -m pip install --upgrade pip
-          pip install -e '.[plot]'
+          pip install -e '.[plot]' build
       - name: Check ASSESSMENT.md against the package
         # The figures an AST scan can settle, which is most of them and
         # costs nothing. The ones needing pytest and ruff are checked by
@@ -67,6 +67,11 @@ jobs:
         # docs build. Every one of those checks looks at the package;
         # the examples are the only callers this repository has.
         run: python tools/run_examples.py
+
+      - name: Check the built wheel outside the checkout
+        run: |
+          python -m build --wheel
+          python tools/check_wheel.py --wheel dist/*.whl
 
   minimums:
     name: Oldest supported dependencies

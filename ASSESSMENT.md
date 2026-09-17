@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
-*A living record, not a point-in-time audit. Last measured **2026-09-16**,
-`music` 1.8.1: 47 modules, 12,081 LOC package + 12,608 LOC tests, 126 names
+*A living record, not a point-in-time audit. Last measured **2026-09-17**,
+`music` 1.8.1: 47 modules, 12,081 LOC package + 13,125 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,7 +59,7 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **3565 tests**, 75 s with branch coverage |
+| Test suite | `pytest -q` | **3622 tests**, 75 s with branch coverage |
 | Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,807 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
@@ -69,7 +69,7 @@ figures described above are automatically compared with the checkout.
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **26 of 35 routines sample-exact**; 5 divergent with a stated reason, 4 where the reference does not run |
-| Article coverage | `tools/article_coverage.py` | **46 of 47 labelled equations** cited by a test; **all 46** a test could settle |
+| Article coverage | `tools/article_coverage.py --strict` | **46 of 47 labelled equations** cited by a test; **all 46** a test could settle |
 | Docstring examples | `pytest --doctest-modules` | **62 examples run**, 1 skipped |
 | Examples | `python tools/run_examples.py` | **13 pass**, 1 skipped for the external singing engine |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
@@ -83,7 +83,7 @@ figures described above are automatically compared with the checkout.
 | Composition | `tests/test_properties.py` | shapers commute, mixing associates, designed filters are linear; pieces survive a write and a read |
 | Theory and structures | `tests/test_theory_properties.py` | conversions invert, interval names round-trip, the modes are one pattern rotated, a peal on `n` bells is `n!` rows one adjacent swap apart |
 | Import cost | `import music`, warm, 3.12 | **~185-290 ms**, and no sympy in `sys.modules` |
-| Archival subjects | `tools/verify_subjects.py` | **17 of 19** resolve to the term they declare; 2 unconfirmable, EuroSciVoc serving an empty graph |
+| Archival subjects | `tools/verify_subjects.py --strict` | **17 of 19** resolve to the term they declare; 2 documented EuroSciVoc exceptions remain unverified |
 
 `mypy` runs with `check_untyped_defs = true`, so it inspects function bodies
 rather than skipping the unannotated ones — which is most of them. A clean
@@ -165,16 +165,15 @@ either documented in the code or tracked in the issue list.
   is *for*; they are not evidence of efficacy, and nothing here should be
   read as clinical.
 - **Two archival subjects cannot be confirmed from their identifiers.**
-  `tools/verify_subjects.py` resolves each subject in `.zenodo.json`
-  against its own vocabulary and compares the label that comes back:
-  sixteen MeSH terms and one GEMET concept agree with the file. The two
-  EuroSciVoc identifiers answer 200 at both `data.europa.eu` and
-  `publications.europa.eu` and return an empty RDF graph with no
-  `skos:prefLabel` in it, so nothing confirms them. That is a fact about
-  the service rather than evidence the file is wrong, and the tool reports
-  it as unconfirmable rather than as an error. This row used to claim that
-  every term resolved, on a lookup that had been done by hand and that
-  nothing could repeat.
+  `tools/verify_subjects.py --strict` queries MeSH and GEMET and compares
+  their preferred labels with `.zenodo.json`: sixteen MeSH terms and one
+  GEMET concept agree with the file. Earlier manual checks of the two
+  EuroSciVoc identifiers received empty RDF graphs, without a preferred
+  label. The tool does not query those identifiers; it lists the exact
+  identifier/scheme/term triples as documented, unverified exceptions.
+  Any additional unresolved subject or mismatched label fails the release
+  gate, including a lookup lost to a network outage. The two exceptions
+  remain a limit on the claim, not evidence that their terms are wrong.
 - **Speaking SSTIM is currently a matter of docstrings.** Each stimulus
   names the SSTIM technique it implements and links its IRI, and
   `StimulationSession` borrows that model's vocabulary, but the package

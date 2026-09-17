@@ -14,8 +14,9 @@ Usage
 -----
 ::
 
-    python tools/release.py            # check and build; changes nothing
+    python tools/release.py            # check and build; publish nothing
     python tools/release.py publish    # upload, tag, release
+    python tools/release.py verify     # checks/build, even after a release
 
 ``publish`` is not reversible. It uploads to PyPI, which never releases a
 version number back, pushes a tag, and creates a GitHub release, which is
@@ -33,9 +34,12 @@ import sys
 import urllib.error
 import urllib.request
 
-# Running this as a script puts tools/ first on sys.path, so its sibling
-# is importable by name. The CA handling belongs in one place.
-from zenodo_sync import changelog_section, ssl_context
+if __package__:
+    from .mass_reference import ReferenceNotFound, locate
+    from .zenodo_sync import changelog_section, ssl_context
+else:
+    from mass_reference import ReferenceNotFound, locate
+    from zenodo_sync import changelog_section, ssl_context
 
 ROOT = pathlib.Path(__file__).parent.parent
 
@@ -49,7 +53,8 @@ def run(*command, capture=True, check=True):
     result = subprocess.run(command, cwd=ROOT, check=False,
                             capture_output=capture, text=True)
     if check and result.returncode:
-        output = (result.stderr or result.stdout or "").strip()
+        output = "\n".join(part.strip() for part in
+                           (result.stdout, result.stderr) if part).strip()
         raise ReleaseError(f"{' '.join(command)} failed:\n{output}")
     return (result.stdout or "").strip()
 
@@ -122,8 +127,32 @@ def check_not_on_pypi(version):
 # The gate
 # ---------------------------------------------------------------------
 
-def run_gate():
-    """Everything CI runs, before anything leaves the machine."""
+def run_external_checks(reference):
+    """Check the article, live reference and archival subject identifiers.
+
+    Their summaries are part of the result: registered reference
+    divergences and the two known vocabulary exceptions must be visible.
+    Nothing is silently skipped if a checkout or service is unavailable.
+    """
+    checks = [
+        ("article", "article_coverage.py", "--strict", "--mass", reference),
+        ("MASS", "mass_reconcile.py", "--mass", reference),
+        ("subjects", "verify_subjects.py", "--strict"),
+    ]
+    for name, script, *options in checks:
+        output = run(sys.executable, str(ROOT / "tools" / script), *options)
+        if output:
+            print(output)
+        step(f"{name} check completed; see its summary above")
+
+
+def run_gate(mass=None):
+    """Local and external checks, before anything leaves the machine."""
+    try:
+        reference = str(locate(mass).resolve())
+    except ReferenceNotFound as error:
+        raise ReleaseError(str(error)) from None
+    step(f"MASS reference: {reference}")
     checks = [
         ("lint", (sys.executable, "-m", "ruff", "check", "music", "tests",
                   "examples", "tools", "conftest.py")),
@@ -134,6 +163,8 @@ def run_gate():
                    "--cov-branch", "--cov-fail-under=100")),
         ("docs", (sys.executable, "-m", "sphinx", "-b", "html", "-W",
                   "docs", "docs/_build/html")),
+        ("examples", (sys.executable, str(ROOT / "tools"
+                                          / "run_examples.py"))),
         # ASSESSMENT.md goes out with the release and is the file that
         # tells a reader what the package does not do. It went stale
         # four times in two days when keeping it current was a habit
@@ -141,17 +172,20 @@ def run_gate():
         # committed during a release.
         ("figures", (sys.executable, str(ROOT / "tools"
                                          / "assessment_figures.py"))),
-        # The sdist ships tests/. Every other check here runs against the
-        # working tree, where conftest.py, pytest.ini, tools/ and docs/
-        # are present; 1.5.0 shipped thirty-eight test files that could
+        # The sdist ships tests/. Working-tree checks have conftest.py,
+        # pytest.ini, tools/ and docs/ available; 1.5.0 shipped
+        # thirty-eight test files that could
         # not collect without them. This runs the suite from inside the
         # unpacked tarball, which is the only place that shows.
         ("sdist", (sys.executable, str(ROOT / "tools"
                                        / "check_sdist.py"))),
     ]
     for name, command in checks:
-        run(*command)
+        output = run(*command)
+        if name == "examples" and output:
+            print(output)
         step(f"{name} passed")
+    run_external_checks(reference)
 
 
 def build():
@@ -166,6 +200,14 @@ def build():
         *[str(path) for path in sorted((ROOT / "dist").iterdir())])
     names = sorted(path.name for path in (ROOT / "dist").iterdir())
     step(f"built and validated {', '.join(names)}")
+    wheels = sorted((ROOT / "dist").glob("*.whl"))
+    if len(wheels) != 1:
+        raise ReleaseError(f"expected one built wheel, found {len(wheels)}")
+    output = run(sys.executable, str(ROOT / "tools" / "check_wheel.py"),
+                 "--wheel", str(wheels[0]))
+    if output:
+        print(output)
+    step("installed-wheel smoke check passed outside the checkout")
     return names
 
 
@@ -235,20 +277,33 @@ def publish(version):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("action", nargs="?", default="check",
-                        choices=["check", "publish"])
+                        choices=["check", "publish", "verify"])
+    parser.add_argument("--mass", help="path to a MASS checkout or its "
+                        "src/aux/functions.py (otherwise use MASS_SRC "
+                        "or the usual checkout locations)")
     parser.add_argument("--skip-gate", action="store_true",
-                        help="do not re-run lint, types, tests and docs")
+                        help="skip ALL source and external checks; build "
+                        "validation and wheel smoke still run")
     args = parser.parse_args(argv)
 
     version = declared_version()
     print(f"music {version}\n")
 
     check_versions_agree(version)
-    check_repository_state(version)
-    check_not_on_pypi(version)
+    if args.action != "verify":
+        check_repository_state(version)
+        check_not_on_pypi(version)
     if not args.skip_gate:
-        run_gate()
+        run_gate(args.mass)
+    else:
+        step("SKIPPED the entire source/external gate (--skip-gate); "
+             "this invocation does not provide a complete verification")
     build()
+
+    if args.action == "verify":
+        print("\nverification/build completed; nothing was published. "
+              "Release readiness was not checked.")
+        return 0
 
     if args.action == "check":
         print(f"\nready. `python {pathlib.Path(__file__).name} publish` "

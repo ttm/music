@@ -98,25 +98,11 @@ Both uploaded artifact hashes match the local builds. GitHub CI and docs
 passed for the tagged commit, including Python 3.10–3.14 and minimum
 dependency versions.
 
-**Pending: Zenodo metadata sync.** The archive and DOI are registered,
-but on 2026-09-16 Zenodo's record and vocabulary APIs repeatedly returned
-HTTP 504, including an authenticated read. Its DataCite export also timed
-out. DataCite's own API confirms the 1.8.1 DOI, 45 free-text subjects and
-zero controlled subjects; only the abstract is present among descriptions.
-The citation has been updated. The failures occurred during reads, before
-any metadata draft was created.
-
-When Zenodo recovers, apply the required controlled subjects and changelog
-summary to this specific record, then verify its DataCite export:
-
-```console
-python tools/zenodo_sync.py --record 22802569 --description
-python tools/zenodo_sync.py --record 22802569 --description --write
-```
-
-The intended result is 19 controlled subjects alongside the 45 keywords,
-with the 1.8.1 release notes attached. This remaining archival step does
-not change the published package, Git tag or DOI.
+**Completed: Zenodo metadata sync, 2026-09-17.** The API recovered after
+the prior day's repeated HTTP 504 responses. The published record now has
+19 controlled subjects, 45 keywords, the current abstract and the 1.8.1
+release notes, verified through Zenodo's DataCite export. The citation
+already names the new archive; the package, Git tag and DOI are unchanged.
 
 ## Completed: measure whether the tests detect wrong answers
 
@@ -127,16 +113,31 @@ The 69 survivors were reviewed and accepted with reasons. No additional
 production defect was found. [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records
 the reproduction command, tool limitation, runtime and survivor IDs.
 
-## Next: make release verification complete
+## Completed: automate the remaining release checks
 
-The highest-priority remaining maintenance is to put the manual release
-checks into the release workflow: run examples and an installed-wheel
-smoke check outside the checkout, and explicitly account for article,
-MASS and vocabulary checks that need external resources. This release's
-manual article/MASS/vocabulary checks reproduced 46/47 labelled equations
-(all 46 testable), 26 exact/5 divergent/4 broken reference routines, and
-17/19 confirmed subjects (two EuroSciVoc identifiers remain unconfirmable).
-The 13 runnable examples passed; the external singing example skipped.
+The release gate now runs examples, strict article coverage, live MASS
+reconciliation and strict vocabulary verification. It validates the
+selected reference path and shows the scientific and vocabulary reports,
+including known exceptions. Missing resources and unexpected verification
+gaps fail; they are not silently skipped.
+
+Every release build now checks the installed wheel outside the checkout,
+including package and metadata origins, version, typing marker and audio
+samples. CI uses the same checker. `release.py verify` runs the gate and
+build checks during development without requiring an unpublished version.
+[RELEASING.md](RELEASING.md) documents dependencies, external resources,
+the two known vocabulary exceptions and the broad `--skip-gate` bypass.
+
+Validated on 2026-09-17 with
+`python tools/release.py verify --mass ../mass`: 3,613 tests passed and
+nine skipped with 100% line and branch coverage; docs, examples,
+assessment figures, sdist tests and installed-wheel checks passed. The
+external checks reproduced 46/47 labelled equations (all 46 testable),
+26 exact/5 divergent/4 broken-reference routines, and 17 confirmed
+subjects with the two declared exceptions. The new failure-path and
+wheel-isolation regressions account for 57 additional test cases.
+
+## Next: expand validation where the code changes
 
 Broader mutation testing remains
 [issue #113](https://github.com/ttm/music/issues/113). Expand one area at a
@@ -152,11 +153,11 @@ targets. The completed audit is not a whole-package mutation score.
   expanding those checks remains optional follow-up work.
 - **Completed:** refresh the local editable installation without changing
   dependencies. Its old `1.3.0.dist-info` made current code report 1.3.0
-  outside the repository; it now reports 1.8.0 from either location.
+  outside the repository; after the release it reports 1.8.1 from either
+  location.
   Published artifacts were unaffected.
 - Consider macOS/Windows CI alongside the existing Ubuntu
-  Python 3.10–3.14 matrix. The wheel check was run manually for this patch;
-  automating it is part of the release-workflow task above.
+  Python 3.10–3.14 matrix. Installed-wheel checks are now automated.
 - **Completed:** shape the notes in the documentation landing-page example,
   as the README and tutorial already do, to avoid raw concatenation clicks.
 

@@ -13,24 +13,36 @@ vocabulary and compares the label that comes back with the one the file
 declares.
 
     python tools/verify_subjects.py           # check them all
+    python tools/verify_subjects.py --strict  # fail incomplete verification
     python tools/verify_subjects.py --term "Auditory Perception"
                                               # search MeSH for a candidate
 
 Needs the network. It is not part of the test suite for that reason; the
 release gate is the place to run it, and it is cheap enough to run by hand
 whenever a subject is added.
+
+Strict mode allows only the two explicitly registered EuroSciVoc entries
+to remain unverified. Those exceptions are not queried; all other missing
+labels, failed lookups and unsupported identifiers prevent release.
 """
 from __future__ import annotations
 
 import argparse
 import json
-import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
 
 METADATA = Path(__file__).resolve().parent.parent / '.zenodo.json'
 TIMEOUT = 20
+
+# These exact entries are documented as unconfirmable in ASSESSMENT.md.
+# They are exceptions to verification, not successful network lookups.
+UNVERIFIED_EXCEPTIONS = frozenset({
+    ('http://data.europa.eu/8mn/euroscivoc/1215',
+     'EuroSciVoc', 'Signal processing'),
+    ('http://data.europa.eu/8mn/euroscivoc/273', 'EuroSciVoc', 'Acoustics'),
+})
 
 MESH_DETAILS = 'https://id.nlm.nih.gov/mesh/lookup/details?descriptor={}'
 #: Descriptors, not terms: a subject is a descriptor, and the term endpoint
@@ -62,14 +74,14 @@ def resolve_mesh(identifier: str) -> str | None:
     descriptor, _, qualifier = code.partition('Q')
     try:
         details = _get_json(MESH_DETAILS.format(descriptor))
-    except (urllib.error.URLError, ValueError):
+    except (OSError, ValueError):
         return None
     if not isinstance(details, dict):
         return None
     # The descriptor's own label is the preferred one among its terms; the
     # rest are entry terms that lead to it, and are not what a subject means.
-    label = next((term['label'] for term in details.get('terms', [])
-                  if term.get('preferred')), None)
+    label = next((term.get('label') for term in details.get('terms', [])
+                  if isinstance(term, dict) and term.get('preferred')), None)
     if label is None:
         return None
     if qualifier:
@@ -90,26 +102,31 @@ def resolve_gemet(identifier: str) -> str | None:
     code = identifier.rstrip('/').rsplit('/', 1)[-1]
     try:
         payload = _get_json(GEMET_CONCEPT.format(code))
-    except (urllib.error.URLError, ValueError):
+    except (OSError, ValueError):
+        return None
+    if not isinstance(payload, dict):
         return None
     label = (payload or {}).get('preferredLabel') or {}
-    return label.get('string')
+    return label.get('string') if isinstance(label, dict) else None
 
 
 def resolve(subject: dict) -> str | None:
     """The label a vocabulary gives the identifier, or None if it gives none.
 
-    EuroSciVoc is the one that gives none. Its identifiers resolve -- both
-    ``data.europa.eu`` and ``publications.europa.eu`` answer 200 -- and what
-    they return is an empty RDF graph, with no ``skos:prefLabel`` in it. So
-    those two subjects cannot be confirmed from their identifiers, which is
-    reported as unverifiable rather than as wrong: the file may well be
-    right and the service is not saying.
+    Only MeSH and GEMET are queried, when the declared scheme matches
+    the identifier's provider. Other entries, including EuroSciVoc,
+    return None without a lookup.
     """
     identifier = subject['identifier']
-    if 'id.nlm.nih.gov/mesh' in identifier:
+    parsed = urllib.parse.urlparse(identifier)
+    if parsed.scheme not in ('http', 'https'):
+        return None
+    if (subject['scheme'] == 'MeSH' and parsed.hostname == 'id.nlm.nih.gov'
+            and parsed.path.startswith('/mesh/')):
         return resolve_mesh(identifier)
-    if 'eionet.europa.eu/gemet' in identifier:
+    if (subject['scheme'] == 'GEMET'
+            and parsed.hostname in ('eionet.europa.eu', 'www.eionet.europa.eu')
+            and parsed.path.startswith('/gemet/')):
         return resolve_gemet(identifier)
     return None
 
@@ -118,7 +135,7 @@ def search(term: str) -> int:
     """Print MeSH descriptors whose label contains `term`."""
     try:
         hits = _get_json(MESH_SEARCH.format(urllib.parse.quote(term)))
-    except (urllib.error.URLError, ValueError) as exc:
+    except (OSError, ValueError) as exc:
         print(f'lookup failed: {exc}')
         return 1
     if not hits:
@@ -129,10 +146,12 @@ def search(term: str) -> int:
     return 0
 
 
-def main() -> int:
+def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--term', help='search MeSH for a candidate subject')
-    args = parser.parse_args()
+    parser.add_argument('--strict', action='store_true',
+                        help='fail unresolved subjects except known entries')
+    args = parser.parse_args(argv)
     if args.term:
         return search(args.term)
 
@@ -141,11 +160,17 @@ def main() -> int:
         print('no subjects in .zenodo.json')
         return 1
 
-    wrong, unreachable = [], []
+    wrong, unreachable, exceptions = [], [], []
     for subject in subjects:
         declared = subject['term']
+        entry = (subject['identifier'], subject['scheme'], declared)
+        if entry in UNVERIFIED_EXCEPTIONS:
+            exceptions.append(subject)
+            print(f'  ?  {declared:<40} {subject["identifier"]} '
+                  '(known exception; not queried, unverified)')
+            continue
         found = resolve(subject)
-        if found is None:
+        if not isinstance(found, str) or not found:
             unreachable.append(subject)
             print(f'  ?  {declared:<40} {subject["identifier"]}')
         elif found.lower() != declared.lower():
@@ -154,16 +179,22 @@ def main() -> int:
         else:
             print(f'  ok {declared:<40} {subject["scheme"]}')
 
-    print(f'\n{len(subjects) - len(wrong) - len(unreachable)} of '
+    verified = len(subjects) - len(wrong) - len(unreachable) - len(exceptions)
+    print(f'\n{verified} of '
           f'{len(subjects)} subjects resolve to the term they declare')
+    if exceptions:
+        print(f'{len(exceptions)} known exceptions were not queried and '
+              'remain unverified.')
     if unreachable:
-        print(f'{len(unreachable)} could not be confirmed: the vocabulary '
-              f'served no label for the identifier. That is a fact about '
-              f'the service, not evidence that the file is wrong.')
+        print(f'{len(unreachable)} could not be confirmed: the lookup was '
+              'unavailable, returned no label, or is unsupported.')
     if wrong:
         for subject, found in wrong:
             print(f'{subject["identifier"]} is {found!r}, '
                   f'not {subject["term"]!r}')
+        return 1
+    if args.strict and unreachable:
+        print('strict verification failed: unresolved subjects remain')
         return 1
     return 0
 

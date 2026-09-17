@@ -8,6 +8,10 @@ names, and reports the rest.
 
     python tools/article_coverage.py                 # the report
     python tools/article_coverage.py --mass PATH     # against a checkout
+    python tools/article_coverage.py --strict        # the release gate
+
+Strict mode requires every article source and a citation for every
+implemented equation that a test could settle.
 
 An equation counts as checked when a test cites its label, so the number
 below is only as honest as the citations are. It is a measure of what has
@@ -23,7 +27,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from tools.mass_reference import locate  # noqa: E402
+from tools.mass_reference import ReferenceNotFound, locate  # noqa: E402
 
 TESTS = Path(__file__).resolve().parent.parent / 'tests'
 
@@ -72,12 +76,22 @@ def cited() -> set:
     return names
 
 
-def main() -> int:
+def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--mass', help='path to a MASS checkout')
-    args = parser.parse_args()
+    parser.add_argument('--strict', action='store_true',
+                        help='fail on missing sources or uncited equations')
+    args = parser.parse_args(argv)
 
-    doc = locate(args.mass).parent.parent.parent / 'doc'
+    try:
+        doc = locate(args.mass).parent.parent.parent / 'doc'
+    except ReferenceNotFound as error:
+        print(error)
+        return 1
+    missing = [name for name in SOURCES if not (doc / name).is_file()]
+    if args.strict and missing:
+        print(f'missing article sources under {doc}: {", ".join(missing)}')
+        return 1
     found = equations(doc)
     if not found:
         print(f'no article sources under {doc}')
@@ -110,6 +124,8 @@ def main() -> int:
     absent = sum(1 for label in found if label in UNIMPLEMENTED)
     unsettleable = sum(1 for label in found if label in NOT_A_CHECK)
     reachable = total - absent - unsettleable
+    reachable_percent = (f'{100 * total_hits / reachable:.0f} %'
+                         if reachable else 'n/a')
 
     print(f'\n  [x] checked                     {total_hits}')
     print(f'  [ ] implemented, not yet checked '
@@ -119,7 +135,7 @@ def main() -> int:
     print(f'\n{total_hits} of {total} labelled equations are cited by a test '
           f'({100 * total_hits / total:.0f} %); {total_hits} of {reachable} '
           f'of the ones a test could settle '
-          f'({100 * total_hits / reachable:.0f} %)')
+          f'({reachable_percent})')
 
     for label in sorted(UNIMPLEMENTED):
         if label in checked:
@@ -131,6 +147,11 @@ def main() -> int:
     if stray:
         print(f'\ncited by a test but not in the article: '
               f'{sorted("eq:" + s for s in stray)}')
+        return 1
+    uncited = set(found) - checked - set(NOT_A_CHECK) - set(UNIMPLEMENTED)
+    if args.strict and uncited:
+        print('\nimplemented equations without a test citation: '
+              + ', '.join(f'eq:{label}' for label in sorted(uncited)))
         return 1
     return 0
 

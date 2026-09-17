@@ -40,10 +40,13 @@ class ReferenceNotFound(Exception):
 def locate(explicit: str | None = None) -> Path:
     """Return the path to the MASS reference file.
 
-    Looks at `explicit`, then `$MASS_SRC`, then a few conventional checkout
-    locations.  The path may name either the repository root or the file.
+    An explicit path must exist; it never falls back to another checkout.
+    The same applies to `$MASS_SRC` when no explicit path was supplied.
+    Without either selector, searches conventional checkout locations.
+    The path may name either the repository root or the reference file.
     """
-    candidates = [explicit, os.environ.get('MASS_SRC'), *DEFAULT_LOCATIONS]
+    selected = explicit if explicit is not None else os.environ.get('MASS_SRC')
+    candidates = [selected] if selected is not None else DEFAULT_LOCATIONS
     for candidate in candidates:
         if not candidate:
             continue
@@ -51,6 +54,10 @@ def locate(explicit: str | None = None) -> Path:
         for probe in (path, path / 'src' / 'aux' / 'functions.py'):
             if probe.is_file():
                 return probe
+    if selected is not None:
+        raise ReferenceNotFound(
+            f'no MASS reference at {selected!r}; pass a checkout containing '
+            'src/aux/functions.py or the reference file itself')
     raise ReferenceNotFound(
         'no MASS checkout found; pass --mass PATH or set MASS_SRC. '
         'Clone it from https://github.com/ttm/mass'

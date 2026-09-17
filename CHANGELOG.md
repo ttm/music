@@ -2,6 +2,10 @@
 
 ### Maintenance
 
+- **Installed-wheel CI covers Linux, macOS and Windows** on Python 3.12,
+  including artifact provenance, WAV/FLAC rendering and session ramps.
+  The full Python 3.10–3.14 suite and minimum-dependency checks run on
+  Linux. Checkout, Python setup and Pages actions use Node 24 releases.
 - **Release verification now runs the remaining manual checks.** Examples,
   strict article coverage, live MASS reconciliation and strict vocabulary
   checks run before publication. Unexpected missing evidence stops the

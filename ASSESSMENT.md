@@ -96,7 +96,7 @@ produced.
 |---|---|
 | **Exceptional** | Docstrings and scientific grounding: every routine carries the equation it implements and the article section it comes from, and `RECONCILIATION.md` now measures the correspondence routine by routine rather than asserting it |
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
-| **Very good** | Test suite and its coverage gate; CI across Python 3.10–3.14 including a job pinned to the declared lower bounds |
+| **Very good** | Test suite and its coverage gate; Linux CI across Python 3.10–3.14 including a job pinned to the declared lower bounds; installed-wheel checks on Linux, macOS and Windows with Python 3.12 |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
 | **Needs work** | Annotation coverage at 48 %; the `legacy/` subpackage |
 
@@ -499,8 +499,10 @@ worse than the code.
   directory, which survives an upgrade and works on a read-only install.
 - **No published API docs**: they are at <https://ttm.github.io/music/>,
   built with warnings as errors on every push.
-- **No CI**: lint, types, tests and docs run on Python 3.10 through 3.14, plus
-  a job that installs the exact lower bounds `pyproject.toml` declares.
+- **No CI**: lint, types and tests run on Python 3.10 through 3.14 on Linux,
+  plus a job that installs the exact lower bounds `pyproject.toml` declares.
+  Docs build on Python 3.12; installed-wheel checks use that version on
+  Linux, macOS and Windows.
 
 ## Is anything perfect?
 

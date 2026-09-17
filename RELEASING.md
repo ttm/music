@@ -72,7 +72,9 @@ checkout verifies that imports and distribution metadata came from that
 installation, checks its version and typing marker, then exercises
 normalization, mono/stereo WAV/FLAC fades at a nondefault rate, and short
 session transitions. Dependencies come from the current environment.
-The same check runs in CI after building the wheel.
+The same check runs in CI on Linux, macOS and Windows with Python 3.12.
+Each job builds and installs the wheel with its runtime dependencies
+before checking a separate temporary installation outside the checkout.
 
 ### Source distribution and assessment
 

@@ -156,8 +156,10 @@ targets. The completed audit is not a whole-package mutation score.
   outside the repository; after the release it reports 1.8.1 from either
   location.
   Published artifacts were unaffected.
-- Consider macOS/Windows CI alongside the existing Ubuntu
-  Python 3.10–3.14 matrix. Installed-wheel checks are now automated.
+- **Completed:** installed-wheel CI runs on Linux, macOS and Windows
+  with Python 3.12, alongside the full Ubuntu Python 3.10–3.14 matrix and
+  minimum-dependency job. Checkout, Python setup and Pages actions now
+  use Node 24 releases.
 - **Completed:** shape the notes in the documentation landing-page example,
   as the README and tutorial already do, to avoid raw concatenation clicks.
 

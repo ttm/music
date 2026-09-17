@@ -325,10 +325,12 @@ python -m build --wheel
 python tools/check_wheel.py --wheel dist/*.whl # installed artifact, outside the checkout
 ```
 
-These checks run on every push and every pull request. Lint, types and tests run on **Python 3.10 through 3.14**; a further job
+These checks run on every push and every pull request. Lint, types and
+tests run on **Python 3.10 through 3.14 on Linux**; a further Linux job
 installs the exact lower bounds `pyproject.toml` declares and runs the
 tests against those, so the floors cannot drift into fiction. The docs
-build, examples, figures and installed-wheel checks run once each. CI runs
+build, examples and figures run once each. Installed wheels are checked
+on **Linux, macOS and Windows with Python 3.12**. CI runs
 pytest with `--cov=music --cov-branch --cov-fail-under=100`; Sphinx treats
 documentation warnings as errors.
 

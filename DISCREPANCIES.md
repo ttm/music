@@ -125,6 +125,47 @@ match `eq:adsr` exactly.
 asserts the implemented form and asserts the article's form is *not* what
 comes out, so this entry cannot go stale in either direction.
 
+Separately, `eq:adsr` has no linear approach to zero: it begins at `ξ` and
+ends at `ξ`, and the straight millisecond the package puts at each end to
+reach silence — its `to_zero` — is the package's own. That test therefore
+passes `to_zero=0`, which is the article's envelope exactly. The reference
+has the parameter too but passes it on a hundred times too small, so it
+never took effect; `RECONCILIATION.md` records that under `AD` and `ADS`.
+
+### `alpha` distorts a tremolo the article never gives one for
+
+`eq:trT` writes the tremolo amplitude as `a_i = 10^(V_dB/20 · t'_i)`, with
+no distortion index anywhere in it. The article's `alpha` belongs to the
+*transitions*, where it is applied to `(i/(Λ-1))^α` — a ramp that runs from
+0 to 1 and is never negative. Both this package and the MASS reference
+carry an `alpha` on the tremolo as well, applied to the signed oscillation
+`t'_i · V_dB/20`.
+
+Raised directly, as the reference does, that has no real value wherever the
+waveform is negative, which is half of every cycle:
+
+| `alpha` | as the reference raises it | sign-preserving |
+|---|---|---|
+| 1 | the tremolo | identical |
+| 0.5 | **NaN on 499 of 1000 samples** | 0.196 … 5.09 |
+| 1.5 | **NaN on 499 of 1000 samples** | 0.443 … 2.26 |
+| 2 | 1.000 … 1.778 — it only ever boosts | 0.562 … 1.778 |
+| 3, 9 | the distorted tremolo | identical |
+
+An even `alpha` rectifies the pattern, so a "tremolo" that cannot fall
+below unity; a fractional one is not a real number at all and arrived as
+NaN behind a NumPy warning, which
+[`tests/test_degenerate.py`](tests/test_degenerate.py) states as the one
+thing no routine here may return.
+
+**This package applies `alpha` to the magnitude and keeps the sign**:
+`sign(x)·|x|^α`. `alpha=1` and every odd whole `alpha` are bit-identical to
+the reference, since `sign(x)|x|³` is `x³`, so the `T` and `T_` rows of
+`RECONCILIATION.md` are still sample-exact — every case there uses
+`alpha=1`. Only the readings that were NaN or rectified have changed.
+`tests/test_envelopes.py` checks that a distorted tremolo is finite, that
+it still cuts as well as boosts, and that an odd index is unchanged.
+
 ### `localize2` implements a model the article does not give
 
 The frequency-dependent ITD and IID in `music.localize2` — a crossover at

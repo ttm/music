@@ -213,10 +213,11 @@ def test_the_exact_cases_reproduce_the_reference(cases, recorded):
             f'samples. Rounding moves a handful of lookups to the next '
             f'table entry; this is too many for that')
         checked.append(case.mass)
-    assert len(checked) == 26
+    assert len(checked) == 24
 
 
-@pytest.mark.parametrize('mass_name', ['trill', 'loc_', 'D_', 'Tr', 'Sa'])
+@pytest.mark.parametrize('mass_name', ['trill', 'loc_', 'D_', 'Tr', 'Sa',
+                                      'AD', 'ADS'])
 def test_the_divergences_stay_the_size_their_reason_accounts_for(
         cases, recorded, mass_name):
     """A stated divergence is bounded, and it is still there.

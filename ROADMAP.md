@@ -106,8 +106,8 @@ already names the new archive; the package, Git tag and DOI are unchanged.
 
 ## Completed: measure whether the tests detect wrong answers
 
-The targeted mutation audit covers normalization, export and session
-envelopes. It added 68 test cases and strengthened existing assertions;
+The first mutation audit, the `export` area, covers normalization, export
+and session envelopes. It added 68 test cases and strengthened existing assertions;
 the final selected tests detect 698 of 767 mutations, up from 617.
 The 69 survivors were reviewed and accepted with reasons. No additional
 production defect was found. [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records
@@ -137,12 +137,77 @@ external checks reproduced 46/47 labelled equations (all 46 testable),
 subjects with the two declared exceptions. The new failure-path and
 wheel-isolation regressions account for 57 additional test cases.
 
-## Next: expand validation where the code changes
+## Completed: the envelope mutation audit, and the three defects it found
+
+Reviewed 2026-09-20. `tools/mutation_audit.py` now takes an `--area`, and
+the second area covers the note-level amplitude envelopes: `am`, `tremolo`,
+`tremolos`, `adsr`, `adsr_vibrato`, `adsr_stereo`, `fade` and `cross_fade`.
+The test selection was chosen by measuring which tests reach those modules
+(`pytest --cov-context=test`, then a query over the coverage database)
+rather than by guessing, and covers every line and branch of all three
+files, so no mutant went unreached.
+
+The first run killed 439 of 550 mutants. `adsr_vibrato` killed **none** of
+its three: its whole body could be replaced by `adsr(**adsr_dict)`,
+dropping the note it exists to render, and the suite stayed green. Unlike
+the first audit, this one found production defects.
+
+### Three corrections
+
+- **A distorted tremolo was not a real number.** `tremolo` raised the
+  signed oscillation straight to `alpha`, so a fractional index returned
+  NaN for half of every envelope — behind a NumPy warning, which
+  `tests/test_degenerate.py` names as the one thing no routine here may
+  return — and an even index rectified the pattern into one that could
+  only boost. The index now applies to the magnitude with the sign kept:
+  `alpha=1` and every whole odd `alpha` are bit-identical, so the `T` and
+  `T_` rows of `RECONCILIATION.md` stay sample-exact. The article gives
+  the tremolo no `alpha` at all; `DISCREPANCIES.md` records that.
+- **`adsr` never reached zero.** `to_zero` is a duration in milliseconds
+  and reached `fade` as a bare ratio where `fade` reads a percentage, a
+  hundred times too small: below about 2.3 ms at 44.1 kHz it rounded to no
+  samples, so `adsr(to_zero=1)` was byte-identical to `adsr(to_zero=0)`.
+  The reference carries the same line, so `AD` and `ADS` are now divergent
+  rows of `RECONCILIATION.md` with a stated reason rather than exact ones,
+  and `trill` carries the correction through the notes it shapes. The
+  register is 24 sample-exact, 7 divergent, 4 where the reference does not
+  run.
+- **`cross_fade` placed the overlap at the wrong rate**, cutting the fades
+  at `sample_rate` while `mix_with_offset` used its own default of
+  44.1 kHz, so at any other rate the two sounds met at full level: a
+  steady 3 and a steady 5 crossfaded at 8 kHz summed to 8. The same defect
+  the 1.8.1 export fades had. No mutant found this one — an argument that
+  is absent cannot be mutated — it came out of writing the tests that kill
+  the mutants around it. A zero or oversized `duration` also reached NumPy
+  as a broadcast failure; both now raise `ValueError` naming the duration.
+
+### Validation
+
+3,663 tests pass with nine skips and 100% line and branch coverage (2,813
+statements, 870 branches). Ruff and mypy are clean. The final audit detects
+535 of 570 mutations; all 35 survivors were reviewed and accepted, and none
+changes what a supported call returns: 23 are equivalent substitutions, 4 a
+boundary that cannot bind, 4 an argument the callee does not read, and 4
+diagnostic wording. Nothing timed out, was skipped or went untested.
+[MUTATION_AUDIT.md](MUTATION_AUDIT.md) records both areas, the survivor
+IDs and the reproduction commands.
+
+## Next: oscillator timing, where the same defect is waiting
 
 Broader mutation testing remains
-[issue #113](https://github.com/ttm/music/issues/113). Expand one area at a
-time when changing it; oscillator timing or envelopes are useful next
-targets. The completed audit is not a whole-package mutation score.
+[issue #113](https://github.com/ttm/music/issues/113), and **oscillator
+timing is the next bounded area**. It already has a defect to answer for:
+the same signed `** alpha` corrected in the tremolo also sits in
+`note_with_vibrato`, `note_with_two_vibratos`, `note_with_glissando_vibrato`
+and `note_with_two_vibratos_glissando` (`notes.py` lines 559, 563, 1006,
+1007, 1239, 1344 and 1345). There it is worse: the NaN frequencies reach an
+`int64` cast of the accumulated phase, which turns them into `INT64_MIN`,
+so the render comes back finite and wrong instead of visibly NaN. It was
+left alone here because the discipline is one area at a time, and that area
+has no mutation coverage yet to validate a change against.
+
+Add an area to `AREAS` rather than widening an existing one. Neither
+completed audit is a whole-package mutation score.
 
 ## Other maintenance
 

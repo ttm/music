@@ -189,7 +189,17 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     # amplitude variation at each sample
     table_amp = waveform_table[gamma_tremolo % length]
     if alpha != 1:
-        t = 10. ** ((table_amp * max_db_dev / 20) ** alpha)
+        # The distortion index bends the oscillation without changing its
+        # sign. Raising the signed deviation directly to `alpha`, as the
+        # reference does, has no real value where the waveform is
+        # negative: `tremolo(alpha=0.5)` returned NaN for half of every
+        # envelope, and an even `alpha` rectified the tremolo into
+        # something that only ever boosted. An odd whole `alpha` is
+        # unchanged by this, since sign(x)|x|^3 is x^3, and so is the
+        # `alpha=1` case below. The article gives no `alpha` for the
+        # tremolo at all; see DISCREPANCIES.md.
+        scaled = table_amp * max_db_dev / 20
+        t = 10. ** (np.sign(scaled) * np.abs(scaled) ** alpha)
     else:
         t = 10. ** (table_amp * max_db_dev / 20)
     if sonic_vector is not None:

@@ -114,9 +114,18 @@ def adsr(envelope_duration=2, attack_duration=20,
     # A stage of zero length is built explicitly: fade() and loud() treat
     # number_of_samples=0 as "unset" and fall back to their own default
     # duration, which would stretch the envelope past the sound.
+    #
+    # `to_zero` and the stage durations are both in milliseconds, so their
+    # ratio is a fraction; `fade` reads `perc` as a percentage. Passing the
+    # fraction, as the reference does, made `to_zero` a hundred times
+    # smaller than it says it is, so it rounded to no samples at all below
+    # about 2.3 ms at 44.1 kHz: `adsr(to_zero=1)` was byte-identical to
+    # `adsr(to_zero=0)` and the envelope never reached zero at either end.
+    # This is why `AD` and `ADS` are no longer sample-exact rows in
+    # RECONCILIATION.md.
     if lambda_a:
         attack = fade(fade_out=0, method=transition, alpha=alpha, db=db_dev,
-                      perc=to_zero / attack_duration,
+                      perc=100 * to_zero / attack_duration,
                       number_of_samples=lambda_a)
     else:
         attack = np.array([])
@@ -132,7 +141,7 @@ def adsr(envelope_duration=2, attack_duration=20,
 
     if lambda_r:
         release = fade(method=transition, alpha=alpha, db=db_dev,
-                       perc=to_zero / release_duration,
+                       perc=100 * to_zero / release_duration,
                        number_of_samples=lambda_r) * a_s
     else:
         release = np.array([])

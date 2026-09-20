@@ -1,6 +1,44 @@
 ## [Unreleased]
 
+### Fixed
+
+- **A distorted tremolo is a real number.** `tremolo` and `tremolos` raised
+  the signed oscillation straight to `alpha`, which has no real value
+  wherever the waveform is negative: `tremolo(alpha=0.5)` returned NaN for
+  half of every envelope, behind a NumPy warning, and an even `alpha`
+  rectified the pattern into one that could only ever boost. The index now
+  applies to the magnitude with the sign kept, so `alpha=1` and every whole
+  odd `alpha` are bit-identical to what they were and the rest are a
+  distortion that stays symmetric in decibels. The article gives the
+  tremolo no `alpha` at all; `DISCREPANCIES.md` records that.
+- **`adsr` departs from zero and returns to it, as its docstring says.**
+  `to_zero` is a duration in milliseconds, and it was passed on as a bare
+  ratio where `fade` reads a percentage, making it a hundred times smaller
+  than it says it is: below about 2.3 ms at 44.1 kHz it rounded to no
+  samples at all, so `adsr(to_zero=1)` was byte-identical to
+  `adsr(to_zero=0)` and the envelope began and ended at `db_dev`. The MASS
+  reference carries the same line, so `AD` and `ADS` are now divergent rows
+  of `RECONCILIATION.md` with a stated reason rather than sample-exact
+  ones, and `trill` carries the correction through the notes it shapes.
+- **`cross_fade` measures the overlap at the rate it was given.** The fades
+  were cut at `sample_rate` while `mix_with_offset` placed the second sound
+  at its own default of 44.1 kHz, so at every other rate the two sounds met
+  at full level instead of crossing: a steady 3 and a steady 5 crossfaded
+  at 8 kHz summed to 8. This is the defect the 1.8.1 export fades had, in
+  the one other place a rate was not passed on.
+- **`cross_fade` refuses an overlap it cannot make.** A duration of zero
+  reached `fade` as "not supplied" and multiplied a whole sound by a
+  two-second envelope, and a duration longer than the shorter of the two
+  sounds ran off its end. Both raised a NumPy broadcast error naming two
+  sample counts; both now raise `ValueError` naming the duration.
+
 ### Maintenance
+
+- **The mutation audit covers the envelopes.** `tools/mutation_audit.py`
+  takes an `--area`, and the new `envelopes` area mutates `am`, `tremolo`,
+  `tremolos`, `adsr`, `adsr_vibrato`, `adsr_stereo`, `fade` and
+  `cross_fade`. The three defects above came out of it. See
+  `MUTATION_AUDIT.md`.
 
 - **Installed-wheel CI covers Linux, macOS and Windows** on Python 3.12,
   including artifact provenance, WAV/FLAC rendering and session ramps.

@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
-"""Run the bounded normalization/export/session mutation audit in a copy.
+"""Run one bounded mutation audit of this package in a scratch copy.
 
 Install mutmut==3.7.0 into the development environment, then run:
-    python tools/mutation_audit.py --revision HEAD
+    python tools/mutation_audit.py --area envelopes --revision HEAD
+
+Each area names the files to mutate and the tests to judge them with; see
+``AREAS`` below and ``--list-areas``. An area is deliberately small, because
+the cost of a run is the test selection multiplied by the mutants, and
+because the output worth reading is the surviving mutants rather than a
+score. The default area is the one audited first, so the command recorded
+in MUTATION_AUDIT.md keeps reproducing that run.
 
 Only committed files at the requested revision are used. The scratch tree,
 per-mutant results and surviving diffs are retained outside the checkout.
-See MUTATION_AUDIT.md for the scope and the dataclass adapter's limits.
+See MUTATION_AUDIT.md for each area's scope and the dataclass adapter's
+limits.
 """
 from __future__ import annotations
 
@@ -23,32 +31,83 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parent.parent
-SOURCES = (
-    'music/core/functions.py',
-    'music/core/io.py',
-    'music/stimulation/session.py',
-)
-TESTS = (
-    'tests/test_normalization.py',
-    'tests/test_io_paths.py',
-    'tests/test_io.py',
-    'tests/test_audio_formats.py',
-    'tests/test_fidelity.py',
-    'tests/test_stimulation_session.py',
-    'tests/test_mass_reconciliation.py',
-    'tests/test_artifacts.py::test_the_quantizer_clips_rather_than_wraps',
-    'tests/test_degenerate.py::test_writing_nothing_says_there_is_nothing',
-)
+
+#: Files the audit copies into the scratch tree besides the package and its
+#: tests, because some selected test reads them: ``RECONCILIATION.md`` holds
+#: the reference comparison, ``docs/`` the tutorial and API listing, and
+#: ``README.md`` the figures checked against the code.
+SUPPORT = ['conftest.py', 'pytest.ini', 'tests/', 'tools/',
+           'RECONCILIATION.md', 'docs/', 'README.md']
+
+#: The bounded areas this runner knows how to audit. ``sources`` are mutated;
+#: ``tests`` judge the mutants and must cover every line and branch of the
+#: sources between them, or mutmut reports mutants no test reaches. Add an
+#: area rather than widening one: see MUTATION_AUDIT.md.
+AREAS = {
+    # Audited 2026-09-16 with the 1.8.1 correctness patch.
+    'export': {
+        'sources': (
+            'music/core/functions.py',
+            'music/core/io.py',
+            'music/stimulation/session.py',
+        ),
+        'tests': (
+            'tests/test_normalization.py',
+            'tests/test_io_paths.py',
+            'tests/test_io.py',
+            'tests/test_audio_formats.py',
+            'tests/test_fidelity.py',
+            'tests/test_stimulation_session.py',
+            'tests/test_mass_reconciliation.py',
+            'tests/test_artifacts.py::test_the_quantizer_clips_rather_than_wraps',
+            'tests/test_degenerate.py::test_writing_nothing_says_there_is_nothing',
+        ),
+        'dataclass_adapter': 'music/stimulation/session.py',
+    },
+    # The note-level amplitude envelopes: ADSR, fades and tremolo/AM.
+    'envelopes': {
+        'sources': (
+            'music/core/synths/envelopes.py',
+            'music/core/filters/adsr.py',
+            'music/core/filters/fade.py',
+        ),
+        'tests': (
+            'tests/test_degenerate.py',
+            'tests/test_public_api.py',
+            'tests/test_io_paths.py',
+            'tests/test_properties.py',
+            'tests/test_fidelity.py',
+            'tests/test_branches.py',
+            'tests/test_artifacts.py',
+            'tests/test_remaining_paths.py',
+            'tests/test_article.py',
+            'tests/test_mass_reconciliation.py',
+            'tests/test_legacy.py',
+            'tests/test_filters.py',
+            'tests/test_bonds.py',
+            'tests/test_envelopes.py',
+            'tests/test_notes_extra.py',
+            'tests/test_mixing.py',
+            'tests/test_audio_formats.py',
+            'tests/test_theory_properties.py',
+            'tests/test_tutorial.py',
+        ),
+        'dataclass_adapter': None,
+    },
+}
 
 
-def expose_dataclasses(tree):
+def expose_dataclasses(tree, relative_path):
     """Apply dataclass after each class so mutmut visits its methods.
 
     mutmut 3.7.0 skips decorated classes. This changes only the scratch
     copy; both classes still become dataclasses before anything uses them.
     Property-decorated methods remain outside mutmut's scope.
+
+    Only an area whose sources define decorated classes needs this, which
+    today is ``export`` alone; the envelope modules are plain functions.
     """
-    path = tree / SOURCES[2]
+    path = tree / relative_path
     source = path.read_text()
     for name in ('StimulusPhase', 'StimulationSession'):
         marker = f'@dataclass\nclass {name}:'
@@ -66,9 +125,21 @@ def expose_dataclasses(tree):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--area', default='export', choices=sorted(AREAS),
+                        help='which bounded area to audit (default: export)')
+    parser.add_argument('--list-areas', action='store_true',
+                        help='print each area with its sources, and stop')
     parser.add_argument('--revision', default='HEAD')
     parser.add_argument('--max-children', type=int, default=2)
     args = parser.parse_args()
+    if args.list_areas:
+        for name, area in sorted(AREAS.items()):
+            print(name)
+            for source in area['sources']:
+                print(f'    {source}')
+        return 0
+    area = AREAS[args.area]
+    sources, tests = area['sources'], area['tests']
     version = importlib.metadata.version('mutmut')
     if version != '3.7.0':
         raise SystemExit(f'expected mutmut 3.7.0, found {version}')
@@ -78,17 +149,19 @@ def main():
     archived = subprocess.check_output(
         ['git', 'archive', revision], cwd=ROOT)
     tree = Path(tempfile.mkdtemp(prefix='music-mutation-'))
-    print(f'Auditing {revision}\nScratch tree: {tree}', flush=True)
+    print(f'Auditing {args.area} at {revision}\nScratch tree: {tree}',
+          flush=True)
     with tarfile.open(fileobj=io.BytesIO(archived)) as archive:
         archive.extractall(tree, filter='data')
-    expose_dataclasses(tree)
+    adapted = area['dataclass_adapter']
+    if adapted:
+        expose_dataclasses(tree, adapted)
     config = {
         'source_paths': ['music/'],
-        'only_mutate': list(SOURCES),
-        'also_copy': ['conftest.py', 'pytest.ini', 'tests/', 'tools/',
-                      'RECONCILIATION.md'],
+        'only_mutate': list(sources),
+        'also_copy': list(SUPPORT),
         'pytest_add_cli_args': ['-o', 'addopts=', '-p', 'no:cacheprovider'],
-        'pytest_add_cli_args_test_selection': list(TESTS),
+        'pytest_add_cli_args_test_selection': list(tests),
         'max_stack_depth': -1,
         'use_setproctitle': False,
     }
@@ -106,16 +179,17 @@ def main():
     stats = json.loads(
         (tree / 'mutants/mutmut-cicd-stats.json').read_text())
     results = {}
-    for source in SOURCES:
+    for source in sources:
         metadata = tree / 'mutants' / (source + '.meta')
         results.update(json.loads(metadata.read_text())['exit_code_by_key'])
     report = {
+        'area': args.area,
         'revision': revision,
         'python': sys.version,
         'mutmut': version,
         'elapsed_seconds': round(elapsed, 2),
         'configuration': config,
-        'dataclass_adapter': True,
+        'dataclass_adapter': adapted,
         'stats': stats,
         'exit_code_by_mutant': results,
     }

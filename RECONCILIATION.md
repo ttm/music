@@ -19,7 +19,7 @@ python tools/mass_reconcile.py --write-fixture  # refresh the test fixture
 python tools/mass_reconcile.py --register RECONCILIATION.md   # this table
 ```
 
-**26 sample-exact, 5 divergent, 4 where the reference does not run.**
+**24 sample-exact, 7 divergent, 4 where the reference does not run.**
 
 ## How to read it
 
@@ -87,13 +87,13 @@ does, and the test asserts it.
 | `VV` | `note_with_two_vibratos` | exact | sample-exact agreement |
 | `PVV` | `note_with_two_vibratos_glissando` | exact | sample-exact agreement |
 | `PV_` | `note_with_vibratos_glissandos` | exact | sample-exact agreement |
-| `trill` | `trill` | divergent | trill takes no waveform table, so it synthesizes through the package's corrected triangular table while the reference uses its own; max&nbsp;\|Δ\|&nbsp;=&nbsp;0.000241 |
+| `trill` | `trill` | divergent | trill takes no waveform table, so it synthesizes through the package's corrected triangular table while the reference uses its own; and it shapes every note with `adsr`, so it carries that row's to_zero correction too, which is the larger of the two; max&nbsp;\|Δ\|&nbsp;=&nbsp;0.0216 |
 | `noises` | `noise` | reference does not run | the reference indexes coefs[Lambda/2] with a true- division float, which has raised IndexError since Python 3; under Python 2 it ran, but into a real-valued coefficient array that discarded the imaginary part of every randomized phase, leaving a spectrum with no phase randomization at all — `IndexError` |
 | `T` | `tremolo` | exact | sample-exact agreement |
 | `T_` | `tremolos` | exact | sample-exact agreement (the reference assigns into its own arguments, so it requires lists where the package accepts any sequence) |
 | `AM` | `am` | exact | sample-exact agreement |
-| `AD` | `adsr` | exact | sample-exact agreement |
-| `ADS` | `adsr_stereo` | exact | sample-exact agreement |
+| `AD` | `adsr` | divergent | the package scales `to_zero` into the percentage `fade` reads, so the linear approach to zero that both docstrings describe happens; the reference passes the bare ratio of two millisecond figures, which rounds to no samples below about 2.3 ms at 44.1 kHz and left the envelope starting and ending at db_dev instead of at zero; max&nbsp;\|Δ\|&nbsp;=&nbsp;0.0188 |
+| `ADS` | `adsr_stereo` | divergent | the package scales `to_zero` into the percentage `fade` reads, so the linear approach to zero that both docstrings describe happens; the reference passes the bare ratio of two millisecond figures, which rounds to no samples below about 2.3 ms at 44.1 kHz and left the envelope starting and ending at db_dev instead of at zero, applied to each channel; max&nbsp;\|Δ\|&nbsp;=&nbsp;0.0188 |
 | `L` | `loud` | exact | sample-exact agreement |
 | `L_` | `louds` | exact | sample-exact agreement |
 | `F` | `fade` | exact | sample-exact agreement |

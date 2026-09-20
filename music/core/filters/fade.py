@@ -180,6 +180,11 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
         Crossfading a mono sound with a stereo one has no single sensible
         answer, so it is refused rather than guessed at.
 
+        If ``duration`` is not a positive number of samples at
+        ``sample_rate``, or is longer than the shorter of the two sounds.
+        Both used to reach a NumPy broadcast failure naming two sample
+        counts, which does not say which duration caused it.
+
     Notes
     -----
     **Both inputs are modified in place.** The fades are applied to the
@@ -213,10 +218,32 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
                          method, sample_rate)
         s = np.array((s1_, s2_))
         return s
+    shortest = min(len(sonic_vector_1), len(sonic_vector_2))
+    if ns < 1:
+        # `fade` reads number_of_samples=0 as "not supplied" and hands back
+        # two seconds, and `v[-0:]` is the whole of v rather than none of
+        # it, so a duration of zero multiplied a whole sound by an envelope
+        # 88,200 samples long. Both ends of that are a broadcast failure
+        # naming sample counts, which says nothing about the duration.
+        raise ValueError(
+            f"duration ({duration} ms) must be a positive number of "
+            f"samples at {sample_rate} Hz; got {ns}")
+    if ns > shortest:
+        raise ValueError(
+            f"duration ({duration} ms, {ns} samples at {sample_rate} Hz) "
+            f"cannot exceed the shorter of the two sounds ({shortest} "
+            f"samples): there is nothing for the rest of the fade to "
+            f"overlap with")
     sonic_vector_1[-ns:] *= fade(number_of_samples=ns, method=method,
                                  sample_rate=sample_rate)
     sonic_vector_2[:ns] *= fade(number_of_samples=ns, method=method,
                                 sample_rate=sample_rate, fade_out=False)
+    # The overlap has to be measured at the same rate the fades were cut
+    # at. Without this, `mix_with_offset` placed the second sound using its
+    # own default of 44.1 kHz while the fades above used `sample_rate`, so
+    # at any other rate the two sounds overlapped at full level: a 3 and a
+    # 5 crossfaded at 8 kHz summed to 8 where they should have stayed
+    # between 3 and 5. Same defect as the export fades fixed in 1.8.1.
     s = mix_with_offset(sonic_vector_1, sonic_vector_2,
-                        duration=-duration / 1000)
+                        duration=-duration / 1000, sample_rate=sample_rate)
     return s

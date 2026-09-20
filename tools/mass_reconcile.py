@@ -39,6 +39,24 @@ FIXTURE = (Path(__file__).resolve().parent.parent / 'tests' / 'fixtures'
 BEGIN = '<!-- register:begin -->'
 END = '<!-- register:end -->'
 
+#: Why `AD`, `ADS` and part of `trill` no longer reproduce the reference.
+#: `to_zero` and the stage durations are both in milliseconds, so their
+#: ratio is a fraction, and `fade` reads `perc` as a percentage. The
+#: reference passes the bare fraction, making `to_zero` a hundred times
+#: smaller than it says it is: below about 2.3 ms at 44.1 kHz it rounded
+#: to no samples at all, so the linear approach to zero that both
+#: docstrings describe never happened and the envelope began and ended at
+#: `db_dev`. The package scales it. The difference is confined to the
+#: attack and the release, where the exponential is now fitted into the
+#: samples the straight part leaves it.
+TO_ZERO_REASON = (
+    'the package scales `to_zero` into the percentage `fade` reads, so the '
+    'linear approach to zero that both docstrings describe happens; the '
+    'reference passes the bare ratio of two millisecond figures, which '
+    'rounds to no samples below about 2.3 ms at 44.1 kHz and left the '
+    'envelope starting and ending at db_dev instead of at zero'
+)
+
 EXACT = 'exact'
 DIVERGENT = 'divergent'
 REFERENCE_BROKEN = 'reference-broken'
@@ -180,10 +198,12 @@ def build_cases(ns: dict) -> list[Case]:
              lambda: ns['trill'](f=[220, 440], ft=17, d=D, fs=FS),
              lambda: music.trill(freqs=[220, 440], notes_per_second=17,
                                  duration=D, sample_rate=FS),
-             expect=DIVERGENT, bound=2.5e-4,
+             expect=DIVERGENT, bound=2.5e-2,
              reason='trill takes no waveform table, so it synthesizes through '
                     "the package's corrected triangular table while the "
-                    'reference uses its own'),
+                    'reference uses its own; and it shapes every note with '
+                    '`adsr`, so it carries that row\'s to_zero correction '
+                    'too, which is the larger of the two'),
         Case('noises', 'noise',
              lambda: ns['noises'](ntype='brown', d=D, fs=FS),
              lambda: music.noise(noise_type='brown', duration=D,
@@ -223,12 +243,15 @@ def build_cases(ns: dict) -> list[Case]:
              lambda: ns['AD'](d=D, A=20, D=20, S=-5, R=50, fs=FS),
              lambda: music.adsr(envelope_duration=D, attack_duration=20,
                                 decay_duration=20, sustain_level=-5,
-                                release_duration=50, sample_rate=FS)),
+                                release_duration=50, sample_rate=FS),
+             expect=DIVERGENT, bound=2e-2, reason=TO_ZERO_REASON),
         Case('ADS', 'adsr_stereo',
              lambda: ns['ADS'](d=D, A=20, D=20, S=-5, R=50, fs=FS),
              lambda: music.adsr_stereo(duration=D, attack_duration=20,
                                        decay_duration=20, sustain_level=-5,
-                                       release_duration=50, sample_rate=FS)),
+                                       release_duration=50, sample_rate=FS),
+             expect=DIVERGENT, bound=2e-2,
+             reason=TO_ZERO_REASON + ', applied to each channel'),
         Case('L', 'loud',
              lambda: ns['L'](d=D, dev=10, alpha=1, method='exp', fs=FS),
              lambda: music.loud(duration=D, trans_dev=10, alpha=1,

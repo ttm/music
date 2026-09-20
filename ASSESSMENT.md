@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
-*A living record, not a point-in-time audit. Last measured **2026-09-17**,
-`music` 1.8.1: 47 modules, 12,081 LOC package + 13,125 LOC tests, 126 names
+*A living record, not a point-in-time audit. Last measured **2026-09-20**,
+`music` 1.8.1: 47 modules, 12,127 LOC package + 13,537 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,16 +59,16 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **3622 tests**, 75 s with branch coverage |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,807 stmts, 0 missed) |
+| Test suite | `pytest -q` | **3672 tests**, 75 s with branch coverage |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,813 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,139 findings |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,143 findings |
 | Annotation coverage | AST scan | **101 / 209 functions (48 %)**; 63 / 94 exported (67 %) |
 | Docstring coverage | AST scan | **169 / 180 public defs (94 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
-| MASS reconciliation | `tools/mass_reconcile.py` | **26 of 35 routines sample-exact**; 5 divergent with a stated reason, 4 where the reference does not run |
+| MASS reconciliation | `tools/mass_reconcile.py` | **24 of 35 routines sample-exact**; 7 divergent with a stated reason, 4 where the reference does not run |
 | Article coverage | `tools/article_coverage.py --strict` | **46 of 47 labelled equations** cited by a test; **all 46** a test could settle |
 | Docstring examples | `pytest --doctest-modules` | **62 examples run**, 1 skipped |
 | Examples | `python tools/run_examples.py` | **13 pass**, 1 skipped for the external singing engine |
@@ -389,7 +389,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,139 findings** on `music/`, almost all
+- **The extended lint set reports 2,143 findings** on `music/`, almost all
   stylistic: 345 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their

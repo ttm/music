@@ -619,6 +619,10 @@ def test_the_adsr_envelope_is_the_four_pieces_equation_adsr_writes():
     The article gives an exponential and a linear form for each sloped
     piece; the package's `transition="exp"` is the first of them, rising
     from xi to 1, falling to a_S, holding, and falling from a_S to xi.
+
+    `to_zero=0` because eq:adsr has no linear approach to zero: it starts
+    at xi and ends at xi, and the straight millisecond the package puts at
+    each end to reach silence is the package's own, not the article's.
     """
     duration, attack, decay, release = 1.0, 100.0, 100.0, 200.0
     sustain_db, db_dev = -6.0, -80.0
@@ -626,7 +630,7 @@ def test_the_adsr_envelope_is_the_four_pieces_equation_adsr_writes():
                           attack_duration=attack, decay_duration=decay,
                           sustain_level=sustain_db,
                           release_duration=release, transition="exp",
-                          db_dev=db_dev, sample_rate=SAMPLE_RATE)
+                          db_dev=db_dev, to_zero=0, sample_rate=SAMPLE_RATE)
 
     lambda_a = int(attack * SAMPLE_RATE * 0.001)
     lambda_d = int(decay * SAMPLE_RATE * 0.001)

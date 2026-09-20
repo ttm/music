@@ -2,6 +2,23 @@
 
 ### Fixed
 
+- **A distorted vibrato is a real number, and does not latch.** The same
+  signed `** alpha` the tremolo carried also sat in the vibrato of
+  `note_with_vibrato`, `note_with_two_vibratos`,
+  `note_with_glissando_vibrato`, `note_with_two_vibratos_glissando` and
+  `note_with_vibrato_seq_localization`. There the distorted quantity is a
+  frequency, so the NaN flowed into the accumulated phase and then into an
+  `int64` cast, which turns NaN into `INT64_MIN`; taken modulo the table
+  length that is one fixed index. A note played normally until the vibrato
+  pattern first went negative and then held **full-scale DC** for the rest
+  of its length, every sample finite and inside full scale.
+  `note_with_vibrato(duration=0.2, vibrato_freq=5, alpha=0.5)` rendered
+  4,411 samples of a note and 4,409 of constant −1.0. The index now
+  applies to the magnitude with the sign kept, through one shared
+  `_signed_power` that returns an index of 1 untouched, so every
+  undistorted render — which is every case in `RECONCILIATION.md` — is bit
+  for bit what it was. The five *glissando* uses of `alpha` are unaffected:
+  those raise the article's own non-negative ramp.
 - **A distorted tremolo is a real number.** `tremolo` and `tremolos` raised
   the signed oscillation straight to `alpha`, which has no real value
   wherever the waveform is negative: `tremolo(alpha=0.5)` returned NaN for
@@ -34,10 +51,14 @@
 
 ### Maintenance
 
-- **The mutation audit covers the envelopes.** `tools/mutation_audit.py`
-  takes an `--area`, and the new `envelopes` area mutates `am`, `tremolo`,
-  `tremolos`, `adsr`, `adsr_vibrato`, `adsr_stereo`, `fade` and
-  `cross_fade`. The three defects above came out of it. See
+- **The mutation audit covers the envelopes and the oscillators.**
+  `tools/mutation_audit.py` takes an `--area`. The `envelopes` area mutates
+  `am`, `tremolo`, `tremolos`, `adsr`, `adsr_vibrato`, `adsr_stereo`,
+  `fade` and `cross_fade`; the `oscillators` area mutates
+  `music/core/synths/notes.py`. The defects above came out of them. A
+  mutant that hangs is now reported as detected rather than as an
+  incomplete run: `trill` accumulates samples in a `while` loop, and four
+  of its mutants run forever instead of returning a wrong answer. See
   `MUTATION_AUDIT.md`.
 
 - **Installed-wheel CI covers Linux, macOS and Windows** on Python 3.12,

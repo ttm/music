@@ -193,22 +193,84 @@ diagnostic wording. Nothing timed out, was skipped or went untested.
 [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records both areas, the survivor
 IDs and the reproduction commands.
 
-## Next: oscillator timing, where the same defect is waiting
+## Completed: a first pass at the oscillators, and the defect it found
 
-Broader mutation testing remains
-[issue #113](https://github.com/ttm/music/issues/113), and **oscillator
-timing is the next bounded area**. It already has a defect to answer for:
-the same signed `** alpha` corrected in the tremolo also sits in
-`note_with_vibrato`, `note_with_two_vibratos`, `note_with_glissando_vibrato`
-and `note_with_two_vibratos_glissando` (`notes.py` lines 559, 563, 1006,
-1007, 1239, 1344 and 1345). There it is worse: the NaN frequencies reach an
-`int64` cast of the accumulated phase, which turns them into `INT64_MIN`,
-so the render comes back finite and wrong instead of visibly NaN. It was
-left alone here because the discipline is one area at a time, and that area
-has no mutation coverage yet to validate a change against.
+Reviewed 2026-09-21. The third area, `oscillators`, mutates
+`music/core/synths/notes.py`: 1,396 mutations judged by 29 test files that
+between them cover every line and branch of it.
 
-Add an area to `AREAS` rather than widening an existing one. Neither
-completed audit is a whole-package mutation score.
+**This one is a first pass, not a finished audit.** It went after the
+defect the envelope area pointed at, found it, and closed the class of gap
+that hid it. 231 survivors remain unread, 80 of them in
+`note_with_vibrato_seq_localization`. `MUTATION_AUDIT.md` says so in the
+area table rather than letting the row imply the area is closed.
+
+### The defect
+
+The signed `** alpha` corrected in the tremolo also sat in the vibrato of
+`note_with_vibrato`, `note_with_two_vibratos`,
+`note_with_glissando_vibrato`, `note_with_two_vibratos_glissando` and
+`note_with_vibrato_seq_localization`. There the distorted quantity is a
+*frequency*, so the NaN did not stay visible: it reached the accumulated
+phase and then an `int64` cast, which turns NaN into `INT64_MIN`, and
+modulo the table length that is one fixed index.
+`note_with_vibrato(duration=0.2, vibrato_freq=5, alpha=0.5)` rendered
+4,411 samples of a note and then 4,409 samples of constant −1.0 —
+full-scale DC. Every sample finite and inside full scale, so nothing
+checking for NaN, finiteness or clipping could see it.
+
+Thirteen mutants of `note_with_vibrato` survived the first run, seven of
+them arithmetic edits to the one line that computes the distorted
+frequency, and one that swapped the branch with its own `else`. The branch
+ran under every test; nothing measured the pitch it produced.
+
+This is the defect `_require_a_ratio` already names for the *glissando*
+endpoints — the guard written for the first did not reach the second. The
+five glissando uses of `alpha` are unaffected: those raise the article's
+own non-negative ramp.
+
+### The correction
+
+One shared `music.utils._signed_power`, used at all seven vibrato sites and
+by the tremolo. It returns an index of exactly 1 untouched rather than
+computing `x ** 1`, so every undistorted render — which is every case in
+`RECONCILIATION.md` — is bit for bit what it was, with no dependence on how
+a NumPy build rounds `power`.
+
+### Validation
+
+3,684 tests pass with nine skips and 100% line and branch coverage. Ruff
+and mypy are clean. The area now detects 1,165 of 1,396 mutations, up from
+1,124 of 1,375; `note_with_vibrato` is closed completely, 57 of 57. Four
+mutants time out rather than answering, in both runs: `trill` accumulates
+samples in a `while` loop and those four make it run forever. They are
+counted as detected, and the runner no longer calls a run containing them
+incomplete.
+
+The test that closed `note_with_vibrato` is the one the defect could not
+have survived: a square vibrato table holds each extreme for half a cycle,
+so the note is two steady tones, and the frequency of each is *measured*
+from its zero crossings and matched against `freq · 2^(±(dev/12)^α)`.
+
+## Next: finish reading the oscillator survivors
+
+The 231 are the outstanding work. `note_with_vibrato` shows the cost and
+the return: one test that measures what the routine actually renders took
+it from thirteen survivors to none. Expect the multi-vibrato routines to
+want the same treatment.
+
+Two things the three areas have taught, worth carrying into the next one:
+
+- **An absent argument cannot be mutated.** The `cross_fade` sample-rate
+  defect was not found by any mutant, because no edit can expose an
+  argument that was never passed. It came out of writing the tests that
+  kill the mutants around it.
+- **A branch can run under every test and still be unasserted.** Both
+  defects found so far sat inside a branch with full line *and* branch
+  coverage, under arithmetic that nothing measured.
+
+Add an area to `AREAS` rather than widening an existing one. None of the
+three is a whole-package mutation score.
 
 ## Other maintenance
 

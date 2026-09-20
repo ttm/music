@@ -11,10 +11,16 @@ output worth reading is the list of survivors rather than the percentage.
 [Issue #113](https://github.com/ttm/music/issues/113) tracks the broader
 work; `tools/mutation_audit.py --list-areas` lists what has been done.
 
-| Area | Sources | Measured | Mutations | Killed | Surviving |
-|---|---|---|---:|---:|---:|
-| `export` | `core/functions.py`, `core/io.py`, `stimulation/session.py` | 2026-09-16 | 767 | 698 | 69 |
-| `envelopes` | `synths/envelopes.py`, `filters/adsr.py`, `filters/fade.py` | 2026-09-20 | 570 | 535 | 35 |
+| Area | Sources | Measured | Mutations | Detected | Surviving | Reviewed |
+|---|---|---|---:|---:|---:|---|
+| `export` | `core/functions.py`, `core/io.py`, `stimulation/session.py` | 2026-09-16 | 767 | 698 | 69 | all |
+| `envelopes` | `synths/envelopes.py`, `filters/adsr.py`, `filters/fade.py` | 2026-09-21 | 561 | 526 | 35 | all |
+| `oscillators` | `synths/notes.py` | 2026-09-21 | 1396 | 1165 | 231 | **a first pass** |
+
+The `oscillators` row is not a finished audit. It found the defect it went
+looking for and closed the class of gap that hid it, and the rest of its
+survivors have not been read. Say so rather than letting the row imply
+otherwise; `## Next` records what is left.
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -134,22 +140,25 @@ functions, so the decorated-class limitation below does not apply to them.
 Unlike the first audit, this one **found three defects in the package**,
 each in a documented parameter that no test depended on.
 
-| Module | Mutations | Killed | Surviving |
+| Module | Mutations | Detected | Surviving |
 |---|---:|---:|---:|
-| `music/core/synths/envelopes.py` | 160 | 154 | 6 |
+| `music/core/synths/envelopes.py` | 151 | 145 | 6 |
 | `music/core/filters/adsr.py` | 188 | 178 | 10 |
 | `music/core/filters/fade.py` | 222 | 203 | 19 |
-| **Total** | **570** | **535** | **35** |
+| **Total** | **561** | **526** | **35** |
 
 The first run, against the code as it stood, killed 439 of 550 with 110
-survivors and one timeout. The totals differ because the corrections below
-changed the code being mutated; nothing timed out, was skipped, crashed or
-went untested in either run.
+survivors and one timeout. The totals differ because the corrections
+changed the code being mutated: the three fixes added lines, and the
+`tremolo` branch later collapsed into a call to the shared
+`_signed_power` the oscillator area needed, removing nine mutants without
+changing a sample. Nothing timed out, was skipped, crashed or went
+untested in any run.
 
-| Function | Mutations | Killed | Surviving |
+| Function | Mutations | Detected | Surviving |
 |---|---:|---:|---:|
 | `am` | 32 | 31 | 1 |
-| `tremolo` | 48 | 47 | 1 |
+| `tremolo` | 39 | 38 | 1 |
 | `tremolos` | 80 | 76 | 4 |
 | `adsr` | 111 | 107 | 4 |
 | `adsr_vibrato` | 3 | 3 | 0 |
@@ -239,6 +248,97 @@ IDs are the numeric suffix of mutmut's identifier for that function, for
 example `music.core.filters.fade.x_fade__mutmut_16`, and apply to this
 snapshot and tool version rather than to arbitrary later edits.
 
+## `oscillators` — the notes, their vibratos and their glissandi
+
+Measured 2026-09-21 on Python 3.12.7, macOS, with `mutmut` 3.7.0, on the
+tree this file is committed with. No adapter. The selection is 29 test
+files, chosen the same way as the envelopes', and covers every line and
+branch of the 382 statements and 104 branches in `notes.py`.
+
+**This is a first pass, not a completed audit.** It went after one defect,
+found it, and closed the gap that hid it. 231 survivors remain unread.
+
+### Result
+
+| | Mutations | Detected | Surviving |
+|---|---:|---:|---:|
+| First run | 1375 | 1124 | 251 |
+| After the correction and its tests | 1396 | 1165 | 231 |
+
+Four mutants time out rather than returning a wrong answer, in both runs.
+They are counted as detected: `trill` accumulates samples in a `while`
+loop, and `pointer -= ns`, `i -= 1`, `i = 1` and a `*` turned `/` each
+make that loop run forever. No suite that finishes accepts them, and the
+runner no longer reports a run containing them as incomplete.
+
+| Function | Mutations | Detected | Surviving |
+|---|---:|---:|---:|
+| `note_with_vibrato_seq_localization` | 499 | 419 | 80 |
+| `note_with_two_vibratos_glissando` | 110 | 80 | 30 |
+| `note_with_glissando_vibrato` | 79 | 55 | 24 |
+| `note_with_two_vibratos` | 88 | 65 | 23 |
+| `note_with_vibratos_glissandos` | 135 | 113 | 22 |
+| `note_with_doppler` | 182 | 168 | 14 |
+| `_require_a_ratio` | 14 | 6 | 8 |
+| `_exponential_positions` | 20 | 12 | 8 |
+| `note_with_glissando` | 61 | 55 | 6 |
+| `trill` | 48 | 42 | 6 |
+| `note_with_fm` | 39 | 35 | 4 |
+| `note_with_phase` | 27 | 24 | 3 |
+| `note` | 20 | 18 | 2 |
+| `_fit_to_samples` | 17 | 16 | 1 |
+| `note_with_vibrato` | 57 | 57 | 0 |
+
+### What it found
+
+**A fractional distortion index latched the render to full-scale DC.**
+The same signed `** alpha` the envelope audit corrected in the tremolo sat
+in the vibrato of five routines. There the distorted quantity is a
+*frequency*, so the NaN did not stay visible: it flowed into the
+accumulated phase and then into an `int64` cast, which turns NaN into
+`INT64_MIN`, and modulo the table length that is one fixed index.
+`note_with_vibrato(duration=0.2, vibrato_freq=5, alpha=0.5)` rendered
+4,411 samples of a note and then 4,409 samples of constant −1.0. Every
+sample finite, inside full scale, and meaningless.
+
+Thirteen mutants of `note_with_vibrato` survived the first run, seven of
+them arithmetic edits to the single line that computes the distorted
+frequency, and one that swapped the branch with its own `else`. The branch
+ran on every one of them. Nothing measured the pitch it produced, which is
+exactly why the defect could sit there.
+
+This is the defect `_require_a_ratio` already names, one parameter over —
+"a negative frequency raised to a fractional power is NaN, which was then
+cast to an integer table index and read out of the waveform table, so the
+render came back finite, plausible and meaningless rather than failing".
+That guard was written for the glissando endpoints and did not reach the
+vibrato. `DISCREPANCIES.md` records what the article does and does not say.
+
+### What the stronger tests catch
+
+- The bent pitch itself. A square vibrato table holds each extreme for
+  half the cycle, so the note is two steady tones and each one's frequency
+  can be *measured* from its zero crossings rather than inferred. The
+  tests match both halves against `freq · 2^(±(dev/12)^α)` to within a
+  tenth of a percent, for four indices. That closed `note_with_vibrato`
+  completely: 57 of 57.
+- That no render latches, across all five routines that carry the index.
+- That the two halves sit either side of the carrier, which is what an
+  even index destroyed by pushing both the same way.
+- That a glissando sweeps frequencies below one hertz. `_require_a_ratio`
+  refuses an endpoint that is not positive, and nothing swept from or to
+  a frequency in (0, 1], so the guard could have read `> 1` at either end.
+
+### What has not been read
+
+The remaining 231. They are concentrated in the four multi-vibrato
+routines and in `note_with_vibrato_seq_localization`, whose 80 are the
+largest single block in the package. The shape of the first run suggests
+most are the same kinds already accepted elsewhere — diagnostic wording,
+defaults nothing calls bare, arguments a callee does not read — but that
+is a guess until someone reads them, and this file does not record guesses
+as findings.
+
 ## Tool limitation and adapter
 
 This applies to the `export` area alone; the envelope modules are plain
@@ -271,6 +371,7 @@ Use a development environment with the package's dev dependencies and
 python -m pip install mutmut==3.7.0
 python tools/mutation_audit.py --list-areas
 python tools/mutation_audit.py --area envelopes --revision HEAD
+python tools/mutation_audit.py --area oscillators --revision HEAD
 python tools/mutation_audit.py --area export --revision ef03962 --max-children 2
 ```
 
@@ -282,18 +383,33 @@ working checkout untouched. It prints the location of `audit.json`,
 commit, the interpreter, the configuration, the runtime and every mutant's
 exit code. The selected tests are in `tools/mutation_audit.py`.
 
-Runtimes, with four workers: 74 seconds for `envelopes`, 84 for `export`
-with two. Neither is a candidate for CI at that cost — these are things to
-run deliberately, read, and act on.
+Runtimes, with four workers: 72 seconds for `envelopes`, 210 for
+`oscillators`, and 84 for `export` with two. None is a candidate for CI at
+that cost — these are things to run deliberately, read, and act on.
 
 ## Next
 
-Expand to another bounded area when changing it. **Oscillator timing is the
-next one**, and it already has a defect waiting: the signed `** alpha` in
-the four vibrato routines named above. Add an area to `AREAS` rather than
-widening an existing one, and pick the test selection by measuring which
-tests reach the module — `pytest --cov-context=test` and a query over the
-coverage database — rather than by guessing at names.
+**Finish reading `oscillators`.** Its 231 survivors are the outstanding
+work in this file, and `note_with_vibrato_seq_localization` holds 80 of
+them. `note_with_vibrato` shows what closing one costs and what it buys:
+one test that measures the pitch it actually renders took it from 13
+survivors to none, and that same test is what the defect could not have
+survived.
+
+Then expand to another bounded area when changing it. Add an area to
+`AREAS` rather than widening an existing one, and pick the test selection
+by measuring which tests reach the module — `pytest --cov-context=test`
+and a query over the coverage database — rather than by guessing at names.
+
+Two things the three areas have taught, worth carrying:
+
+- **An absent argument cannot be mutated.** No edit to `cross_fade` could
+  expose a `sample_rate` that was never passed to `mix_with_offset`; that
+  came out of writing the tests that kill the mutants around it. A score
+  measures the tests that exist against the code that exists.
+- **A branch can run on every test and still be unasserted.** Both defects
+  found so far sat inside a branch with full line *and* branch coverage,
+  under arithmetic that nothing measured. That is the shape to look for.
 
 Keep the sample-based assertions when refactoring these paths. Resolve the
 property/decorator coverage limitation before interpreting any future

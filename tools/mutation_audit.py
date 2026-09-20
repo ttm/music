@@ -64,6 +64,44 @@ AREAS = {
         ),
         'dataclass_adapter': 'music/stimulation/session.py',
     },
+    # Oscillator timing: the notes, their vibratos and their glissandi.
+    'oscillators': {
+        'sources': (
+            'music/core/synths/notes.py',
+        ),
+        'tests': (
+            'tests/test_degenerate.py',
+            'tests/test_properties.py',
+            'tests/test_fidelity.py',
+            'tests/test_artifacts.py',
+            'tests/test_branches.py',
+            'tests/test_public_api.py',
+            'tests/test_article.py',
+            'tests/test_stimulation.py',
+            'tests/test_remaining_paths.py',
+            'tests/test_audio_formats.py',
+            'tests/test_bonds.py',
+            'tests/test_hrtf.py',
+            'tests/test_notes_extra.py',
+            'tests/test_synths.py',
+            'tests/test_utils.py',
+            'tests/test_mass_reconciliation.py',
+            'tests/test_theory_properties.py',
+            'tests/test_localize_linear.py',
+            'tests/test_sequencer.py',
+            'tests/test_spectral.py',
+            'tests/test_filter_design.py',
+            'tests/test_io_paths.py',
+            'tests/test_legacy.py',
+            'tests/test_stimulation_session.py',
+            'tests/test_theory.py',
+            'tests/test_filters.py',
+            'tests/test_hrtf_dataset.py',
+            'tests/test_normalization.py',
+            'tests/test_tutorial.py',
+        ),
+        'dataclass_adapter': None,
+    },
     # The note-level amplitude envelopes: ADSR, fades and tremolo/AM.
     'envelopes': {
         'sources': (
@@ -207,9 +245,18 @@ def main():
                 stream.write(get_diff_for_mutant(name) + '\n')
     print(json.dumps(stats, indent=2))
     print(f'{elapsed:.1f} seconds; report and survivor diffs in {tree}')
-    incomplete = sum(value for key, value in stats.items()
-                     if key not in ('killed', 'survived', 'total'))
-    return 1 if incomplete else 0
+    # A mutant that hangs has been detected: no suite that finishes
+    # accepts it. `trill` accumulates samples in a while loop, so four of
+    # its mutants run forever rather than returning a wrong answer, and
+    # counting those as an incomplete run would fail every audit of that
+    # file. The categories below are the ones that really leave a mutant
+    # without a verdict.
+    undecided = sum(value for key, value in stats.items()
+                    if key not in ('killed', 'survived', 'total', 'timeout'))
+    if stats.get('timeout'):
+        print(f"{stats['timeout']} mutant(s) timed out; a mutant that hangs "
+              f"is detected, not surviving")
+    return 1 if undecided else 0
 
 
 if __name__ == '__main__':

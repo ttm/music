@@ -2,7 +2,7 @@
 
 import numpy as np
 from music.utils import (WAVEFORM_SINE, WAVEFORM_TRIANGULAR,
-                         as_sonic_vector)
+                         as_sonic_vector, _signed_power)
 
 
 def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
@@ -188,20 +188,15 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
                      sample_rate).astype(np.int64)
     # amplitude variation at each sample
     table_amp = waveform_table[gamma_tremolo % length]
-    if alpha != 1:
-        # The distortion index bends the oscillation without changing its
-        # sign. Raising the signed deviation directly to `alpha`, as the
-        # reference does, has no real value where the waveform is
-        # negative: `tremolo(alpha=0.5)` returned NaN for half of every
-        # envelope, and an even `alpha` rectified the tremolo into
-        # something that only ever boosted. An odd whole `alpha` is
-        # unchanged by this, since sign(x)|x|^3 is x^3, and so is the
-        # `alpha=1` case below. The article gives no `alpha` for the
-        # tremolo at all; see DISCREPANCIES.md.
-        scaled = table_amp * max_db_dev / 20
-        t = 10. ** (np.sign(scaled) * np.abs(scaled) ** alpha)
-    else:
-        t = 10. ** (table_amp * max_db_dev / 20)
+    # The distortion index bends the oscillation without changing its
+    # sign. Raising the signed deviation directly to `alpha`, as the
+    # reference does, has no real value where the waveform is negative:
+    # `tremolo(alpha=0.5)` returned NaN for half of every envelope, and an
+    # even `alpha` rectified the tremolo into something that only ever
+    # boosted. `_signed_power` hands back an index of 1 untouched, so the
+    # undistorted tremolo is bit for bit what it was. The article gives no
+    # `alpha` for the tremolo at all; see DISCREPANCIES.md.
+    t = 10. ** _signed_power(table_amp * max_db_dev / 20, alpha)
     if sonic_vector is not None:
         return t * sonic_vector
     return t

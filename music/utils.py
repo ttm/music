@@ -600,6 +600,34 @@ def convert_to_stereo(sound_vector: ArrayLike) -> NDArray[np.float64]:
     return stereo_sound
 
 
+def _signed_power(values, index):
+    """Raise an oscillatory pattern to a distortion index, keeping its sign.
+
+    The article's distortion index applies to ``(i/(Lambda-1))**alpha``, a
+    ramp that runs from 0 to 1 and is never negative. This package and the
+    MASS reference also carry one on the *oscillatory patterns*, whose
+    values are signed, and there a plain ``x ** alpha`` has no real value
+    wherever ``x`` is negative. A fractional index therefore produced NaN
+    for half of every cycle, and an even one rectified the pattern into
+    something that only ever pushed one way.
+
+    Raising the magnitude and restoring the sign gives the reference's own
+    value wherever the reference produced a number at all for a whole odd
+    index, since ``sign(x)|x|**3`` is ``x**3``, and bends the oscillation
+    symmetrically rather than folding it for every other index.
+
+    An index of exactly 1 returns the values themselves rather than
+    computing ``x ** 1``, so the undistorted path -- which is every case
+    in ``RECONCILIATION.md`` -- is untouched, bit for bit, with no
+    dependence on how a particular NumPy build rounds ``power``.
+
+    See DISCREPANCIES.md for what the article does and does not say here.
+    """
+    if index == 1:
+        return values
+    return np.sign(values) * np.abs(values) ** index
+
+
 def _integrate_phase(increments, length, block=16384):
     """Accumulate per-sample table shifts without accumulating drift.
 

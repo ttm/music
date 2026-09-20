@@ -132,14 +132,21 @@ passes `to_zero=0`, which is the article's envelope exactly. The reference
 has the parameter too but passes it on a hundred times too small, so it
 never took effect; `RECONCILIATION.md` records that under `AD` and `ADS`.
 
-### `alpha` distorts a tremolo the article never gives one for
+### `alpha` distorts patterns the article never gives one for
 
 `eq:trT` writes the tremolo amplitude as `a_i = 10^(V_dB/20 · t'_i)`, with
-no distortion index anywhere in it. The article's `alpha` belongs to the
-*transitions*, where it is applied to `(i/(Λ-1))^α` — a ramp that runs from
-0 to 1 and is never negative. Both this package and the MASS reference
-carry an `alpha` on the tremolo as well, applied to the signed oscillation
-`t'_i · V_dB/20`.
+no distortion index anywhere in it, and the vibrato equations do the same
+for pitch. The article's `alpha` belongs to the *transitions*, where it is
+applied to `(i/(Λ-1))^α` — a ramp that runs from 0 to 1 and is never
+negative. Both this package and the MASS reference carry an `alpha` on the
+oscillatory patterns as well, applied to the signed `t'_i`.
+
+It reaches nine places: `tremolo` and `tremolos`, and the vibrato of
+`note_with_vibrato`, `note_with_two_vibratos`,
+`note_with_glissando_vibrato`, `note_with_two_vibratos_glissando` and
+`note_with_vibrato_seq_localization`. The five glissando uses of `alpha`
+are *not* affected: those raise `(i/(Λ-1))`, which is the article's own
+non-negative ramp.
 
 Raised directly, as the reference does, that has no real value wherever the
 waveform is negative, which is half of every cycle:
@@ -167,6 +174,26 @@ within the last bit: NumPy builds need not agree on `power` with a
 negative base. Only the readings that were NaN or rectified have changed.
 `tests/test_envelopes.py` checks that a distorted tremolo is finite, that
 it still cuts as well as boosts, and that an odd index is unchanged.
+
+**In the vibratos it was worse, because nothing was left to see.** There
+the distorted quantity is a frequency, and the NaN it produced flowed into
+the accumulated phase and then into an `int64` cast, which turns NaN into
+`INT64_MIN`. Taken modulo the table length that is a single fixed index,
+so the note played normally until the vibrato pattern first went negative
+and then **latched to full-scale DC** for the rest of its length —
+`note_with_vibrato(duration=0.2, vibrato_freq=5, alpha=0.5)` rendered
+4,411 samples of a note and 4,409 samples of constant −1.0. Every sample
+was finite and inside full scale, so a check for NaN, for finiteness or
+for clipping saw nothing wrong.
+
+This is the defect `_require_a_ratio` already names for the *glissando*
+frequencies — "a negative frequency raised to a fractional power is NaN,
+which was then cast to an integer table index and read out of the waveform
+table, so the render came back finite, plausible and meaningless rather
+than failing". The vibrato was the same defect one parameter over, and the
+guard written for the first did not reach it.
+`tests/test_synths.py` measures the bent pitch of each half-cycle against
+`freq · 2^(±(dev/12)^α)` and asserts that no render latches.
 
 ### `localize2` implements a model the article does not give
 

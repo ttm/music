@@ -8,7 +8,7 @@
   half of every envelope, behind a NumPy warning, and an even `alpha`
   rectified the pattern into one that could only ever boost. The index now
   applies to the magnitude with the sign kept, so `alpha=1` and every whole
-  odd `alpha` are bit-identical to what they were and the rest are a
+  odd `alpha` compute what they always did and the rest are a
   distortion that stays symmetric in decibels. The article gives the
   tremolo no `alpha` at all; `DISCREPANCIES.md` records that.
 - **`adsr` departs from zero and returns to it, as its docstring says.**

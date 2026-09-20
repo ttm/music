@@ -168,18 +168,35 @@ def test_a_distorted_tremolo_stays_symmetric_in_decibels(alpha):
     assert above == pytest.approx(-below, rel=1e-6)
 
 
-def test_an_odd_distortion_index_is_the_plain_power_it_always_was():
-    # sign(x)|x|**3 is x**3, so every whole odd index is bit-identical to
-    # what the reference computes, and the `T` and `T_` rows of
-    # RECONCILIATION.md stay sample-exact.
+def _reference_pattern():
+    """The signed deviation the tremolo raises, computed the long way."""
     table = music.utils.WAVEFORM_SINE
     length = len(table)
     indices = (np.arange(1000) * length / 1000).astype(np.int64) % length
-    scaled = table[indices] * 10 / 20
-    for alpha in (3, 9):
-        env = music.tremolo(duration=1, tremolo_freq=1, max_db_dev=10,
-                            alpha=alpha, sample_rate=1000)
-        assert np.array_equal(env, 10. ** (scaled ** alpha))
+    return table[indices] * 10 / 20
+
+
+def test_an_undistorted_tremolo_is_untouched_by_the_correction():
+    # `alpha=1` takes the branch the correction did not touch, so it is
+    # exactly, bit for bit, what it was. That is what keeps the `T` and
+    # `T_` rows of RECONCILIATION.md sample-exact: every case there uses
+    # `alpha=1`. This one can be an equality because no arithmetic moved.
+    env = music.tremolo(duration=1, tremolo_freq=1, max_db_dev=10,
+                        alpha=1, sample_rate=1000)
+    assert np.array_equal(env, 10. ** _reference_pattern())
+
+
+@pytest.mark.parametrize("alpha", [3, 9])
+def test_an_odd_distortion_index_is_the_plain_power_it_always_was(alpha):
+    # sign(x)|x|**3 is x**3 in real arithmetic, so a whole odd index still
+    # computes the reference's distortion. Not an equality: `power` with a
+    # negative base need not agree to the last bit between NumPy builds,
+    # and asserting that it did failed on Python 3.13 and 3.14 while
+    # passing on 3.10 through 3.12.
+    scaled = _reference_pattern()
+    env = music.tremolo(duration=1, tremolo_freq=1, max_db_dev=10,
+                        alpha=alpha, sample_rate=1000)
+    assert np.allclose(env, 10. ** (scaled ** alpha), rtol=1e-12, atol=0)
 
 
 def test_tremolos_hands_on_a_distortion_index_too():

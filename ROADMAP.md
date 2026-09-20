@@ -160,8 +160,9 @@ the first audit, this one found production defects.
   `tests/test_degenerate.py` names as the one thing no routine here may
   return — and an even index rectified the pattern into one that could
   only boost. The index now applies to the magnitude with the sign kept:
-  `alpha=1` and every whole odd `alpha` are bit-identical, so the `T` and
-  `T_` rows of `RECONCILIATION.md` stay sample-exact. The article gives
+  `alpha=1` is bit-identical, taking the branch the correction did not
+  touch, so the `T` and `T_` rows of `RECONCILIATION.md` stay
+  sample-exact; a whole odd `alpha` agrees to within the last bit. The article gives
   the tremolo no `alpha` at all; `DISCREPANCIES.md` records that.
 - **`adsr` never reached zero.** `to_zero` is a duration in milliseconds
   and reached `fade` as a bare ratio where `fade` reads a percentage, a

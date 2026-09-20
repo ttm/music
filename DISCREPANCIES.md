@@ -159,10 +159,12 @@ NaN behind a NumPy warning, which
 thing no routine here may return.
 
 **This package applies `alpha` to the magnitude and keeps the sign**:
-`sign(x)·|x|^α`. `alpha=1` and every odd whole `alpha` are bit-identical to
-the reference, since `sign(x)|x|³` is `x³`, so the `T` and `T_` rows of
-`RECONCILIATION.md` are still sample-exact — every case there uses
-`alpha=1`. Only the readings that were NaN or rectified have changed.
+`sign(x)·|x|^α`. `alpha=1` is untouched — it takes the other branch, bit
+for bit — so the `T` and `T_` rows of `RECONCILIATION.md` are still
+sample-exact, every case there using `alpha=1`. A whole odd `alpha` is the
+reference's own value too, since `sign(x)|x|³` is `x³`, though only to
+within the last bit: NumPy builds need not agree on `power` with a
+negative base. Only the readings that were NaN or rectified have changed.
 `tests/test_envelopes.py` checks that a distorted tremolo is finite, that
 it still cuts as well as boosts, and that an odd index is unchanged.
 

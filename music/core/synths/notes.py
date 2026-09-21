@@ -560,7 +560,7 @@ def note_with_glissando_vibrato(
     else:
         f = start_freq * (end_freq / start_freq) ** \
             (samples / (lambda_pv - 1)) * 2. ** \
-            ((tv * max_pitch_dev / 12) ** alpha)
+            _signed_power(tv * max_pitch_dev / 12, alpha)
     length = len(waveform_table)
     gamma = _integrate_phase(f * length / sample_rate, length).astype(np.int64)
     s = waveform_table[gamma % length]
@@ -998,8 +998,12 @@ def note_with_two_vibratos_glissando(
     # LUT indexes
     gammav2 = (samples * secondary_vibrato_freq * lv2 /
                sample_rate).astype(np.int64)
-    # values of the oscillatory pattern at each sample
-    tv2 = tabv1[gammav2 % lv2]
+    # values of the oscillatory pattern at each sample. This read `tabv1`,
+    # as the MASS reference still does, so the second vibrato's waveform
+    # was the first one's: `tabv2` was accepted, documented and used only
+    # for its length. Two tables of different lengths then indexed the
+    # shorter one with the longer one's modulus and raised IndexError.
+    tv2 = tabv2[gammav2 % lv2]
 
     if alpha != 1 or alphav1 != 1 or alphav2 != 1:
         f = start_freq * (end_freq / start_freq) ** \
@@ -1114,8 +1118,9 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
             # values of the oscillatory pattern at each sample
             tv = waveform_tables[i + 1][j][gammav % lv]
             if alpha[i + 1][j] != 0:
-                f = 2. ** ((tv * vibratos_max_pitch_devs[i][j] / 12) **
-                           alpha[i + 1][j])
+                f = 2. ** _signed_power(
+                    tv * vibratos_max_pitch_devs[i][j] / 12,
+                    alpha[i + 1][j])
             else:
                 f = 2. ** (tv * vibratos_max_pitch_devs[i][j] / 12)
             segments.append(f)
@@ -1338,8 +1343,10 @@ def note_with_two_vibratos(
     lv2 = len(sec_vibrato_waveform_table)
     gammav2 = (samples * secondary_vibrato_freq * lv2 /
                sample_rate).astype(np.int64)  # LUT indexes
-    # values of the oscillatory pattern at each sample
-    tv2 = vibrato_waveform_table[gammav2 % lv2]
+    # values of the oscillatory pattern at each sample. The same defect
+    # the glissando form carried: this read `vibrato_waveform_table`, so
+    # `sec_vibrato_waveform_table` was used only for its length.
+    tv2 = sec_vibrato_waveform_table[gammav2 % lv2]
 
     if alphav1 != 1 or alphav2 != 1:
         f = freq * 2. ** _signed_power(tv1 * nu1 / 12, alphav1) * 2. ** \

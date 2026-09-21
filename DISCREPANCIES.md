@@ -141,12 +141,17 @@ applied to `(i/(Λ-1))^α` — a ramp that runs from 0 to 1 and is never
 negative. Both this package and the MASS reference carry an `alpha` on the
 oscillatory patterns as well, applied to the signed `t'_i`.
 
-It reaches nine places: `tremolo` and `tremolos`, and the vibrato of
+It reaches ten places: `tremolo` and `tremolos`, and the vibrato of
 `note_with_vibrato`, `note_with_two_vibratos`,
-`note_with_glissando_vibrato`, `note_with_two_vibratos_glissando` and
-`note_with_vibrato_seq_localization`. The five glissando uses of `alpha`
-are *not* affected: those raise `(i/(Λ-1))`, which is the article's own
-non-negative ramp.
+`note_with_glissando_vibrato`, `note_with_two_vibratos_glissando`,
+`note_with_vibrato_seq_localization` and `note_with_vibratos_glissandos`.
+The six glissando uses of `alpha` are *not* affected: those raise
+`(i/(Λ-1))`, which is the article's own non-negative ramp.
+
+The list is from an AST walk over every `**` whose exponent names an
+index, not from a text search: one site had its `**` at the end of a line
+and its index at the start of the next, so a search for `** alpha` did not
+see it, and this file said there were nine until a second pass found it.
 
 Raised directly, as the reference does, that has no real value wherever the
 waveform is negative, which is half of every cycle:
@@ -238,6 +243,7 @@ correctness.
 | `Tr` | a triangle reaching full amplitude | `hstack((ramp, ramp[::-1]))`, which duplicates the peak and tops out at `1 − 2/8192` |
 | `Sa` | a table that tiles | `linspace(-1, 1, Lt)` including the endpoint, so the wrap is a jump of 2.0 |
 | `readHRTF` | the KEMAR responses, read from disk | reads them with a `data_type` that is defined in neither `HRTF.py` nor `functions.py`, so it raises `NameError` on every call and has never run |
+| `VV`, `PVV` | two vibratos, each with the waveform its own argument names | reads the *second* vibrato out of `tabv1`, so `tabv2` is accepted, documented and used only for its length: a square second vibrato under a sine first one gives back two sines, and two tables of different lengths index the shorter one with the longer one's modulus and raise `IndexError` |
 
 ## What the article states that this package does not implement
 

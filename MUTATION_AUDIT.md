@@ -15,7 +15,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 |---|---|---|---:|---:|---:|---|
 | `export` | `core/functions.py`, `core/io.py`, `stimulation/session.py` | 2026-09-16 | 767 | 698 | 69 | all |
 | `envelopes` | `synths/envelopes.py`, `filters/adsr.py`, `filters/fade.py` | 2026-09-21 | 561 | 526 | 35 | all |
-| `oscillators` | `synths/notes.py` | 2026-09-21 | 1396 | 1165 | 231 | **a first pass** |
+| `oscillators` | `synths/notes.py` | 2026-09-21 | 1402 | 1248 | 154 | the vibratos; the rest unread |
 
 The `oscillators` row is not a finished audit. It found the defect it went
 looking for and closed the class of gap that hid it, and the rest of its
@@ -255,15 +255,18 @@ tree this file is committed with. No adapter. The selection is 29 test
 files, chosen the same way as the envelopes', and covers every line and
 branch of the 382 statements and 104 branches in `notes.py`.
 
-**This is a first pass, not a completed audit.** It went after one defect,
-found it, and closed the gap that hid it. 231 survivors remain unread.
+**The vibratos are done; the rest is not.** Two passes: the first went
+after one defect and found it, the second closed the routines that carry a
+vibrato and found three more. 154 survivors remain unread, 80 of them in
+`note_with_vibrato_seq_localization`.
 
 ### Result
 
 | | Mutations | Detected | Surviving |
 |---|---:|---:|---:|
 | First run | 1375 | 1124 | 251 |
-| After the correction and its tests | 1396 | 1165 | 231 |
+| After the latching correction | 1396 | 1165 | 231 |
+| After closing the vibrato routines | 1402 | 1248 | 154 |
 
 Four mutants time out rather than returning a wrong answer, in both runs.
 They are counted as detected: `trill` accumulates samples in a `while`
@@ -271,23 +274,26 @@ loop, and `pointer -= ns`, `i -= 1`, `i = 1` and a `*` turned `/` each
 make that loop run forever. No suite that finishes accepts them, and the
 runner no longer reports a run containing them as incomplete.
 
-| Function | Mutations | Detected | Surviving |
-|---|---:|---:|---:|
-| `note_with_vibrato_seq_localization` | 499 | 419 | 80 |
-| `note_with_two_vibratos_glissando` | 110 | 80 | 30 |
-| `note_with_glissando_vibrato` | 79 | 55 | 24 |
-| `note_with_two_vibratos` | 88 | 65 | 23 |
-| `note_with_vibratos_glissandos` | 135 | 113 | 22 |
-| `note_with_doppler` | 182 | 168 | 14 |
-| `_require_a_ratio` | 14 | 6 | 8 |
-| `_exponential_positions` | 20 | 12 | 8 |
-| `note_with_glissando` | 61 | 55 | 6 |
-| `trill` | 48 | 42 | 6 |
-| `note_with_fm` | 39 | 35 | 4 |
-| `note_with_phase` | 27 | 24 | 3 |
-| `note` | 20 | 18 | 2 |
-| `_fit_to_samples` | 17 | 16 | 1 |
-| `note_with_vibrato` | 57 | 57 | 0 |
+| Function | Mutations | Detected | Surviving | Was |
+|---|---:|---:|---:|---:|
+| `note_with_vibrato_seq_localization` | 499 | 419 | 80 | 81 |
+| `note_with_vibratos_glissandos` | 138 | 120 | 18 | 22 |
+| `note_with_doppler` | 182 | 168 | 14 | 14 |
+| `_require_a_ratio` | 14 | 6 | 8 | 10 |
+| `_exponential_positions` | 20 | 12 | 8 | 8 |
+| `note_with_glissando` | 61 | 55 | 6 | 6 |
+| `trill` | 48 | 42 | 6 | 6 |
+| `note_with_fm` | 39 | 35 | 4 | 4 |
+| `note_with_phase` | 27 | 24 | 3 | 3 |
+| `note` | 20 | 18 | 2 | 2 |
+| `note_with_glissando_vibrato` | 82 | 80 | 2 | 25 |
+| `note_with_two_vibratos_glissando` | 110 | 108 | 2 | 33 |
+| `_fit_to_samples` | 17 | 16 | 1 | 1 |
+| `note_with_vibrato` | 57 | 57 | 0 | 13 |
+| `note_with_two_vibratos` | 88 | 88 | 0 | 23 |
+
+"Was" is the first run. The five routines that carry a vibrato held 112
+survivors between them and now hold 22.
 
 ### What it found
 
@@ -314,6 +320,37 @@ render came back finite, plausible and meaningless rather than failing".
 That guard was written for the glissando endpoints and did not reach the
 vibrato. `DISCREPANCIES.md` records what the article does and does not say.
 
+**A sixth routine carried the same signed power, and a text search could
+not see it.** `note_with_vibratos_glissandos` raises its vibrato pattern on
+a line whose `**` ends one line and whose index begins the next, so the
+`grep '\*\* *alpha'` that found the other five missed it, and the first
+pass of this audit recorded five where there were six. The list is now from
+an AST walk over every `Pow` node whose exponent names an index. There are
+none left.
+
+**The second vibrato read the first one's waveform table.** In
+`note_with_two_vibratos` and `note_with_two_vibratos_glissando`, `tv2` was
+looked up in `tabv1`, so `tabv2` and `sec_vibrato_waveform_table` were
+accepted, documented, and used only for their length: a square second
+vibrato under a sine first one gave back two sines. Two tables of different
+lengths were worse — the modulus came from the second and the lookup from
+the first, so the shorter was indexed past its end and raised `IndexError`.
+The MASS reference has the same line; both reconciliation cases pass the
+same table twice, so `VV` and `PVV` stay sample-exact.
+
+**No mutant found either.** One was a name, not an arithmetic operator, and
+swapping one valid table for another is not an edit mutmut makes; the other
+was a line mutmut mutated freely but whose survivors read like the rest of
+the distorted-path block. Both came out of writing the tests that kill the
+mutants around them — the same way the `cross_fade` sample rate did. The
+score measures the tests that exist against the code that exists, and
+reading the code while writing them is where the rest comes from.
+
+**A test can pass because of the defect it should catch.** The quadrant
+test below named only the primary waveform table, and the table defect was
+handing the same square wave to the second vibrato. It measured four clean
+quadrants, passed, and broke the moment the defect was corrected.
+
 ### What the stronger tests catch
 
 - The bent pitch itself. A square vibrato table holds each extreme for
@@ -331,9 +368,9 @@ vibrato. `DISCREPANCIES.md` records what the article does and does not say.
 
 ### What has not been read
 
-The remaining 231. They are concentrated in the four multi-vibrato
-routines and in `note_with_vibrato_seq_localization`, whose 80 are the
-largest single block in the package. The shape of the first run suggests
+The remaining 154, of which `note_with_vibrato_seq_localization` holds 80
+— the largest single block in the package — `note_with_vibratos_glissandos`
+18 and `note_with_doppler` 14. The shape of the first run suggests
 most are the same kinds already accepted elsewhere — diagnostic wording,
 defaults nothing calls bare, arguments a callee does not read — but that
 is a guess until someone reads them, and this file does not record guesses
@@ -389,7 +426,7 @@ that cost — these are things to run deliberately, read, and act on.
 
 ## Next
 
-**Finish reading `oscillators`.** Its 231 survivors are the outstanding
+**Finish reading `oscillators`.** Its 154 survivors are the outstanding
 work in this file, and `note_with_vibrato_seq_localization` holds 80 of
 them. `note_with_vibrato` shows what closing one costs and what it buys:
 one test that measures the pitch it actually renders took it from 13

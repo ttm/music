@@ -2,11 +2,27 @@
 
 ### Fixed
 
+- **The second vibrato reads the waveform table it was given.**
+  `note_with_two_vibratos` and `note_with_two_vibratos_glissando` looked
+  the second oscillatory pattern up in the *first* vibrato's table, as the
+  MASS reference still does, so `sec_vibrato_waveform_table` and `tabv2`
+  were accepted, documented, and used only for their length: asking for a
+  square second vibrato under a sine first one gave back a sound identical
+  to two sines. Two tables of different lengths were worse — the modulus
+  came from the second table and the lookup from the first, so the shorter
+  one was indexed past its end and raised `IndexError`. No mutant found
+  this one: the name was wrong rather than the arithmetic, and swapping
+  one valid table for another is not an edit mutation testing makes. The
+  `VV` and `PVV` rows of `RECONCILIATION.md` stay sample-exact, both
+  reconciliation cases passing the same table twice.
 - **A distorted vibrato is a real number, and does not latch.** The same
   signed `** alpha` the tremolo carried also sat in the vibrato of
   `note_with_vibrato`, `note_with_two_vibratos`,
-  `note_with_glissando_vibrato`, `note_with_two_vibratos_glissando` and
-  `note_with_vibrato_seq_localization`. There the distorted quantity is a
+  `note_with_glissando_vibrato`, `note_with_two_vibratos_glissando`,
+  `note_with_vibrato_seq_localization` and `note_with_vibratos_glissandos`
+  — the last of these found only on a second pass, because its `**` ended
+  a line and its index began the next one, so a search for `** alpha` did
+  not see it. There the distorted quantity is a
   frequency, so the NaN flowed into the accumulated phase and then into an
   `int64` cast, which turns NaN into `INT64_MIN`; taken modulo the table
   length that is one fixed index. A note played normally until the vibrato

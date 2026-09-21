@@ -193,15 +193,17 @@ diagnostic wording. Nothing timed out, was skipped or went untested.
 [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records both areas, the survivor
 IDs and the reproduction commands.
 
-## Completed: a first pass at the oscillators, and the defect it found
+## Completed: the oscillator vibratos, and the four defects they hid
 
 Reviewed 2026-09-21. The third area, `oscillators`, mutates
 `music/core/synths/notes.py`: 1,396 mutations judged by 29 test files that
 between them cover every line and branch of it.
 
-**This one is a first pass, not a finished audit.** It went after the
-defect the envelope area pointed at, found it, and closed the class of gap
-that hid it. 231 survivors remain unread, 80 of them in
+**The vibratos are done; the rest of the area is not.** Two passes: the
+first went after the defect the envelope area pointed at, the second closed
+every routine that carries a vibrato. Between them the five vibrato
+routines went from 112 survivors to 22, and three further defects came out.
+154 survivors remain unread, 80 of them in
 `note_with_vibrato_seq_localization`. `MUTATION_AUDIT.md` says so in the
 area table rather than letting the row imply the area is closed.
 
@@ -229,6 +231,30 @@ endpoints — the guard written for the first did not reach the second. The
 five glissando uses of `alpha` are unaffected: those raise the article's
 own non-negative ramp.
 
+### Three more, from the second pass
+
+- **A sixth routine carried the same signed power.**
+  `note_with_vibratos_glissandos` raises its vibrato on a line whose `**`
+  ends one line and whose index begins the next, so the text search that
+  found the other five could not see it and the first pass recorded five
+  where there were six. The list is now from an AST walk over every `Pow`
+  node whose exponent names an index; none is left.
+- **The second vibrato read the first one's waveform table.** In
+  `note_with_two_vibratos` and `note_with_two_vibratos_glissando`, `tabv2`
+  and `sec_vibrato_waveform_table` were accepted, documented and used only
+  for their length, so a square second vibrato under a sine first one gave
+  back two sines; two tables of different lengths raised `IndexError`. The
+  reference has the same line, and both reconciliation cases pass the same
+  table twice, so `VV` and `PVV` stay sample-exact.
+- **A glissando sweeps frequencies below one hertz.** Nothing swept from
+  or to a frequency in (0, 1], so `_require_a_ratio`'s "positive" guard
+  could have read `> 1` at either end.
+
+Neither of the first two was found by a mutant. One was a name rather than
+an operator; the other sat among survivors that read like the rest of the
+distorted-path block. Both came out of writing the tests that kill the
+mutants around them, as the `cross_fade` sample rate did.
+
 ### The correction
 
 One shared `music.utils._signed_power`, used at all seven vibrato sites and
@@ -239,9 +265,10 @@ a NumPy build rounds `power`.
 
 ### Validation
 
-3,684 tests pass with nine skips and 100% line and branch coverage. Ruff
-and mypy are clean. The area now detects 1,165 of 1,396 mutations, up from
-1,124 of 1,375; `note_with_vibrato` is closed completely, 57 of 57. Four
+3,715 tests pass with nine skips and 100% line and branch coverage. Ruff
+and mypy are clean. The area now detects 1,248 of 1,402 mutations, up from
+1,124 of 1,375; `note_with_vibrato` and `note_with_two_vibratos` are closed
+completely, and the glissando forms hold two survivors each. Four
 mutants time out rather than answering, in both runs: `trill` accumulates
 samples in a `while` loop and those four make it run forever. They are
 counted as detected, and the runner no longer calls a run containing them
@@ -254,7 +281,8 @@ from its zero crossings and matched against `freq · 2^(±(dev/12)^α)`.
 
 ## Next: finish reading the oscillator survivors
 
-The 231 are the outstanding work. `note_with_vibrato` shows the cost and
+The 154 are the outstanding work, 80 of them in
+`note_with_vibrato_seq_localization`. `note_with_vibrato` shows the cost and
 the return: one test that measures what the routine actually renders took
 it from thirteen survivors to none. Expect the multi-vibrato routines to
 want the same treatment.

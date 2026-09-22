@@ -15,16 +15,15 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 |---|---|---|---:|---:|---:|---|
 | `export` | `core/functions.py`, `core/io.py`, `stimulation/session.py` | 2026-09-16 | 767 | 698 | 69 | all |
 | `envelopes` | `synths/envelopes.py`, `filters/adsr.py`, `filters/fade.py` | 2026-09-21 | 561 | 526 | 35 | all |
-| `oscillators` | `synths/notes.py` | 2026-09-21 | 1402 | 1248 | 154 | the vibratos; the rest unread |
+| `oscillators` | `synths/notes.py` | 2026-09-23 | 1426 | 1350 | 76 | vibratos and sequential localization; 74 outside the completed localization pass |
 
-The `oscillators` row is not a finished audit. It found the defect it went
-looking for and closed the class of gap that hid it, and the rest of its
-survivors have not been read. Say so rather than letting the row imply
-otherwise; `## Next` records what is left.
+The `oscillators` row is not a finished audit. Sequential localization now
+has two reviewed, accepted survivors; the other 74 remain outside that
+completed pass. `## Next` records what is left.
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
-mutmut reports mutants no test reaches. Both areas report none.
+mutmut reports mutants no test reaches. All areas report none.
 
 ## `export` — normalization, export and session envelopes
 
@@ -250,15 +249,16 @@ snapshot and tool version rather than to arbitrary later edits.
 
 ## `oscillators` — the notes, their vibratos and their glissandi
 
-Measured 2026-09-21 on Python 3.12.7, macOS, with `mutmut` 3.7.0, on the
-tree this file is committed with. No adapter. The selection is 29 test
-files, chosen the same way as the envelopes', and covers every line and
-branch of the 382 statements and 104 branches in `notes.py`.
+Measured 2026-09-23 on Python 3.12.7, macOS, with `mutmut` 3.7.0. No
+adapter. The selection is now 32 test files: the previous 29 plus three
+dedicated to sequential localization. Together they reach every line and
+branch of `notes.py` (387 statements, 106 branches).
 
-**The vibratos are done; the rest is not.** Two passes: the first went
-after one defect and found it, the second closed the routines that carry a
-vibrato and found three more. 154 survivors remain unread, 80 of them in
-`note_with_vibrato_seq_localization`.
+**The vibratos and sequential localization are closed; the area is not.**
+The first two passes found the vibrato defects below. The third reviewed
+all 80 survivors in `note_with_vibrato_seq_localization`, found the timing,
+gain and input defects described below, and left only two accepted mutants.
+The other 74 survivors remain outside this completed pass.
 
 ### Result
 
@@ -267,8 +267,9 @@ vibrato and found three more. 154 survivors remain unread, 80 of them in
 | First run | 1375 | 1124 | 251 |
 | After the latching correction | 1396 | 1165 | 231 |
 | After closing the vibrato routines | 1402 | 1248 | 154 |
+| After closing sequential localization | 1426 | 1350 | 76 |
 
-Four mutants time out rather than returning a wrong answer, in both runs.
+Four mutants time out rather than returning a wrong answer in every run.
 They are counted as detected: `trill` accumulates samples in a `while`
 loop, and `pointer -= ns`, `i -= 1`, `i = 1` and a `*` turned `/` each
 make that loop run forever. No suite that finishes accepts them, and the
@@ -276,7 +277,7 @@ runner no longer reports a run containing them as incomplete.
 
 | Function | Mutations | Detected | Surviving | Was |
 |---|---:|---:|---:|---:|
-| `note_with_vibrato_seq_localization` | 499 | 419 | 80 | 81 |
+| `note_with_vibrato_seq_localization` | 523 | 521 | 2 | 81 |
 | `note_with_vibratos_glissandos` | 138 | 120 | 18 | 22 |
 | `note_with_doppler` | 182 | 168 | 14 | 14 |
 | `_require_a_ratio` | 14 | 6 | 8 | 10 |
@@ -366,15 +367,63 @@ quadrants, passed, and broke the moment the defect was corrected.
   refuses an endpoint that is not positive, and nothing swept from or to
   a frequency in (0, 1], so the guard could have read `> 1` at either end.
 
-### What has not been read
+### Sequential localization: completed 2026-09-23
 
-The remaining 154, of which `note_with_vibrato_seq_localization` holds 80
-— the largest single block in the package — `note_with_vibratos_glissandos`
-18 and `note_with_doppler` 14. The shape of the first run suggests
-most are the same kinds already accepted elsewhere — diagnostic wording,
-defaults nothing calls bare, arguments a callee does not read — but that
-is a guess until someone reads them, and this file does not record guesses
-as findings.
+The 80 survivors exposed tests that reached pitch curves, spatial paths and
+mono gain without measuring what those paths produced. The new tests use
+hand-calculated pitches, measured zero crossings, distinct carrier tables,
+geometric distances and exact segment boundaries. They cover independent
+vibrato lines, nonunit pitch-curve indices, mono/stereo motion, temperature,
+initial interaural delay, and the state held after each control line ends.
+
+The pass corrected these concrete failures:
+
+- Vibrato segments rounded fractional sample counts up while pitch and
+  movement rounded down. At 1 kHz, 2.5 ms and 5.5 ms vibratos occupied
+  nine samples instead of seven, shifting their boundary and the final
+  unmodulated tail. All three controls now use integer sample counts.
+- A one-sample pitch glide divided by zero and poisoned the accumulated
+  phase for the rest of the note. Positive curve indices now select its
+  starting frequency; a zero index retains its immediate jump to the end.
+- A finished path held gain one sample before its destination. A ten-sample
+  move from `(0.3, 0.4)` to `(0.6, 0.8)` held a distance of 0.95 m instead
+  of 1 m, leaving the rest of the mono note 5.26% too loud. The held gain
+  now uses the exact final distance, per ear in stereo.
+- Nonpositive pitch endpoints and movement durations below one sample
+  reached undefined ratios or velocities. They now raise `ValueError`.
+- Documented list/tuple waveform tables could not be indexed by arrays,
+  and integer carrier tables could not receive floating-point gain. Tables
+  are converted to floating-point arrays without modifying caller inputs.
+
+Twenty regression cases failed against the original source before these
+fixes. The final tests add array-like inputs and narrow cases identified by
+the preliminary mutation run, including a two-sample glide and a curved
+glide whose starting frequency is not one. The MASS `D_` comparison retains
+its original fixture and tight phase bound while explicitly accounting for
+the corrected counts and final gain; see `RECONCILIATION.md`.
+
+The function now detects **521 of 523 mutants**. Both survivors are accepted:
+
+| ID | Reason |
+|---|---|
+| 21 | Adds `XX` around the movement-duration error text; the same invalid input is refused with the same exception and useful diagnostic. |
+| 498 | Changes `x[0] > 0` to `x[0] >= 0`; at zero both ears are equidistant and the initial delay is zero, so either padding branch returns the same samples. |
+
+IDs use the `music.core.synths.notes.x_note_with_vibrato_seq_localization`
+prefix. The final run used the working-tree changes on `bbb4d83`, with
+`notes.py` SHA-256
+`7015dfad1fd11f6bd258ebb531318f815a0b4d5a4a5e3dd2657c8ddd4d0243d0`.
+The scratch audit records the base commit and per-file hashes; it is not an
+audit of unchanged `bbb4d83`. The standard reproduction command below
+archives committed files, so these changes must be committed before using
+`--revision HEAD` to reproduce them. No repository commit was needed for
+the scratch measurement.
+
+The final full area run took 397 seconds with two workers: 1,346 killed, four
+timeouts and 76 survivors. Nothing was untested, skipped, suspicious or
+interrupted. The two survivors above are the only ones in this function;
+18 in `note_with_vibratos_glissandos`, 14 in `note_with_doppler` and 42
+elsewhere remain outside this completed pass.
 
 ## Tool limitation and adapter
 
@@ -420,18 +469,18 @@ working checkout untouched. It prints the location of `audit.json`,
 commit, the interpreter, the configuration, the runtime and every mutant's
 exit code. The selected tests are in `tools/mutation_audit.py`.
 
-Runtimes, with four workers: 72 seconds for `envelopes`, 210 for
-`oscillators`, and 84 for `export` with two. None is a candidate for CI at
+Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
+`oscillators`, and 84 for `export` with two. The latest oscillator pass took
+397 seconds with two workers. None is a candidate for CI at
 that cost — these are things to run deliberately, read, and act on.
 
 ## Next
 
-**Finish reading `oscillators`.** Its 154 survivors are the outstanding
-work in this file, and `note_with_vibrato_seq_localization` holds 80 of
-them. `note_with_vibrato` shows what closing one costs and what it buys:
-one test that measures the pitch it actually renders took it from 13
-survivors to none, and that same test is what the defect could not have
-survived.
+**Continue with the other oscillator routines.** Sequential localization
+is closed with two accepted survivors. Of the other 74, start with the 18
+in `note_with_vibratos_glissandos`, then the 14 in `note_with_doppler`.
+The former still contains the analogous fractional-duration and short-glide
+expressions; it was not changed or closed by this bounded localization pass.
 
 Then expand to another bounded area when changing it. Add an area to
 `AREAS` rather than widening an existing one, and pick the test selection

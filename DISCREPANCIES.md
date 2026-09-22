@@ -200,6 +200,36 @@ guard written for the first did not reach it.
 `tests/test_synths.py` measures the bent pitch of each half-cycle against
 `freq · 2^(±(dev/12)^α)` and asserts that no render latches.
 
+### Localized sequences use consistent sample counts and final positions
+
+`note_with_vibrato_seq_localization` and the reference's `D_` used
+`arange(duration * sample_rate)` for vibrato segments, but
+`int(duration * sample_rate)` for pitch and position segments. A fractional
+sample count therefore rounded up only for vibratos. At 1 kHz, a 2.5 ms
+segment held its vibrato for three samples while the other controls changed
+after two. The package now uses the same floor for all three, consistent
+with its duration-to-sample convention (`eq:dur`). The saved reconciliation
+case loses exactly four surplus samples; its original reference fixture is
+unchanged.
+
+Both implementations also held the last sampled spatial gain after a path
+ended, even though that sample precedes the destination by one sample
+interval. A mono path from `(0.3, 0.4)` to `(0.6, 0.8)` over ten samples
+thus kept amplitude `1 / 0.95` after stopping, instead of the final
+`1 / 1.0`: 5.26% too loud. The package now uses the destination's inverse
+distance, per ear in stereo, while preserving every sample during motion.
+This also makes the held gain consistent with the stationary Doppler factor
+after the path ends (`eq:distOuvidos`, `eq:dii`, `eq:fDoppler`).
+
+`tests/test_seq_localization_edges.py` checks the timing boundaries, and
+`tests/test_seq_localization_spatial.py` checks the geometric amplitudes and
+measured Doppler pitch. `tests/test_mass_reconciliation.py` retains the
+original tight phase bound by explicitly accounting for these two changes
+in a supplementary render. The complete original waveform must also equal
+a render with explicitly rounded durations, so that comparison cannot hide
+errors confined to the original fractional-duration call. Tests reject
+further length, pitch, gain or nonfinite drift.
+
 ### `localize2` implements a model the article does not give
 
 The frequency-dependent ITD and IID in `music.localize2` — a crossover at

@@ -203,9 +203,9 @@ between them cover every line and branch of it.
 first went after the defect the envelope area pointed at, the second closed
 every routine that carries a vibrato. Between them the five vibrato
 routines went from 112 survivors to 22, and three further defects came out.
-154 survivors remain unread, 80 of them in
-`note_with_vibrato_seq_localization`. `MUTATION_AUDIT.md` says so in the
-area table rather than letting the row imply the area is closed.
+At that checkpoint, 154 survivors remained unread, 80 of them in
+`note_with_vibrato_seq_localization`. The subsequent localization pass is
+recorded below; the oscillator area as a whole remains open.
 
 ### The defect
 
@@ -279,13 +279,40 @@ have survived: a square vibrato table holds each extreme for half a cycle,
 so the note is two steady tones, and the frequency of each is *measured*
 from its zero crossings and matched against `freq · 2^(±(dev/12)^α)`.
 
-## Next: finish reading the oscillator survivors
+## Completed: sequential localization, 2026-09-23
 
-The 154 are the outstanding work, 80 of them in
-`note_with_vibrato_seq_localization`. `note_with_vibrato` shows the cost and
-the return: one test that measures what the routine actually renders took
-it from thirteen survivors to none. Expect the multi-vibrato routines to
-want the same treatment.
+The bounded pass through `note_with_vibrato_seq_localization` reviewed its
+80 survivors. Tests now measure rendered pitch, waveform changes, Doppler
+shift, geometric gain and interaural delay, including short and fractional
+segments. The pass corrected inconsistent vibrato sample counts, a
+one-sample glide that corrupted the remaining phase, and a finished path
+that held gain just before its destination. It also added clear refusals
+for invalid pitch endpoints and unrenderable movement durations, and made
+documented array-like waveform tables work.
+
+The routine now detects **521 of 523 mutations**. The two accepted
+survivors change diagnostic decoration or choose an equivalent padding
+branch at zero interaural delay. The full oscillator area detects
+**1,350 of 1,426**, including the same four known `trill` timeouts.
+`MUTATION_AUDIT.md` records the exact snapshot and survivor IDs.
+
+The reference fixture is unchanged. `D_` now explicitly accounts for the
+four surplus samples the reference creates and for its pre-destination
+tail gain; the existing phase-comparison bound remains intact.
+
+Validation: **3,801 passed, nine skipped**, with 100% line and branch
+coverage. Ruff, mypy, strict Sphinx, all 13 runnable examples and the
+installed-wheel checks pass. Live MASS reconciliation remains 24 exact,
+seven explained divergences and four broken reference routines. The
+assessment figures and changelog are current; these are unreleased changes.
+
+## Next: the other oscillator routines
+
+The other 74 survivors remain outside the completed localization pass.
+Start with the 18 in `note_with_vibratos_glissandos`, then the 14 in
+`note_with_doppler`. The former still has the analogous fractional-duration
+and short-glide expressions; this pass did not change that routine or close
+its audit.
 
 Two things the three areas have taught, worth carrying into the next one:
 

@@ -82,6 +82,8 @@ class Case:
     seed: int | None = None
     #: Largest difference the divergence accounts for.  None is unbounded.
     bound: float | None = None
+    #: A documented comparison for intentional changes to sample timing.
+    compare: Callable | None = None
     result: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -101,6 +103,72 @@ SEQ_NU = ((2, 1, 5), (4, 3, 7, 10, 3))
 SEQ_ALPHA = ((1, 1), (1, 1, 1), (1, 1, 1, 1, 1))
 SEQ_D_LOC = SEQ_D + ((0.012, 0.016, 0.006),)
 SEQ_ALPHA_LOC = SEQ_ALPHA + ((1, 1, 1),)
+SEQ_X = (-10, 10, 5, 3)
+SEQ_Y = (1, 1, 0.1, 0.1)
+
+
+def compare_localized_sequence(reference, package, render):
+    """Account for D_'s duration rounding and final-position gain fixes.
+
+    Keep the original render and fixture intact. Normalizing every duration
+    to its floored sample count must reproduce the entire original render
+    exactly: the oscillator depends on these counts, not the remainders.
+    A supplementary render gives each vibrato the reference's old number
+    of samples, then restores its old tail gain explicitly. Only that
+    controlled comparison may use the existing one-table-step phase bound;
+    the original shapes and unchanged prefix must also agree.
+    """
+    floors = [[int(FS * d) for d in row] for row in SEQ_D_LOC]
+    legacy = [floors[0]] + [
+        [int(np.ceil(FS * d)) for d in row] for row in SEQ_D_LOC[1:-1]
+    ] + [floors[-1]]
+    ears = np.array([-0.215 / 2, 0.215 / 2])
+    initial_distance = np.hypot(SEQ_X[0] - ears, SEQ_Y[0])
+    delay = int((initial_distance[0] - initial_distance[1]) * FS / 343.42)
+    expected_shapes = ((2, max(map(sum, legacy)) + abs(delay)),
+                       (2, max(map(sum, floors)) + abs(delay)))
+    if (reference.shape, package.shape) != expected_shapes:
+        raise ValueError(f'D_ expected reference/package shapes '
+                         f'{expected_shapes}, got '
+                         f'{(reference.shape, package.shape)}')
+    if not (np.isfinite(reference).all() and np.isfinite(package).all()):
+        raise ValueError('D_ reference/package render must be finite')
+
+    # Round upward by one ulp so converting back with int retains the
+    # requested count even when count / FS is not exactly representable.
+    canonical_durations = [
+        [np.nextafter(count / FS, np.inf) for count in row]
+        for row in floors
+    ]
+    canonical = np.asarray(render(canonical_durations), dtype=float)
+    if canonical.shape != package.shape:
+        raise ValueError('D_ floor-normalized render has the wrong shape')
+    if not np.isfinite(canonical).all():
+        raise ValueError('D_ floor-normalized render must be finite')
+    if not np.array_equal(package, canonical):
+        raise ValueError('D_ original render differs from the complete '
+                         'floor-normalized render')
+
+    durations = lists(SEQ_D_LOC)
+    for i, row in enumerate(legacy[1:-1], 1):
+        durations[i] = [np.nextafter(count / FS, np.inf) for count in row]
+    aligned = np.asarray(render(durations), dtype=float)
+    if aligned.shape != reference.shape:
+        raise ValueError('D_ duration-aligned render has the wrong shape')
+    if not np.isfinite(aligned).all():
+        raise ValueError('D_ duration-aligned render must be finite')
+    final_count = floors[-1][-1]
+    last_x = SEQ_X[-1] + (SEQ_X[-2] - SEQ_X[-1]) / final_count
+    last_y = SEQ_Y[-1] + (SEQ_Y[-2] - SEQ_Y[-1]) / final_count
+    old_distance = np.hypot(last_x - ears, last_y)
+    final_distance = np.hypot(SEQ_X[-1] - ears, SEQ_Y[-1])
+    for channel, offset in enumerate((max(delay, 0), max(-delay, 0))):
+        aligned[channel, sum(floors[-1]) + offset:] *= (
+            final_distance[channel] / old_distance[channel])
+    prefix = min(row[0] for row in floors[1:-1])
+    return max(float(np.max(np.abs(aligned - reference))),
+               float(np.max(np.abs(package[:, :prefix]
+                                   - reference[:, :prefix]))))
 
 
 def lists(seq):
@@ -123,6 +191,13 @@ def build_cases(ns: dict) -> list[Case]:
     # The tables are compared as cases in their own right, at the end.
     def seq_tables():
         return ((Tr, Tr), (S, Tr, S), (S,) * 5)
+
+    def localized_sequence(durations=SEQ_D_LOC):
+        return music.note_with_vibrato_seq_localization(
+            freqs=SEQ_F, durations=durations, vibratos_freqs=SEQ_FV,
+            max_pitch_devs=SEQ_NU, alpha=SEQ_ALPHA_LOC,
+            x=SEQ_X, y=SEQ_Y, method=('lin', 'exp', 'lin'),
+            waveform_tables=seq_tables(), sample_rate=FS)
 
     return [
         # ---- normalisation ------------------------------------------------
@@ -309,19 +384,22 @@ def build_cases(ns: dict) -> list[Case]:
                               alpha=lists(SEQ_ALPHA_LOC), x=[-10, 10, 5, 3],
                               y=[1, 1, 0.1, 0.1], method=['lin', 'exp', 'lin'],
                               tab=lists(seq_tables()), fs=FS),
-             lambda: music.note_with_vibrato_seq_localization(
-                 freqs=SEQ_F, durations=SEQ_D_LOC, vibratos_freqs=SEQ_FV,
-                 max_pitch_devs=SEQ_NU, alpha=SEQ_ALPHA_LOC,
-                 x=(-10, 10, 5, 3), y=(1, 1, 0.1, 0.1),
-                 method=('lin', 'exp', 'lin'),
-                 waveform_tables=seq_tables(), sample_rate=FS),
+             localized_sequence,
              expect=DIVERGENT, bound=2.5e-4,
-             reason='the package folds the running phase into one table '
-                    'period as it goes rather than accumulating it with '
-                    'cumsum, so the two round to different table indexes at a '
-                    'boundary; the difference is bounded by one step of the '
-                    'table and does not grow with the length of the render '
-                    '(issue #102)'),
+             compare=lambda a, b: compare_localized_sequence(
+                 a, b, localized_sequence),
+             reason='vibrato durations now floor to whole samples, like '
+                    'pitch and position durations: the original render is '
+                    '(2, 1613), versus the reference\'s (2, 1617); a '
+                    'continuing note also holds gain at the final position, '
+                    'not one sample before it. The reported amplitude '
+                    'difference compares a supplementary render with the '
+                    'reference\'s duration counts and tail gain restored, '
+                    'and the original unchanged prefix; it retains the '
+                    'one-table-step phase bound from issue #102. The '
+                    'complete original render must also exactly match a '
+                    'render with all durations normalized to their '
+                    'floored sample counts'),
         # ---- filters ------------------------------------------------------
         Case('FIR', 'fir',
              lambda: ns['FIR'](samples=np.array([1.0, 0.5, 0.25]),
@@ -401,14 +479,23 @@ def run(case: Case) -> dict:
         out['status'] = 'package-error'
         return out
     a, b = out['reference'], out['package']
-    if a.shape != b.shape:
+    if case.compare is not None:
+        out['shapes'] = (a.shape, b.shape)
+        try:
+            delta = case.compare(a, b)
+        except ValueError as exc:
+            out['status'] = DIVERGENT
+            out['comparison_error'] = str(exc)
+            return out
+    elif a.shape != b.shape:
         out['status'] = DIVERGENT
         out['delta'] = float('nan')
         out['shapes'] = (a.shape, b.shape)
         return out
-    delta = float(np.max(np.abs(a - b))) if a.size else 0.0
+    else:
+        delta = float(np.max(np.abs(a - b))) if a.size else 0.0
     out['delta'] = delta
-    out['status'] = EXACT if delta == 0.0 else DIVERGENT
+    out['status'] = EXACT if delta == 0.0 and a.shape == b.shape else DIVERGENT
     if case.bound is not None and delta > case.bound:
         out['over_bound'] = case.bound
     return out
@@ -464,10 +551,12 @@ def register_rows(cases: list[Case]) -> list[dict]:
             'expect': case.expect,
             'status': r['status'],
             'delta': r.get('delta'),
-            'error': r.get('reference_error') or r.get('package_error') or '',
+            'error': (r.get('reference_error') or r.get('package_error')
+                      or r.get('comparison_error') or ''),
             'reason': case.reason,
             'notes': case.notes,
-            'agrees': r['status'] == case.expect and 'over_bound' not in r,
+            'agrees': (r['status'] == case.expect and 'over_bound' not in r
+                       and 'comparison_error' not in r),
         })
     return rows
 

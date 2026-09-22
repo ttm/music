@@ -639,11 +639,13 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
 
     Parameters
     ----------
-    freqs : list of lists of scalars
-        The frequencies of the note at each end of the transitions.
+    freqs : sequence of scalars
+        Positive frequencies at each end of the pitch transitions.
     durations : list of lists of scalars
         The durations of the pitch transitions and then of the
-        vibratos and then of the position transitions.
+        vibratos and then of the position transitions, in seconds. Each
+        segment uses ``int(sample_rate * duration)`` samples. A position
+        transition must span at least one sample to define its velocity.
     vibratos_freqs :  list of lists of scalars
         The frequencies of each vibrato.
     max_pitch_devs : list of lists of scalars
@@ -651,9 +653,10 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     alpha : list of lists of scalars
         Indexes to distort the pitch deviations of the transitions
         and the vibratos.
-    x : list of lists of scalars
+        A zero vibrato index selects the undistorted oscillation.
+    x : sequence of scalars
         The x positions at each end of the transitions.
-    y : list of lists of scalars
+    y : sequence of scalars
         The y positions at each end of the transitions.
     method : list of strings
         An entry for each transition of location: 'exp' for
@@ -672,8 +675,8 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         The air temperature in Celsius.
         (Used to calculate the acoustic velocity.)
     number_of_samples : scalar
-        The number of samples of the sound.
-        If supplied, d is not used.
+        If nonzero, truncate or zero-pad the complete render to this
+        length, including the initial interaural delay.
     sample_rate : scalar
         The sample rate.
 
@@ -681,6 +684,12 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     -------
     s : ndarray
         A numpy array where each value is a PCM sample of the sound.
+
+    Raises
+    ------
+    ValueError
+        If a pitch endpoint is not positive or a position transition
+        spans fewer than one sample.
 
     See Also
     --------
@@ -705,6 +714,12 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     Check the functions above for more information about how each feature of
     this function is implemented.
 
+    A one-sample pitch transition uses its starting frequency for a
+    positive curve index; an index of zero jumps directly to the endpoint.
+    After the pitch sequence ends its final frequency is held; completed
+    vibratos contribute no further modulation. After movement ends the
+    source stays at its final coordinates, with zero radial velocity.
+
     Cite the following article whenever you use this function.
 
     References
@@ -713,16 +728,26 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    waveform_tables = tuple(tuple(np.asarray(table, dtype=float)
+                                  for table in row)
+                            for row in waveform_tables)
+    if any(int(sample_rate * dur) < 1 for dur in durations[-1]):
+        raise ValueError(
+            "each location duration must span at least one sample")
+
     # pitch transition contributions
     pitch_parts = []
     for i, dur in enumerate(durations[0]):
         lambda_ = int(sample_rate * dur)
         samples = np.arange(lambda_)
         f1, f2 = freqs[i:i + 2]
+        _require_a_ratio(f1, f2)
+        # A single sample sits at the start; it has no interval to divide by.
+        intervals = max(lambda_ - 1, 1)
         if alpha[0][i] != 1:
-            f = f1 * (f2 / f1) ** ((samples / (lambda_ - 1)) ** alpha[0][i])
+            f = f1 * (f2 / f1) ** ((samples / intervals) ** alpha[0][i])
         else:
-            f = f1 * (f2 / f1) ** (samples / (lambda_ - 1))
+            f = f1 * (f2 / f1) ** (samples / intervals)
         pitch_parts.append(f)
     ft = np.hstack(pitch_parts)
 
@@ -732,7 +757,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     for i, vib in enumerate(durations[1:-1]):
         segments = []
         for j, dur in enumerate(vib):
-            samples = np.arange(dur * sample_rate)
+            samples = np.arange(int(dur * sample_rate))
             lv = len(waveform_tables[i + 1][j])
             gammav = (samples * vibratos_freqs[i][j] * lv /
                       sample_rate).astype(np.int64)  # LUT indexes
@@ -851,7 +876,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         s_.append(s)
         s = np.hstack(s_)
         s[:len(iid_a)] *= iid_a
-        s[len(iid_a):] *= iid_a[-1]
+        s[len(iid_a):] *= iid[-1]
     else:
         # left channel
         Vl = v_ + [f_[0]]
@@ -869,7 +894,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         s_.append(s)
         tl = np.hstack(s_)
         tl[:len(iid_a[0])] *= iid_a[0]
-        tl[len(iid_a[0]):] *= iid_a[0][-1]
+        tl[len(iid_a[0]):] *= iid_al[-1]
 
         # right channel
         vr = v_ + [f_[1]]
@@ -887,7 +912,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         s_.append(s)
         tr = np.hstack(s_)
         tr[:len(iid_a[1])] *= iid_a[1]
-        tr[len(iid_a[1]):] *= iid_a[1][-1]
+        tr[len(iid_a[1]):] *= iid_ar[-1]
 
         if x[0] > 0:
             tl = np.hstack((np.zeros(int(lambda_itd)), tl))

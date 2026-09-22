@@ -31,13 +31,17 @@ References
        representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 """
 
+from dataclasses import replace
+
 import numpy as np
 import pytest
 
+import music
 from music.utils import (WAVEFORM_SAWTOOTH, WAVEFORM_SINE, WAVEFORM_SQUARE,
                          WAVEFORM_TRIANGULAR)
 from tools.mass_reconcile import (DIVERGENT, EXACT, FIXTURE,
-                                  REFERENCE_BROKEN, build_cases)
+                                  REFERENCE_BROKEN, build_cases, register_rows,
+                                  run)
 
 
 @pytest.fixture(scope='module')
@@ -216,7 +220,7 @@ def test_the_exact_cases_reproduce_the_reference(cases, recorded):
     assert len(checked) == 24
 
 
-@pytest.mark.parametrize('mass_name', ['trill', 'loc_', 'D_', 'Tr', 'Sa',
+@pytest.mark.parametrize('mass_name', ['trill', 'loc_', 'Tr', 'Sa',
                                       'AD', 'ADS'])
 def test_the_divergences_stay_the_size_their_reason_accounts_for(
         cases, recorded, mass_name):
@@ -239,6 +243,138 @@ def test_the_divergences_stay_the_size_their_reason_accounts_for(
     assert delta <= case.bound, (
         f'{case.music} differs from {case.mass} by {delta:.3e}, more than the '
         f'{case.bound:.3g} its reason accounts for: {case.reason}')
+
+
+def test_localized_sequence_accounts_for_timing_and_final_gain(cases,
+                                                              recorded):
+    """The unchanged reference fixture remains a bound after both fixes.
+
+    This representative render loses exactly four surplus vibrato samples.
+    Its full waveform must exactly match a render with every duration
+    normalized to its floored sample count: fractional remainders cannot
+    affect a discrete sample clock.
+    Restoring the old counts and old tail gain in a supplementary render
+    must leave only the pre-existing phase-rounding difference. Independent
+    timing and geometric expectations live in test_seq_localization_edges
+    and test_seq_localization_spatial.
+    """
+    case = replace(next(c for c in cases if c.mass == 'D_'),
+                   reference=lambda: recorded['D_.samples'])
+    case.result = run(case)
+    assert case.result['shapes'] == ((2, 1617), (2, 1613))
+    assert FLOATING_POINT_NOISE < case.result['delta'] <= case.bound
+    assert register_rows([case])[0]['agrees']
+
+
+@pytest.mark.parametrize('defect', ['length', 'pitch', 'gain', 'tail_gain',
+                                  'nan_tail', 'infinite_tail'])
+def test_localized_sequence_comparison_rejects_rendering_regressions(
+        cases, recorded, monkeypatch, defect):
+    """Neither the explicit shape correction nor gain alignment is a bypass."""
+    original = music.note_with_vibrato_seq_localization
+
+    def broken_render(**kwargs):
+        if defect == 'pitch':
+            kwargs['freqs'] = tuple(f * 1.03 for f in kwargs['freqs'])
+        rendered = original(**kwargs)
+        if defect == 'length':
+            return rendered[..., :-1]
+        if defect == 'gain':
+            rendered *= 1.03
+        if defect == 'tail_gain':
+            rendered[..., 1550:] *= 1.03
+        if defect == 'nan_tail':
+            rendered[..., 1550:] = np.nan
+        if defect == 'infinite_tail':
+            rendered[..., 1550:] = np.inf
+        return rendered
+
+    monkeypatch.setattr(music, 'note_with_vibrato_seq_localization',
+                        broken_render)
+    case = replace(next(c for c in cases if c.mass == 'D_'),
+                   reference=lambda: recorded['D_.samples'])
+    case.result = run(case)
+    assert not register_rows([case])[0]['agrees']
+
+
+def test_localized_sequence_comparison_checks_the_entire_original_render(
+        cases, recorded):
+    """A separate, correct render cannot hide a corrupted original tail."""
+    case = next(c for c in cases if c.mass == 'D_')
+    original = case.package
+
+    def broken_render():
+        rendered = original()
+        rendered[..., 264:] = 0
+        return rendered
+
+    case = replace(case, reference=lambda: recorded['D_.samples'],
+                   package=broken_render)
+    case.result = run(case)
+    assert 'complete floor-normalized' in case.result['comparison_error']
+    assert not register_rows([case])[0]['agrees']
+
+
+def test_localized_sequence_comparison_rejects_a_changed_reference_length(
+        cases, recorded):
+    """The special comparison admits exactly the recorded timing difference."""
+    case = replace(next(c for c in cases if c.mass == 'D_'),
+                   reference=lambda: recorded['D_.samples'][..., :-1])
+    case.result = run(case)
+    assert 'comparison_error' in case.result
+    assert not register_rows([case])[0]['agrees']
+
+
+@pytest.mark.parametrize('side', ['reference', 'canonical', 'aligned'])
+def test_localized_sequence_comparison_rejects_nonfinite_comparison_samples(
+        cases, recorded, monkeypatch, side):
+    """The supplementary comparison must not turn NaN into a passing bound."""
+    reference = recorded['D_.samples'].copy()
+    original = music.note_with_vibrato_seq_localization
+    calls = 0
+
+    def broken_render(**kwargs):
+        nonlocal calls
+        calls += 1
+        rendered = original(**kwargs)
+        if calls == {'canonical': 2, 'aligned': 3}.get(side):
+            rendered[..., 1550:] = np.nan
+        return rendered
+
+    if side == 'reference':
+        reference[..., 1550:] = np.nan
+    else:
+        monkeypatch.setattr(music, 'note_with_vibrato_seq_localization',
+                            broken_render)
+    case = replace(next(c for c in cases if c.mass == 'D_'),
+                   reference=lambda: reference)
+    case.result = run(case)
+    assert 'comparison_error' in case.result
+    assert not register_rows([case])[0]['agrees']
+
+
+@pytest.mark.parametrize('side', ['canonical', 'aligned'])
+def test_localized_sequence_comparison_rejects_changed_comparison_lengths(
+        cases, recorded, monkeypatch, side):
+    """Both supplementary renders must use the documented sample clocks."""
+    original = music.note_with_vibrato_seq_localization
+    calls = 0
+
+    def broken_render(**kwargs):
+        nonlocal calls
+        calls += 1
+        rendered = original(**kwargs)
+        if calls == {'canonical': 2, 'aligned': 3}[side]:
+            return rendered[..., :-1]
+        return rendered
+
+    monkeypatch.setattr(music, 'note_with_vibrato_seq_localization',
+                        broken_render)
+    case = replace(next(c for c in cases if c.mass == 'D_'),
+                   reference=lambda: recorded['D_.samples'])
+    case.result = run(case)
+    assert 'wrong shape' in case.result['comparison_error']
+    assert not register_rows([case])[0]['agrees']
 
 
 @pytest.mark.parametrize('mass_name', ['noises', 'loc2', 'FIR', 'R'])

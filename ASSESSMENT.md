@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
-*A living record, not a point-in-time audit. Last measured **2026-09-21**,
-`music` 1.8.2: 47 modules, 12,158 LOC package + 13,933 LOC tests, 126 names
+*A living record, not a point-in-time audit. Last measured **2026-09-22**,
+`music` 1.8.2: 47 modules, 12,183 LOC package + 14,495 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,11 +59,11 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **3724 tests**, 75 s with branch coverage |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,814 stmts, 0 missed) |
+| Test suite | `pytest -q` | **3810 tests**, 9 optional skips locally |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,819 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,147 findings |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,149 findings |
 | Annotation coverage | AST scan | **101 / 210 functions (48 %)**; 63 / 94 exported (67 %) |
 | Docstring coverage | AST scan | **169 / 180 public defs (94 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
@@ -389,7 +389,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,147 findings** on `music/`, almost all
+- **The extended lint set reports 2,149 findings** on `music/`, almost all
   stylistic: 345 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their

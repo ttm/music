@@ -1,3 +1,28 @@
+## [Unreleased]
+
+### Fixed
+
+- `note_with_vibrato_seq_localization` now rounds every vibrato segment
+  down to a whole sample, as its pitch and movement segments already do.
+  Fractional sample counts previously added a sample to each segment,
+  shifting modulation boundaries and sometimes extending the note.
+- A one-sample pitch transition no longer divides by zero and corrupts
+  the rest of the note's phase. Pitch endpoints must be positive, and a
+  movement duration shorter than one sample raises `ValueError` because it
+  cannot define a velocity.
+- When movement ends before the note, its gain now corresponds to the
+  final coordinates. It previously held the distance from one sample
+  before arrival while already treating the source as stationary.
+- The localized sequence accepts list, tuple and integer waveform tables,
+  converting them to floating-point arrays before lookup and gain scaling.
+
+### Tests
+
+- Measure the localized sequence's pitch curves, independent vibratos,
+  waveform changes, Doppler shifts, interaural delays and distance gain.
+  The oscillator mutation audit includes these tests; its remaining
+  survivors and scope are recorded in `MUTATION_AUDIT.md`.
+
 ## [1.8.2] - 2026-09-21
 
 ### Fixed

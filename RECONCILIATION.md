@@ -1,6 +1,6 @@
 # The MASS reconciliation
 
-*Run on **2026-09-04** against [ttm/mass](https://github.com/ttm/mass) at
+*Run on **2026-09-22** against [ttm/mass](https://github.com/ttm/mass) at
 `e516b08`. The register it produced is re-checked against `music` 1.8.2
 on every push.*
 
@@ -38,6 +38,23 @@ reading the recorded outputs rather than the reference itself, and
 `tools/assessment_figures.py` checks the version stamped at the top, so this
 file cannot go on naming a release the package has left behind.
 
+The `D_` row retains its original arguments and recorded reference samples.
+Its vibrato segments formerly rounded up fractional sample counts while
+pitch and location segments rounded down. Applying the same floor to all
+three changes this case from 1,617 to 1,613 samples per ear, including the
+27-sample interaural delay. Its final held gain also now uses the destination
+coordinates. The row checks those exact lengths and requires the complete
+original waveform to equal a render with every duration explicitly rounded
+to its whole-sample count. It then separately renders the reference's old
+vibrato counts and restores its old tail gain. The reported amplitude
+difference belongs to that controlled comparison and the unchanged initial
+samples, under the original 0.00025 phase-rounding bound; it is not a
+subtraction of unequal-length arrays. Tests reject additional length,
+pitch, gain and nonfinite errors, including corruption confined to the
+original render. The independent timing and spatial tests in
+`tests/test_seq_localization_edges.py` and
+`tests/test_seq_localization_spatial.py` establish the corrected behavior.
+
 ## The reference is GPL-3; this package is MIT
 
 So the reference is never vendored here. `tools/mass_reference.py` reads
@@ -63,7 +80,9 @@ the vibrato before it, and each appended its own concatenation back into
 the list it was concatenating, so the frequency contour was multiplied by
 every segment *and* by their joins. Both routines returned an array of
 plausible length, which is why nothing caught it: 99.9 % of the samples
-were wrong. With the accumulators separated, both agree with the reference.
+were wrong. Separating the accumulators restored agreement; the later
+timing, final-position gain and phase corrections account for the localized
+routine's current divergence below.
 
 Nine reference defects, which the package had already fixed or worked
 around, and which are now on the record rather than implicit in the code.
@@ -101,7 +120,7 @@ does, and the test asserts it.
 | `loc2` | `localize_linear` | reference does not run | the reference declares dist1 and dist2 and its body reads an undefined dist, so loc2 raises NameError on every call and has never run — `NameError` |
 | `loc_` | `localize2` | divergent | four corrections the package carries and documents in place: the FFT bin spacing read 2*fs/Lambda rather than fs/Lambda, so every frequency was an octave high; the interaural delay was applied with the sign that advances the far ear rather than delaying it; the delay was wrapped into one period of f before becoming a phase, which is redundant and wrapped the two branches inconsistently; and the reference prints rather than raises on an unknown method. The reference's brute branch additionally builds n.zeros((2, maxsize)) from a float and raises TypeError; max&nbsp;\|Δ\|&nbsp;=&nbsp;1.04 |
 | `D` | `note_with_doppler` | exact | sample-exact agreement |
-| `D_` | `note_with_vibrato_seq_localization` | divergent | the package folds the running phase into one table period as it goes rather than accumulating it with cumsum, so the two round to different table indexes at a boundary; the difference is bounded by one step of the table and does not grow with the length of the render (issue #102); max&nbsp;\|Δ\|&nbsp;=&nbsp;0.000244 |
+| `D_` | `note_with_vibrato_seq_localization` | divergent | vibrato durations now floor to whole samples, like pitch and position durations: the original render is (2, 1613), versus the reference's (2, 1617); a continuing note also holds gain at the final position, not one sample before it. The reported amplitude difference compares a supplementary render with the reference's duration counts and tail gain restored, and the original unchanged prefix; it retains the one-table-step phase bound from issue #102. The complete original render must also exactly match a render with all durations normalized to their floored sample counts; max&nbsp;\|Δ\|&nbsp;=&nbsp;0.000244 |
 | `FIR` | `fir` | reference does not run | the reference's convolve recurses into itself in both branches and never terminates, so FIR raises RecursionError for every input; its frequency-domain branch also builds a symmetric kernel and then discards it, convolving with the raw samples either way — `RecursionError` |
 | `IIR` | `iir` | exact | sample-exact agreement (the reference multiplies its coefficients elementwise, so it requires arrays where the package accepts lists) |
 | `R` | `reverb` | reference does not run | the reference reads an undefined decay1 where its own signature declares decay, so R raises NameError on every call and has never run — `NameError` |

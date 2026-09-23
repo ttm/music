@@ -36,10 +36,11 @@ import urllib.request
 
 if __package__:
     from .mass_reference import ReferenceNotFound, locate
-    from .zenodo_sync import changelog_section, ssl_context
+    from .zenodo_sync import (changelog_section, ssl_context,
+                              unheaded_entries)
 else:
     from mass_reference import ReferenceNotFound, locate
-    from zenodo_sync import changelog_section, ssl_context
+    from zenodo_sync import changelog_section, ssl_context, unheaded_entries
 
 ROOT = pathlib.Path(__file__).parent.parent
 
@@ -89,6 +90,23 @@ def check_versions_agree(version):
         raise ReleaseError(
             f"CHANGELOG.md has no section for {version}")
     step(f"pyproject, CITATION.cff and CHANGELOG all say {version}")
+
+
+def check_release_notes(version):
+    """Every entry the Zenodo record will summarise has a headline.
+
+    The record is synced after publication, which is too late to find
+    that its summary is empty: at 1.8.3 it was caught only by reading the
+    dry run.
+    """
+    notes = changelog_section(version, ROOT / "CHANGELOG.md") or ""
+    missing = unheaded_entries(notes)
+    if missing:
+        raise ReleaseError(
+            f"{len(missing)} CHANGELOG.md entries for {version} open with "
+            "no bold headline, so the Zenodo summary would drop them: "
+            + "; ".join(repr(entry[:60]) for entry in missing))
+    step("every changelog entry opens with a headline")
 
 
 def check_repository_state(version):
@@ -290,6 +308,7 @@ def main(argv=None):
     print(f"music {version}\n")
 
     check_versions_agree(version)
+    check_release_notes(version)
     if args.action != "verify":
         check_repository_state(version)
         check_not_on_pypi(version)

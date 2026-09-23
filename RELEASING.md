@@ -9,7 +9,8 @@ python tools/release.py verify     # verify/build during development too
 ```
 
 `check` refuses to go on unless the version in `pyproject.toml`,
-`CITATION.cff` and `CHANGELOG.md` agree, master is clean and in sync with
+`CITATION.cff` and `CHANGELOG.md` agree, every entry in the version's
+changelog section opens with a bold headline, master is clean and in sync with
 origin, the tag does not exist, PyPI does not already have that version,
 lint, types, tests, docs and examples all pass, `ASSESSMENT.md` still
 describes the package it ships with, and the source distribution passes
@@ -105,7 +106,10 @@ which is what triggers Zenodo.
 Before `check` or `publish`, bump `version` in `pyproject.toml` and in
 `CITATION.cff`,
 set `date-released` in `CITATION.cff`, and move the changelog's entries under
-the new heading. Then run `python tools/assessment_figures.py --write`,
+the new heading. Each entry opens with a bold headline, `- **Like this.**`:
+the Zenodo record summarises a release by those headlines alone, so an
+entry without one would be missing from it. A test checks the newest
+section on every push, and the gate checks the release's. Then run `python tools/assessment_figures.py --write`,
 which carries the bump into the version stamped at the top of
 `ASSESSMENT.md`, `RECONCILIATION.md` and `DISCREPANCIES.md` and re-measures
 the figures while it is there. The script will tell you if you missed one:

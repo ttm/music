@@ -258,6 +258,25 @@ def summarise(notes, repository="https://github.com/ttm/music"):
             f"CHANGELOG.md).")
 
 
+def unheaded_entries(notes):
+    """The entries `summarise` would drop, for opening with no headline.
+
+    The summary keeps each entry's bolded headline and nothing else, so an
+    entry written without one leaves the record without a word. Four of
+    the eight at 1.8.1 did, and all eleven at 1.8.3 would have, leaving
+    two empty section titles and a link. A nested bullet is detail under
+    an entry and the upgrade note is kept whole, so neither needs one.
+    """
+    missing, whole = [], False
+    for line in notes.splitlines():
+        if line.startswith("### "):
+            whole = "upgrad" in line.lower()
+        elif (line.startswith("- ") and not whole
+              and not line.startswith("- **")):
+            missing.append(line[2:].strip())
+    return missing
+
+
 def changelog_section(version, path=None):
     """The changelog's entry for ``version``, as markdown.
 
@@ -519,6 +538,13 @@ def main(argv=None):
     if not args.no_release_notes:
         version = record_version(record_id)
         notes = changelog_section(version) if version else None
+    missing = unheaded_entries(notes) if notes else []
+    if missing:
+        raise SyncError(
+            f"{len(missing)} changelog entries for {version} open with no "
+            "bold headline, and the summary keeps only headlines: "
+            + "; ".join(repr(entry[:60]) for entry in missing)
+            + ". Give each one a headline, or pass --no-release-notes.")
 
     metadata = build_metadata(config, with_description=args.description,
                               release_notes=notes)

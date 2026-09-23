@@ -12,6 +12,7 @@ check statically what the validator would have said.
 
 import json
 import pathlib
+import re
 
 import pytest
 
@@ -142,3 +143,40 @@ def test_summarising_a_section_with_no_bullets_says_nothing_extra():
     summary = summarise("### Added\n\nProse with no entries in it.\n")
     assert "Prose with no entries" not in summary
     assert "CHANGELOG.md" in summary
+
+
+def test_an_entry_without_a_headline_is_reported_rather_than_dropped():
+    """The summary keeps headlines only, so an entry without one vanished
+    from the record without a word: four of eight at 1.8.1, and all
+    eleven at 1.8.3 until the dry run was read."""
+    from tools.zenodo_sync import unheaded_entries
+
+    notes = (
+        "### Note for anyone upgrading\n"
+        "- Kept whole, so it needs no headline.\n"
+        "\n"
+        "### Fixed\n"
+        "- **Headed.** And explained.\n"
+        "  - A nested detail, which needs none.\n"
+        "- Unheaded, and would be dropped.\n"
+    )
+    assert unheaded_entries(notes) == ["Unheaded, and would be dropped."]
+
+
+def test_the_newest_changelog_section_gives_every_entry_a_headline():
+    """Checked on every push rather than at release, where it is late."""
+    from tools.zenodo_sync import changelog_section, unheaded_entries
+
+    changelog = (ZENODO.parent / "CHANGELOG.md").read_text()
+    newest = re.search(r"^## \[([^\]]+)\]", changelog, re.MULTILINE)
+    assert unheaded_entries(changelog_section(newest.group(1))) == []
+
+
+def test_the_sync_refuses_to_send_a_summary_that_drops_entries(monkeypatch):
+    """1.8.1's section has four entries without headlines."""
+    from tools import zenodo_sync
+
+    monkeypatch.setattr(zenodo_sync, "latest_record_id", lambda: 1)
+    monkeypatch.setattr(zenodo_sync, "record_version", lambda _: "v1.8.1")
+    with pytest.raises(zenodo_sync.SyncError, match="4 changelog entries"):
+        zenodo_sync.main([])

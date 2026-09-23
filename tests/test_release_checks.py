@@ -129,3 +129,15 @@ def test_failed_commands_preserve_the_report_alongside_warnings(monkeypatch):
         release.run('check')
     assert 'wrong scientific result' in str(error.value)
     assert 'unrelated warning' in str(error.value)
+
+
+def test_an_entry_without_a_headline_stops_before_the_gate(checkout,
+                                                            monkeypatch):
+    """The Zenodo summary is written after publication; its input is not."""
+    (checkout / 'CHANGELOG.md').write_text(
+        '## [1.8.1] - 2026-09-16\n\n### Fixed\n\n'
+        '- **Headed.** Explained.\n- Not headed.\n')
+    monkeypatch.setattr(release, 'run_gate', forbid)
+    monkeypatch.setattr(release, 'build', forbid)
+    with pytest.raises(release.ReleaseError, match="'Not headed.'"):
+        release.main(['verify'])

@@ -155,6 +155,34 @@ AREAS = {
         ),
         'dataclass_adapter': None,
     },
+    # Interaural time and intensity cues: fixed, per-frequency, moving
+    # and convolved. Selected from `pytest --cov-context=test`.
+    'localization': {
+        'sources': (
+            'music/core/filters/localization.py',
+        ),
+        'tests': (
+            'tests/test_localize_linear.py',
+            'tests/test_localization_audit.py',
+            'tests/test_hrtf.py',
+            'tests/test_hrtf_dataset.py',
+            'tests/test_fidelity.py',
+            'tests/test_degenerate.py',
+            'tests/test_branches.py',
+            'tests/test_remaining_paths.py',
+            'tests/test_article.py',
+            'tests/test_mass_reconciliation.py',
+            'tests/test_audio_formats.py',
+            'tests/test_filters.py',
+            'tests/test_properties.py',
+            'tests/test_public_api.py',
+            'tests/test_sequencer.py',
+            'tests/test_stimulation.py',
+            'tests/test_stimuli_audit.py',
+            'tests/test_tutorial.py',
+        ),
+        'dataclass_adapter': None,
+    },
 }
 
 

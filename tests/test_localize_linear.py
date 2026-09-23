@@ -218,4 +218,8 @@ def test_the_output_stays_continuous_as_the_source_moves():
     """A delay that jumped by whole samples would step audibly."""
     signal = music.note(220, 1.0)
     out = localize_linear(signal, theta1=0, theta2=180, dist=1.0)
-    assert np.abs(np.diff(out[0])).max() <= 3 * np.abs(np.diff(signal)).max()
+    # From once the sound has reached both ears. Before that the far ear
+    # is silent, and its onset is the one the near ear has at sample 0: a
+    # step, for a table that starts at -1, but not one the motion made.
+    arrived = out[0][64:]
+    assert np.abs(np.diff(arrived)).max() <= 3 * np.abs(np.diff(signal)).max()

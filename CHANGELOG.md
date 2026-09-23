@@ -16,6 +16,24 @@
 - **`spatial_motion` refuses a sound that is not mono,** with a message
   saying so rather than one about broadcasting, and no longer renders
   two seconds of tone to answer a zero duration with nothing.
+- **The far ear hears nothing before the sound reaches it.** The
+  fractional delay behind `localize_linear` and `spatial_motion` read the
+  first sample for every position before the start, so the far ear held
+  it for the whole interaural delay: a click at the start arrived as a
+  plateau some 27 samples long. Outside the signal it now reads silence,
+  as `localize` pads.
+- **A source on an ear is heard by that ear alone.** At zero distance the
+  intensity ratio was 0 / 0, and `localize_linear` and `spatial_motion`
+  returned NaN for that channel. Its limit, which `localize` already
+  renders, is the near ear in full and the far one silent.
+- **`localize2`'s brute-force method resynthesizes each partial in
+  phase.** The FFT's angles are a cosine's and it read a sine table, so
+  every partial came back a quarter cycle early: a sine as minus a
+  cosine, and a sound of several partials as a different waveform. Its
+  output is now longer than the input by the largest interaural delay,
+  rather than by some thirty samples more.
+- **`localize` accepts a list,** as documented, rather than raising
+  `TypeError` when scaling it by the intensity ratio.
 
 ### Tests
 
@@ -24,6 +42,20 @@
   gate and ramp sample by sample, the band and rate of modulated noise,
   the direction of a frequency sweep, the orbit's azimuth through several
   cycles, and every routine's declared defaults.
+- **The localization filters have a mutation audit.** The new
+  `localization` area checks each routine's delays and gains against
+  geometry computed independently: the far ear of a ramp, exact tones
+  through both `localize2` methods either side of the 4 kHz crossover,
+  the fractional delay on a parabola, and the energy `brute` keeps.
+
+### Documentation
+
+- **`localize` and `localize2` say what a zero angle means.** Zero reads
+  as not supplied and selects `x` and `y`, so a source at zero degrees
+  is given by its coordinates. `localize` now states the speed of sound
+  it uses (331.3 m/s at 0 °C, not 331.2) and a diffraction delay of
+  0.7 ms rather than 0.7 s, and `localize_hrtf` no longer claims to use
+  its `sample_rate`.
 
 ### Maintenance
 

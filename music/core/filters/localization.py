@@ -17,11 +17,12 @@ def localize(sonic_vector=None, theta=0, distance=0, x=.1, y=.01,
     Parameters
     ----------
     sonic_vector : array_like
-        An one dimensional with the PCM samples of the sound.
+        A one-dimensional array with the PCM samples of the sound.
     theta : scalar
         The azimuthal angle of the position in degrees. If theta is supplied,
         x and y are ignored and dist must also be supplied for the sound
-        localization to have effect.
+        localization to have effect. Zero reads as not supplied, so a
+        source at zero degrees is given as ``x=distance, y=0``.
     distance : scalar
         The distance of the source from the listener in meters.
     x : scalar
@@ -74,14 +75,14 @@ def localize(sonic_vector=None, theta=0, distance=0, x=.1, y=.01,
     When az = tan^{-1}(y/x) lies in the 'cone of confusion', many values of x
     and y have the same ITD and IID [1]. Furthermore, lateral sources have the
     low frequencies diffracted and reach the opposite ear with a delay of
-    ~0.7s [1]. The height of a source and if it is in front or behind a
+    ~0.7 ms [1]. The height of a source and if it is in front or behind a
     listener are cues given by the HRTF [1]. These issues are not taken into
     account in this function.
 
     The value of zeta is ~0.215 for adult humans [1].
 
     This implementation assumes that the speed of sound (in air) is
-    s = 331.2 + 0.606 * temp.
+    s = 331.3 + 0.606 * temp.
 
     Cite the following article whenever you use this function.
 
@@ -93,6 +94,8 @@ def localize(sonic_vector=None, theta=0, distance=0, x=.1, y=.01,
     """
     if sonic_vector is None:
         sonic_vector = note()
+    # A list could not be scaled by the intensity ratio below.
+    sonic_vector = np.asarray(sonic_vector, dtype=np.float64)
     if theta:
         theta = 2 * np.pi * theta / 360
         x = np.cos(theta) * distance
@@ -102,16 +105,18 @@ def localize(sonic_vector=None, theta=0, distance=0, x=.1, y=.01,
     dr = np.sqrt((x - zeta / 2) ** 2 + y ** 2)  # distance from right ear
     dl = np.sqrt((x + zeta / 2) ** 2 + y ** 2)  # distance from left ear
 
-    iid_a = dr / dl  # proportion of amplitudes from left to right ear
     itd = (dl - dr) / speed  # seconds
     lambda_itd = int(itd * sample_rate)
 
+    # The far ear is scaled by the nearer distance over its own, each ratio
+    # on its own side: computed once as dr / dl and inverted for the left,
+    # it divided by zero for a source on the left ear.
     if x > 0:
-        tl = np.hstack((np.zeros(lambda_itd), iid_a * sonic_vector))
+        tl = np.hstack((np.zeros(lambda_itd), dr / dl * sonic_vector))
         tr = np.hstack((sonic_vector, np.zeros(lambda_itd)))
     else:
         tl = np.hstack((sonic_vector, np.zeros(-lambda_itd)))
-        tr = np.hstack((np.zeros(-lambda_itd), sonic_vector * (1 / iid_a)))
+        tr = np.hstack((np.zeros(-lambda_itd), sonic_vector * (dl / dr)))
     s = np.vstack((tl, tr))
     return s
 
@@ -130,8 +135,8 @@ def _delayed(signal, delay):
     signal : ndarray
         The samples to read from.
     delay : ndarray
-        How far back to read at each output sample, in samples. Values
-        beyond either end read the nearest sample.
+        How far back to read at each output sample, in samples. Before
+        its first sample and after its last the signal is silent.
 
     Returns
     -------
@@ -143,7 +148,13 @@ def _delayed(signal, delay):
     fraction = position - index
 
     def tap(offset):
-        return signal[np.clip(index + offset, 0, len(signal) - 1)]
+        # Silence outside the signal: the far ear hears nothing until the
+        # sound reaches it. Reading the nearest sample there held the
+        # first one for the whole delay, so a click at the start reached
+        # the far ear as a plateau some 27 samples long.
+        at = index + offset
+        inside = (at >= 0) & (at < len(signal))
+        return np.where(inside, signal[np.clip(at, 0, len(signal) - 1)], 0.)
 
     before, at, after, beyond = tap(-1), tap(0), tap(1), tap(2)
     return at + .5 * fraction * (
@@ -197,9 +208,13 @@ def _localize_positions(sonic_vector, xpos, ypos, zeta, air_temp,
     nearest = np.minimum(dist_l, dist_r)
 
     # IID: the nearer ear is heard in full, the farther one attenuated by
-    # how much farther it is.
-    iid_l = nearest / dist_l
-    iid_r = nearest / dist_r
+    # how much farther it is. A source on an ear is at distance zero from
+    # it, where the ratio is 0 / 0 and came out NaN; its limit is one, the
+    # nearer ear in full, and `localize` renders that position the same.
+    iid_l = np.divide(nearest, dist_l, out=np.ones_like(dist_l),
+                      where=dist_l > 0)
+    iid_r = np.divide(nearest, dist_r, out=np.ones_like(dist_r),
+                      where=dist_r > 0)
 
     # ITD: likewise, only the extra distance to the farther ear becomes a
     # delay, so the nearer ear is undelayed and the sound stays in step
@@ -335,11 +350,12 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
     Parameters
     ----------
     sonic_vector : array_like
-        An one dimensional with the PCM samples of the sound.
+        A one-dimensional array with the PCM samples of the sound.
     theta : scalar
         The azimuthal angle of the position in degrees.  If theta is supplied,
         x and y are ignored and dist must also be supplied for the sound
-        localization to have effect.
+        localization to have effect. Zero, or None, reads as not supplied
+        and selects ``x`` and ``y``, which is how a position is given.
     x : scalar
         The lateral component of the position in meters.
     y : scalar
@@ -352,8 +368,10 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
     method : string
         Set to "ifft" for a working method that changes the fourier spectral
         coefficients. Set to "brute" for using an implementation that
-        sinthesizes each sinusoid in the fourier spectrum separately
-        (currently not giving good results for all sounds).
+        synthesizes each sinusoid in the fourier spectrum separately, from
+        the bins holding all but the last 1% of the energy, counted from
+        the lowest frequency up; it is slow, and its output is longer than
+        the input by the largest interaural delay.
     sample_rate : integer
         The sample rate.
 
@@ -466,17 +484,13 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
         p = 0.01
         cutoff = energy.max() * (1 - p)
         ncoeffs = min(int((energy < cutoff).sum()) + 1, max_coef)
-        maxfreq = ncoeffs * df
-        if maxfreq <= 4000:
-            foo = .3
-        else:
-            foo = .2
-        # A sample count, so a whole number of them: it sizes the buffers
-        # below, all of which np.zeros refuses to build from a float.
-        maxsize = int(np.ceil(
-            len(sonic_vector)
-            + sample_rate * foo * np.sin(abs(theta_)) / speed
-        ))
+        # The input and the longest delay any bin receives, which is the
+        # 0.3 coefficient every bin up to 4 kHz takes. This chose 0.3 or
+        # 0.2 by the highest bin kept, and left out `zeta`: the buffer ran
+        # some thirty samples past any delay, and only the missing factor
+        # kept the 0.2 case from being shorter than the delays it held.
+        maxsize = len(sonic_vector) + abs(int(
+            sample_rate * .3 * zeta * np.sin(abs(theta_)) / speed))
         # Annotated without a shape: it is rebuilt by np.vstack further
         # down, and numpy's stubs narrow np.zeros((2, n)) to a 2-tuple shape
         # that the vstack result does not match.
@@ -548,10 +562,15 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
                 amplitude = norms[i] / lambda_l
             else:
                 amplitude = 2 * norms[i] / lambda_l
+            # The FFT's angles are a cosine's, and this reads a sine
+            # table, so a quarter cycle turns one into the other. Without
+            # it every partial came back a quarter cycle early: a sine
+            # resynthesized as minus a cosine, and a sound of several
+            # partials as a different waveform.
             sine = note_with_phase(freq=f, number_of_samples=lambda_l,
                                    waveform_table=WAVEFORM_SINE,
                                    sample_rate=sample_rate,
-                                   phase=angles[i]) * amplitude
+                                   phase=angles[i] + np.pi / 2) * amplitude
 
             # Account for phase and energy
             if theta_ > 0:
@@ -638,8 +657,9 @@ def localize_hrtf(sonic_vector: ArrayLike,
         ears is what carries the direction.
     sample_rate : integer
         The sample rate. It has to be the rate the responses were measured
-        at, and nothing here can check that, so it is taken on trust and
-        only used to report the delay the convolution adds.
+        at, and nothing here can check that, so it is taken on trust. It is
+        accepted for symmetry with the other routines; a convolution needs
+        no rate.
 
     Returns
     -------

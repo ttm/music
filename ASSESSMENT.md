@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-23**,
-`music` 1.8.3: 47 modules, 12,264 LOC package + 15,473 LOC tests, 126 names
+`music` 1.8.3: 47 modules, 12,284 LOC package + 15,844 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,11 +59,11 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **3970 tests**, 9 optional skips locally |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,840 stmts, 0 missed) |
+| Test suite | `pytest -q` | **4035 tests**, 9 optional skips locally |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,838 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,157 findings |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,154 findings |
 | Annotation coverage | AST scan | **101 / 210 functions (48 %)**; 63 / 94 exported (67 %) |
 | Docstring coverage | AST scan | **169 / 180 public defs (94 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
@@ -218,18 +218,18 @@ either documented in the code or tracked in the issue list.
   degenerate parameters now checks the mean as well, with these seven
   registered, so the class has somewhere to be recorded.
 
-- **Mutation testing covers eight selected files across four areas.**
+- **Mutation testing covers nine selected files across five areas.**
   The September 2026 audits change normalization, audio I/O, session
-  envelopes, amplitude envelopes, note synthesis and the stimulus
-  generators one operation at a time. All four areas are complete, with
-  their surviving mutants individually reviewed. These tests exposed
-  timing, gain, modulation, envelope-rate and refusal defects that line
-  and branch coverage had not revealed.
+  envelopes, amplitude envelopes, note synthesis, the stimulus generators
+  and the localization filters one operation at a time. All five areas
+  are complete, with their surviving mutants individually reviewed. These
+  tests exposed timing, gain, modulation, envelope-rate, phase and
+  refusal defects that line and branch coverage had not revealed.
 
   [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records the scope, assertions,
   survivor IDs and reproduction command. The tool skips decorated classes,
   so an isolated adapter was needed to reach session methods; properties
-  remain outside mutation scope. The measured results apply to those eight
+  remain outside mutation scope. The measured results apply to those nine
   files and their selected tests. Expanding the audit remains issue #113.
 
 - **The click measure is relative, so it is blind in fast passages.** A
@@ -388,7 +388,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,157 findings** on `music/`, almost all
+- **The extended lint set reports 2,154 findings** on `music/`, almost all
   stylistic: 345 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their

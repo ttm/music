@@ -17,6 +17,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `envelopes` | `synths/envelopes.py`, `filters/adsr.py`, `filters/fade.py` | 2026-09-21 | 561 | 526 | 35 | all |
 | `oscillators` | `synths/notes.py` | 2026-09-23 | 1460 | 1442 | 18 | all |
 | `stimuli` | `stimulation/stimuli.py` | 2026-09-23 | 427 | 423 | 4 | all |
+| `localization` | `filters/localization.py` | 2026-09-23 | 644 | 623 | 21 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -653,6 +654,113 @@ The final snapshot uses the working-tree changes on `95cf57a`, with
 `384c0b5e9628ddc2d7c3f399095ab770e494aea2df0c3c26d3d068a72af941da`.
 The run took 60 seconds with two workers.
 
+## `localization` — interaural cues, fixed, per-frequency, moving and convolved
+
+Measured 2026-09-23 on Python 3.12.7, macOS, with `mutmut` 3.7.0. No
+adapter. The eighteen selected test files are the seventeen that
+`pytest --cov-context=test` found reaching `localization.py`, plus the
+one this audit added. Together they reach every line and branch of it.
+
+### Result
+
+| | Mutations | Detected | Surviving |
+|---|---:|---:|---:|
+| First run | 611 | 526 | 85 |
+| After the tests and corrections below | 644 | 623 | 21 |
+
+One first-run mutant timed out and is counted as detected. Nothing lacked
+tests, was skipped or was suspicious.
+
+Fifty-four of the 85 first-run survivors were in `localize2`, and its
+`brute` method was barely measured. Replacing its accumulation `s += s_`
+with `s = s_` survived. So did its amplitude, the arguments of its
+resynthesis, its energy cutoff and its buffer size. The `ifft` method's
+gain formula, its high-frequency delay coefficient and its 4 kHz boundary
+went unmeasured too. `localize` was never checked for a source on the
+left, or for an angle at a distance other than one. Nothing checked that
+`localize_linear` reaches `theta2` at its last sample.
+
+### What it found
+
+Thirty-one regression cases failed against the previous source:
+
+- **`brute` resynthesized every partial a quarter cycle early.** The
+  FFT's angles are a cosine's, and it passed them as the phase of a sine
+  table: a sine came back as minus a cosine, a sound of several partials
+  as a different waveform. This is the "not giving good results for all
+  sounds" the docstring admitted to. The MASS reference has the same line,
+  but its `brute` raises `TypeError` before reaching it.
+- **`brute`'s buffer ran some thirty samples past any delay.** It was
+  sized without `zeta`, and by a coefficient chosen from the highest bin
+  kept. Only the missing factor kept that choice from producing a buffer
+  shorter than the delays it had to hold.
+- **The far ear heard the first sample before the sound arrived.** The
+  fractional delay read the nearest sample outside the signal, so the far
+  ear held the first one for the whole interaural delay. A click at the
+  start reached it as a plateau some 27 samples long. `localize` pads
+  with silence, and now the delay line does too.
+- **A source on an ear returned NaN.** At zero distance the intensity
+  ratio was 0 / 0. Its limit is the near ear in full and the far one
+  silent, which `localize` already rendered. `localize` itself divided by
+  zero for a source on the left ear, and warned while getting it right.
+- **`localize` rejected a list**, although it is documented as
+  array_like.
+
+Reading the module also corrected four docstrings: the speed of sound
+(331.3, not 331.2), a diffraction delay of 0.7 ms rather than 0.7 s,
+`localize_hrtf` claiming to use a `sample_rate` it ignores, and what a
+zero angle means to `localize` and `localize2`.
+
+**Not changed: a zero angle reads as not supplied.** Both routines take
+`theta=0` as "use `x` and `y`". `localize2`'s default angle is -70, so
+passing zero is how its callers select a position, and existing tests do
+exactly that. Placing a source at zero degrees takes its coordinates.
+Making `None` the sentinel would break those callers, so it is now
+documented rather than changed.
+
+### What the tests catch
+
+`tests/test_localization_audit.py` computes the geometry independently
+and compares samples:
+
+- The fractional delay against the textbook Catmull-Rom spline through a
+  signal extended by silence, at every sample including both ends, and
+  exactly on a parabola, where the spline is exact.
+- The far ear's delay and gain on a ramp at three temperatures, and
+  `localize`'s delays and gains on both sides, at an angle and distance,
+  and truncated to whole samples either side of an integer.
+- `localize_linear` against positions computed from its endpoints, for
+  two, three and fifty samples, and for `float32` and boolean input.
+- `localize2`'s `ifft` method on exact tones at the lowest bin, either
+  side of 4 kHz and above a third of the spectrum, for both sides.
+- `brute` on tones of three phases, at two sample rates, with the gain
+  between the ears exact and the partials it keeps or drops by energy.
+- A source exactly on either ear, and which ear an empty impulse response
+  error names.
+
+### Accepted survivors
+
+| Function | IDs | Reason |
+|---|---|---|
+| `localize2` | 14, 15, 154, 155 | Case changes or `XX` around the refusal and the warning text. |
+| `localize2` | 140, 216, 226 | `theta_ > 0` to `>=`. At zero the delay is zero and the gain one, so both branches render the same samples. |
+| `localize` | 58 | `x > 0` to `>=`, for the same reason at `x = 0`. |
+| `localize2` | 193, 195, 196 | Inside the Nyquist branch of `brute`, which the loop bound makes unreachable. |
+| `localize2` | 84 | `energy < cutoff` to `<=`, which differs only where a cumulative energy equals 99% of the total exactly. |
+| `localize` | 12, 14 | Drops the `float64` conversion. The array is always scaled by or stacked with `float64`. |
+| `localize_hrtf` | 4, 6, 17, 19 | Drops the conversion of the sound or of one response; convolution promotes to the other operand's `float64`. |
+| `localize_hrtf` | 38, 40 | Drops `dtype=np.float64` from `np.zeros`, whose default it is. |
+| `localize_hrtf` | 1 | Changes the default of `sample_rate`, which the routine does not use. |
+
+The conversion survivors were checked, not argued: int8, uint8, bool,
+float32 and list inputs gave identical samples with and without each one.
+
+IDs use the `music.core.filters.localization.x_<function>__mutmut_`
+prefix. The final snapshot uses the working-tree changes on `b926e7a`,
+with `localization.py` SHA-256
+`29f4dd2cd0f14b1099f62cf61945551944eda2c8d8636e5ceef7b3b7e8670346`.
+The run took 307 seconds with two workers.
+
 ## Tool limitation and adapter
 
 This applies to the `export` area alone; the envelope modules are plain
@@ -687,6 +795,7 @@ python tools/mutation_audit.py --list-areas
 python tools/mutation_audit.py --area envelopes --revision HEAD
 python tools/mutation_audit.py --area oscillators --revision HEAD
 python tools/mutation_audit.py --area stimuli --revision HEAD
+python tools/mutation_audit.py --area localization --revision HEAD
 python tools/mutation_audit.py --area export --revision ef03962 --max-children 2
 ```
 
@@ -700,15 +809,16 @@ exit code. The selected tests are in `tools/mutation_audit.py`.
 
 Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 `oscillators`, and 84 for `export` with two. The latest oscillator pass took
-582 seconds with two workers, and `stimuli` 60. None is a candidate for CI at
-that cost — these are things to run deliberately, read, and act on.
+582 seconds with two workers, `stimuli` 60 and `localization` 307. None
+is a candidate for CI at that cost — these are things to run
+deliberately, read, and act on.
 
 ## Next
 
-**Expand to another bounded area when changing it.** All four areas are
-closed, with every survivor reviewed. `core/filters/localization.py` is
-the natural next one: the localized sequences that resemble it hid three
-defects. Add an area to
+**Expand to another bounded area when changing it.** All five areas are
+closed, with every survivor reviewed. `utils.py` is the largest module
+left, and the one the others lean on most; `core/filters/` beyond the
+envelopes and localization is the next most used. Add an area to
 `AREAS` rather than widening an existing one, and pick the test selection
 by measuring which tests reach the module — `pytest --cov-context=test`
 and a query over the coverage database — rather than by guessing at names.

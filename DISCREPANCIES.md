@@ -287,6 +287,16 @@ The routine's docstring used to say its calculations were "as described in
 refinement as a rule of thumb; a full treatment needs an HRTF, which
 nothing here has.
 
+Its `brute` method departs from the reference in two places the reference
+never reached, since its `brute` branch raises `TypeError` before it
+renders anything. The reference passes each FFT angle, which is a
+cosine's, to a sine table as its phase, so each partial comes back a
+quarter cycle early. The package adds that quarter cycle. The reference
+also sizes the output buffer by `fs * foo * sin|θ| / speed`, without
+`zeta`. The package sizes it by the longest delay it applies.
+`tests/test_localization_audit.py` checks both against independently
+computed partials.
+
 ### `eq:serieHarmonica` — the sixth partial
 
 The article tabulates the first twenty partials in semitones. Nineteen of

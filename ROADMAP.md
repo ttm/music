@@ -389,14 +389,42 @@ The release tooling also gained a guard. The Zenodo summary keeps only
 each changelog entry's bold headline, and silently dropped the entries
 without one. The gate, the sync and a test on every push now refuse them.
 
-## Next: `core/filters/localization.py`
+## Completed: the localization filters
 
-Four mutation areas are closed. The localization filters are the natural
-fifth: the localized sequences that resemble them hid three defects, and
-`spatial_motion` now depends on `_localize_positions` for every sample.
-Measure the test selection with `pytest --cov-context=test`.
+Reviewed 2026-09-23, as the fifth mutation area, `localization`. The first
+run left **85 of 611** mutations alive, 54 of them in `localize2`, whose
+`brute` method survived even losing its accumulation.
 
-Things the four areas have taught, worth carrying into the next one:
+Thirty-one regression cases failed against the old source:
+
+- `brute` resynthesized each partial a quarter cycle early, reading the
+  FFT's cosine angles into a sine table, and sized its buffer without
+  `zeta`, some thirty samples past any delay.
+- The fractional delay behind `localize_linear` and `spatial_motion` held
+  the first sample for the whole interaural delay, so a click at the
+  start reached the far ear as a 27-sample plateau.
+- A source exactly on an ear returned NaN from the moving routines, and
+  `localize` divided by zero on the left ear.
+- `localize` rejected a list, although documented as array_like.
+
+A zero angle still reads as "use `x` and `y`" in `localize` and
+`localize2`; callers rely on it, so it is now documented rather than
+changed. The area detects **623 of 644**, with 21 survivors that are
+text, equivalent at a zero angle or checked by experiment to be
+equivalent conversions. `MUTATION_AUDIT.md` records them.
+
+## Next: release 1.8.4, then `utils.py`
+
+The unreleased section of `CHANGELOG.md` now holds the stimulus and
+localization corrections, including one behavior change: a zero
+modulation rate leaves an amplitude-modulated carrier at full level. It
+is worth releasing before another area adds to it.
+
+After that, `utils.py` is the largest module left unaudited and the one
+the others lean on most. Measure its test selection with
+`pytest --cov-context=test`.
+
+Things the five areas have taught, worth carrying into the next one:
 
 - **An absent argument cannot be mutated.** The `cross_fade` and `trill`
   sample-rate defects were not found by any mutant, because no edit can
@@ -407,12 +435,15 @@ Things the four areas have taught, worth carrying into the next one:
   work; most were refusal text and defaults.
 - **A spectrum is not a sample.** A test that measures where energy sits
   lets through every edit that keeps the rate.
+- **An exact position needs exact inputs.** `sin(pi)` is not zero, so a
+  source "on the left ear" at 180 degrees never reached the guard it was
+  meant to test.
 - **A branch can run under every test and still be unasserted.** The
   defects found so far sat inside branches with full line *and* branch
   coverage, under arithmetic that nothing measured.
 
 Add an area to `AREAS` rather than widening an existing one. None of the
-four is a whole-package mutation score.
+five is a whole-package mutation score.
 
 ## Other maintenance
 

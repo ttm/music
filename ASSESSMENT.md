@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-23**,
-`music` 1.8.2: 47 modules, 12,197 LOC package + 14,868 LOC tests, 126 names
+`music` 1.8.2: 47 modules, 12,221 LOC package + 15,097 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,8 +59,8 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **3871 tests**, 9 optional skips locally |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,822 stmts, 0 missed) |
+| Test suite | `pytest -q` | **3914 tests**, 9 optional skips locally |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,827 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
 | Lint, extended rule set | `ruff check --select ALL music` | 2,149 findings |
@@ -221,11 +221,9 @@ either documented in the code or tracked in the issue list.
 - **Mutation testing covers seven selected files across three areas.**
   The September 2026 audits change normalization, audio I/O, session
   envelopes, amplitude envelopes and note synthesis one operation at a
-  time. The export and envelope areas are complete, with their surviving
-  mutants individually reviewed. The oscillator area remains open after
-  the vibrato, localization, unlocalized sequence and Doppler passes.
-  These tests exposed timing, gain and modulation defects that line and
-  branch coverage had not revealed.
+  time. All three areas are complete, with their surviving mutants
+  individually reviewed. These tests exposed timing, gain, modulation and
+  envelope-rate defects that line and branch coverage had not revealed.
 
   [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records the scope, assertions,
   survivor IDs and reproduction command. The tool skips decorated classes,

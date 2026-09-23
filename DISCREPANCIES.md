@@ -253,6 +253,26 @@ the ratios used by the other glissando routines. These cases are covered by
 independent pitch and timing expectations in
 `tests/test_vibratos_glissandos_audit.py`.
 
+### Single glissandi, trills and exponential paths at their edges
+
+Three more reference behaviors fail only outside the reconciliation
+fixtures, which render at 44.1 kHz with no one-sample sweep and no
+exponential path on an axis, so no saved comparison changes.
+
+- `P`, `PV` and `PVV` divide by `Lambda - 1`, which is zero for one
+  sample. The package sounds the starting frequency there, or the end for
+  a zero curve index, as its sequences already do.
+- `trill` passes `fs` to its notes but not to `AD`, so the envelope's
+  milliseconds are timed at 44,100 Hz whatever the rate. The package times
+  them at the trill's own rate.
+- `D_` moves each coordinate by `x[i] * (x[i+1] / x[i]) ** t`, which
+  divides by zero for a coordinate held at zero. The package holds any
+  unchanged coordinate and refuses one that reaches or crosses zero.
+
+`tests/test_glissando_trill_audit.py` and
+`tests/test_seq_localization_spatial.py` check each against independently
+computed samples.
+
 ### `localize2` implements a model the article does not give
 
 The frequency-dependent ITD and IID in `music.localize2` — a crossover at

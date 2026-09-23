@@ -340,20 +340,44 @@ coverage** (2,822 statements and 872 branches). Ruff, mypy, strict Sphinx,
 all 13 runnable examples, strict article coverage and installed-wheel
 checks pass. Independent review found no remaining issue.
 
-## Next: the remaining oscillator routines
+## Completed: the remaining oscillator routines
 
-The full area has **45 survivors**: three accepted in the completed
-sequence/Doppler passes and **42 elsewhere**. Review the eight each in
-`_require_a_ratio` and `_exponential_positions`, then the six each in
-`note_with_glissando` and `trill`. The remaining groups and reproduction
-command are in `MUTATION_AUDIT.md`.
+Reviewed 2026-09-23. The last 42 oscillator survivors were 17 refusal-text
+edits, 14 changed defaults, four equivalents and seven unasserted
+behaviors. Seventeen regression cases failed against the old source:
 
-Two things the three areas have taught, worth carrying into the next one:
+- `trill` passed its sample rate to `note` but not to `adsr`, so at 8 kHz
+  every attack, decay and release lasted 5.5 times as long.
+- A one-sample glissando divided zero by zero in three routines, reading
+  an arbitrary table entry. It now sounds the starting frequency.
+- An exponential path refused a coordinate held at zero, such as a source
+  straight ahead. It now holds any coordinate that does not change.
 
-- **An absent argument cannot be mutated.** The `cross_fade` sample-rate
-  defect was not found by any mutant, because no edit can expose an
-  argument that was never passed. It came out of writing the tests that
-  kill the mutants around it.
+New tests measure short glissando endpoints, trills at 8 kHz and at one
+note a second or fewer, single zero path endpoints, which refusals
+suggest `method="lin"`, and the remaining routines' declared defaults.
+
+The area now detects **1,442 of 1,460 mutations**. All 18 survivors are
+accepted as refusal text or equivalent; `MUTATION_AUDIT.md` lists them.
+The MASS reconciliation fixtures are unaffected, and `DISCREPANCIES.md`
+records the three edge cases where the package now departs from the
+reference.
+
+## Next: another bounded mutation area
+
+All three mutation areas are closed. Add the next area when changing a
+module, measuring its test selection with `pytest --cov-context=test`
+rather than guessing. `MUTATION_AUDIT.md` has the procedure.
+
+Three things the three areas have taught, worth carrying into the next one:
+
+- **An absent argument cannot be mutated.** The `cross_fade` and `trill`
+  sample-rate defects were not found by any mutant, because no edit can
+  expose an argument that was never passed. Both came out of reading the
+  code around the mutants.
+- **Sort survivors by what they change, not where they are.** Grouped by
+  function, the last 42 looked like pitch-curve work; most were refusal
+  text and defaults.
 - **A branch can run under every test and still be unasserted.** Both
   defects found so far sat inside a branch with full line *and* branch
   coverage, under arithmetic that nothing measured.

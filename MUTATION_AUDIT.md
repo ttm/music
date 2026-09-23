@@ -15,11 +15,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 |---|---|---|---:|---:|---:|---|
 | `export` | `core/functions.py`, `core/io.py`, `stimulation/session.py` | 2026-09-16 | 767 | 698 | 69 | all |
 | `envelopes` | `synths/envelopes.py`, `filters/adsr.py`, `filters/fade.py` | 2026-09-21 | 561 | 526 | 35 | all |
-| `oscillators` | `synths/notes.py` | 2026-09-23 | 1439 | 1394 | 45 | sequence and Doppler passes closed; 42 outside these completed passes |
-
-The `oscillators` row is not a finished audit. The two sequence routines
-and Doppler are closed with three accepted survivors; 42 elsewhere remain
-outside those completed passes. `## Next` records what is left.
+| `oscillators` | `synths/notes.py` | 2026-09-23 | 1460 | 1442 | 18 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -250,16 +246,17 @@ snapshot and tool version rather than to arbitrary later edits.
 ## `oscillators` — the notes, their vibratos and their glissandi
 
 Measured 2026-09-23 on Python 3.12.7, macOS, with `mutmut` 3.7.0. No
-adapter. The selection is now 34 test files: the previous 29 plus three
-dedicated to sequential localization and two for the unlocalized sequence
-and Doppler oscillator. Together they reach every line and branch of
-`notes.py` (390 statements, 106 branches).
+adapter. The selection is now 35 test files: the previous 29 plus three
+dedicated to sequential localization, two for the unlocalized sequence
+and Doppler oscillator, and one for the glissandi, trills and defaults.
+Together they reach every line and branch of `notes.py`.
 
-**The vibrato, sequence and Doppler passes are closed; the area is not.**
-The first two passes found the vibrato defects below. The third reviewed
+**The area is closed, with all 18 survivors reviewed and accepted.** The
+first two passes found the vibrato defects below. The third reviewed
 all 80 survivors in `note_with_vibrato_seq_localization`, found the timing,
 gain and input defects described below, and left only two accepted mutants.
-The next pass closed the unlocalized sequence and Doppler targets below.
+The next pass closed the unlocalized sequence and Doppler targets below,
+and the last one the 42 survivors in the remaining routines.
 
 ### Result
 
@@ -270,6 +267,7 @@ The next pass closed the unlocalized sequence and Doppler targets below.
 | After closing the vibrato routines | 1402 | 1248 | 154 |
 | After closing sequential localization | 1426 | 1350 | 76 |
 | After closing the unlocalized sequence and Doppler | 1439 | 1394 | 45 |
+| After closing the remaining routines | 1460 | 1442 | 18 |
 
 Four mutants time out rather than returning a wrong answer in every run.
 They are counted as detected: `trill` accumulates samples in a `while`
@@ -282,22 +280,23 @@ runner no longer reports a run containing them as incomplete.
 | `note_with_vibrato_seq_localization` | 523 | 521 | 2 | 81 |
 | `note_with_vibratos_glissandos` | 151 | 151 | 0 | 22 |
 | `note_with_doppler` | 182 | 181 | 1 | 14 |
-| `_require_a_ratio` | 14 | 6 | 8 | 10 |
-| `_exponential_positions` | 20 | 12 | 8 | 8 |
-| `note_with_glissando` | 61 | 55 | 6 | 6 |
-| `trill` | 48 | 42 | 6 | 6 |
-| `note_with_fm` | 39 | 35 | 4 | 4 |
-| `note_with_phase` | 27 | 24 | 3 | 3 |
-| `note` | 20 | 18 | 2 | 2 |
-| `note_with_glissando_vibrato` | 82 | 80 | 2 | 25 |
-| `note_with_two_vibratos_glissando` | 110 | 108 | 2 | 33 |
+| `_exponential_positions` | 29 | 20 | 9 | 8 |
+| `_require_a_ratio` | 14 | 11 | 3 | 10 |
+| `trill` | 50 | 48 | 2 | 6 |
 | `_fit_to_samples` | 17 | 16 | 1 | 1 |
+| `note_with_glissando` | 63 | 63 | 0 | 6 |
+| `note_with_fm` | 39 | 39 | 0 | 4 |
+| `note_with_phase` | 27 | 27 | 0 | 3 |
+| `note` | 20 | 20 | 0 | 2 |
+| `note_with_glissando_vibrato` | 86 | 86 | 0 | 25 |
+| `note_with_two_vibratos_glissando` | 114 | 114 | 0 | 33 |
 | `note_with_vibrato` | 57 | 57 | 0 | 13 |
 | `note_with_two_vibratos` | 88 | 88 | 0 | 23 |
 
 "Was" is the first run. The initial vibrato passes left 22 survivors across
 the five unlocalized vibrato routines; the later sequence passes also
-examine timing, timbre and spatial behavior.
+examine timing, timbre and spatial behavior. `_exponential_positions` has
+more mutations than it had, because the last pass gave it a branch.
 
 ### What it found
 
@@ -483,6 +482,80 @@ suspicious or interrupted. The two accepted localized-sequence survivors
 and Doppler's one are unchanged in meaning; the other 42 survivors are
 outside these completed passes.
 
+### Remaining routines: completed 2026-09-23
+
+The last pass examined the other 42 survivors. Sorted by what they
+changed rather than where: 17 edited refusal text, 14 changed a default
+argument, four could not change behavior and seven exposed an unasserted
+behavior. The groups did not follow the function names. None of
+`note_with_glissando`'s six touched its pitch curve; the pitch-curve
+survivors were in the two glissando-vibrato routines.
+
+It found three production defects. Seventeen regression cases failed
+against the previous source:
+
+- **`trill` timed its envelope at 44,100 Hz whatever its rate.** It passed
+  `sample_rate` to `note` but not to `adsr`, whose durations are
+  milliseconds, so at 8 kHz each attack, decay and release lasted 5.5
+  times as long. No mutant can remove an argument that is not there. This
+  one came from reading around the mutant that removed the rate from the
+  `note` call, which survived because nothing ran a trill at another
+  rate: the same way the `cross_fade` sample rate was found.
+- **A one-sample glissando divided zero by zero** in `note_with_glissando`,
+  `note_with_glissando_vibrato` and `note_with_two_vibratos_glissando`.
+  The NaN frequency became `INT64_MIN` as a table index, so the sample
+  read an arbitrary entry behind a `RuntimeWarning`. It now sounds the
+  starting frequency, or the end for a zero index, as the sequences do.
+- **An exponential path refused a coordinate held on an axis.** Each
+  coordinate moves by its own ratio, and a source straight ahead keeps
+  `x = 0`, so it was refused as a path that crosses the listener. An
+  unchanged coordinate is now held, and the refusal of a coordinate
+  that reaches or crosses zero says so.
+
+The tests now measure:
+
+- Where a glissando lands. The sweep's exponent is `samples / (n - 1)`,
+  and an edit to that denominator moves the end of a second-long sweep
+  by thousandths of a cent. Five samples at 64 Hz through a ramp table
+  make each sample's integrated phase exact, for three curve indices.
+- A trill's pitch and envelope timing at 8 kHz, and trills of one note a
+  second or fewer. Only a rate of zero had been refused in a test, so the
+  guard could have read `<= 1`.
+- A single zero endpoint refused at either end and on either axis. Only
+  opposite signs had been tested.
+- A resting source on an exponential path. The scratch run left one
+  survivor in the new branch, which returned a held coordinate as one
+  value: that broadcasts invisibly while the other coordinate moves.
+- Which refusals suggest `method="lin"`. Only `note_with_glissando`
+  offers it, and the other two end with the values they were given.
+- That bare calls of `note`, `note_with_phase`, `note_with_fm`,
+  `note_with_glissando` and `trill` equal calls with their declared
+  defaults, as the vibrato routines' already did.
+
+Fifteen new survivors are accepted, with the three from earlier passes:
+
+| Function | IDs | Reason |
+|---|---|---|
+| `_exponential_positions` | 14, 17 | `<` to `<=` in the sign test. A zero at either end is refused before it, so both comparisons agree wherever they run. |
+| `_exponential_positions` | 20–26 | Case changes or `XX` around the refusal text. The same inputs are refused with the same exception. |
+| `_require_a_ratio` | 8, 13, 14 | Case changes or `XX` around the refusal text. The tests check the hint's presence and the values the message ends with. |
+| `_fit_to_samples` | 5 | `<=` to `<` at an equal length. The full slice and a zero-length pad return the same samples. |
+| `trill` | 7 | `XX` around the refusal text. |
+| `trill` | 32 | Drops `waveform_table=WAVEFORM_TRIANGULAR` from the `note` call. That is `note`'s default. |
+
+IDs use the `music.core.synths.notes.x_<function>__mutmut_` prefix. The
+final snapshot uses the working-tree changes on `a44c81b`, with
+`notes.py` SHA-256
+`b31fac556994e3d8cd12ef72848437fdabc78bdebb90f22d6729a677c269d9be`.
+The scratch report records every Python input's hash and all 35
+selected test files. The standard command below reproduces the audit
+once these changes are committed.
+
+The full area run took 582 seconds with two workers: **1,438 killed,
+four known `trill` timeouts and 18 survivors**, every one accepted above
+or in an earlier pass. Nothing was untested, skipped, suspicious or
+interrupted.
+
 ## Tool limitation and adapter
 
 This applies to the `export` area alone; the envelope modules are plain
@@ -529,18 +602,13 @@ exit code. The selected tests are in `tools/mutation_audit.py`.
 
 Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 `oscillators`, and 84 for `export` with two. The latest oscillator pass took
-334 seconds with two workers. None is a candidate for CI at
+582 seconds with two workers. None is a candidate for CI at
 that cost — these are things to run deliberately, read, and act on.
 
 ## Next
 
-**Review the remaining 42 oscillator survivors.** The two sequence routines
-and Doppler are closed, with three accepted survivors between them. Start
-with the eight each in `_require_a_ratio` and `_exponential_positions`,
-then the six each in `note_with_glissando` and `trill`. The function table
-above records the smaller remaining groups.
-
-Then expand to another bounded area when changing it. Add an area to
+**Expand to another bounded area when changing it.** All three areas are
+closed, with every survivor reviewed. Add an area to
 `AREAS` rather than widening an existing one, and pick the test selection
 by measuring which tests reach the module — `pytest --cov-context=test`
 and a query over the coverage database — rather than by guessing at names.
@@ -548,9 +616,14 @@ and a query over the coverage database — rather than by guessing at names.
 Two things the three areas have taught, worth carrying:
 
 - **An absent argument cannot be mutated.** No edit to `cross_fade` could
-  expose a `sample_rate` that was never passed to `mix_with_offset`; that
-  came out of writing the tests that kill the mutants around it. A score
-  measures the tests that exist against the code that exists.
+  expose a `sample_rate` that was never passed to `mix_with_offset`, nor
+  to `trill` one that was never passed to `adsr`; both came out of
+  reading the code around the mutants. A score measures the tests that
+  exist against the code that exists.
+- **Sort survivors by what they change, not where they are.** The last
+  42 were grouped by function, and the grouping said little: most were
+  refusal text and defaults, and the pitch-curve ones sat in routines
+  listed as small.
 - **A branch can run on every test and still be unasserted.** Both defects
   found so far sat inside a branch with full line *and* branch coverage,
   under arithmetic that nothing measured. That is the shape to look for.

@@ -459,16 +459,18 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
     else:
         lambda_p = int(sample_rate * duration)
     samples = np.arange(lambda_p)
+    # A single sample sits at the start; it has no interval to divide by.
+    intervals = max(lambda_p - 1, 1)
     if method == "exp":
         _require_a_ratio(start_freq, end_freq, linear_option=True)
         if alpha != 1:
             f = start_freq * (end_freq / start_freq) ** \
-                ((samples / (lambda_p - 1)) ** alpha)
+                ((samples / intervals) ** alpha)
         else:
             f = start_freq * (end_freq / start_freq) ** \
-                (samples / (lambda_p - 1))
+                (samples / intervals)
     else:
-        f = start_freq + (end_freq - start_freq) * samples / (lambda_p - 1)
+        f = start_freq + (end_freq - start_freq) * samples / intervals
     waveform_table_length = len(waveform_table)
     gamma = _integrate_phase(f * waveform_table_length / sample_rate,
                              waveform_table_length).astype(np.int64)
@@ -552,13 +554,15 @@ def note_with_glissando_vibrato(
     # values of the oscillatory pattern at each sample
     tv = vibrato_waveform_table[gammav % lv]
 
+    # A single sample sits at the start; it has no interval to divide by.
+    intervals = max(lambda_pv - 1, 1)
     if alpha != 1 or alpha_vibrato != 1:
         f = start_freq * (end_freq / start_freq) ** \
-            ((samples / (lambda_pv - 1)) ** alpha) * 2. ** \
+            ((samples / intervals) ** alpha) * 2. ** \
             _signed_power(tv * max_pitch_dev / 12, alpha_vibrato)
     else:
         f = start_freq * (end_freq / start_freq) ** \
-            (samples / (lambda_pv - 1)) * 2. ** \
+            (samples / intervals) * 2. ** \
             _signed_power(tv * max_pitch_dev / 12, alpha)
     length = len(waveform_table)
     gamma = _integrate_phase(f * length / sample_rate, length).astype(np.int64)
@@ -569,19 +573,26 @@ def note_with_glissando_vibrato(
 def _exponential_positions(start, end, curve):
     """Interpolate exponentially from `start` to `end` along `curve`.
 
+    A coordinate that does not change is held, zero included: a source
+    straight ahead moving away keeps ``x = 0`` the whole way, and holding
+    it needs no ratio.
+
     Raises
     ------
     ValueError
-        If the two ends have opposite signs, or either is zero. The
-        expression is ``start * (end / start) ** curve``, and a negative
-        base raised to a fractional power is not a real number -- it
-        silently produced NaN, which then propagated into the audio.
+        If the two ends differ and either is zero or they differ in sign.
+        The expression is ``start * (end / start) ** curve``, and a
+        negative base raised to a fractional power is not a real number --
+        it silently produced NaN, which then propagated into the audio.
     """
+    if start == end:
+        return np.full(np.shape(curve), float(start))
     if start == 0 or end == 0 or (start < 0) != (end < 0):
         raise ValueError(
             f"an exponential transition cannot run from {start} to {end}: "
             "the positions must share a sign and be non-zero. Use 'lin' "
-            "for a path that crosses the listener."
+            "for a path that reaches or crosses an axis through the "
+            "listener."
         )
     return start * (end / start) ** curve
 
@@ -659,7 +670,10 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         The y positions at each end of the transitions.
     method : list of strings
         An entry for each transition of location: 'exp' for
-        exponential and 'lin' (default) for linear.
+        exponential and 'lin' (default) for linear. An exponential
+        transition moves each coordinate by a constant ratio, so a
+        coordinate that changes may not start or end at zero or change
+        sign; one that stays the same, zero included, is held.
     waveform_tables : list of lists of array_likes
         The tables with the waveforms to synthesize the sound
         and then for the oscillatory patterns of the vibratos.
@@ -687,8 +701,9 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     Raises
     ------
     ValueError
-        If a pitch endpoint is not positive or a position transition
-        spans fewer than one sample.
+        If a pitch endpoint is not positive, a position transition
+        spans fewer than one sample, or an exponential position
+        transition has no ratio to move a coordinate by.
 
     See Also
     --------
@@ -1029,14 +1044,16 @@ def note_with_two_vibratos_glissando(
     # shorter one with the longer one's modulus and raised IndexError.
     tv2 = tabv2[gammav2 % lv2]
 
+    # A single sample sits at the start; it has no interval to divide by.
+    intervals = max(lambda_pvv - 1, 1)
     if alpha != 1 or alphav1 != 1 or alphav2 != 1:
         f = start_freq * (end_freq / start_freq) ** \
-            ((samples / (lambda_pvv - 1)) ** alpha) * 2. ** \
+            ((samples / intervals) ** alpha) * 2. ** \
             _signed_power(tv1 * max_pitch_dev / 12, alphav1) * 2. ** \
             _signed_power(tv2 * secondary_max_pitch_dev / 12, alphav2)
     else:
         f = start_freq * (end_freq / start_freq) ** \
-            (samples / (lambda_pvv - 1)) * 2. ** \
+            (samples / intervals) * 2. ** \
             ((tv1 * max_pitch_dev / 12)) * 2. ** \
             (tv2 * secondary_max_pitch_dev / 12)
     length = len(waveform_table)
@@ -1414,11 +1431,14 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
     freqs : iterable of scalars
         Frequencies to the iterated.
     notes_per_second : scalar
-        The number of notes per second.
+        The number of notes per second. It may be one or fewer, for notes
+        of a second or longer.
     duration : scalar
         The maximum duration of the trill in seconds.
     sample_rate : integer
-        The sample rate.
+        The sample rate. Each note is shaped by :func:`adsr` with its
+        default attack, decay and sustain and a 10 ms release, all timed
+        at this rate.
 
     See Also
     --------
@@ -1478,7 +1498,11 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
         note_ = note(freqs[i % len(freqs)], number_of_samples=ns,
                      waveform_table=WAVEFORM_TRIANGULAR,
                      sample_rate=sample_rate)
-        s.append(adsr(sonic_vector=note_, release_duration=10))
+        # The envelope's durations are milliseconds, so it needs the rate
+        # too. It was the one call left at the 44,100 default: at 8,000 Hz
+        # every attack, decay and release lasted 5.5 times as long.
+        s.append(adsr(sonic_vector=note_, release_duration=10,
+                      sample_rate=sample_rate))
         pointer += ns
         i += 1
     if not s:

@@ -63,6 +63,44 @@ def test_exponential_position_uses_its_own_curve_and_next_endpoint(stereo,
 
 
 @pytest.mark.parametrize("stereo", [False, True])
+@pytest.mark.parametrize("x, y", [((0, 0), (0.5, 2.0)),
+                                  ((0.5, 2.0), (0, 0)),
+                                  ((0, 0), (1.5, 1.5))])
+def test_exponential_path_holds_a_coordinate_that_stays_on_an_axis(stereo,
+                                                                   x, y):
+    """Straight ahead and moving away, along the ears' axis, or resting.
+
+    Each coordinate moves by its own ratio and a zero has none, so these
+    paths were refused as ones that cross the listener, which they never
+    reach. A coordinate that does not change needs no ratio to be held.
+    A held coordinate must still be one position per sample: while the
+    other one moves, a single value broadcasts and hides that, so the
+    resting source holds both.
+    """
+    actual = _render(stereo=stereo, x=x, y=y, movement_durations=(0.02,),
+                     method=("exp",), curves=(2,))
+    curve = (np.arange(80) / 80) ** 2
+    positions = [np.full(80, float(start)) if start == end
+                 else start * (end / start) ** curve
+                 for start, end in (x, y)]
+    expected = _geometric_signal(*positions, stereo=stereo)
+    np.testing.assert_allclose(actual, expected, rtol=1e-13, atol=1e-14)
+
+
+@pytest.mark.parametrize("stereo", [False, True])
+@pytest.mark.parametrize("x, y", [((0, 1), (1, 1)), ((1, 0), (1, 1)),
+                                  ((1, 1), (0, 1)), ((1, 1), (1, 0))])
+def test_exponential_path_refuses_a_coordinate_leaving_or_reaching_zero(
+        stereo, x, y):
+    """There is no ratio from or to zero. Only paths whose ends had
+    opposite signs were tested, so the guard could have refused a zero
+    only when both ends were zero."""
+    with pytest.raises(ValueError, match="cannot run from"):
+        _render(stereo=stereo, x=x, y=y, movement_durations=(0.02,),
+                method=("exp",), curves=(1,))
+
+
+@pytest.mark.parametrize("stereo", [False, True])
 def test_linear_position_moves_both_coordinates_through_each_segment(stereo):
     """Each segment uses its own adjacent x/y points and duration."""
     x, y = (0.5, 1.2, 2.0), (2.0, 0.75, 1.5)

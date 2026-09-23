@@ -2,53 +2,60 @@
 
 ### Fixed
 
-- `note_with_vibrato_seq_localization` now rounds every vibrato segment
+- **Localized sequences time every segment with the same clock.**
+  `note_with_vibrato_seq_localization` now rounds every vibrato segment
   down to a whole sample, as its pitch and movement segments already do.
   Fractional sample counts previously added a sample to each segment,
   shifting modulation boundaries and sometimes extending the note.
-- A one-sample pitch transition no longer divides by zero and corrupts
-  the rest of the note's phase. Pitch endpoints must be positive, and a
-  movement duration shorter than one sample raises `ValueError` because it
-  cannot define a velocity.
-- When movement ends before the note, its gain now corresponds to the
-  final coordinates. It previously held the distance from one sample
-  before arrival while already treating the source as stationary.
-- The localized sequence accepts list, tuple and integer waveform tables,
-  converting them to floating-point arrays before lookup and gain scaling.
-- `note_with_vibratos_glissandos` also floors each vibrato segment to a
-  whole sample and handles one-sample pitch transitions without corrupting
-  the accumulated phase. It requires positive pitch endpoints and accepts
-  nested list and tuple waveform tables. The `PV_` MASS comparison records
-  the timing correction against its unchanged reference fixture.
-- `trill` times each note's envelope at its own sample rate. It passed
+- **A one-sample pitch transition no longer corrupts the rest of the
+  note.** It divided by zero and poisoned the accumulated phase. Pitch
+  endpoints must be positive, and a movement duration shorter than one
+  sample raises `ValueError` because it cannot define a velocity.
+- **A finished path holds the gain of its destination.** When movement
+  ends before the note, its gain now corresponds to the final
+  coordinates. It previously held the distance from one sample before
+  arrival while already treating the source as stationary.
+- **The localized sequence accepts the waveform tables it documents.**
+  List, tuple and integer tables are converted to floating-point arrays
+  before lookup and gain scaling.
+- **`note_with_vibratos_glissandos` has the same corrections.** It also
+  floors each vibrato segment to a whole sample and handles one-sample
+  pitch transitions without corrupting the accumulated phase. It requires
+  positive pitch endpoints and accepts nested list and tuple waveform
+  tables. The `PV_` MASS comparison records the timing correction against
+  its unchanged reference fixture.
+- **`trill` times each note's envelope at its own sample rate.** It passed
   `sample_rate` to `note` but not to `adsr`, so at any rate but 44,100 Hz
   the 20 ms attack and decay and the 10 ms release were rescaled by the
   ratio: at 8 kHz each lasted 5.5 times as long.
-- A one-sample `note_with_glissando`, `note_with_glissando_vibrato` or
-  `note_with_two_vibratos_glissando` no longer divides zero by zero. Its
+- **A one-sample glissando sounds its starting frequency.** In
+  `note_with_glissando`, `note_with_glissando_vibrato` and
+  `note_with_two_vibratos_glissando` it divided zero by zero. Its
   frequency was NaN, which the integer table index turned into an
-  arbitrary entry behind a `RuntimeWarning`. It now sounds the starting
-  frequency, or the end for a zero curve index, as the sequences do.
-- An exponential position transition in
-  `note_with_vibrato_seq_localization` holds a coordinate that does not
-  change, zero included. A source straight ahead (`x = 0`) or on the ears'
-  axis (`y = 0`) was refused as if its path crossed the listener. The
-  refusal of a coordinate that reaches or crosses zero now says so.
+  arbitrary entry behind a `RuntimeWarning`. A zero curve index still
+  jumps to the end, as in the sequences.
+- **An exponential path holds a coordinate that does not change.** In
+  `note_with_vibrato_seq_localization`, a source straight ahead (`x = 0`)
+  or on the ears' axis (`y = 0`) was refused as if its path crossed the
+  listener. The refusal of a coordinate that reaches or crosses zero now
+  says so.
 
 ### Tests
 
-- Measure the localized sequence's pitch curves, independent vibratos,
-  waveform changes, Doppler shifts, interaural delays and distance gain.
-  The oscillator mutation audit includes these tests; its remaining
-  survivors and scope are recorded in `MUTATION_AUDIT.md`.
-- Check the unlocalized sequence's curved glides, modulation boundaries,
-  independent vibratos and changing timbres. Measure Doppler frequency
-  and distance gain independently for each ear, including initial delay,
-  subsonic motion, temperature and short renders.
-- Close the oscillator mutation audit. Measure where short glissandi
-  land, trills at another sample rate and at one note a second or fewer,
-  and exponential paths on an axis. Check that only the glissando with a
-  linear method suggests it, and pin the remaining routines' defaults.
+- **The localized sequence is measured, not just run.** Tests check its
+  pitch curves, independent vibratos, waveform changes, Doppler shifts,
+  interaural delays and distance gain.
+- **The unlocalized sequence and Doppler oscillator are measured too.**
+  Tests check curved glides, modulation boundaries, independent vibratos
+  and changing timbres, and each ear's Doppler frequency and distance
+  gain, including initial delay, subsonic motion, temperature and short
+  renders.
+- **The oscillator mutation audit is closed.** Tests measure where short
+  glissandi land, trills at another sample rate and at one note a second
+  or fewer, and exponential paths on an axis. They check that only the
+  glissando with a linear method suggests it, and pin the remaining
+  routines' defaults. `MUTATION_AUDIT.md` records all 18 accepted
+  survivors.
 
 ## [1.8.2] - 2026-09-21
 

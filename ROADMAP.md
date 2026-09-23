@@ -201,8 +201,8 @@ between them cover every line and branch of it.
 
 **The vibratos are done; the rest of the area is not.** Two passes: the
 first went after the defect the envelope area pointed at, the second closed
-every routine that carries a vibrato. Between them the five vibrato
-routines went from 112 survivors to 22, and three further defects came out.
+every routine that carries a vibrato. Those passes left 22 survivors across
+the five unlocalized vibrato routines, and three further defects came out.
 At that checkpoint, 154 survivors remained unread, 80 of them in
 `note_with_vibrato_seq_localization`. The subsequent localization pass is
 recorded below; the oscillator area as a whole remains open.
@@ -306,13 +306,47 @@ installed-wheel checks pass. Live MASS reconciliation remains 24 exact,
 seven explained divergences and four broken reference routines. The
 assessment figures and changelog are current; these are unreleased changes.
 
-## Next: the other oscillator routines
+## Completed: the unlocalized sequence and Doppler oscillator
 
-The other 74 survivors remain outside the completed localization pass.
-Start with the 18 in `note_with_vibratos_glissandos`, then the 14 in
-`note_with_doppler`. The former still has the analogous fractional-duration
-and short-glide expressions; this pass did not change that routine or close
-its audit.
+Reviewed 2026-09-23, following the localization checkpoint in `c01827f`.
+The next two targets were the 18 survivors in
+`note_with_vibratos_glissandos` and the 14 in `note_with_doppler`.
+
+Twelve new sequence regression cases failed against the old source. The
+routine now floors vibrato durations to whole samples, renders one-sample
+glides without corrupting subsequent phase, rejects nonpositive pitch
+endpoints, and accepts nested list/tuple tables while preserving existing
+array dtypes. The independent tests measure curved glides, multiple
+vibratos, changing timbres and the state held after each sequence ends.
+
+The Doppler pass found no production defect. It now measures each ear's
+radial frequency and inverse-distance gain, temperature effects, initial
+delay, diagonal motion and whole-waveform symmetries, including empty and
+single-sample renders. Its docstring explicitly accounts for the initial
+stereo delay padding in the returned sample count.
+
+The `PV_` MASS fixture remains unchanged; its comparison accounts for the
+four removed fractional-duration samples while checking the complete
+original waveform and a separate render with the old vibrato counts.
+Live reconciliation is now **23 exact, eight explained divergences and
+four broken reference routines**.
+
+The unlocalized sequence detects **151 of 151 mutants**. Doppler detects
+**181 of 182**, with one equivalent centered-source delay branch accepted.
+`MUTATION_AUDIT.md` records the numerical checks and accepted survivor.
+
+Validation: **3,862 passed, nine skipped**, with **100% line and branch
+coverage** (2,822 statements and 872 branches). Ruff, mypy, strict Sphinx,
+all 13 runnable examples, strict article coverage and installed-wheel
+checks pass. Independent review found no remaining issue.
+
+## Next: the remaining oscillator routines
+
+The full area has **45 survivors**: three accepted in the completed
+sequence/Doppler passes and **42 elsewhere**. Review the eight each in
+`_require_a_ratio` and `_exponential_positions`, then the six each in
+`note_with_glissando` and `trill`. The remaining groups and reproduction
+command are in `MUTATION_AUDIT.md`.
 
 Two things the three areas have taught, worth carrying into the next one:
 

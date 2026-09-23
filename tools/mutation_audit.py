@@ -87,6 +87,8 @@ AREAS = {
             'tests/test_seq_localization_pitch.py',
             'tests/test_seq_localization_spatial.py',
             'tests/test_seq_localization_edges.py',
+            'tests/test_vibratos_glissandos_audit.py',
+            'tests/test_doppler_audit.py',
             'tests/test_utils.py',
             'tests/test_mass_reconciliation.py',
             'tests/test_theory_properties.py',

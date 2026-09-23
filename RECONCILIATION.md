@@ -1,6 +1,6 @@
 # The MASS reconciliation
 
-*Run on **2026-09-22** against [ttm/mass](https://github.com/ttm/mass) at
+*Run on **2026-09-23** against [ttm/mass](https://github.com/ttm/mass) at
 `e516b08`. The register it produced is re-checked against `music` 1.8.2
 on every push.*
 
@@ -19,7 +19,7 @@ python tools/mass_reconcile.py --write-fixture  # refresh the test fixture
 python tools/mass_reconcile.py --register RECONCILIATION.md   # this table
 ```
 
-**24 sample-exact, 7 divergent, 4 where the reference does not run.**
+**23 sample-exact, 8 divergent, 4 where the reference does not run.**
 
 ## How to read it
 
@@ -37,6 +37,21 @@ widen without someone writing down why.
 reading the recorded outputs rather than the reference itself, and
 `tools/assessment_figures.py` checks the version stamped at the top, so this
 file cannot go on naming a release the package has left behind.
+
+The `PV_` row retains its original arguments and recorded reference samples.
+Its vibrato segments formerly rounded fractional sample counts up while
+pitch segments rounded down. Consistent flooring changes this case from
+1,590 to 1,586 samples. The complete original waveform must exactly match
+a render with every duration explicitly rounded to its whole-sample count.
+A supplementary render restores the reference's old vibrato counts, then
+compares against the unchanged reference samples. That comparison and the
+unchanged initial prefix retain the previous numerical safeguards: at most
+one table step in amplitude, with no more than four samples differing beyond
+floating-point noise. The measured supplementary render agrees exactly on
+this machine. The original render's length and complete waveform are
+checked separately, so a correct supplementary render cannot hide a corrupt
+original tail. Independent timing, pitch and waveform checks live in
+`tests/test_vibratos_glissandos_audit.py`.
 
 The `D_` row retains its original arguments and recorded reference samples.
 Its vibrato segments formerly rounded up fractional sample counts while
@@ -81,8 +96,8 @@ the list it was concatenating, so the frequency contour was multiplied by
 every segment *and* by their joins. Both routines returned an array of
 plausible length, which is why nothing caught it: 99.9 % of the samples
 were wrong. Separating the accumulators restored agreement; the later
-timing, final-position gain and phase corrections account for the localized
-routine's current divergence below.
+timing corrections account for both routines' current divergences below,
+alongside final-position gain and phase corrections for the localized one.
 
 Nine reference defects, which the package had already fixed or worked
 around, and which are now on the record rather than implicit in the code.
@@ -105,7 +120,7 @@ does, and the test asserts it.
 | `PV` | `note_with_glissando_vibrato` | exact | sample-exact agreement |
 | `VV` | `note_with_two_vibratos` | exact | sample-exact agreement |
 | `PVV` | `note_with_two_vibratos_glissando` | exact | sample-exact agreement |
-| `PV_` | `note_with_vibratos_glissandos` | exact | sample-exact agreement |
+| `PV_` | `note_with_vibratos_glissandos` | divergent | vibrato durations now floor to whole samples, like pitch durations: the original render is (1586,), versus the reference's (1590,). The complete original render must exactly match a render with all durations normalized to their floored sample counts. A supplementary render restores the reference's vibrato counts; its samples and the original unchanged prefix retain the one-table-step bound, with at most four samples differing beyond floating-point noise |
 | `trill` | `trill` | divergent | trill takes no waveform table, so it synthesizes through the package's corrected triangular table while the reference uses its own; and it shapes every note with `adsr`, so it carries that row's to_zero correction too, which is the larger of the two; max&nbsp;\|Δ\|&nbsp;=&nbsp;0.0216 |
 | `noises` | `noise` | reference does not run | the reference indexes coefs[Lambda/2] with a true- division float, which has raised IndexError since Python 3; under Python 2 it ran, but into a real-valued coefficient array that discarded the imaginary part of every randomized phase, leaving a spectrum with no phase randomization at all — `IndexError` |
 | `T` | `tremolo` | exact | sample-exact agreement |

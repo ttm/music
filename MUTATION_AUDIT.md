@@ -15,11 +15,11 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 |---|---|---|---:|---:|---:|---|
 | `export` | `core/functions.py`, `core/io.py`, `stimulation/session.py` | 2026-09-16 | 767 | 698 | 69 | all |
 | `envelopes` | `synths/envelopes.py`, `filters/adsr.py`, `filters/fade.py` | 2026-09-21 | 561 | 526 | 35 | all |
-| `oscillators` | `synths/notes.py` | 2026-09-23 | 1426 | 1350 | 76 | vibratos and sequential localization; 74 outside the completed localization pass |
+| `oscillators` | `synths/notes.py` | 2026-09-23 | 1439 | 1394 | 45 | sequence and Doppler passes closed; 42 outside these completed passes |
 
-The `oscillators` row is not a finished audit. Sequential localization now
-has two reviewed, accepted survivors; the other 74 remain outside that
-completed pass. `## Next` records what is left.
+The `oscillators` row is not a finished audit. The two sequence routines
+and Doppler are closed with three accepted survivors; 42 elsewhere remain
+outside those completed passes. `## Next` records what is left.
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -250,15 +250,16 @@ snapshot and tool version rather than to arbitrary later edits.
 ## `oscillators` — the notes, their vibratos and their glissandi
 
 Measured 2026-09-23 on Python 3.12.7, macOS, with `mutmut` 3.7.0. No
-adapter. The selection is now 32 test files: the previous 29 plus three
-dedicated to sequential localization. Together they reach every line and
-branch of `notes.py` (387 statements, 106 branches).
+adapter. The selection is now 34 test files: the previous 29 plus three
+dedicated to sequential localization and two for the unlocalized sequence
+and Doppler oscillator. Together they reach every line and branch of
+`notes.py` (390 statements, 106 branches).
 
-**The vibratos and sequential localization are closed; the area is not.**
+**The vibrato, sequence and Doppler passes are closed; the area is not.**
 The first two passes found the vibrato defects below. The third reviewed
 all 80 survivors in `note_with_vibrato_seq_localization`, found the timing,
 gain and input defects described below, and left only two accepted mutants.
-The other 74 survivors remain outside this completed pass.
+The next pass closed the unlocalized sequence and Doppler targets below.
 
 ### Result
 
@@ -268,6 +269,7 @@ The other 74 survivors remain outside this completed pass.
 | After the latching correction | 1396 | 1165 | 231 |
 | After closing the vibrato routines | 1402 | 1248 | 154 |
 | After closing sequential localization | 1426 | 1350 | 76 |
+| After closing the unlocalized sequence and Doppler | 1439 | 1394 | 45 |
 
 Four mutants time out rather than returning a wrong answer in every run.
 They are counted as detected: `trill` accumulates samples in a `while`
@@ -278,8 +280,8 @@ runner no longer reports a run containing them as incomplete.
 | Function | Mutations | Detected | Surviving | Was |
 |---|---:|---:|---:|---:|
 | `note_with_vibrato_seq_localization` | 523 | 521 | 2 | 81 |
-| `note_with_vibratos_glissandos` | 138 | 120 | 18 | 22 |
-| `note_with_doppler` | 182 | 168 | 14 | 14 |
+| `note_with_vibratos_glissandos` | 151 | 151 | 0 | 22 |
+| `note_with_doppler` | 182 | 181 | 1 | 14 |
 | `_require_a_ratio` | 14 | 6 | 8 | 10 |
 | `_exponential_positions` | 20 | 12 | 8 | 8 |
 | `note_with_glissando` | 61 | 55 | 6 | 6 |
@@ -293,8 +295,9 @@ runner no longer reports a run containing them as incomplete.
 | `note_with_vibrato` | 57 | 57 | 0 | 13 |
 | `note_with_two_vibratos` | 88 | 88 | 0 | 23 |
 
-"Was" is the first run. The five routines that carry a vibrato held 112
-survivors between them and now hold 22.
+"Was" is the first run. The initial vibrato passes left 22 survivors across
+the five unlocalized vibrato routines; the later sequence passes also
+examine timing, timbre and spatial behavior.
 
 ### What it found
 
@@ -419,11 +422,66 @@ archives committed files, so these changes must be committed before using
 `--revision HEAD` to reproduce them. No repository commit was needed for
 the scratch measurement.
 
-The final full area run took 397 seconds with two workers: 1,346 killed, four
+That full area run took 397 seconds with two workers: 1,346 killed, four
 timeouts and 76 survivors. Nothing was untested, skipped, suspicious or
 interrupted. The two survivors above are the only ones in this function;
 18 in `note_with_vibratos_glissandos`, 14 in `note_with_doppler` and 42
-elsewhere remain outside this completed pass.
+elsewhere remained outside that completed pass.
+
+### Unlocalized sequence and Doppler: completed 2026-09-23
+
+The next pass examined all 18 survivors in
+`note_with_vibratos_glissandos` and all 14 in `note_with_doppler`.
+The new tests measure curved pitch glides, independent modulation lines,
+fractional segment boundaries, distinct carrier tables and the pitch held
+when a control sequence finishes. Twelve sequence cases failed against
+the previous implementation:
+
+- A one-sample pitch transition divided by zero, corrupting the phase of
+  subsequent samples. Positive curve indices now use the starting pitch;
+  a zero index retains the immediate jump to the endpoint.
+- Fractional vibrato durations rounded up, while pitch durations rounded
+  down. Both now use the integer sample count for each segment.
+- Nonpositive endpoints reached undefined exponential ratios. Each pitch
+  segment now uses the same positive-endpoint guard as other glissandi.
+- Nested list and tuple tables failed at indexed lookup. Converting each
+  table with `np.asarray` supports those inputs and preserves array dtypes.
+
+The `PV_` MASS case consequently changes from 1,590 to 1,586 samples.
+Its original fixture is preserved. The comparator checks the complete
+render against explicit floored durations and separately restores the
+reference's vibrato counts, retaining the previous rare-table-step bound.
+Tests reject corrupt original tails and supplementary renders as well as
+additional timing, pitch, gain and nonfinite differences.
+
+The Doppler tests found no production defect. They measure source defaults,
+empty and single-sample renders, inverse-distance gain on diagonal paths,
+temperature-dependent pitch at each ear and the initial interaural delay.
+A phase ramp exposes the received frequency for comparison with radial
+velocity computed independently from the path. Reflections of the path and
+coincident ears additionally check whole-waveform symmetry.
+
+The unlocalized sequence now detects **151 of 151 mutants**. Doppler
+detects **181 of 182**; its only survivor is accepted:
+
+| ID | Reason |
+|---|---|
+| 128 | Changes `x[0] > 0` to `x[0] >= 0`; a centered source has equal ear distances and zero initial delay, so both branches return the same samples. |
+
+This ID uses the `music.core.synths.notes.x_note_with_doppler` prefix.
+The final snapshot uses the working-tree changes on `c01827f`, with
+`notes.py` SHA-256
+`6088967074493c849398fdcfeb57dae60a75c460f9e7d0570b85a439ff9c5c7e`.
+The scratch report records every Python input's hash and all 34 selected
+test files; source and test hashes were checked against the final checkout.
+The standard command below reproduces the audit once these changes are
+committed.
+
+The full area run took 334 seconds with two workers: **1,390 killed, four
+known `trill` timeouts and 45 survivors**. Nothing was untested, skipped,
+suspicious or interrupted. The two accepted localized-sequence survivors
+and Doppler's one are unchanged in meaning; the other 42 survivors are
+outside these completed passes.
 
 ## Tool limitation and adapter
 
@@ -471,16 +529,16 @@ exit code. The selected tests are in `tools/mutation_audit.py`.
 
 Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 `oscillators`, and 84 for `export` with two. The latest oscillator pass took
-397 seconds with two workers. None is a candidate for CI at
+334 seconds with two workers. None is a candidate for CI at
 that cost — these are things to run deliberately, read, and act on.
 
 ## Next
 
-**Continue with the other oscillator routines.** Sequential localization
-is closed with two accepted survivors. Of the other 74, start with the 18
-in `note_with_vibratos_glissandos`, then the 14 in `note_with_doppler`.
-The former still contains the analogous fractional-duration and short-glide
-expressions; it was not changed or closed by this bounded localization pass.
+**Review the remaining 42 oscillator survivors.** The two sequence routines
+and Doppler are closed, with three accepted survivors between them. Start
+with the eight each in `_require_a_ratio` and `_exponential_positions`,
+then the six each in `note_with_glissando` and `trill`. The function table
+above records the smaller remaining groups.
 
 Then expand to another bounded area when changing it. Add an area to
 `AREAS` rather than widening an existing one, and pick the test selection

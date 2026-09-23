@@ -15,6 +15,11 @@
   before arrival while already treating the source as stationary.
 - The localized sequence accepts list, tuple and integer waveform tables,
   converting them to floating-point arrays before lookup and gain scaling.
+- `note_with_vibratos_glissandos` also floors each vibrato segment to a
+  whole sample and handles one-sample pitch transitions without corrupting
+  the accumulated phase. It requires positive pitch endpoints and accepts
+  nested list and tuple waveform tables. The `PV_` MASS comparison records
+  the timing correction against its unchanged reference fixture.
 
 ### Tests
 
@@ -22,6 +27,10 @@
   waveform changes, Doppler shifts, interaural delays and distance gain.
   The oscillator mutation audit includes these tests; its remaining
   survivors and scope are recorded in `MUTATION_AUDIT.md`.
+- Check the unlocalized sequence's curved glides, modulation boundaries,
+  independent vibratos and changing timbres. Measure Doppler frequency
+  and distance gain independently for each ear, including initial delay,
+  subsonic motion, temperature and short renders.
 
 ## [1.8.2] - 2026-09-21
 

@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
-*A living record, not a point-in-time audit. Last measured **2026-09-22**,
-`music` 1.8.2: 47 modules, 12,183 LOC package + 14,495 LOC tests, 126 names
+*A living record, not a point-in-time audit. Last measured **2026-09-23**,
+`music` 1.8.2: 47 modules, 12,197 LOC package + 14,868 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,8 +59,8 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **3810 tests**, 9 optional skips locally |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,819 stmts, 0 missed) |
+| Test suite | `pytest -q` | **3871 tests**, 9 optional skips locally |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,822 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
 | Lint, extended rule set | `ruff check --select ALL music` | 2,149 findings |
@@ -68,7 +68,7 @@ figures described above are automatically compared with the checkout.
 | Docstring coverage | AST scan | **169 / 180 public defs (94 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
-| MASS reconciliation | `tools/mass_reconcile.py` | **24 of 35 routines sample-exact**; 7 divergent with a stated reason, 4 where the reference does not run |
+| MASS reconciliation | `tools/mass_reconcile.py` | **23 of 35 routines sample-exact**; 8 divergent with a stated reason, 4 where the reference does not run |
 | Article coverage | `tools/article_coverage.py --strict` | **46 of 47 labelled equations** cited by a test; **all 46** a test could settle |
 | Docstring examples | `pytest --doctest-modules` | **62 examples run**, 1 skipped |
 | Examples | `python tools/run_examples.py` | **13 pass**, 1 skipped for the external singing engine |
@@ -218,20 +218,20 @@ either documented in the code or tracked in the issue list.
   degenerate parameters now checks the mean as well, with these seven
   registered, so the class has somewhere to be recorded.
 
-- **Mutation testing covers three selected files, not the whole package.**
-  The September 2026 audit deliberately changed normalization, audio I/O
-  and session code one operation at a time. Stronger sample-based tests
-  and two additional existing test selections detect 698 of 767 mutations,
-  up from 617. The 69 survivors were individually reviewed: diagnostic
-  text, equivalent supported behavior, and two explicitly accepted
-  one-sample changes to default noise length. No further production
-  defect was found.
+- **Mutation testing covers seven selected files across three areas.**
+  The September 2026 audits change normalization, audio I/O, session
+  envelopes, amplitude envelopes and note synthesis one operation at a
+  time. The export and envelope areas are complete, with their surviving
+  mutants individually reviewed. The oscillator area remains open after
+  the vibrato, localization, unlocalized sequence and Doppler passes.
+  These tests exposed timing, gain and modulation defects that line and
+  branch coverage had not revealed.
 
   [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records the scope, assertions,
   survivor IDs and reproduction command. The tool skips decorated classes,
   so an isolated adapter was needed to reach session methods; properties
-  remain outside mutation scope. This is evidence about those three files,
-  not a measure of the whole suite. Expanding it remains issue #113.
+  remain outside mutation scope. The measured results apply to those seven
+  files and their selected tests. Expanding the audit remains issue #113.
 
 - **The click measure is relative, so it is blind in fast passages.** A
   step counts as a click when it stands eight times over the median step

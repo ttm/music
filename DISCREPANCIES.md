@@ -1,6 +1,6 @@
 # Discrepancies
 
-*Run on **2026-09-05** against [ttm/mass](https://github.com/ttm/mass) at
+*Initial audit on **2026-09-05** against [ttm/mass](https://github.com/ttm/mass) at
 `e516b08`. Every entry below has a test that re-checks it against
 `music` 1.8.2 on every push.*
 
@@ -229,6 +229,29 @@ in a supplementary render. The complete original waveform must also equal
 a render with explicitly rounded durations, so that comparison cannot hide
 errors confined to the original fractional-duration call. Tests reject
 further length, pitch, gain or nonfinite drift.
+
+### Unlocalized vibrato sequences use the same whole-sample clock
+
+`note_with_vibratos_glissandos` shared the localized routine's inconsistent
+rounding: a 2.5 ms vibrato at 1 kHz lasted three samples, while a pitch
+segment of the same duration lasted two. It now floors both types of
+segment. The saved `PV_` reconciliation case consequently loses four
+surplus samples, from 1,590 to 1,586; its original reference fixture is
+unchanged. The complete original render must equal a render with explicit
+whole-sample durations, and a supplementary render with the reference's
+old vibrato counts retains the previous table-step and differing-sample
+count bounds. `tests/test_mass_reconciliation.py` checks both comparisons
+and rejects additional timing, pitch, gain or nonfinite drift.
+
+A one-sample pitch segment also previously divided by zero when computing
+its progress, producing an invalid frequency and a meaningless table index.
+Positive curve indices now sample the segment's starting pitch; a zero
+index retains its immediate jump to the endpoint. A zero-sample segment
+is empty.
+All exponential pitch endpoints must be strictly positive, as required for
+the ratios used by the other glissando routines. These cases are covered by
+independent pitch and timing expectations in
+`tests/test_vibratos_glissandos_audit.py`.
 
 ### `localize2` implements a model the article does not give
 

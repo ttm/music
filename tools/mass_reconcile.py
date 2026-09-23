@@ -107,6 +107,59 @@ SEQ_X = (-10, 10, 5, 3)
 SEQ_Y = (1, 1, 0.1, 0.1)
 
 
+def compare_vibrato_sequence(reference, package, render):
+    """Account for PV_'s consistent rounding of segment sample counts.
+
+    Require the complete original render to match explicit floored counts.
+    Then restore the reference's old vibrato counts in a separate render,
+    retaining both its one-table-step bound and its bound on how few samples
+    may differ. The original reference samples remain unchanged.
+    """
+    floors = [[int(FS * d) for d in row] for row in SEQ_D]
+    legacy = [floors[0]] + [
+        [int(np.ceil(FS * d)) for d in row] for row in SEQ_D[1:]
+    ]
+    expected_shapes = ((max(map(sum, legacy)),), (max(map(sum, floors)),))
+    if (reference.shape, package.shape) != expected_shapes:
+        raise ValueError(f'PV_ expected reference/package shapes '
+                         f'{expected_shapes}, got '
+                         f'{(reference.shape, package.shape)}')
+    if not (np.isfinite(reference).all() and np.isfinite(package).all()):
+        raise ValueError('PV_ reference/package render must be finite')
+
+    # An upward ulp preserves the count when division by FS rounds down.
+    canonical_durations = [
+        [np.nextafter(count / FS, np.inf) for count in row]
+        for row in floors
+    ]
+    canonical = np.asarray(render(canonical_durations), dtype=float)
+    if canonical.shape != package.shape:
+        raise ValueError('PV_ floor-normalized render has the wrong shape')
+    if not np.isfinite(canonical).all():
+        raise ValueError('PV_ floor-normalized render must be finite')
+    if not np.array_equal(package, canonical):
+        raise ValueError('PV_ original render differs from the complete '
+                         'floor-normalized render')
+
+    durations = lists(SEQ_D)
+    for i, row in enumerate(legacy[1:], 1):
+        durations[i] = [np.nextafter(count / FS, np.inf) for count in row]
+    aligned = np.asarray(render(durations), dtype=float)
+    if aligned.shape != reference.shape:
+        raise ValueError('PV_ duration-aligned render has the wrong shape')
+    if not np.isfinite(aligned).all():
+        raise ValueError('PV_ duration-aligned render must be finite')
+    prefix = min(row[0] for row in floors[1:])
+    differences = [np.abs(aligned - reference),
+                   np.abs(package[:prefix] - reference[:prefix])]
+    for difference in differences:
+        if np.count_nonzero(difference > 1e-12) > max(4,
+                                                    difference.size // 1000):
+            raise ValueError('PV_ too many samples differ after duration '
+                             'alignment')
+    return max(float(difference.max()) for difference in differences)
+
+
 def compare_localized_sequence(reference, package, render):
     """Account for D_'s duration rounding and final-position gain fixes.
 
@@ -192,6 +245,12 @@ def build_cases(ns: dict) -> list[Case]:
     def seq_tables():
         return ((Tr, Tr), (S, Tr, S), (S,) * 5)
 
+    def vibrato_sequence(durations=SEQ_D):
+        return music.note_with_vibratos_glissandos(
+            freqs=SEQ_F, durations=durations, vibratos_freqs=SEQ_FV,
+            vibratos_max_pitch_devs=SEQ_NU, alpha=SEQ_ALPHA,
+            waveform_tables=seq_tables(), sample_rate=FS)
+
     def localized_sequence(durations=SEQ_D_LOC):
         return music.note_with_vibrato_seq_localization(
             freqs=SEQ_F, durations=durations, vibratos_freqs=SEQ_FV,
@@ -265,10 +324,19 @@ def build_cases(ns: dict) -> list[Case]:
              lambda: ns['PV_'](f=list(SEQ_F), d=lists(SEQ_D), fv=lists(SEQ_FV),
                                nu=lists(SEQ_NU), alpha=lists(SEQ_ALPHA),
                                tab=lists(seq_tables()), fs=FS),
-             lambda: music.note_with_vibratos_glissandos(
-                 freqs=SEQ_F, durations=SEQ_D, vibratos_freqs=SEQ_FV,
-                 vibratos_max_pitch_devs=SEQ_NU, alpha=SEQ_ALPHA,
-                 waveform_tables=seq_tables(), sample_rate=FS)),
+             vibrato_sequence,
+             expect=DIVERGENT, bound=2.5e-4,
+             compare=lambda a, b: compare_vibrato_sequence(
+                 a, b, vibrato_sequence),
+             reason='vibrato durations now floor to whole samples, like '
+                    'pitch durations: the original render is (1586,), '
+                    'versus the reference\'s (1590,). The complete original '
+                    'render must exactly match a render with all durations '
+                    'normalized to their floored sample counts. A '
+                    'supplementary render restores the reference\'s vibrato '
+                    'counts; its samples and the original unchanged prefix '
+                    'retain the one-table-step bound, with at most four '
+                    'samples differing beyond floating-point noise'),
         Case('trill', 'trill',
              lambda: ns['trill'](f=[220, 440], ft=17, d=D, fs=FS),
              lambda: music.trill(freqs=[220, 440], notes_per_second=17,

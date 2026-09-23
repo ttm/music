@@ -114,9 +114,8 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     y : iterable of scalars
         The starting and ending y positions.
     stereo : boolean
-        If True, returns a (2, nsamples) array representing
-        a stereo sound. Else it returns a simple array
-        for a mono sound.
+        If True, return two channels with the initial interaural delay
+        represented by zero padding. Otherwise return a mono array.
     zeta : float
         The distance between the listener's ears in meters. It is used to
         compute interaural differences when generating stereo output.
@@ -124,8 +123,8 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
         The air temperature in Celsius.
         (Used to calculate the acoustic velocity.)
     number_of_samples : integer
-        The number of samples in the sound.
-        If not 0, d is ignored.
+        The number of source samples; if nonzero, duration is ignored.
+        Stereo output additionally includes the initial delay padding.
     sample_rate : integer
         The sample rate.
 
@@ -1071,12 +1070,18 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
     A meta-vibrato consists in multiple vibratos.
     The sequence of pitch transitions is a glissandi.
 
+    A one-sample pitch transition uses its starting frequency for a
+    positive curve index; an index of zero jumps directly to the endpoint.
+    After the pitch sequence ends, its last frequency is held. Completed
+    vibratos contribute no further modulation.
+
     Parameters
     ----------
-    freqs : list of lists of scalars
-        The frequencies of the note at each end of the transitions.
+    freqs : sequence of scalars
+        Positive frequencies at each end of the pitch transitions.
     durations : list of lists of scalars
-        The durations of the transitions and then of the vibratos.
+        Durations of the pitch transitions and then of the vibratos, in
+        seconds. Every segment uses ``int(sample_rate * duration)`` samples.
     vibratos_freqs :  list of lists of scalars
         The frequencies of each vibrato.
     vibratos_max_pitch_devs : list of lists of scalars
@@ -1084,13 +1089,13 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
     alpha : list of lists of scalars
         Indexes to distort the pitch deviations of the transitions
         and the vibratos.
+        A zero vibrato index selects the undistorted oscillation.
     waveform_tables : list of lists of array_likes
         The tables with the waveforms to synthesize the sound
         and for the oscillatory patterns of the vibratos.
         All the tables for f should have the same size.
     number_of_samples : scalar
-        The number of samples of the sound.
-        If supplied, d is not used.
+        If nonzero, truncate or zero-pad the complete render to this length.
     sample_rate : scalar
         The sample rate.
 
@@ -1098,6 +1103,11 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
     -------
     s : ndarray
         A numpy array where each value is a PCM sample of the sound.
+
+    Raises
+    ------
+    ValueError
+        If a pitch endpoint is not positive.
 
     See Also
     --------
@@ -1117,16 +1127,20 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
     >>> write_wav_mono(note_with_vibratos_glissandos())
 
     """
+    waveform_tables = tuple(tuple(np.asarray(table) for table in row)
+                            for row in waveform_tables)
     # pitch transition contributions
     f_ = []
     for i, dur in enumerate(durations[0]):
         lambda_ = int(sample_rate * dur)
         samples = np.arange(lambda_)
         f1, f2 = freqs[i:i + 2]
+        _require_a_ratio(f1, f2)
+        intervals = max(lambda_ - 1, 1)
         if alpha[0][i] != 1:
-            f = f1 * (f2 / f1) ** ((samples / (lambda_ - 1)) ** alpha[0][i])
+            f = f1 * (f2 / f1) ** ((samples / intervals) ** alpha[0][i])
         else:
-            f = f1 * (f2 / f1) ** (samples / (lambda_ - 1))
+            f = f1 * (f2 / f1) ** (samples / intervals)
         f_.append(f)
     ft = np.hstack(f_)
 
@@ -1136,7 +1150,7 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
     for i, vib in enumerate(durations[1:]):
         segments = []
         for j, dur in enumerate(vib):
-            samples = np.arange(dur * sample_rate)
+            samples = np.arange(int(dur * sample_rate))
             lv = len(waveform_tables[i + 1][j])
             gammav = (samples * vibratos_freqs[i][j] * lv /
                       sample_rate).astype(np.int64)  # LUT indexes

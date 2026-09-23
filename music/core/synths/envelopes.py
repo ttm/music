@@ -22,12 +22,13 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     max_amplitude : scalar
         The maximum deviation of amplitude of the AM.
     waveform_table : array_like
-        The table with the waveform for the tremolo oscillatory pattern.
+        The table with the waveform for the AM oscillatory pattern.
     number_of_samples : integer
-        The number of samples of the envelope. If supplied, d is ignored.
+        The number of samples of the envelope. If supplied, duration is
+        ignored.
     sonic_vector : array_like
-        Samples for the tremolo to be applied to.
-        If supplied, d and nsamples are ignored.
+        Samples for the modulation to be applied to. If supplied, duration
+        and number_of_samples are ignored.
     sample_rate : integer
         The sample rate.
 
@@ -45,7 +46,7 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
 
     Examples
     --------
-    >>> write_wav_mono(note_with_vibrato() * am())  # a note with tremolo
+    >>> write_wav_mono(note_with_vibrato() * am())  # a note with AM
     >>> s = horizontal_stack(
     ...     *[note_with_vibrato() * am(fm=i, max_amplitude=j)
     ...      for i, j in zip([60, 150, 100],
@@ -62,8 +63,8 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     (or AM), the tremolo pattern is considered separately from a synthesis of
     the sound.
 
-    The AM is an oscilattory pattern of amplitude while the tremolo is an
-    oscilattory pattern of loudness being: loudness ~ log(amplitude)
+    The AM is an oscillatory pattern of amplitude while the tremolo is an
+    oscillatory pattern of loudness being: loudness ~ log(amplitude)
 
     The vibrato and FM patterns are considered when synthesizing the sound.
 
@@ -121,10 +122,11 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     waveform_table : array_like
         The table with the waveform for the tremolo oscillatory pattern.
     number_of_samples : integer
-        The number of samples of the envelope. If supplied, d is ignored.
+        The number of samples of the envelope. If supplied, duration is
+        ignored.
     sonic_vector : array_like
-        Samples for the tremolo to be applied to.
-        If supplied, d and nsamples are ignored.
+        Samples for the tremolo to be applied to. If supplied, duration and
+        number_of_samples are ignored.
     sample_rate : integer
         The sample rate.
 

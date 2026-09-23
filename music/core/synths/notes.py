@@ -44,7 +44,7 @@ def note(freq: float = 220, duration: float = 2,
         The table with the waveform to synthesize the sound.
     number_of_samples : integer
         The number of samples in the sound.
-        If not 0, d is ignored.
+        If not 0, duration is ignored.
     sample_rate : integer
         The sample rate.
 
@@ -246,7 +246,7 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
         The table with the waveform for the modulator.
     number_of_samples : integer
         The number of samples in the sound.
-        If supplied, d is ignored.
+        If supplied, duration is ignored.
     sample_rate : integer
         The sample rate.
 
@@ -338,7 +338,7 @@ def note_with_phase(freq: float = 220, duration: float = 2,
         The table with the waveform to synthesize the sound.
     number_of_samples : integer
         The number of samples in the sound.
-        If not 0, d is ignored.
+        If not 0, duration is ignored.
     sample_rate : integer
         The sample rate.
 
@@ -417,7 +417,7 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
         "lin" for a linear transition of amplitude.
     number_of_samples : integer
         The number of samples of the sound.
-        If supplied, d is not used.
+        If supplied, duration is not used.
     sample_rate : integer
         The sample rate.
 
@@ -512,7 +512,7 @@ def note_with_glissando_vibrato(
         The table with the waveform for the vibrato oscillatory pattern.
     number_of_samples : integer
         The number of samples of the sound.
-        If supplied, d is not used.
+        If supplied, duration is not used.
     sample_rate : integer
         The sample rate.
 
@@ -985,7 +985,7 @@ def note_with_two_vibratos_glissando(
         secondary pattern of the vibrato.
     number_of_samples : scalar
         The number of samples of the sound.
-        If supplied, d is not used.
+        If supplied, duration is not used.
     sample_rate : scalar
         The sample rate.
 
@@ -1238,7 +1238,7 @@ def note_with_vibrato(
         If alpha != 1, the vibrato is not of linear pitch.
     number_of_samples : integer
         The number of samples in the sound.
-        If supplied, d is ignored.
+        If supplied, duration is ignored.
     sample_rate : integer
         The sample rate.
 
@@ -1351,7 +1351,7 @@ def note_with_two_vibratos(
         secondary pattern of the vibrato.
     number_of_samples : scalar
         The number of samples of the sound.
-        If supplied, d is not used.
+        If supplied, duration is not used.
     sample_rate : scalar
         The sample rate.
 
@@ -1455,9 +1455,11 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
     Raises
     ------
     ValueError
-        If ``notes_per_second`` is not positive. Each note of the trill
-        lasts ``sample_rate / notes_per_second`` samples, so a rate of
-        zero divided.
+        If ``notes_per_second`` is not positive, or is above
+        ``sample_rate``. Each note of the trill lasts
+        ``sample_rate / notes_per_second`` samples, so a rate of zero
+        divided, and one above the sample rate left notes shorter than a
+        sample.
 
     Examples
     --------
@@ -1482,6 +1484,13 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
         raise ValueError(
             "notes_per_second sets how long each note of the trill lasts "
             f"and must be positive; got {notes_per_second}")
+    if notes_per_second > sample_rate:
+        # A note shorter than a sample rounded to zero samples, which
+        # `note` reads as "not given": a millisecond at 50,000 notes a
+        # second came back as twelve seconds of two-second notes.
+        raise ValueError(
+            f"each note of the trill must span at least one sample; "
+            f"{notes_per_second} notes a second at {sample_rate} Hz do not")
     number_of_samples = sample_rate / notes_per_second
     pointer = 0
     i = 0

@@ -409,7 +409,7 @@ Thirty-one regression cases failed against the old source:
 
 A zero angle read as "use `x` and `y`" in `localize` and `localize2`, so
 no source could be placed at zero degrees. `None` is now the sentinel,
-noted for anyone upgrading. The area detects **626 of 647**, with 21
+noted for anyone upgrading. The area detects **631 of 652**, with 21
 survivors that are text, equivalent at a zero angle or checked by
 experiment to be equivalent conversions. `MUTATION_AUDIT.md` records
 them.
@@ -423,6 +423,25 @@ to half its rate without passing the rate, so at 8 kHz its tail sat below
 44.1 kHz whatever rate they were given. The other patterns turned up no
 further cases: a zero read as "not given", an FFT angle read into a sine
 table, and a clamped read outside a signal.
+
+A second pass widened the scan and found five more defects:
+
+- `pan_transitions` *added* its envelopes to the sound it was given
+  rather than scaling it by them, so nothing was panned. A parameter the
+  function never reads was the lead: `method`, documented as ignored.
+- `louds` given sample counts passed its arguments one place over, so
+  `trans_devs` was never read. A scan for positional arguments landing
+  in a differently named parameter finds no other case.
+- `reverb` failed for a response with no second period, and `trill` for
+  notes shorter than a sample: both handed `number_of_samples=0` to a
+  routine that reads it as "not given".
+- `localize2` refused an empty sound, and `sing` a note outside its
+  table, with a numpy and a `KeyError` message respectively.
+
+It also gave `sing` its missing docstring, replaced the MASS names (`d`,
+`nsamples`, `L()`) still used in parameter descriptions, and corrected
+nine misspellings. Calling every routine that takes a sound with a plain
+list found no other that refuses one.
 
 ## Next: the next release, then `utils.py`
 

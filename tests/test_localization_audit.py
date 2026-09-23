@@ -392,3 +392,15 @@ def test_the_default_sound_is_rendered_at_the_rate_asked_for(routine):
                                     sample_rate=8000)
     np.testing.assert_array_equal(rendered, given)
     assert rendered.shape[-1] < 2 * 8000 + 100
+
+
+@pytest.mark.parametrize("method", ["ifft", "brute"])
+def test_localize2_places_nothing_as_nothing(method):
+    """As the other localizers do; its FFT refused zero points."""
+    assert music.localize2(np.array([]), method=method).shape == (2, 0)
+
+
+def test_localize2_places_a_single_sample_in_both_ears():
+    """One sample has no frequencies but DC, which the cues leave alone."""
+    np.testing.assert_allclose(music.localize2(np.array([.5]), theta=40),
+                               [[.5], [.5]])

@@ -33,10 +33,10 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
         The percentage of the fade that is linear to ensure it reaches zero.
         It has no effect if method="linear".
     number_of_samples : integer
-        The number of samples of the fade. If supplied, d is ignored.
+        The number of samples of the fade. If supplied, duration is ignored.
     sonic_vector : array_like
-        Samples for the fade to be applied to. If supplied, d and nsamples are
-        ignored.
+        Samples for the fade to be applied to. If supplied, duration and
+        number_of_samples are ignored.
     sample_rate : integer
         The sample rate. Only used if number_of_samples and sonic_vector are
         not supplied.

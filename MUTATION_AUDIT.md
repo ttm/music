@@ -15,9 +15,9 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 |---|---|---|---:|---:|---:|---|
 | `export` | `core/functions.py`, `core/io.py`, `stimulation/session.py` | 2026-09-16 | 767 | 698 | 69 | all |
 | `envelopes` | `synths/envelopes.py`, `filters/adsr.py`, `filters/fade.py` | 2026-09-21 | 561 | 526 | 35 | all |
-| `oscillators` | `synths/notes.py` | 2026-09-23 | 1460 | 1442 | 18 | all |
+| `oscillators` | `synths/notes.py` | 2026-09-23 | 1462 | 1444 | 18 | all |
 | `stimuli` | `stimulation/stimuli.py` | 2026-09-23 | 427 | 423 | 4 | all |
-| `localization` | `filters/localization.py` | 2026-09-23 | 647 | 626 | 21 | all |
+| `localization` | `filters/localization.py` | 2026-09-23 | 652 | 631 | 21 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -270,6 +270,7 @@ and the last one the 42 survivors in the remaining routines.
 | After closing sequential localization | 1426 | 1350 | 76 |
 | After closing the unlocalized sequence and Doppler | 1439 | 1394 | 45 |
 | After closing the remaining routines | 1460 | 1442 | 18 |
+| After the second review's `trill` refusal | 1462 | 1444 | 18 |
 
 Four mutants time out rather than returning a wrong answer in every run.
 They are counted as detected: `trill` accumulates samples in a `while`
@@ -284,7 +285,7 @@ runner no longer reports a run containing them as incomplete.
 | `note_with_doppler` | 182 | 181 | 1 | 14 |
 | `_exponential_positions` | 29 | 20 | 9 | 8 |
 | `_require_a_ratio` | 14 | 11 | 3 | 10 |
-| `trill` | 50 | 48 | 2 | 6 |
+| `trill` | 52 | 50 | 2 | 6 |
 | `_fit_to_samples` | 17 | 16 | 1 | 1 |
 | `note_with_glissando` | 63 | 63 | 0 | 6 |
 | `note_with_fm` | 39 | 39 | 0 | 4 |
@@ -543,7 +544,7 @@ Fifteen new survivors are accepted, with the three from earlier passes:
 | `_require_a_ratio` | 8, 13, 14 | Case changes or `XX` around the refusal text. The tests check the hint's presence and the values the message ends with. |
 | `_fit_to_samples` | 5 | `<=` to `<` at an equal length. The full slice and a zero-length pad return the same samples. |
 | `trill` | 7 | `XX` around the refusal text. |
-| `trill` | 32 | Drops `waveform_table=WAVEFORM_TRIANGULAR` from the `note` call. That is `note`'s default. |
+| `trill` | 34 | Drops `waveform_table=WAVEFORM_TRIANGULAR` from the `note` call. That is `note`'s default. |
 
 IDs use the `music.core.synths.notes.x_<function>__mutmut_` prefix. The
 final snapshot uses the working-tree changes on `a44c81b`, with
@@ -557,6 +558,12 @@ The full area run took 582 seconds with two workers: **1,438 killed,
 four known `trill` timeouts and 18 survivors**, every one accepted above
 or in an earlier pass. Nothing was untested, skipped, suspicious or
 interrupted.
+
+The second review after 1.8.3 made `trill` refuse notes shorter than a
+sample. A rerun on that source, `notes.py` SHA-256
+`8e28e37b8708851c22df243dd0617901aebd17d9085c033f4ea2fab4eb7c8597`,
+detects **1,444 of 1,462** with the same eighteen survivors; the `trill`
+line deletion that was ID 32 is now 34. It took 357 seconds.
 
 ## `stimuli` — the sensory-stimulation generators
 
@@ -666,7 +673,7 @@ one this audit added. Together they reach every line and branch of it.
 | | Mutations | Detected | Surviving |
 |---|---:|---:|---:|
 | First run | 611 | 526 | 85 |
-| After the tests and corrections below | 647 | 626 | 21 |
+| After the tests and corrections below | 652 | 631 | 21 |
 
 One first-run mutant timed out and is counted as detected. Nothing lacked
 tests, was skipped or was suspicious.
@@ -744,11 +751,11 @@ and compares samples:
 
 | Function | IDs | Reason |
 |---|---|---|
-| `localize2` | 14, 15, 155, 156 | Case changes or `XX` around the refusal and the warning text. |
-| `localize2` | 141, 217, 227 | `theta_ > 0` to `>=`. At zero the delay is zero and the gain one, so both branches render the same samples. |
+| `localize2` | 14, 15, 160, 161 | Case changes or `XX` around the refusal and the warning text. |
+| `localize2` | 146, 222, 232 | `theta_ > 0` to `>=`. At zero the delay is zero and the gain one, so both branches render the same samples. |
 | `localize` | 59 | `x > 0` to `>=`, for the same reason at `x = 0`. |
-| `localize2` | 194, 196, 197 | Inside the Nyquist branch of `brute`, which the loop bound makes unreachable. |
-| `localize2` | 85 | `energy < cutoff` to `<=`, which differs only where a cumulative energy equals 99% of the total exactly. |
+| `localize2` | 199, 201, 202 | Inside the Nyquist branch of `brute`, which the loop bound makes unreachable. |
+| `localize2` | 90 | `energy < cutoff` to `<=`, which differs only where a cumulative energy equals 99% of the total exactly. |
 | `localize` | 12, 14 | Drops the `float64` conversion. The array is always scaled by or stacked with `float64`. |
 | `localize_hrtf` | 4, 6, 17, 19 | Drops the conversion of the sound or of one response; convolution promotes to the other operand's `float64`. |
 | `localize_hrtf` | 38, 40 | Drops `dtype=np.float64` from `np.zeros`, whose default it is. |
@@ -757,15 +764,15 @@ and compares samples:
 The conversion survivors were checked, not argued: int8, uint8, bool,
 float32 and list inputs gave identical samples with and without each one.
 
-The review after the audit made `None` the angle sentinel and rendered
-the default sound at the requested rate. The final snapshot includes
-both.
+The reviews after the audit made `None` the angle sentinel, rendered the
+default sound at the requested rate and answered an empty sound with an
+empty stereo array. The final snapshot includes all three.
 
 IDs use the `music.core.filters.localization.x_<function>__mutmut_`
-prefix. The final snapshot uses the working-tree changes on `cf7ca25`,
+prefix. The final snapshot uses the working-tree changes on `9078d08`,
 with `localization.py` SHA-256
-`2d0c3e54c36dbc10dc238ea1423310026b56f60e0b6332821873e584dc2f3dd5`.
-The run took 244 seconds with two workers.
+`8bd02c2a7940af55d808e1bfa2f69f2d02e75c88ad1d21cee1bf4f573be2ce74`.
+The run took 233 seconds with two workers.
 
 ## Tool limitation and adapter
 
@@ -815,7 +822,7 @@ exit code. The selected tests are in `tools/mutation_audit.py`.
 
 Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 `oscillators`, and 84 for `export` with two. The latest oscillator pass took
-582 seconds with two workers, `stimuli` 60 and `localization` 244. None
+582 seconds with two workers, `stimuli` 60 and `localization` 233. None
 is a candidate for CI at that cost — these are things to run
 deliberately, read, and act on.
 

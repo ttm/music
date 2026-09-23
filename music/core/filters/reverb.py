@@ -32,7 +32,9 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     Raises
     ------
     ValueError
-        If ``first_phase_duration`` is longer than ``duration``.
+        If ``first_phase_duration`` is longer than ``duration``, or
+        ``duration`` is shorter than one sample: the response begins with
+        the direct sound, so it has at least that.
 
     Returns
     -------
@@ -80,12 +82,18 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
             f"exceed duration ({duration} s): the first period of the "
             "reverberation is part of it, not longer than it"
         )
+    if lambda_r < 1:
+        raise ValueError(
+            f"duration ({duration} s) must span at least one sample at "
+            f"{sample_rate} Hz: the response begins with the direct sound")
     # Sound reincidence probability in the first period:
     ii = np.arange(lambda_r)
     p = (ii[:lambda1] / lambda1) ** 2.
     # incidences:
     r1_ = np.random.random(lambda1) < p
-    a = 10. ** ((decay / 20) * (ii / (lambda_r - 1)))
+    # A one-sample response is the direct sound alone, with no span for
+    # the decay to divide.
+    a = 10. ** ((decay / 20) * (ii / max(lambda_r - 1, 1)))
     # Eq. 76 First period of reverberation:
     r1 = r1_ * a[:lambda1]  # first incidences
 
@@ -93,9 +101,13 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     # The noise needs the rate as well as the band: given only
     # max_freq=sample_rate / 2, it built that band at 44.1 kHz, so at
     # 8 kHz the tail held 95% of its energy below 680 Hz.
-    noise_ = noise(noise_type, max_freq=sample_rate / 2,
-                   number_of_samples=lambda_r - lambda1,
-                   sample_rate=sample_rate)
+    # `noise` reads number_of_samples=0 as "not given" and returns two
+    # seconds, so a response that is all first period builds its empty
+    # second period here; asking for it failed with a broadcast error.
+    tail = lambda_r - lambda1
+    noise_ = (noise(noise_type, max_freq=sample_rate / 2,
+                    number_of_samples=tail, sample_rate=sample_rate)
+              if tail else np.array([]))
     r2 = noise_ * a[lambda1:lambda_r]
 
     # Eq. 78 Impulse response of the reverberation

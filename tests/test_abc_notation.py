@@ -86,6 +86,7 @@ def test_write_abc_carries_the_lyric_line(cache):
 # --------------------------------------------------------------------------
 
 @pytest.mark.parametrize("effect, expected", [
+    ("flite", "flite.inc"),
     ("flint", "flite.inc"),
     ("tremolo", "tremolo.inc"),
     ("melt", "melt.inc"),
@@ -173,3 +174,10 @@ def test_the_note_dictionary_covers_the_midi_range_it_claims():
     assert len(notes.notes_dict) == 85
     assert min(notes.notes_dict) == 12
     assert max(notes.notes_dict) == 96
+
+
+@pytest.mark.parametrize("notes, reference", [((40,), 60), ((0,), 5)])
+def test_a_note_outside_the_table_is_refused_by_name(notes, reference):
+    """It raised KeyError with the bare MIDI number."""
+    with pytest.raises(ValueError, match="outside the 12 to 96"):
+        perform.translate_to_abc(notes, [1], reference)

@@ -14,7 +14,7 @@ def adsr(envelope_duration=2, attack_duration=20,
     """
     Synthesize an ADSR envelope.
 
-    ADSR (Atack, Decay, Sustain, Release) is a very traditional loudness
+    ADSR (Attack, Decay, Sustain, Release) is a very traditional loudness
     envelope in sound synthesis [1].
 
     Parameters
@@ -48,10 +48,11 @@ def adsr(envelope_duration=2, attack_duration=20,
         is an array_like, it should hold two values, one for Attack and
         another for Release. It's ignored if trans="linear".
     number_of_samples : integer
-        The number of samples of the envelope. If supplied, d is ignored.
+        The number of samples of the envelope. If supplied,
+        envelope_duration is ignored.
     sonic_vector : array_like
-        Samples for the ADSR envelope to be applied to. If supplied, d and
-        nsamples are ignored.
+        Samples for the ADSR envelope to be applied to. If supplied,
+        envelope_duration and number_of_samples are ignored.
     sample_rate : integer
         The sample rate.
 

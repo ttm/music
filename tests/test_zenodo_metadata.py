@@ -116,17 +116,19 @@ def test_a_wrapped_headline_survives_the_summary_whole():
     assert "reasoning that should not appear" not in summary
 
 
-@pytest.mark.parametrize("entry", [
-    "- **A thing**, which goes on. Reasoning.\n",
-    "- **A thing,** which goes on. Reasoning.\n",
+@pytest.mark.parametrize("entry, headline", [
+    ("- **A thing**, which goes on. Reasoning.\n",
+     "- **A thing**, which goes on."),
+    ("- **A thing,** which goes on. Reasoning.\n",
+     "- **A thing,** which goes on."),
 ])
-def test_a_headline_that_ends_mid_sentence_is_finished(entry):
+def test_a_headline_that_ends_mid_sentence_is_finished(entry, headline):
     """With the comma inside the bold, the record showed "A thing," and
     stopped; outside it, the sentence was already carried on."""
     from tools.zenodo_sync import summarise
 
     summary = summarise("### Fixed\n" + entry)
-    assert "which goes on." in summary
+    assert headline in summary.splitlines()
     assert "Reasoning" not in summary
 
 

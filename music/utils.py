@@ -866,12 +866,15 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
     sample_rate : int, optional
         Sample rate of the audio, by default 44100
     sonic_vector : ndarray, optional
-        Input sonic vector, by default None
+        A mono or stereo sound to pan. Without one, the two envelopes
+        themselves are returned.
 
     Returns
     -------
     ndarray
-        Stereo audio signal with pan transitions applied.
+        The ``(2, n)`` panning envelopes, or ``sonic_vector`` scaled by
+        them: as long as the sound, holding the last position past the
+        end of the transitions.
 
     Notes
     -----
@@ -904,14 +907,14 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
 
     For now, each channel's signal are kept from mixing.
     One immediate possibility is to maintain the expected
-    tessiture of the sample amplitudes.
+    tessitura of the sample amplitudes.
     Say p = [.5,1,0,.5] ~ [(1,1),(1,0),(0,1),(1,1)].
     Then pi,pj = .5,1 might be performed as::
 
         s1 = s1*.5 -> 0
         s2 = s1*.5 -> (s1+s2)*.5
 
-    Or through sinusoids and expotentials
+    Or through sinusoids and exponentials
 
     Make fast and slow fades and parameter transitions
     using weber-fechner and steven's laws.
@@ -933,7 +936,10 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
     t0_ = []
     t1_ = []
     for i, pp in enumerate(p[1:]):
-        di = d[i] * sample_rate
+        # Whole samples, as every other routine counts a duration: the
+        # count was np.arange of the product, which rounds a fraction up,
+        # so 1.1 s of panning was a sample longer than 1.1 s of note.
+        di = int(d[i] * sample_rate)
         di_ = np.arange(di) / di
         t0 = pp_[0] * (1 - di_) + pp[0] * di_
         t1 = pp_[1] * (1 - di_) + pp[1] * di_
@@ -950,8 +956,16 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
     t1__ = horizontal_stack(*t1_)
     t = np.array((t0__, t1__))
     if sonic_vector is not None:
+        # An envelope scales the sound. This mixed the two, adding the
+        # ramps to it: the sound came back unpanned under a full-scale
+        # offset, and panning silence returned the envelopes themselves.
         sonic_vector = convert_to_stereo(sonic_vector)
-        return mix_with_offset(sonic_vector, t)
+        length = sonic_vector.shape[1]
+        if length > t.shape[1]:
+            # The destination, which the ramps approach but never reach.
+            final = np.asarray(p[-1], dtype=np.float64).reshape(2, 1)
+            t = np.hstack((t, np.repeat(final, length - t.shape[1], axis=1)))
+        return sonic_vector * t[:, :length]
     return t
 
 
@@ -1202,7 +1216,7 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
 
     Parameters
     ----------
-    durations : interable of scalars
+    durations : iterable of scalars
         The relative durations of each item (e.g. note).
     freqs : iterable of scalars
         The number of the entry's duration that fits into the pulse.

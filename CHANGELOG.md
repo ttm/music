@@ -15,14 +15,18 @@ of -70, so a caller who passed `theta=0` to give a position now passes
 *Rates.* `amplitude_modulation` at a zero rate returns the carrier at
 full level, where it scaled it by the modulator table's first entry:
 by half, for the default sine at full depth. `frequency_modulation` at a
-zero rate holds the carrier's pitch. A negative modulation rate, and a
-`pulse_rate` that is not positive, raise `ValueError`.
+zero rate holds the carrier's pitch. A negative modulation rate, a
+`pulse_rate` that is not positive, and a `trill` of more notes a second
+than the sample rate raise `ValueError`.
 
 *Renders.* The far ear in `localize_linear` and `spatial_motion` is
 silent until the sound reaches it, which changes its first samples for a
 sound that does not start at zero. `localize2(method="brute")` returns
 each partial in phase, and an output shorter by some thirty samples.
 `reverb` at a rate other than 44.1 kHz has a tail spanning the whole band.
+`pan_transitions` given a sound returns it panned, where it returned the
+sound with the envelopes added to it, and `louds` given sample counts
+uses the deviations it was given.
 
 ### Fixed
 
@@ -68,6 +72,29 @@ each partial in phase, and an output shorter by some thirty samples.
   asked for.** Called without a sound, `localize`, `localize_linear` and
   `localize2` rendered the default note at 44.1 kHz whatever
   `sample_rate` was: at 8 kHz, eleven seconds of it at 40 Hz.
+- **`pan_transitions` pans the sound it is given.** It mixed the
+  envelopes into it rather than scaling it by them, so the sound came
+  back unpanned under full-scale ramps, and panning silence returned the
+  envelopes themselves. The result now has the sound's length, holding
+  the final position past the end of the transitions, and each leg is a
+  whole number of samples as other durations are.
+- **`louds` given sample counts uses the deviations it was given.** That
+  branch passed its arguments by position one place over, so each
+  `alpha` became a deviation in decibels and `trans_devs` was never
+  read: a 6 dB rise came out as 1 dB. A transition with no samples is
+  refused by name, where both branches failed on its missing last value.
+- **`reverb` handles a response that is all first period, or one sample
+  long.** The first failed with a broadcast error, because `noise` reads
+  zero samples as "not given"; the second divided 0 / 0. A duration of
+  less than a sample is refused by name.
+- **`trill` refuses notes shorter than a sample.** They rounded to zero
+  samples, which `note` also reads as "not given": a millisecond at
+  50,000 notes a second came back as twelve seconds.
+- **`localize2` answers an empty sound with an empty stereo array.** The
+  other localizers already did; its FFT refused zero points.
+- **`sing` names a note outside the range it can write.** That range is
+  MIDI 12 to 96, and it raised a bare `KeyError`. It also accepts
+  `effect="flite"` for the voice it loads, keeping `"flint"`.
 - **`reverb`'s tail spans the band at any rate.** It asked `noise` for a
   band up to half its own rate without passing the rate, so the band was
   built at 44.1 kHz: at 8 kHz the tail held 95% of its energy below
@@ -88,6 +115,8 @@ each partial in phase, and an output shorter by some thirty samples.
 
 ### Documentation
 
+- **`sing` has a docstring, as do the helpers that write its score.** It
+  was the one public routine that raised without saying so.
 - **`localize2` says how it measures an angle.** From straight ahead and
   positive to the left, where `localize` and the other routines measure
   from the ear axis; and it has no distance, which its docstring used to

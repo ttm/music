@@ -252,7 +252,9 @@ def summarise(notes, repository="https://github.com/ttm/music"):
         # off at the comma.
         if rest[:1] in (",", ":") or head[end - 1] in ",:":
             stop = rest.find(". ")
-            headline += rest if stop == -1 else rest[:stop + 1]
+            # After a closing ** the rest follows a word, not punctuation.
+            gap = "" if rest[:1] in (",", ":") else " "
+            headline += gap + (rest if stop == -1 else rest[:stop + 1])
         kept.append(f"- {headline}".rstrip())
 
     summary = "\n".join(kept).strip()

@@ -12,7 +12,7 @@ def localize(sonic_vector=None, theta=None, distance=0, x=.1, y=.01,
     """
     Make a mono sound stereo and localize it by a very naive method.
 
-    See bellow for implementation notes.
+    See below for implementation notes.
 
     Parameters
     ----------
@@ -348,7 +348,7 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
     """
     Make a mono sound stereo and localize it by experimental methods.
 
-    See bellow for implementation notes. These implementations are not
+    See below for implementation notes. These implementations are not
     standard and are only to illustrate the method of using ITD and IID that
     are frequency dependent.
 
@@ -445,6 +445,10 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
         raise ValueError("The only methods implemented are ifft and brute")
     if sonic_vector is None:
         sonic_vector = note(sample_rate=sample_rate)
+    if len(sonic_vector) == 0:
+        # Nothing to place, as the other localizers answer it; the FFT
+        # below refused zero points.
+        return np.zeros((2, 0))
     # None, not zero, selects the position: zero is straight ahead, and
     # reading it as "not given" put the source at x and y.
     if theta is None:

@@ -273,6 +273,16 @@ exponential path on an axis, so no saved comparison changes.
 `tests/test_seq_localization_spatial.py` check each against independently
 computed samples.
 
+### `louds` by sample count reads the deviations it is given
+
+The reference's `L_` calls `L(dev[i], alpha[i], nsamples=ns)` when given
+sample counts, and `L` takes `d, dev, alpha` in that order: each `alpha`
+becomes a deviation and each deviation a duration the count overrides. The
+package inherited the call and now passes its arguments by name, so a count
+and a duration of the same length give the same envelope. The `L_` row of
+`RECONCILIATION.md` stays sample-exact, since it passes durations.
+`tests/test_filters.py` checks that the two branches agree.
+
 ### `localize2` implements a model the article does not give
 
 The frequency-dependent ITD and IID in `music.localize2` — a crossover at

@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pytest
 
@@ -347,3 +349,49 @@ def test_a_cross_fade_allows_the_overlaps_at_the_edge_of_what_fits(samples):
     joined = cross_fade(first, second, duration=samples * 1000 / 44100)
     assert joined.min() >= 3.0 - 1e-9
     assert joined.max() <= 5.0 + 1e-9
+
+
+def test_a_reverb_of_only_its_first_period_has_no_tail():
+    """`noise` reads zero samples as "not given" and returned two
+    seconds of tail, which failed to broadcast against no decay."""
+    np.random.seed(2)
+    response = reverb(duration=.01, first_phase_duration=.01,
+                      sample_rate=1000)
+    assert len(response) == 10 and response[0] == 1
+
+
+def test_a_one_sample_reverb_is_the_direct_sound():
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        np.testing.assert_array_equal(
+            reverb(duration=1 / 1000, first_phase_duration=0,
+                   sample_rate=1000), [1.])
+
+
+def test_a_reverb_shorter_than_a_sample_is_refused():
+    """With no first period to conflict with, a zero duration failed as a
+    broadcast error rather than saying what was wrong."""
+    with pytest.raises(ValueError, match="at least one sample"):
+        reverb(duration=0, first_phase_duration=0)
+
+
+def test_louds_by_count_is_louds_by_duration():
+    """The counts branch passed `trans_devs[i], alpha[i]` by position to
+    `loud(duration, trans_dev, alpha, ...)`, so every alpha became a
+    deviation: a 6 dB rise came out as a 1 dB one."""
+    settings = dict(trans_devs=(6, -12), alpha=(1, 2),
+                    method=("exp", "exp"))
+    by_count = louds(number_of_samples=(100, 50), **settings)
+    by_time = louds(durations=(.1, .05), sample_rate=1000, **settings)
+    np.testing.assert_array_equal(by_count, by_time)
+    assert 20 * np.log10(by_count[99]) == pytest.approx(6)
+    assert 20 * np.log10(by_count[-1]) == pytest.approx(6 - 12)
+
+
+@pytest.mark.parametrize("given", [dict(number_of_samples=(100, 0)),
+                                   dict(durations=(.1, 0))])
+def test_louds_refuses_a_transition_with_no_samples(given):
+    """It failed on the empty transition's missing last value."""
+    with pytest.raises(ValueError, match="at least one sample"):
+        louds(trans_devs=(6, -6), alpha=(1, 1), method=("exp", "exp"),
+              sample_rate=1000, **given)

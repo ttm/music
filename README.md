@@ -271,8 +271,8 @@ The modules are:
 ## Plans
 
 See [the findings and prioritized roadmap](ROADMAP.md) for the September
-2026 review, the 1.8.1 correctness patch, and the completed
-[targeted mutation audit](MUTATION_AUDIT.md).
+2026 review, the correctness patches since 1.8.1, and the
+[targeted mutation audits](MUTATION_AUDIT.md) of five areas of the package.
 
 Concrete things the code itself is waiting for, rather than a wish list:
 
@@ -289,13 +289,15 @@ Concrete things the code itself is waiting for, rather than a wish list:
   paper describes and `music.theory` does not implement.
 * **Checking the routines MASS has no counterpart for.**
   [`RECONCILIATION.md`](RECONCILIATION.md) compares the package with the MASS
-  reference implementation routine by routine — 24 of 35 are reproduced sample
-  for sample, and the rest diverge for reasons it states.
+  reference implementation routine by routine — 23 of 35 are reproduced sample
+  for sample, 8 diverge for reasons it states, and in 4 the reference itself
+  does not run.
   [`tests/test_article.py`](tests/test_article.py) checks the article's
   equations instead of its code, and covers 46 of 47 labelled equations:
   all 46 that a test could settle. Routines without a MASS counterpart
-  also have signal-property and composition tests; the next step is to
-  measure whether those assertions detect deliberate implementation errors.
+  also have signal-property and composition tests, and the mutation audits
+  measure, one area at a time, whether the assertions detect deliberate
+  implementation errors; the areas not yet audited are the next step.
   [`DISCREPANCIES.md`](DISCREPANCIES.md) is where the article, the reference
   implementation and this package are recorded as disagreeing.
 * **An article describing the package**, as a companion to the MASS one.
@@ -315,7 +317,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 4,046 tests, 100% line and branch coverage
+pytest                                       # 4,086 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

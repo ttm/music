@@ -173,6 +173,14 @@ def test_a_trill_may_hold_each_note_for_a_second_or_longer(notes_per_second):
             freq, rel=5e-3)
 
 
+def test_a_trill_refuses_notes_shorter_than_a_sample():
+    """They rounded to zero samples, which `note` reads as "not given":
+    a millisecond at 50,000 notes a second came back as twelve seconds."""
+    with pytest.raises(ValueError, match="at least one sample"):
+        music.trill(notes_per_second=50000, duration=.001)
+    assert len(music.trill(notes_per_second=44100, duration=.001)) == 44
+
+
 @pytest.mark.parametrize("routine, declared", [
     ("note", dict(freq=220, duration=2)),
     ("note_with_phase", dict(freq=220, duration=2, phase=0)),

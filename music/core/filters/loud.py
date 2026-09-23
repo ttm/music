@@ -31,13 +31,15 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
         "linear" for a linear transition of amplitude.
     number_of_samples : integer
         The number of samples of the envelope.
-        If supplied, d is ignored.
+        If supplied, duration is ignored.
     sonic_vector : array_like
         Samples for the envelope to be applied to.
-        If supplied, d and nsamples are ignored.
+        If supplied, duration and
+        number_of_samples are ignored.
     sample_rate : integer
         The sample rate.
-        Only used if nsamples and sonic_vector are not supplied.
+        Only used if number_of_samples and sonic_vector are not
+        supplied.
 
     Returns
     -------
@@ -117,7 +119,7 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
     """
     An envelope with linear or exponential transitions of amplitude.
 
-    See L() for more details.
+    See :func:`loud` for more details.
 
     Parameters
     ----------
@@ -129,12 +131,12 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
         If method="linear" the deviations are amplitude proportions.
     alpha : iterable
         Indexes to make the transitions slower or faster [1].
-        Ignored it method="linear".
+        Ignored if method="linear".
     method : iterable
         Methods for each transition.
         "exp" for exponential transitions of amplitude (linear loudness).
         "linear" for linear transitions of amplitude.
-    number_of_samples : interable
+    number_of_samples : iterable
         The number of samples of each transition.
         If supplied, durations is ignored.
     sonic_vector : array_like
@@ -146,7 +148,7 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
         number_of_samples yield shorter sequences).
     sample_rate : integer
         The sample rate.
-        Only used if nsamples and sonic_vector are not supplied.
+        Only used if number_of_samples is not supplied.
 
     Returns
     -------
@@ -154,6 +156,11 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
         A numpy array where each value is a value of the envelope for the PCM
         samples. If sonic_vector is supplied, e is the sonic vector with the
         envelope applied to it.
+
+    Raises
+    ------
+    ValueError
+        If a transition spans fewer than one sample.
 
     See Also
     --------
@@ -177,20 +184,25 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
 
     """
     sonic_vector = as_sonic_vector(sonic_vector)
+    # One count per transition, as `loud` itself would take a duration.
+    # The counts branch passed its arguments by position one place over:
+    # each alpha became the deviation and each deviation a duration that
+    # the count then overrode, so `trans_devs` was never read there.
+    counts = (number_of_samples if number_of_samples else
+              [int(sample_rate * dur) for dur in durations])
     s = []
     fact = 1
-    if number_of_samples:
-        for i, ns in enumerate(number_of_samples):
-            s_ = loud(trans_devs[i], alpha[i], number_of_samples=ns,
-                      method=method[i]) * fact
-            s.append(s_)
-            fact = s_[-1]
-    else:
-        for i, dur in enumerate(durations):
-            s_ = loud(dur, trans_devs[i], alpha[i],
-                      method=method[i], sample_rate=sample_rate) * fact
-            s.append(s_)
-            fact = s_[-1]
+    for i, count in enumerate(counts):
+        if count < 1:
+            # `loud` reads zero samples as "not given", and an empty
+            # transition has no last value to carry into the next one.
+            raise ValueError(
+                f"each transition must span at least one sample; "
+                f"transition {i} has {count}")
+        s_ = loud(trans_dev=trans_devs[i], alpha=alpha[i],
+                  method=method[i], number_of_samples=count) * fact
+        s.append(s_)
+        fact = s_[-1]
     e = np.hstack(s)
 
     if sonic_vector is not None:

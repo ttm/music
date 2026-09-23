@@ -16,9 +16,48 @@ def sing(text="Mar-ry had a litt-le lamb",
          notes=(4, 2, 0, 2, 4, 4, 4), durs=(1, 1, 1, 1, 1, 1, 2),
          M='4/4', L='1/4', Q=120, K='C', reference=60,
          lang='en', transpose=-36, effect=None):
-    #         lang='pt', transpose=-36, effect=None):
-    # write abc file, write make file, convert to midi, sing it out
-    # reference -= 24
+    """Sing a line of text to a melody, with the eCantorix engine.
+
+    The melody is written as ABC notation, the engine renders it through
+    espeak, and the result is read back as samples.
+
+    Parameters
+    ----------
+    text : str
+        The lyric, one syllable per note: syllables within a word joined
+        by hyphens, words separated by spaces.
+    notes : sequence of int
+        Each note's pitch, in semitones above ``reference``.
+    durs : sequence
+        Each note's duration, in units of ``L``.
+    M, L, Q, K : str or int
+        The ABC meter, unit note length, tempo in beats per minute and key.
+    reference : int
+        The MIDI note that pitch zero refers to.
+    lang : str
+        The espeak voice, which sets the language the text is sung in.
+    transpose : int
+        The espeak transposition, in semitones.
+    effect : str or None
+        A voice from the engine's extras: ``"flite"`` (also accepted as
+        ``"flint"``, its earlier spelling here), ``"tremolo"`` or
+        ``"melt"``. None sings with the plain voice.
+
+    Returns
+    -------
+    ndarray
+        The sung line, normalized, at 44,100 Hz.
+
+    Raises
+    ------
+    RuntimeError
+        If the engine is not installed (run
+        :func:`music.singing.setup_engine`), cannot be built in the cache,
+        or renders at a rate other than 44,100 Hz.
+    ValueError
+        If ``effect`` is not one of those above, there is not exactly one
+        duration per note, or a note falls outside MIDI 12 to 96.
+    """
     engine = engine_dir()
     cache = cache_dir()
     if not is_engine(engine):
@@ -34,7 +73,7 @@ def sing(text="Mar-ry had a litt-le lamb",
     write_abc(text, notes, durs, M=M, L=L, Q=Q, K=K, reference=reference)
     conf_text = '$ESPEAK_VOICE = "{}";\n'.format(lang)
     conf_text += '$ESPEAK_TRANSPOSE = {};'.format(transpose)
-    if effect == 'flint':
+    if effect in ('flite', 'flint'):
         conf_text += "\ndo 'extravoices/flite.inc';"
     elif effect == 'tremolo':
         conf_text += "\ndo 'extravoices/tremolo.inc';"
@@ -63,6 +102,11 @@ def sing(text="Mar-ry had a litt-le lamb",
 
 
 def write_abc(text, notes, durs, M='4/4', L='1/4', Q=120, K='C', reference=60):
+    """Write the melody and its lyric as ABC notation in the cache.
+
+    The engine reads ``achant.abc`` from the singing cache; the
+    parameters are those of :func:`sing`.
+    """
     text_ = 'X:1\n'
     text_ += 'T:Some chanting for music python package\n'
     text_ += 'M:{}\n'.format(M)
@@ -120,11 +164,14 @@ def translate_to_abc(notes, durs, reference):
 
 
 class Notes:
+    """The ABC name of each MIDI note from 12 to 96."""
+
     def __init__(self):
         self.notes_dict = None
         self.make_dict()
 
     def make_dict(self):
+        """Build the table from MIDI note number to ABC note name."""
         notes = re.findall(r'[\^=]?[a-g]', '=c^c=d^de=f^f=g^g=a^ab')
         # notes=re.findall(r'[\^]{0,1}[a-g]{1}','a^abc^cd^def^fg^g')
         notes_ = [note.upper() for note in notes]
@@ -144,12 +191,24 @@ class Notes:
                                    strict=True))
 
     def convert(self, notes, reference):
+        """Name each note, given in semitones above ``reference``.
+
+        Raises
+        ------
+        ValueError
+            If a note falls outside MIDI 12 to 96, which the table
+            covers. It raised a bare KeyError naming only the number.
+        """
         if self.notes_dict is None:
             self.make_dict()
         assert self.notes_dict is not None  # make_dict always assigns it
         notes_ = [reference + note for note in notes]
-        notes__ = [self.notes_dict[note] for note in notes_]
-        return notes__
+        outside = [note for note in notes_ if note not in self.notes_dict]
+        if outside:
+            raise ValueError(
+                f"MIDI notes {outside} are outside the 12 to 96 that ABC "
+                f"names here; move them, or change reference={reference}")
+        return [self.notes_dict[note] for note in notes_]
 
 
 converter = Notes()

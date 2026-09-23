@@ -462,6 +462,46 @@ def test_pan_transitions_moves_between_the_points_it_was_given():
     assert not clicks(rendered)
 
 
+@pytest.mark.parametrize("stereo", [False, True])
+def test_pan_transitions_scales_a_sound_by_its_envelopes(stereo):
+    """Panning multiplies. It mixed: the sound came back unpanned, under
+    ramps added to it at full scale, and panning silence returned the
+    envelopes themselves. The only test of this branch asked that the
+    result be stereo and finite, and it was both."""
+    points, legs = ((1, 0), (0, 1), (.5, .5)), (1, 1)
+    envelopes = music.pan_transitions(p=points, d=legs, sample_rate=100)
+    tone = music.note(7, number_of_samples=200, sample_rate=100)
+    sound = np.vstack((tone, -tone)) if stereo else tone
+    panned = music.pan_transitions(p=points, d=legs, sample_rate=100,
+                                   sonic_vector=sound)
+    np.testing.assert_array_equal(
+        panned, (sound if stereo else np.vstack((tone, tone))) * envelopes)
+    silence = music.pan_transitions(p=points, d=legs, sample_rate=100,
+                                    sonic_vector=np.zeros(200))
+    assert not silence.any()
+
+
+@pytest.mark.parametrize("length", [150, 260])
+def test_a_panned_sound_keeps_its_length_and_ends_at_the_last_point(length):
+    """Shorter than the transitions, it is cut where it ends; longer, it
+    stays at the final point, which the ramps approach but never reach."""
+    points, legs = ((1, 0), (0, 1), (.5, .25)), (1, 1)
+    envelopes = music.pan_transitions(p=points, d=legs, sample_rate=100)
+    panned = music.pan_transitions(p=points, d=legs, sample_rate=100,
+                                   sonic_vector=np.ones(length))
+    assert panned.shape == (2, length)
+    held = max(length - 200, 0)
+    expected = np.hstack((envelopes[:, :length],
+                          np.repeat([[.5], [.25]], held, axis=1)))
+    np.testing.assert_array_equal(panned, expected)
+
+
+def test_pan_transitions_with_no_transitions_holds_the_final_point():
+    panned = music.pan_transitions(p=((1, 0), (.3, .7)), d=(0,),
+                                   sonic_vector=np.ones(4))
+    np.testing.assert_array_equal(panned, [[.3] * 4, [.7] * 4])
+
+
 def test_pan_transitions_ignores_the_method_it_is_given():
     """A known limitation, pinned so that fixing it is a decision.
 
@@ -1116,3 +1156,10 @@ DC_WHEN_ZEROED = {
     ("note_with_two_vibratos", "freq"),
     ("note_with_vibrato", "freq"),
 }
+
+
+@pytest.mark.parametrize("seconds", [1.1, .0025])
+def test_a_pan_lasts_as_long_as_a_note_of_the_same_duration(seconds):
+    """Each leg rounded its sample count up where notes round down."""
+    envelopes = music.pan_transitions(p=((1, 0), (0, 1)), d=(seconds,))
+    assert envelopes.shape[1] == len(music.note(duration=seconds))

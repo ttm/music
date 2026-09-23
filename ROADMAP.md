@@ -363,27 +363,56 @@ The MASS reconciliation fixtures are unaffected, and `DISCREPANCIES.md`
 records the three edge cases where the package now departs from the
 reference.
 
-## Next: another bounded mutation area
+## Completed: the stimulus generators
 
-All three mutation areas are closed. Add the next area when changing a
-module, measuring its test selection with `pytest --cov-context=test`
-rather than guessing. `MUTATION_AUDIT.md` has the procedure.
+Reviewed 2026-09-23, as the fourth mutation area, `stimuli`. The first run
+left **75 of 404** mutations alive: the module was tested for its shapes
+and spectra, not its samples. The amplitude envelope, the orbit's
+trajectory, the isochronic ramp, the sign of a frequency sweep and every
+carrier's sample rate went unmeasured.
 
-Three things the three areas have taught, worth carrying into the next one:
+Ten regression cases failed against the old source:
+
+- `isochronic_tones` raised `ZeroDivisionError` at a zero rate with a
+  ramp, and ran backwards at a negative one. It now requires a positive
+  `pulse_rate`.
+- `amplitude_modulation` and `frequency_modulation` treated a zero rate
+  as their modulator held at its first entry, halving the carrier or
+  shifting its pitch. Zero now leaves the carrier alone, as
+  `modulated_noise` documents. Both refuse a negative rate, as it does.
+- `spatial_motion` refuses a stereo sound with a clear message.
+
+The area now detects **423 of 427**, with four equivalent or text-only
+survivors. `MUTATION_AUDIT.md` records them.
+
+The release tooling also gained a guard. The Zenodo summary keeps only
+each changelog entry's bold headline, and silently dropped the entries
+without one. The gate, the sync and a test on every push now refuse them.
+
+## Next: `core/filters/localization.py`
+
+Four mutation areas are closed. The localization filters are the natural
+fifth: the localized sequences that resemble them hid three defects, and
+`spatial_motion` now depends on `_localize_positions` for every sample.
+Measure the test selection with `pytest --cov-context=test`.
+
+Things the four areas have taught, worth carrying into the next one:
 
 - **An absent argument cannot be mutated.** The `cross_fade` and `trill`
   sample-rate defects were not found by any mutant, because no edit can
   expose an argument that was never passed. Both came out of reading the
   code around the mutants.
 - **Sort survivors by what they change, not where they are.** Grouped by
-  function, the last 42 looked like pitch-curve work; most were refusal
-  text and defaults.
-- **A branch can run under every test and still be unasserted.** Both
-  defects found so far sat inside a branch with full line *and* branch
+  function, the last 42 oscillator survivors looked like pitch-curve
+  work; most were refusal text and defaults.
+- **A spectrum is not a sample.** A test that measures where energy sits
+  lets through every edit that keeps the rate.
+- **A branch can run under every test and still be unasserted.** The
+  defects found so far sat inside branches with full line *and* branch
   coverage, under arithmetic that nothing measured.
 
 Add an area to `AREAS` rather than widening an existing one. None of the
-three is a whole-package mutation score.
+four is a whole-package mutation score.
 
 ## Other maintenance
 

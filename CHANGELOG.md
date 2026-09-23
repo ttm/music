@@ -1,5 +1,30 @@
 ## [Unreleased]
 
+### Fixed
+
+- **`isochronic_tones` requires a positive `pulse_rate`.** At zero a
+  ramp divided by the pulse period and raised `ZeroDivisionError`; a
+  negative rate ran the gate backwards, so each period began silent.
+- **`amplitude_modulation` and `frequency_modulation` refuse a negative
+  rate,** as `modulated_noise` already did: for an asymmetric modulator
+  table it is a different modulation, not the same one reversed.
+- **A zero modulation rate leaves the carrier unmodulated.** It did in
+  `modulated_noise`, but `amplitude_modulation` held its modulator at the
+  table's first entry and scaled the carrier by it (by half, for the
+  default sine at full depth), and `frequency_modulation` shifted its
+  pitch the same way for a table that does not start at zero.
+- **`spatial_motion` refuses a sound that is not mono,** with a message
+  saying so rather than one about broadcasting, and no longer renders
+  two seconds of tone to answer a zero duration with nothing.
+
+### Tests
+
+- **The stimulus generators have a mutation audit.** The new `stimuli`
+  area measures carriers at 8 kHz, the amplitude envelope, the isochronic
+  gate and ramp sample by sample, the band and rate of modulated noise,
+  the direction of a frequency sweep, the orbit's azimuth through several
+  cycles, and every routine's declared defaults.
+
 ### Maintenance
 
 - **An entry without a headline stops the release.** The Zenodo record

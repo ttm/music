@@ -138,6 +138,23 @@ AREAS = {
         ),
         'dataclass_adapter': None,
     },
+    # The sensory-stimulation generators: beats, pulses, modulations and
+    # motion. Selected from `pytest --cov-context=test`.
+    'stimuli': {
+        'sources': (
+            'music/stimulation/stimuli.py',
+        ),
+        'tests': (
+            'tests/test_stimulation.py',
+            'tests/test_stimuli_audit.py',
+            'tests/test_degenerate.py',
+            'tests/test_properties.py',
+            'tests/test_public_api.py',
+            'tests/test_artifacts.py',
+            'tests/test_stimulation_session.py',
+        ),
+        'dataclass_adapter': None,
+    },
 }
 
 

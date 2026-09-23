@@ -30,7 +30,7 @@ def _sample_count(duration, number_of_samples, sample_rate):
     return int(duration * sample_rate)
 
 
-def _nothing(channels=1):
+def _nothing(channels):
     """Zero samples, in the shape the routine would otherwise return.
 
     Every routine here sizes itself with :func:`_sample_count` and then
@@ -244,6 +244,7 @@ def isochronic_tones(carrier_freq: float = 200.0, pulse_rate: float = 10.0,
         The frequency of the gated tone, in Hertz.
     pulse_rate : scalar
         How many times per second the tone is switched on, in Hertz.
+        Must be positive.
     duty_cycle : scalar
         The fraction of each pulse period the tone is on, in ``(0, 1]``.
     duration : scalar
@@ -254,7 +255,8 @@ def isochronic_tones(carrier_freq: float = 200.0, pulse_rate: float = 10.0,
         technique; see the note below on what that costs. A ramp longer
         than half the sounding part of a pulse leaves the two ramps
         overlapping, and the pulse becomes a triangle that never reaches
-        full amplitude rather than an error.
+        full amplitude rather than an error. At a duty cycle of one the
+        pulses touch, and the ramps still meet at each boundary.
     waveform_table : array_like
         The table the tone is looked up in.
     number_of_samples : integer
@@ -270,6 +272,10 @@ def isochronic_tones(carrier_freq: float = 200.0, pulse_rate: float = 10.0,
 
     Raises
     ------
+    ValueError
+        If ``pulse_rate`` is not positive. At zero there is no pulse to
+        gate, and a ramp divided by the period; a negative rate ran the
+        gate backwards, starting each period silent.
     ValueError
         If ``duty_cycle`` is outside ``(0, 1]``. A duty cycle of zero is
         silence and one above one is not a gate, and both are more
@@ -306,6 +312,9 @@ def isochronic_tones(carrier_freq: float = 200.0, pulse_rate: float = 10.0,
            https://w3id.org/sstim/vocab#techIsochronicTones
 
     """
+    if pulse_rate <= 0:
+        raise ValueError(
+            f"pulse_rate must be positive, got {pulse_rate}")
     if not 0 < duty_cycle <= 1:
         raise ValueError(
             f"duty_cycle must be in (0, 1], got {duty_cycle}")
@@ -353,7 +362,8 @@ def amplitude_modulation(
     carrier_freq : scalar
         The frequency of the carrier, in Hertz.
     modulation_freq : scalar
-        The rate at which its amplitude is modulated, in Hertz.
+        The rate at which its amplitude is modulated, in Hertz. Zero
+        leaves the carrier unmodulated, as in :func:`modulated_noise`.
     modulation_depth : scalar
         How deep the modulation goes, in ``[0, 1]``. At 1 the envelope
         reaches zero once per modulation period; at 0 the carrier is
@@ -382,6 +392,9 @@ def amplitude_modulation(
         If ``modulation_depth`` is outside ``[0, 1]``, where the
         envelope would go negative and invert the carrier's phase
         rather than deepening the modulation.
+    ValueError
+        If ``modulation_freq`` is negative, for the reason
+        :func:`modulated_noise` gives.
 
     Notes
     -----
@@ -413,11 +426,18 @@ def amplitude_modulation(
     if not 0 <= modulation_depth <= 1:
         raise ValueError(
             f"modulation_depth must be in [0, 1], got {modulation_depth}")
+    if modulation_freq < 0:
+        raise ValueError(
+            f"modulation_freq cannot be negative, got {modulation_freq}")
     count = _sample_count(duration, number_of_samples, sample_rate)
     if count < 1:
         return _nothing(1)
     tone = note(freq=carrier_freq, waveform_table=waveform_table,
                 number_of_samples=count, sample_rate=sample_rate)
+    if not modulation_freq:
+        # No rate is no modulation. The table's first entry, held still,
+        # scaled the carrier instead: by half, for the default sine.
+        return tone
     modulator = _oscillator(modulation_waveform_table, modulation_freq,
                             count, sample_rate)
     envelope = 1 - modulation_depth * (1 - modulator) / 2
@@ -443,7 +463,8 @@ def frequency_modulation(
     carrier_freq : scalar
         The centre frequency of the carrier, in Hertz.
     modulation_freq : scalar
-        The rate at which the pitch sweeps, in Hertz.
+        The rate at which the pitch sweeps, in Hertz. Zero leaves the
+        pitch at ``carrier_freq``.
     frequency_deviation : scalar
         The peak departure from ``carrier_freq``, in Hertz. Stated in
         Hertz rather than in semitones, which is the convention this
@@ -465,6 +486,12 @@ def frequency_modulation(
     -------
     ndarray
         A mono sequence of PCM samples.
+
+    Raises
+    ------
+    ValueError
+        If ``modulation_freq`` is negative, for the reason
+        :func:`modulated_noise` gives.
 
     Notes
     -----
@@ -499,10 +526,16 @@ def frequency_modulation(
            https://w3id.org/sstim/vocab#techFrequencyModulation
 
     """
+    if modulation_freq < 0:
+        raise ValueError(
+            f"modulation_freq cannot be negative, got {modulation_freq}")
     count = _sample_count(duration, number_of_samples, sample_rate)
-    modulator = _oscillator(modulation_waveform_table, modulation_freq,
-                            count, sample_rate)
-    instantaneous = carrier_freq + frequency_deviation * modulator
+    instantaneous = np.full(max(count, 0), float(carrier_freq))
+    if modulation_freq:
+        # As in amplitude_modulation: a table held still at a nonzero
+        # first entry shifted the pitch rather than leaving it alone.
+        instantaneous += frequency_deviation * _oscillator(
+            modulation_waveform_table, modulation_freq, count, sample_rate)
 
     table = np.asarray(waveform_table)
     length = len(table)
@@ -625,7 +658,7 @@ def modulated_noise(noise_type: str | float = 'pink',
                 max_freq=max_freq, number_of_samples=count,
                 sample_rate=sample_rate)
     if not modulation_freq:
-        return np.asarray(bed, dtype=np.float64)
+        return bed
     modulator = _oscillator(modulation_waveform_table, modulation_freq,
                             count, sample_rate)
     envelope = 1 - modulation_depth * (1 - modulator) / 2
@@ -700,6 +733,10 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
     ValueError
         If ``motion_rate`` is negative, which would reverse the
         trajectory rather than slow it.
+    ValueError
+        If ``sonic_vector`` is not one-dimensional. A stereo sound has
+        its position already, and moving one failed inside the
+        localization with a message about broadcasting.
 
     Notes
     -----
@@ -748,13 +785,19 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
             f"motion_rate cannot be negative, got {motion_rate}")
     if sonic_vector is None:
         count = _sample_count(duration, number_of_samples, sample_rate)
+        if count < 1:
+            return _nothing(2)
         source = note(freq=carrier_freq, waveform_table=waveform_table,
                       number_of_samples=count, sample_rate=sample_rate)
     else:
         source = np.asarray(sonic_vector, dtype=np.float64)
+        if source.ndim != 1:
+            raise ValueError(
+                "spatial_motion moves a mono sound; got an array of "
+                f"shape {source.shape}")
         count = len(source)
-    if count == 0:
-        return np.zeros((2, 0))
+        if count == 0:
+            return _nothing(2)
 
     # The azimuth is triangular in time: one cycle runs theta1 to theta2
     # and back, so `progress` rises from 0 to 1 and falls again.

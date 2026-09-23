@@ -16,6 +16,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `export` | `core/functions.py`, `core/io.py`, `stimulation/session.py` | 2026-09-16 | 767 | 698 | 69 | all |
 | `envelopes` | `synths/envelopes.py`, `filters/adsr.py`, `filters/fade.py` | 2026-09-21 | 561 | 526 | 35 | all |
 | `oscillators` | `synths/notes.py` | 2026-09-23 | 1460 | 1442 | 18 | all |
+| `stimuli` | `stimulation/stimuli.py` | 2026-09-23 | 427 | 423 | 4 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -556,6 +557,102 @@ four known `trill` timeouts and 18 survivors**, every one accepted above
 or in an earlier pass. Nothing was untested, skipped, suspicious or
 interrupted.
 
+## `stimuli` — the sensory-stimulation generators
+
+Measured 2026-09-23 on Python 3.12.7, macOS, with `mutmut` 3.7.0. No
+adapter. The seven selected test files are the six that
+`pytest --cov-context=test` found reaching `stimuli.py`, plus the one this
+audit added. Together they reach every line and branch of it.
+
+### Result
+
+| | Mutations | Detected | Surviving |
+|---|---:|---:|---:|
+| First run | 404 | 329 | 75 |
+| After the tests and corrections below | 427 | 423 | 4 |
+
+The totals differ because the corrections added refusals and removed
+two redundancies. Nothing timed out, lacked tests, was skipped or was
+suspicious.
+
+The 75 first-run survivors show that the module was tested for its shapes
+and spectra, not its samples. Every arithmetic edit to the amplitude
+envelope survived, since the tests only asked where the envelope's energy
+sat. So did most edits to the orbit's phase, fold and azimuth, the
+isochronic ramp's shape, and the sign of the frequency deviation.
+`modulated_noise` could drop `min_freq`, `max_freq` or `sample_rate` on
+the way to `noise`. No test ran any stimulus at a rate other than
+44.1 kHz, so every call passing the rate to `note` could have dropped it.
+Twenty-seven survivors were changed defaults.
+
+### What it found
+
+Ten regression cases failed against the previous source:
+
+- **An isochronic train at a zero rate raised `ZeroDivisionError`** once
+  it had a ramp, which divides by the pulse period. A negative rate ran
+  the gate backwards, starting each period silent. `pulse_rate` must now
+  be positive.
+- **A zero modulation rate meant different things in siblings.**
+  `modulated_noise` documents zero as unmodulated and returns the noise
+  at full level. `amplitude_modulation` held its modulator at the table's
+  first entry and scaled the carrier by it, which is half, for the default
+  sine at full depth. `frequency_modulation` shifted its pitch the same way
+  for any table not starting at zero. Both now leave the carrier alone.
+  The survivors that refused a zero or sub-hertz rate prompted the
+  decision, since a test of zero needs an answer to test against.
+- **Negative modulation rates were refused only by `modulated_noise`.**
+  `amplitude_modulation` and `frequency_modulation` now refuse them too,
+  for the reason its docstring gives.
+- **`spatial_motion` accepted a stereo sound** and failed inside the
+  localization with a message about broadcasting. It now says what is
+  wrong. A zero duration no longer renders two seconds of tone first.
+- **The `float64` conversion of a moved sound is load-bearing.** Its
+  mutants looked equivalent. Without it, a `float32` sound interpolates
+  its fractional delay in single precision, and a boolean one raises.
+
+Two redundancies went: `_nothing` had a default no caller used, and
+`modulated_noise` converted `noise`'s output to the `float64` it already
+was.
+
+### What the tests catch
+
+`tests/test_stimuli_audit.py` reads samples rather than spectra. A ramp
+table renders a carrier's phase, and a constant table renders an envelope
+or a gate by itself:
+
+- Both binaural carriers, the monaural mean, and the gated, modulated and
+  orbiting carriers at 8 kHz.
+- The amplitude envelope `1 - depth * (1 - m) / 2` at crest, zero and
+  trough for three depths, and the same envelope on a seeded noise bed.
+- Unmodulated noise equal to `noise` with the same colour, band and rate.
+- A frequency sweep that rises while the modulator is up.
+- The isochronic gate to the sample, its edge included, with a duty
+  cycle of one and with a linear ramp from each edge.
+- The orbit against independently computed azimuths through two and a
+  half triangular cycles, for two pairs of endpoints.
+- One-sample and zero-length renders, `number_of_samples` for the noise
+  and the orbit, zero and sub-hertz rates, and each routine's declared
+  defaults.
+
+### Accepted survivors
+
+| Function | IDs | Reason |
+|---|---|---|
+| `isochronic_tones` | 48 | `.astype(None)` for `.astype(np.float64)`: NumPy's default type is `float64`. |
+| `isochronic_tones` | 65 | `gate =` for `gate *=` in the ramp. The ramp is already zero wherever the gate is closed and the gate is one wherever it is open. |
+| `isochronic_tones` | 68 | Drops the ramp's lower clip. Its values are negative only where the gate is closed, where the product is a zero of the other sign. |
+| `spatial_motion` | 43 | `XX` around the refusal text. |
+
+The two ramp mutants agreed with the source in all of 3,000 random
+settings of rate, duty cycle, ramp, length and sample rate.
+
+IDs use the `music.stimulation.stimuli.x_<function>__mutmut_` prefix.
+The final snapshot uses the working-tree changes on `95cf57a`, with
+`stimuli.py` SHA-256
+`384c0b5e9628ddc2d7c3f399095ab770e494aea2df0c3c26d3d068a72af941da`.
+The run took 60 seconds with two workers.
+
 ## Tool limitation and adapter
 
 This applies to the `export` area alone; the envelope modules are plain
@@ -589,6 +686,7 @@ python -m pip install mutmut==3.7.0
 python tools/mutation_audit.py --list-areas
 python tools/mutation_audit.py --area envelopes --revision HEAD
 python tools/mutation_audit.py --area oscillators --revision HEAD
+python tools/mutation_audit.py --area stimuli --revision HEAD
 python tools/mutation_audit.py --area export --revision ef03962 --max-children 2
 ```
 
@@ -602,18 +700,20 @@ exit code. The selected tests are in `tools/mutation_audit.py`.
 
 Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 `oscillators`, and 84 for `export` with two. The latest oscillator pass took
-582 seconds with two workers. None is a candidate for CI at
+582 seconds with two workers, and `stimuli` 60. None is a candidate for CI at
 that cost — these are things to run deliberately, read, and act on.
 
 ## Next
 
-**Expand to another bounded area when changing it.** All three areas are
-closed, with every survivor reviewed. Add an area to
+**Expand to another bounded area when changing it.** All four areas are
+closed, with every survivor reviewed. `core/filters/localization.py` is
+the natural next one: the localized sequences that resemble it hid three
+defects. Add an area to
 `AREAS` rather than widening an existing one, and pick the test selection
 by measuring which tests reach the module — `pytest --cov-context=test`
 and a query over the coverage database — rather than by guessing at names.
 
-Two things the three areas have taught, worth carrying:
+What the areas have taught, worth carrying:
 
 - **An absent argument cannot be mutated.** No edit to `cross_fade` could
   expose a `sample_rate` that was never passed to `mix_with_offset`, nor
@@ -624,9 +724,17 @@ Two things the three areas have taught, worth carrying:
   42 were grouped by function, and the grouping said little: most were
   refusal text and defaults, and the pitch-curve ones sat in routines
   listed as small.
-- **A branch can run on every test and still be unasserted.** Both defects
-  found so far sat inside a branch with full line *and* branch coverage,
-  under arithmetic that nothing measured. That is the shape to look for.
+- **A branch can run on every test and still be unasserted.** The
+  defects found so far sat inside branches with full line *and* branch
+  coverage, under arithmetic that nothing measured. That is the shape to
+  look for.
+- **A spectrum is not a sample.** The stimulus tests measured where a
+  modulation's energy sat and nothing about its shape, so every edit
+  that kept the rate survived. A constant or ramp table reads the
+  envelope or the phase directly.
+- **An apparent equivalent deserves an experiment.** Two `float64`
+  conversions in `spatial_motion` looked redundant; one line of other
+  input types showed they were not.
 
 Keep the sample-based assertions when refactoring these paths. Resolve the
 property/decorator coverage limitation before interpreting any future

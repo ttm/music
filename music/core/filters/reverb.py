@@ -90,8 +90,12 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     r1 = r1_ * a[:lambda1]  # first incidences
 
     # Eq. 77 Second period of reverberation:
+    # The noise needs the rate as well as the band: given only
+    # max_freq=sample_rate / 2, it built that band at 44.1 kHz, so at
+    # 8 kHz the tail held 95% of its energy below 680 Hz.
     noise_ = noise(noise_type, max_freq=sample_rate / 2,
-                   number_of_samples=lambda_r - lambda1)
+                   number_of_samples=lambda_r - lambda1,
+                   sample_rate=sample_rate)
     r2 = noise_ * a[lambda1:lambda_r]
 
     # Eq. 78 Impulse response of the reverberation

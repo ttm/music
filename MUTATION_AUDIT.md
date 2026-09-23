@@ -17,7 +17,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `envelopes` | `synths/envelopes.py`, `filters/adsr.py`, `filters/fade.py` | 2026-09-21 | 561 | 526 | 35 | all |
 | `oscillators` | `synths/notes.py` | 2026-09-23 | 1460 | 1442 | 18 | all |
 | `stimuli` | `stimulation/stimuli.py` | 2026-09-23 | 427 | 423 | 4 | all |
-| `localization` | `filters/localization.py` | 2026-09-23 | 644 | 623 | 21 | all |
+| `localization` | `filters/localization.py` | 2026-09-23 | 647 | 626 | 21 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -666,7 +666,7 @@ one this audit added. Together they reach every line and branch of it.
 | | Mutations | Detected | Surviving |
 |---|---:|---:|---:|
 | First run | 611 | 526 | 85 |
-| After the tests and corrections below | 644 | 623 | 21 |
+| After the tests and corrections below | 647 | 626 | 21 |
 
 One first-run mutant timed out and is counted as detected. Nothing lacked
 tests, was skipped or was suspicious.
@@ -711,12 +711,14 @@ Reading the module also corrected four docstrings: the speed of sound
 `localize_hrtf` claiming to use a `sample_rate` it ignores, and what a
 zero angle means to `localize` and `localize2`.
 
-**Not changed: a zero angle reads as not supplied.** Both routines take
-`theta=0` as "use `x` and `y`". `localize2`'s default angle is -70, so
-passing zero is how its callers select a position, and existing tests do
-exactly that. Placing a source at zero degrees takes its coordinates.
-Making `None` the sentinel would break those callers, so it is now
-documented rather than changed.
+**Then changed: a zero angle is an angle.** Both routines read `theta=0`
+as "use `x` and `y`", so a source could not be placed at zero degrees:
+`localize` put it at its default position and `localize2` far to one
+side. Because `localize2`'s default angle is -70, passing zero was how
+its callers gave a position, and existing tests did exactly that. The
+sentinel is now `None`, the change is in the changelog's note for anyone
+upgrading, and `localize2`'s docstring now says that it measures from
+straight ahead where the others measure from the ear axis.
 
 ### What the tests catch
 
@@ -742,11 +744,11 @@ and compares samples:
 
 | Function | IDs | Reason |
 |---|---|---|
-| `localize2` | 14, 15, 154, 155 | Case changes or `XX` around the refusal and the warning text. |
-| `localize2` | 140, 216, 226 | `theta_ > 0` to `>=`. At zero the delay is zero and the gain one, so both branches render the same samples. |
-| `localize` | 58 | `x > 0` to `>=`, for the same reason at `x = 0`. |
-| `localize2` | 193, 195, 196 | Inside the Nyquist branch of `brute`, which the loop bound makes unreachable. |
-| `localize2` | 84 | `energy < cutoff` to `<=`, which differs only where a cumulative energy equals 99% of the total exactly. |
+| `localize2` | 14, 15, 155, 156 | Case changes or `XX` around the refusal and the warning text. |
+| `localize2` | 141, 217, 227 | `theta_ > 0` to `>=`. At zero the delay is zero and the gain one, so both branches render the same samples. |
+| `localize` | 59 | `x > 0` to `>=`, for the same reason at `x = 0`. |
+| `localize2` | 194, 196, 197 | Inside the Nyquist branch of `brute`, which the loop bound makes unreachable. |
+| `localize2` | 85 | `energy < cutoff` to `<=`, which differs only where a cumulative energy equals 99% of the total exactly. |
 | `localize` | 12, 14 | Drops the `float64` conversion. The array is always scaled by or stacked with `float64`. |
 | `localize_hrtf` | 4, 6, 17, 19 | Drops the conversion of the sound or of one response; convolution promotes to the other operand's `float64`. |
 | `localize_hrtf` | 38, 40 | Drops `dtype=np.float64` from `np.zeros`, whose default it is. |
@@ -755,11 +757,15 @@ and compares samples:
 The conversion survivors were checked, not argued: int8, uint8, bool,
 float32 and list inputs gave identical samples with and without each one.
 
+The review after the audit made `None` the angle sentinel and rendered
+the default sound at the requested rate. The final snapshot includes
+both.
+
 IDs use the `music.core.filters.localization.x_<function>__mutmut_`
-prefix. The final snapshot uses the working-tree changes on `b926e7a`,
+prefix. The final snapshot uses the working-tree changes on `cf7ca25`,
 with `localization.py` SHA-256
-`29f4dd2cd0f14b1099f62cf61945551944eda2c8d8636e5ceef7b3b7e8670346`.
-The run took 307 seconds with two workers.
+`2d0c3e54c36dbc10dc238ea1423310026b56f60e0b6332821873e584dc2f3dd5`.
+The run took 244 seconds with two workers.
 
 ## Tool limitation and adapter
 
@@ -809,7 +815,7 @@ exit code. The selected tests are in `tools/mutation_audit.py`.
 
 Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 `oscillators`, and 84 for `export` with two. The latest oscillator pass took
-582 seconds with two workers, `stimuli` 60 and `localization` 307. None
+582 seconds with two workers, `stimuli` 60 and `localization` 244. None
 is a candidate for CI at that cost — these are things to run
 deliberately, read, and act on.
 

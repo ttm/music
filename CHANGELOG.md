@@ -1,21 +1,51 @@
 ## [Unreleased]
 
+### Note for anyone upgrading
+
+**This one changes what some calls return.** Nothing is removed or
+renamed and no import breaks.
+
+*Angles.* `localize` and `localize2` read `theta=0` as "no angle given"
+and placed the source at `x` and `y`. Zero is now an angle: the right
+ear's side for `localize`, straight ahead for `localize2`. `None` means
+no angle, and is `localize`'s new default; `localize2` keeps its default
+of -70, so a caller who passed `theta=0` to give a position now passes
+`theta=None`.
+
+*Rates.* `amplitude_modulation` at a zero rate returns the carrier at
+full level, where it scaled it by the modulator table's first entry:
+by half, for the default sine at full depth. `frequency_modulation` at a
+zero rate holds the carrier's pitch. A negative modulation rate, and a
+`pulse_rate` that is not positive, raise `ValueError`.
+
+*Renders.* The far ear in `localize_linear` and `spatial_motion` is
+silent until the sound reaches it, which changes its first samples for a
+sound that does not start at zero. `localize2(method="brute")` returns
+each partial in phase, and an output shorter by some thirty samples.
+`reverb` at a rate other than 44.1 kHz has a tail spanning the whole band.
+
 ### Fixed
+
+- **A zero angle is an angle.** `localize(theta=0, distance=1)` placed the
+  source at the default `x` and `y` rather than on the right ear's side,
+  and `localize2(theta=0)` put a source meant to be straight ahead far to
+  one side. `None` now leaves the angle out.
 
 - **`isochronic_tones` requires a positive `pulse_rate`.** At zero a
   ramp divided by the pulse period and raised `ZeroDivisionError`; a
   negative rate ran the gate backwards, so each period began silent.
 - **`amplitude_modulation` and `frequency_modulation` refuse a negative
-  rate,** as `modulated_noise` already did: for an asymmetric modulator
+  rate.** `modulated_noise` already did: for an asymmetric modulator
   table it is a different modulation, not the same one reversed.
 - **A zero modulation rate leaves the carrier unmodulated.** It did in
   `modulated_noise`, but `amplitude_modulation` held its modulator at the
   table's first entry and scaled the carrier by it (by half, for the
   default sine at full depth), and `frequency_modulation` shifted its
   pitch the same way for a table that does not start at zero.
-- **`spatial_motion` refuses a sound that is not mono,** with a message
-  saying so rather than one about broadcasting, and no longer renders
-  two seconds of tone to answer a zero duration with nothing.
+- **`spatial_motion` refuses a sound that is not mono.** Its message
+  says so, where it used to be one about broadcasting, and a zero
+  duration no longer renders two seconds of tone before returning
+  nothing.
 - **The far ear hears nothing before the sound reaches it.** The
   fractional delay behind `localize_linear` and `spatial_motion` read the
   first sample for every position before the start, so the far ear held
@@ -32,8 +62,16 @@
   cosine, and a sound of several partials as a different waveform. Its
   output is now longer than the input by the largest interaural delay,
   rather than by some thirty samples more.
-- **`localize` accepts a list,** as documented, rather than raising
-  `TypeError` when scaling it by the intensity ratio.
+- **`localize` accepts a list, as documented.** It raised `TypeError`
+  when scaling one by the intensity ratio.
+- **The localization routines render their default sound at the rate
+  asked for.** Called without a sound, `localize`, `localize_linear` and
+  `localize2` rendered the default note at 44.1 kHz whatever
+  `sample_rate` was: at 8 kHz, eleven seconds of it at 40 Hz.
+- **`reverb`'s tail spans the band at any rate.** It asked `noise` for a
+  band up to half its own rate without passing the rate, so the band was
+  built at 44.1 kHz: at 8 kHz the tail held 95% of its energy below
+  680 Hz rather than near 4 kHz.
 
 ### Tests
 
@@ -50,12 +88,12 @@
 
 ### Documentation
 
-- **`localize` and `localize2` say what a zero angle means.** Zero reads
-  as not supplied and selects `x` and `y`, so a source at zero degrees
-  is given by its coordinates. `localize` now states the speed of sound
-  it uses (331.3 m/s at 0 °C, not 331.2) and a diffraction delay of
-  0.7 ms rather than 0.7 s, and `localize_hrtf` no longer claims to use
-  its `sample_rate`.
+- **`localize2` says how it measures an angle.** From straight ahead and
+  positive to the left, where `localize` and the other routines measure
+  from the ear axis; and it has no distance, which its docstring used to
+  ask for. `localize` states the speed of sound it uses (331.3 m/s at
+  0 °C, not 331.2) and a diffraction delay of 0.7 ms rather than 0.7 s,
+  and `localize_hrtf` no longer claims to use its `sample_rate`.
 
 ### Maintenance
 
@@ -63,7 +101,9 @@
   summarises a release by each changelog entry's bold headline, and
   silently left out the entries without one: four of eight at 1.8.1.
   The release gate refuses them, `tools/zenodo_sync.py` refuses to send
-  such a summary, and a test checks the newest section on every push.
+  such a summary, and a test checks the newest section on every push. A
+  headline whose bold ends at a comma is carried to the end of its
+  sentence, rather than shown cut off there.
 
 ## [1.8.3] - 2026-09-23
 

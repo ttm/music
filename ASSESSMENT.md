@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-23**,
-`music` 1.8.3: 47 modules, 12,284 LOC package + 15,844 LOC tests, 126 names
+`music` 1.8.3: 47 modules, 12,299 LOC package + 15,905 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,7 +59,7 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **4035 tests**, 9 optional skips locally |
+| Test suite | `pytest -q` | **4046 tests**, 9 optional skips locally |
 | Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,838 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
@@ -505,7 +505,10 @@ worse than the code.
 
 ## Is anything perfect?
 
-Still no, and the same file is still closest. `music/core/filters/reverb.py`
-is 76 lines at 100 % coverage, fully documented, clean under both the default
-lint set and the type checker. It is also small enough that saying so proves
-little — which is the honest version of the compliment.
+Still no, and the file this section used to name shows why.
+`music/core/filters/reverb.py` is small, at 100 % coverage, fully
+documented, and clean under both the default lint set and the type
+checker. Until the review after 1.8.3 it also built its noise tail at
+44.1 kHz whatever rate it was given, and nothing measured that. Coverage
+says a line ran; it cannot say the line was right. The mutation audits
+come closest to asking, and they cover five areas, not the package.

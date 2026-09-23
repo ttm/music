@@ -117,6 +117,24 @@ def test_reverb_refuses_a_first_phase_longer_than_the_whole_reverb():
         reverb(duration=0.1)
 
 
+@pytest.mark.parametrize("sample_rate", [8000, 22050, 44100])
+def test_the_reverb_tail_spans_the_band_at_any_rate(sample_rate):
+    """White noise up to the Nyquist frequency of the rate asked for.
+
+    `reverb` asked `noise` for a band up to half its own rate without
+    passing the rate, so the band was built at 44.1 kHz: at 8 kHz the
+    tail held 95% of its energy below 680 Hz rather than near 4 kHz.
+    """
+    np.random.seed(1)
+    response = reverb(duration=1.0, first_phase_duration=0.1, decay=-10,
+                      noise_type="white", sample_rate=sample_rate)
+    tail = response[int(0.2 * sample_rate):]
+    power = np.abs(np.fft.rfft(tail)) ** 2
+    freqs = np.fft.rfftfreq(len(tail), 1 / sample_rate)
+    edge = freqs[np.searchsorted(np.cumsum(power) / power.sum(), .95)]
+    assert edge > .9 * sample_rate / 2
+
+
 # The envelope contracts the mutation audit found nothing depending on.
 # Each test below kills mutants that survived the first run: the defaults
 # in the signatures, and the settings these routines pass on to the fades

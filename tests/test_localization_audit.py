@@ -298,8 +298,22 @@ def test_the_ifft_method_delays_the_far_ear_and_amplifies_the_near(
 def test_a_position_uses_the_default_coordinates_when_none_are_given():
     sound = _tone(400, 441)
     np.testing.assert_array_equal(
-        music.localize2(sound, theta=0),
-        music.localize2(sound, theta=0, x=.1, y=.01))
+        music.localize2(sound, theta=None),
+        music.localize2(sound, theta=None, x=.1, y=.01))
+
+
+@pytest.mark.parametrize("routine, zero, position", [
+    ("localize", dict(theta=0, distance=1), dict(x=1, y=0)),
+    ("localize2", dict(theta=0), dict(theta=None, x=0, y=1)),
+])
+def test_an_angle_of_zero_is_an_angle(routine, zero, position):
+    """Zero read as "no angle given" and fell back to the default
+    position: for `localize` the right ear's side became (0.1, 0.01), and
+    for `localize2` straight ahead became a source far to one side."""
+    sound = _tone(400, 441)
+    np.testing.assert_allclose(getattr(music, routine)(sound, **zero),
+                               getattr(music, routine)(sound, **position),
+                               atol=1e-12)
 
 
 def _brute(sound, theta=-70, sample_rate=44100):
@@ -365,3 +379,16 @@ def test_brute_force_drops_the_last_percent_of_energy_counted_upwards(
     expected = _resynthesized(kept)
     np.testing.assert_allclose(_brute(sound), expected,
                                atol=1e-3 * np.abs(expected).max())
+
+
+@pytest.mark.parametrize("routine", ["localize", "localize_linear",
+                                     "localize2"])
+def test_the_default_sound_is_rendered_at_the_rate_asked_for(routine):
+    """Two seconds of the default note, at whatever rate is localized to.
+    It was rendered at 44.1 kHz regardless: at 8 kHz, eleven seconds of a
+    note at 40 Hz rather than 220."""
+    rendered = getattr(music, routine)(sample_rate=8000)
+    given = getattr(music, routine)(music.note(sample_rate=8000),
+                                    sample_rate=8000)
+    np.testing.assert_array_equal(rendered, given)
+    assert rendered.shape[-1] < 2 * 8000 + 100

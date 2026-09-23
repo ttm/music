@@ -247,7 +247,10 @@ def summarise(notes, repository="https://github.com/ttm/music"):
             continue
         headline = head[:end + 2]
         rest = head[end + 2:].lstrip()
-        if rest[:1] in (",", ":"):
+        # A comma or colon on either side of the closing ** means the
+        # sentence goes on; inside it, the record showed a headline cut
+        # off at the comma.
+        if rest[:1] in (",", ":") or head[end - 1] in ",:":
             stop = rest.find(". ")
             headline += rest if stop == -1 else rest[:stop + 1]
         kept.append(f"- {headline}".rstrip())

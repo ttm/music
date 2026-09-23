@@ -776,14 +776,17 @@ def test_the_lag_measurement_reads_a_known_shift():
     assert delayed_right * SAMPLE_RATE == pytest.approx(-10)
 
 
-def test_localize2_leaves_a_source_on_the_median_plane_alone():
+@pytest.mark.parametrize("position", [
+    {"theta": 0}, {"theta": None, "x": 0, "y": 1},
+])
+def test_localize2_leaves_a_source_on_the_median_plane_alone(position):
     """No angle, no cues: the two channels must be the same samples.
 
-    `theta=0` does not do this -- it is falsy, so the routine falls back
-    to the x/y position -- which is why this passes x=0 instead.
+    Straight ahead as an angle or as a position. `theta=0` used to be
+    falsy and fell back to the default position, far to one side.
     """
     tone = music.note(freq=500, duration=0.1, waveform_table=WAVEFORM_SINE)
-    both = music.localize2(tone, theta=0, x=0, y=1)
+    both = music.localize2(tone, **position)
     assert np.array_equal(both[0], both[1])
 
 
@@ -950,13 +953,12 @@ def test_localize2_returns_the_frequency_it_was_given(method, freq):
 
 #: Each case names the side the source is on, and so the near ear, in
 #: both of the ways localize2 accepts a position. `theta` defaults to
-#: -70 rather than 0, so x and y are only consulted when theta is passed
-#: as 0 explicitly.
+#: -70, so x and y are only consulted when theta is passed as None.
 SIDES = [
     ("angle, left", {"theta": 40}, 0, 1),
     ("angle, right", {"theta": -40}, 1, 0),
-    ("position, left", {"theta": 0, "x": -1.0, "y": 0.01}, 0, 1),
-    ("position, right", {"theta": 0, "x": 1.0, "y": 0.01}, 1, 0),
+    ("position, left", {"theta": None, "x": -1.0, "y": 0.01}, 0, 1),
+    ("position, right", {"theta": None, "x": 1.0, "y": 0.01}, 1, 0),
 ]
 
 
@@ -992,7 +994,7 @@ def test_the_two_localize2_methods_agree_about_the_side(method):
     assert np.abs(rendered[0]).max() > np.abs(rendered[1]).max()
 
 
-def test_localize2_ignores_x_and_y_unless_theta_is_zero():
+def test_localize2_ignores_x_and_y_unless_theta_is_none():
     """`theta` defaults to -70, not to 0, so a caller who passes only a
     position gets the default angle and no error. Documented in the
     signature and easy to miss; pinned so it is a choice rather than a
@@ -1003,7 +1005,7 @@ def test_localize2_ignores_x_and_y_unless_theta_is_zero():
     default = music.localize2(tone)
     assert np.array_equal(ignored, default)
 
-    honoured = music.localize2(tone, theta=0, x=1.0, y=0.01)
+    honoured = music.localize2(tone, theta=None, x=1.0, y=0.01)
     assert not np.array_equal(honoured, default)
 
 

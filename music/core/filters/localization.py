@@ -7,7 +7,7 @@ from music.core.synths.notes import note, note_with_phase
 from music.utils import WAVEFORM_SINE
 
 
-def localize(sonic_vector=None, theta=0, distance=0, x=.1, y=.01,
+def localize(sonic_vector=None, theta=None, distance=0, x=.1, y=.01,
              zeta=0.215, air_temp=20, sample_rate=44100):
     """
     Make a mono sound stereo and localize it by a very naive method.
@@ -18,11 +18,12 @@ def localize(sonic_vector=None, theta=0, distance=0, x=.1, y=.01,
     ----------
     sonic_vector : array_like
         A one-dimensional array with the PCM samples of the sound.
-    theta : scalar
-        The azimuthal angle of the position in degrees. If theta is supplied,
-        x and y are ignored and dist must also be supplied for the sound
-        localization to have effect. Zero reads as not supplied, so a
-        source at zero degrees is given as ``x=distance, y=0``.
+    theta : scalar or None
+        The azimuthal angle of the position in degrees, measured from the
+        ear axis as in :func:`localize_linear`: 0 is the right ear's side,
+        90 straight ahead and 180 the left. If it is given, x and y are
+        ignored and ``distance`` must also be given for the localization to
+        have effect. None, the default, places the source at x and y.
     distance : scalar
         The distance of the source from the listener in meters.
     x : scalar
@@ -93,10 +94,14 @@ def localize(sonic_vector=None, theta=0, distance=0, x=.1, y=.01,
 
     """
     if sonic_vector is None:
-        sonic_vector = note()
+        # At the rate being localized to, or the default note is the wrong
+        # length and pitch there.
+        sonic_vector = note(sample_rate=sample_rate)
     # A list could not be scaled by the intensity ratio below.
     sonic_vector = np.asarray(sonic_vector, dtype=np.float64)
-    if theta:
+    # None, not zero, is what leaves the angle out: zero is the right
+    # ear's side, and reading it as "not given" put the source at x and y.
+    if theta is not None:
         theta = 2 * np.pi * theta / 360
         x = np.cos(theta) * distance
         y = np.sin(theta) * distance
@@ -316,7 +321,7 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
 
     """
     if sonic_vector is None:
-        sonic_vector = note()
+        sonic_vector = note(sample_rate=sample_rate)
     sonic_vector = np.asarray(sonic_vector, dtype=np.float64)
     lambda_l = len(sonic_vector)
     if lambda_l == 0:
@@ -351,11 +356,13 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
     ----------
     sonic_vector : array_like
         A one-dimensional array with the PCM samples of the sound.
-    theta : scalar
-        The azimuthal angle of the position in degrees.  If theta is supplied,
-        x and y are ignored and dist must also be supplied for the sound
-        localization to have effect. Zero, or None, reads as not supplied
-        and selects ``x`` and ``y``, which is how a position is given.
+    theta : scalar or None
+        The azimuthal angle of the position in degrees, measured from
+        straight ahead and positive to the left -- not from the ear axis,
+        as :func:`localize` and :func:`localize_linear` measure it. Only
+        the side and how far round matter: the model has no distance, and
+        cannot tell ahead from behind. If it is given, x and y are ignored.
+        None places the source at x and y instead.
     x : scalar
         The lateral component of the position in meters.
     y : scalar
@@ -396,8 +403,9 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
     Examples
     --------
     >>> write_wav_stereo(localize2())
+    >>> # theta=None, or the default angle overrides every position
     >>> write_wav_stereo(horizontal_stack(*[
-    ...     localize2(note_with_vibrato(duration=1), x=i, y=j)
+    ...     localize2(note_with_vibrato(duration=1), theta=None, x=i, y=j)
     ...     for i, j in zip([.1, .7, np.pi - .1, np.pi - .7],
     ...                     [.1, .1, .1, .1])]))
 
@@ -436,8 +444,10 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
     if method not in ("ifft", "brute"):
         raise ValueError("The only methods implemented are ifft and brute")
     if sonic_vector is None:
-        sonic_vector = note()
-    if not theta:
+        sonic_vector = note(sample_rate=sample_rate)
+    # None, not zero, selects the position: zero is straight ahead, and
+    # reading it as "not given" put the source at x and y.
+    if theta is None:
         theta_ = np.arctan2(-x, y)
     else:
         theta_ = 2 * np.pi * theta / 360

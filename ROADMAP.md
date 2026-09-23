@@ -407,18 +407,30 @@ Thirty-one regression cases failed against the old source:
   `localize` divided by zero on the left ear.
 - `localize` rejected a list, although documented as array_like.
 
-A zero angle still reads as "use `x` and `y`" in `localize` and
-`localize2`; callers rely on it, so it is now documented rather than
-changed. The area detects **623 of 644**, with 21 survivors that are
-text, equivalent at a zero angle or checked by experiment to be
-equivalent conversions. `MUTATION_AUDIT.md` records them.
+A zero angle read as "use `x` and `y`" in `localize` and `localize2`, so
+no source could be placed at zero degrees. `None` is now the sentinel,
+noted for anyone upgrading. The area detects **626 of 647**, with 21
+survivors that are text, equivalent at a zero angle or checked by
+experiment to be equivalent conversions. `MUTATION_AUDIT.md` records
+them.
 
-## Next: release 1.8.4, then `utils.py`
+## Completed: a review of the work since 1.8.3
 
-The unreleased section of `CHANGELOG.md` now holds the stimulus and
-localization corrections, including one behavior change: a zero
-modulation rate leaves an amplitude-modulated carrier at full level. It
-is worth releasing before another area adds to it.
+Reviewed 2026-09-23. A package-wide scan for the patterns the audits kept
+finding found two more of the first. `reverb` asked `noise` for a band up
+to half its rate without passing the rate, so at 8 kHz its tail sat below
+680 Hz. The three localization routines rendered their default sound at
+44.1 kHz whatever rate they were given. The other patterns turned up no
+further cases: a zero read as "not given", an FFT angle read into a sine
+table, and a clamped read outside a signal.
+
+## Next: the next release, then `utils.py`
+
+The unreleased section of `CHANGELOG.md` holds the stimulus, localization
+and review corrections, and its note for anyone upgrading lists the calls
+that now return something different: a zero angle, a zero modulation
+rate and the far ear's first samples among them. It is worth releasing
+before another area adds to it.
 
 After that, `utils.py` is the largest module left unaudited and the one
 the others lean on most. Measure its test selection with

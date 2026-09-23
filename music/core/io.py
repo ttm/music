@@ -271,7 +271,8 @@ def write_wav_stereo(
 
     Examples
     --------
-    >>> placed = localize(note(freq=440, duration=0.5), theta=30)
+    >>> placed = localize(note(freq=440, duration=0.5), theta=30,
+    ...                   distance=1)
     >>> write_wav_stereo(placed, "placed.wav")
     >>> read_wav("placed.wav").shape[0]
     2

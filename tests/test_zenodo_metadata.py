@@ -116,6 +116,20 @@ def test_a_wrapped_headline_survives_the_summary_whole():
     assert "reasoning that should not appear" not in summary
 
 
+@pytest.mark.parametrize("entry", [
+    "- **A thing**, which goes on. Reasoning.\n",
+    "- **A thing,** which goes on. Reasoning.\n",
+])
+def test_a_headline_that_ends_mid_sentence_is_finished(entry):
+    """With the comma inside the bold, the record showed "A thing," and
+    stopped; outside it, the sentence was already carried on."""
+    from tools.zenodo_sync import summarise
+
+    summary = summarise("### Fixed\n" + entry)
+    assert "which goes on." in summary
+    assert "Reasoning" not in summary
+
+
 def test_the_upgrade_note_is_kept_whole():
     """It is the part a reader of the record needs in front of them."""
     from tools.zenodo_sync import summarise

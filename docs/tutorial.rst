@@ -238,6 +238,10 @@ interaural time and intensity differences from a geometry you describe.
 
    fixed = music.localize(music.note(440, 1), theta=45, distance=2)
 
+Angles are measured from the ear axis: 0 is the right ear's side, 90
+straight ahead and 180 the left. :func:`music.localize2` is the exception,
+measuring from straight ahead, as its documentation says.
+
 :func:`music.localize_linear` moves it in a straight line, recomputing
 the position — and from it the two delays and the two gains — at every
 sample:

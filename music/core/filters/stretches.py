@@ -24,7 +24,8 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=44100):
     -------
     ndarray
         The repeats concatenated, mono or ``(2, nsamples)`` stereo
-        according to ``x``.
+        according to ``x``, each ``int(duration * sample_rate)`` samples
+        long. An empty ``x`` gives an empty result.
 
     Raises
     ------
@@ -61,15 +62,19 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=44100):
     else:
         length = x.shape[1]
         stereo = True
-    ns = length / sample_rate
-    # x[::ns] (mono) or x[:, ::ns] stereo is the sound in one second
-    # for any duration s[i], use ns_ = ns//s[i]
-    # x[np.arange(0, len(x), ns_[i])]
+    if length == 0:
+        # Nothing to repeat; the step through it divided by its length.
+        return x
     sound = []
     for ss in durations:
-        indexes = np.arange(0, length, ns / ss).round().astype(np.int64)
-        # rounding can push the final index one past the end of the fragment
-        indexes = indexes[indexes < length]
+        # Whole samples, as every duration here is counted, each read from
+        # the nearest sample of the fragment. Positions that rounded to
+        # one past its end were dropped rather than held, so a repeat fell
+        # short by half a fragment sample's worth of output: a ten-sample
+        # fragment stretched to twelve seconds lost more than half of one.
+        count = int(ss * sample_rate)
+        indexes = np.minimum(np.round(np.arange(count) * length / count),
+                             length - 1).astype(np.int64)
         if stereo:
             segment = x[:, indexes]
         else:

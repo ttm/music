@@ -26,7 +26,8 @@ each partial in phase, and an output shorter by some thirty samples.
 `reverb` at a rate other than 44.1 kHz has a tail spanning the whole band.
 `pan_transitions` given a sound returns it panned, where it returned the
 sound with the envelopes added to it, and `louds` given sample counts
-uses the deviations it was given.
+uses the deviations it was given. Each repeat `stretches` makes is exactly
+as long as its duration, where it could fall short.
 
 ### Fixed
 
@@ -95,6 +96,17 @@ uses the deviations it was given.
 - **`sing` names a note outside the range it can write.** That range is
   MIDI 12 to 96, and it raised a bare `KeyError`. It also accepts
   `effect="flite"` for the voice it loads, keeping `"flint"`.
+- **`stretches` makes each repeat as long as its duration.** Positions
+  that rounded to one past the fragment's end were dropped rather than
+  held, so a repeat fell short by half a fragment sample's worth of
+  output: ten samples stretched to twelve seconds lost 26,460. An empty
+  fragment gives an empty result rather than `ZeroDivisionError`.
+- **`Sequencer.add_note` refuses a note that starts before zero.**
+  Rendering placed it at a negative offset and failed with a broadcast
+  error.
+- **`convert_to_stereo` duplicates a single channel written as one row.**
+  It returned the row unchanged, one channel from a routine promising
+  two.
 - **`reverb`'s tail spans the band at any rate.** It asked `noise` for a
   band up to half its own rate without passing the rate, so the band was
   built at 44.1 kHz: at 8 kHz the tail held 95% of its energy below
@@ -117,6 +129,9 @@ uses the deviations it was given.
 
 - **`sing` has a docstring, as do the helpers that write its score.** It
   was the one public routine that raised without saying so.
+- **Only `localize2` measures an angle from straight ahead,** and `hrir`
+  and `spatial_motion` no longer say that every routine measures from
+  the ear axis.
 - **`localize2` says how it measures an angle.** From straight ahead and
   positive to the left, where `localize` and the other routines measure
   from the ear axis; and it has no distance, which its docstring used to
@@ -133,6 +148,10 @@ uses the deviations it was given.
   such a summary, and a test checks the newest section on every push. A
   headline whose bold ends at a comma is carried to the end of its
   sentence, rather than shown cut off there.
+- **The subject check tries a vocabulary service three times.** GEMET
+  failed now and then and answered a moment later, and twice that
+  stopped a release gate that had passed everything else. A 4xx is
+  still an answer, and is not retried.
 
 ## [1.8.3] - 2026-09-23
 

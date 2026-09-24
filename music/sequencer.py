@@ -91,7 +91,18 @@ class Sequencer:
         adsr_params: Optional[Dict[str, Any]] = None,
         spatial: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Add a note event to the sequencer."""
+        """Add a note event to the sequencer.
+
+        Raises
+        ------
+        ValueError
+            If ``start`` is negative. Rendering placed such a note at a
+            negative sample offset and failed with a broadcasting error.
+        """
+        if start < 0:
+            raise ValueError(
+                f"a note cannot start before the sequence does; got "
+                f"start={start}")
         self.events.append(
             NoteEvent(
                 freq=freq,

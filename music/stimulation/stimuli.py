@@ -697,7 +697,7 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
         The duration in seconds.
     theta1 : scalar
         The azimuth the motion starts from, in degrees, measured from
-        the ear axis as everywhere else in this package: 0 is the right
+        the ear axis as in :func:`music.localize_linear`: 0 is the right
         ear's side, 180 the left. The default is a full crossing of the
         head.
     theta2 : scalar

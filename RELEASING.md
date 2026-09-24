@@ -51,7 +51,8 @@ resolves the reference once and passes the same file to both checks:
   subjects may remain unconfirmed; they are printed as exceptions, not
   counted as verified. An additional unresolved subject fails the gate.
 
-A missing checkout or an unavailable vocabulary service stops verification.
+A missing checkout, or a vocabulary service still unavailable after
+three tries, stops verification.
 The successful reports are printed so these limits remain visible.
 
 `--skip-gate` is an explicit bypass for reuse of a previously completed

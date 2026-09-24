@@ -191,3 +191,11 @@ def test_profile_of_an_empty_namespace_is_empty():
     assert summary["type"] == {"scalar": [], "collections": [], "other": []}
     assert summary["analyses"]["ndarray"] == {}
     assert summary["guesses"] == {}
+
+
+def test_a_single_channel_row_becomes_two_channels():
+    """Mono written as one row was returned as it was: one channel, from
+    a routine whose whole job is to return two."""
+    row = np.array([[.1, .2, .3]])
+    np.testing.assert_array_equal(utils.convert_to_stereo(row),
+                                  [[.1, .2, .3], [.1, .2, .3]])

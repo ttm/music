@@ -1,4 +1,6 @@
 
+import pytest
+
 import music
 
 
@@ -31,3 +33,10 @@ def test_sequencer_write(tmp_path):
     out_file = tmp_path / "seq.wav"
     seq.write(str(out_file))
     assert out_file.exists()
+
+
+def test_a_note_cannot_start_before_the_sequence():
+    """Rendered at a negative offset, it failed with a broadcast error."""
+    sequencer = music.Sequencer()
+    with pytest.raises(ValueError, match="cannot start before"):
+        sequencer.add_note(440, start=-0.05, duration=0.1)

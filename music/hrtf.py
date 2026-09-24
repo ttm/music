@@ -272,10 +272,12 @@ def hrir(elevation: float = 0, azimuth: float = 90,
         Degrees above the horizontal, from -40 to 90. Rounded to the
         nearest measured elevation, which are ten degrees apart.
     azimuth : scalar
-        Degrees, measured from the ear axis as everything else in this
-        package is: 0 is to the right, 90 straight ahead, 180 to the left
-        and 270 behind. Rounded to the nearest measured azimuth, which are
-        between five and thirty degrees apart depending on the elevation.
+        Degrees, measured from the ear axis as :func:`~music.localize` and
+        :func:`~music.localize_linear` measure them (only
+        :func:`~music.localize2` measures from straight ahead): 0 is to
+        the right, 90 straight ahead, 180 to the left and 270 behind.
+        Rounded to the nearest measured azimuth, which are between five
+        and thirty degrees apart depending on the elevation.
     directory : path, optional
         Where the measurements are. Defaults to :func:`hrtf_dir`.
 

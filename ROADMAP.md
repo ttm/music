@@ -443,6 +443,15 @@ It also gave `sing` its missing docstring, replaced the MASS names (`d`,
 nine misspellings. Calling every routine that takes a sound with a plain
 list found no other that refuses one.
 
+A third pass tried what the first two had not: rates written into
+function bodies as literals (none but one checked on purpose), every
+duration rendered at 8 and 16 kHz (all 28 scale), casts that could turn
+a NaN into a table index, and the modules no audit has reached. It found
+`stretches` falling short of the durations it was given, by up to 26,460
+samples for a short fragment; a negative start in the sequencer failing
+as a broadcast error; and `convert_to_stereo` returning one channel for
+a single row.
+
 ## Next: the next release, then `utils.py`
 
 The unreleased section of `CHANGELOG.md` holds the stimulus, localization

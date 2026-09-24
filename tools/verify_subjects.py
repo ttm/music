@@ -29,6 +29,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -54,12 +56,33 @@ GEMET_CONCEPT = ('https://www.eionet.europa.eu/gemet/getConcept'
                  '&language=en')
 
 
-def _get_json(url: str):
+#: Tries per lookup. GEMET fails now and then and answers a moment later,
+#: and twice that stopped a release gate that had passed everything else.
+ATTEMPTS = 3
+
+
+def _get_json(url: str, attempts: int = ATTEMPTS, pause: float = 2.0):
+    """The JSON at `url`, trying again after a network failure.
+
+    Only a failure to get an answer is retried: a server error or no
+    connection. A 4xx is an answer, about the identifier, and a retry
+    would only delay it.
+    """
     request = urllib.request.Request(
         url, headers={'Accept': 'application/json',
                       'User-Agent': 'music/verify_subjects'})
-    with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
-        return json.load(response)
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+                return json.load(response)
+        except urllib.error.HTTPError as error:
+            if error.code < 500 or attempt == attempts:
+                raise
+        except OSError:
+            if attempt == attempts:
+                raise
+        time.sleep(pause)
+    raise AssertionError('unreachable')  # pragma: no cover
 
 
 def resolve_mesh(identifier: str) -> str | None:

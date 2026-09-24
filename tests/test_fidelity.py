@@ -730,6 +730,29 @@ def test_stretches_gives_each_repeat_the_duration_it_asked_for(duration):
     assert len(out) == pytest.approx(duration * sample_rate, abs=2)
 
 
+@pytest.mark.parametrize("fragment_length", [1, 10, 1000])
+def test_every_stretch_lasts_exactly_its_duration(fragment_length):
+    """Whole samples, however far a short fragment is stretched.
+
+    Positions that rounded to one past the fragment's end were dropped,
+    so a repeat fell short by half a fragment sample's worth of output.
+    The test above allows two samples either way, and on a one-second
+    fragment stretched at most twofold the loss never exceeded one; ten
+    samples stretched to twelve seconds lost 26,460.
+    """
+    fragment = np.linspace(-1, 1, fragment_length)
+    out = music.stretches(fragment, durations=(.3, 12), sample_rate=8000)
+    assert len(out) == int(.3 * 8000) + 12 * 8000
+    repeat = out[int(.3 * 8000):]
+    assert repeat[0] == fragment[0] and repeat[-1] == fragment[-1]
+
+
+@pytest.mark.parametrize("shape", [(0,), (2, 0)])
+def test_stretching_nothing_gives_nothing(shape):
+    """The step through an empty fragment divided by its length."""
+    assert music.stretches(np.zeros(shape)).shape == shape
+
+
 def test_stretches_squeezes_rather_than_truncates():
     """A half-length repeat must be the whole fragment at twice the
     speed, not the first half of it: the last sample of the fragment has

@@ -656,10 +656,12 @@ The two ramp mutants agreed with the source in all of 3,000 random
 settings of rate, duty cycle, ramp, length and sample rate.
 
 IDs use the `music.stimulation.stimuli.x_<function>__mutmut_` prefix.
-The final snapshot uses the working-tree changes on `95cf57a`, with
+The audit's own snapshot used the working-tree changes on `95cf57a`. A
+later review corrected one docstring, and a rerun on that source,
 `stimuli.py` SHA-256
-`384c0b5e9628ddc2d7c3f399095ab770e494aea2df0c3c26d3d068a72af941da`.
-The run took 60 seconds with two workers.
+`872b06e9fdb415ef01863d4617768118a4111e9a64cf887faa4b564d41da0763`,
+detects the same 423 of 427 with the same four survivors. The first run
+took 60 seconds with two workers.
 
 ## `localization` — interaural cues, fixed, per-frequency, moving and convolved
 

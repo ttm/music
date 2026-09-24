@@ -258,3 +258,49 @@ def test_subject_search_handles_raw_timeout(monkeypatch, capsys):
     monkeypatch.setattr(subjects, '_get_json', unavailable)
     assert subjects.main(['--term', 'Music']) == 1
     assert 'lookup failed' in capsys.readouterr().out
+
+
+def _answers(*outcomes):
+    """A stand-in for urlopen that fails or answers in the order given."""
+    import io
+    import json as json_
+    calls = []
+
+    def urlopen(request, timeout):
+        outcome = outcomes[len(calls)]
+        calls.append(request.full_url)
+        if isinstance(outcome, Exception):
+            raise outcome
+        return io.BytesIO(json_.dumps(outcome).encode())
+    return urlopen, calls
+
+
+def test_a_lookup_is_retried_after_a_network_failure(monkeypatch):
+    """GEMET failed now and then and answered a moment later; twice that
+    stopped a release gate that had passed everything else."""
+    import urllib.error
+    urlopen, calls = _answers(urllib.error.URLError("down"),
+                              urllib.error.HTTPError("u", 503, "", {}, None),
+                              {"ok": True})
+    monkeypatch.setattr(subjects.urllib.request, "urlopen", urlopen)
+    assert subjects._get_json("https://example.org", pause=0) == {"ok": True}
+    assert len(calls) == 3
+
+
+def test_a_lookup_is_not_retried_after_an_answer(monkeypatch):
+    """A 404 is about the identifier, and asking again changes nothing."""
+    import urllib.error
+    urlopen, calls = _answers(urllib.error.HTTPError("u", 404, "", {}, None))
+    monkeypatch.setattr(subjects.urllib.request, "urlopen", urlopen)
+    with pytest.raises(urllib.error.HTTPError):
+        subjects._get_json("https://example.org", pause=0)
+    assert len(calls) == 1
+
+
+def test_a_lookup_gives_up_after_its_attempts(monkeypatch):
+    import urllib.error
+    urlopen, calls = _answers(*[urllib.error.URLError("down")] * 3)
+    monkeypatch.setattr(subjects.urllib.request, "urlopen", urlopen)
+    with pytest.raises(urllib.error.URLError):
+        subjects._get_json("https://example.org", pause=0)
+    assert len(calls) == 3

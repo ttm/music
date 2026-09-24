@@ -583,6 +583,10 @@ def convert_to_stereo(sound_vector: ArrayLike) -> NDArray[np.float64]:
         # If the input vector is mono, duplicate it for both left and right
         # channels.
         stereo_sound = np.array((sound_array, sound_array))
+    elif sound_array.shape[0] == 1:
+        # Mono written as one row is mono too. It was returned as it was,
+        # a single channel from a routine that promises two.
+        stereo_sound = np.vstack((sound_array, sound_array))
     elif sound_array.shape[0] > 2:
         # If the input vector has more than two channels, keep only the first
         # two (left and right) and sum the rest to both left and right channels

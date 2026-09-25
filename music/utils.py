@@ -444,9 +444,9 @@ def mix_stereo(
         The second stereo sonic vector to mix, by default None. If not
         provided, the first sonic vector is duplicated to create a stereo mix.
     end : bool, optional
-        A flag indicating whether to append the second sonic vector at the end
-        of the first sonic vector (if False) or at the beginning (if True), by
-        default False.
+        If False, both sounds start together and the shorter is padded at
+        the end. If True, both sounds end together and the shorter is padded
+        at the beginning. Defaults to False.
 
     Returns
     -------
@@ -533,11 +533,9 @@ def resolve_stereo(afunction, argdict, stereo_vars=('sonic_vector',)):
     ag1 = argdict.copy()
     ag2 = argdict.copy()
     for v in stereo_vars:
-        argdict[v] = convert_to_stereo(argdict[v])
-        sv1 = argdict[v][0]
-        sv2 = argdict[v][1]
-        ag1[v] = sv1
-        ag2[v] = sv2
+        stereo = convert_to_stereo(argdict[v])
+        ag1[v] = stereo[0]
+        ag2[v] = stereo[1]
 
     sv1_ = afunction(**ag1)
     sv2_ = afunction(**ag2)
@@ -575,8 +573,9 @@ def convert_to_stereo(sound_vector: ArrayLike) -> NDArray[np.float64]:
     >>> stereo_vector.shape
     (2, 4)
     """
-    # Convert the input sound vector to a numpy array
-    sound_array = np.array(sound_vector)
+    # Keep channel sums in floating-point PCM even when the input is integer
+    # data; adding extra channels in an integer dtype can overflow.
+    sound_array = np.array(sound_vector, dtype=np.float64)
 
     # Check the shape of the input array
     if len(sound_array.shape) == 1:
@@ -1046,13 +1045,16 @@ def _describe_array(array, sample_rate, blocks=16):
     """Measure one array: the figures :func:`profile` reports for it."""
     values = np.asarray(array)
     flat = values.reshape(-1)
+    samples = values.shape[-1] if values.ndim > 1 else flat.size
     description: dict = {
         'shape': values.shape,
-        'samples': int(flat.size),
-        'seconds': float(flat.size) / sample_rate,
+        'samples': int(samples),
+        'seconds': float(samples) / sample_rate,
         'dtype': str(values.dtype),
     }
-    if flat.size == 0 or not np.issubdtype(values.dtype, np.number):
+    real_numeric = (np.issubdtype(values.dtype, np.number) and
+                    not np.issubdtype(values.dtype, np.complexfloating))
+    if flat.size == 0 or not real_numeric:
         description['numeric'] = False
         return description
 
@@ -1063,6 +1065,10 @@ def _describe_array(array, sample_rate, blocks=16):
         description['finite'] = False
         return description
     description['finite'] = True
+    # Squaring in the source dtype overflowed for integer PCM and float32
+    # arrays. These measurements describe amplitudes, so do the arithmetic
+    # in float64; complex arrays have no ordered real minimum or maximum.
+    finite = finite.astype(np.float64, copy=False)
     description['mean'] = float(np.mean(finite))
     description['mean_square'] = float(np.mean(np.square(finite)))
     description['rms'] = float(np.sqrt(description['mean_square']))
@@ -1145,16 +1151,19 @@ def profile(adict, sample_rate=44100):
 
     Returns
     -------
-    dict
+        dict
         ``d['type']`` sorts the names: ``'scalar'`` for numbers and
         strings, ``'collections'`` for dicts, lists, sets and arrays, and
         ``'other'`` for everything else. ``d['analyses']['ndarray']`` maps
-        each array name to its measurements -- ``shape``, ``samples``,
-        ``seconds`` at `sample_rate`, ``mean``, ``mean_square``, ``rms``,
+        each array name to its measurements -- ``shape``, ``samples`` (the
+        last-axis length for multichannel audio), ``seconds`` at
+        `sample_rate`, ``mean``, ``mean_square``, ``rms``,
         ``minimum``, ``maximum``, and the mean and standard deviation of
         the RMS taken block by block, whose spread is what discontinuity
-        shows up in. ``d['guesses']`` maps the same names to readings of
-        those measurements, each a ``(reading, reason)`` pair.
+        shows up in. Empty and non-real-numeric arrays are marked as
+        unmeasurable; arrays with no finite values are marked as non-finite.
+        ``d['guesses']`` maps the same names to readings of those
+        measurements, each a ``(reading, reason)`` pair.
 
     Notes
     -----
@@ -1228,7 +1237,7 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
     duration : scalar
         A basic duration (e.g. for the pulse) in seconds.
     bpm : scalar
-        The number of beats per second.
+        Tempo in beats per minute. One beat lasts ``60 / bpm`` seconds.
         If supplied, duration is ignored.
     total_duration: scalar
         The total duration of the sequence in seconds.
@@ -1307,22 +1316,33 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
-    if not bpm and not total_duration:
-        dur = duration
-    elif bpm:
-        dur = bpm / 60
-    else:
+    durations = tuple(durations)
+    if total_duration is not None:
+        if total_duration < 0:
+            raise ValueError("total_duration must not be negative")
         dur = None
-    if not dur and total_duration is None:
+    elif bpm is not None:
+        if bpm <= 0:
+            raise ValueError("bpm must be positive")
+        dur = 60 / bpm
+    else:
+        dur = duration
+    if (dur is None or dur <= 0) and total_duration is None:
         raise ValueError(
             "nothing here gives a duration: pass a positive duration, a "
             f"bpm, or a total_duration; got duration={duration}, bpm={bpm}, "
             "total_duration=None")
-    durs = []
-    if freqs:
-        if not dur:  # obtain from total_dur
+    durs: list[float] = []
+    if freqs is not None:
+        freqs = tuple(freqs)
+        if dur is None:  # obtain from total_dur
             durs_ = [1 / i if not isinstance(i, (list, tuple, np.ndarray))
                      else 1 / i[0] for i in freqs]
+            if not durs_:
+                return durs
+            if sum(durs_) == 0:
+                raise ValueError(
+                    "frequencies cannot distribute total_duration evenly")
             dur = total_duration / sum(durs_)
         for d in freqs:
             if isinstance(d, (list, tuple, np.ndarray)):
@@ -1336,9 +1356,14 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
             else:
                 durs.append(dur / d)
     else:
-        if not dur:  # obtain from total_dur
+        if dur is None:  # obtain from total_dur
             durs_ = [i if not isinstance(i, (list, tuple, np.ndarray))
                      else i[0] for i in durations]
+            if not durs_:
+                return durs
+            if sum(durs_) == 0:
+                raise ValueError(
+                    "durations cannot distribute total_duration evenly")
             dur = total_duration / sum(durs_)
         for d in durations:
             if isinstance(d, (list, tuple, np.ndarray)):

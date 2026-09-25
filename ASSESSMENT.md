@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
-*A living record, not a point-in-time audit. Last measured **2026-09-24**,
-`music` 1.9.0: 47 modules, 12,434 LOC package + 16,116 LOC tests, 126 names
+*A living record, not a point-in-time audit. Last measured **2026-09-25**,
+`music` 1.9.0: 47 modules, 12,459 LOC package + 16,520 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,16 +59,16 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **4096 tests**, 9 optional skips locally |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,854 stmts, 0 missed) |
+| Test suite | `pytest -q` | **4146 tests**, 9 optional skips locally |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,869 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,161 findings |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,169 findings |
 | Annotation coverage | AST scan | **101 / 210 functions (48 %)**; 63 / 94 exported (67 %) |
 | Docstring coverage | AST scan | **174 / 180 public defs (97 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
-| MASS reconciliation | `tools/mass_reconcile.py` | **23 of 35 routines sample-exact**; 8 divergent with a stated reason, 4 where the reference does not run |
+| MASS reconciliation | `tools/mass_reconcile.py` | **22 of 35 routines sample-exact**; 9 divergent with a stated reason, 4 where the reference does not run |
 | Article coverage | `tools/article_coverage.py --strict` | **46 of 47 labelled equations** cited by a test; **all 46** a test could settle |
 | Docstring examples | `pytest --doctest-modules` | **62 examples run**, 1 skipped |
 | Examples | `python tools/run_examples.py` | **13 pass**, 1 skipped for the external singing engine |
@@ -218,10 +218,10 @@ either documented in the code or tracked in the issue list.
   degenerate parameters now checks the mean as well, with these seven
   registered, so the class has somewhere to be recorded.
 
-- **Mutation testing covers nine selected files across five areas.**
+- **Mutation testing covers nine selected files across six areas.**
   The September 2026 audits change normalization, audio I/O, session
   envelopes, amplitude envelopes, note synthesis, the stimulus generators
-  and the localization filters one operation at a time. All five areas
+  and the localization filters one operation at a time. All six areas
   are complete, with their surviving mutants individually reviewed. These
   tests exposed timing, gain, modulation, envelope-rate, phase and
   refusal defects that line and branch coverage had not revealed.
@@ -388,7 +388,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,161 findings** on `music/`, almost all
+- **The extended lint set reports 2,169 findings** on `music/`, almost all
   stylistic: 345 quote-style, 296 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
@@ -511,4 +511,4 @@ documented, and clean under both the default lint set and the type
 checker. Until the review after 1.8.3 it also built its noise tail at
 44.1 kHz whatever rate it was given, and nothing measured that. Coverage
 says a line ran; it cannot say the line was right. The mutation audits
-come closest to asking, and they cover five areas, not the package.
+come closest to asking, and they cover six areas, not the package.

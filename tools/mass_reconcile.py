@@ -506,10 +506,17 @@ def build_cases(ns: dict) -> list[Case]:
                    "than by each vector's own offset, and raises for any "
                    'offset given'),
         Case('rhythymToDurations', 'rhythm_to_durations',
-             lambda: ns['rhythymToDurations'](durations=[4, 2, 2, 4],
-                                              duration=0.25),
-             lambda: music.rhythm_to_durations(durations=[4, 2, 2, 4],
-                                               duration=0.25)),
+             lambda: ns['rhythymToDurations'](
+                 durations=[1, 2], duration=1, BPM=120, total_duration=3),
+             lambda: music.rhythm_to_durations(
+                 durations=[1, 2], duration=1, bpm=120, total_duration=3),
+             expect=DIVERGENT,
+             reason='the reference sets the base duration to BPM / 60 '
+                    '(2 seconds at 120 BPM) and chooses BPM over '
+                    'total_duration despite documenting that the total takes '
+                    'precedence; the package uses 60 / BPM seconds per beat '
+                    'and honors the explicit total duration',
+             bound=2.0),
         # ---- tables -------------------------------------------------------
         Case('Tr', 'WAVEFORM_TRIANGULAR', lambda: Tr,
              lambda: WAVEFORM_TRIANGULAR,

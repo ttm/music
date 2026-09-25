@@ -88,3 +88,15 @@ def test_the_date_is_rewritten_rather_than_quietly_skipped():
 
     with pytest.raises(SystemExit, match="not where this script looks"):
         stamp_the_date("a file that no longer carries a stamp")
+
+
+def test_every_register_row_is_counted_in_one_state():
+    """A state worded differently would drop out of all three counts and
+    leave the quoted figures agreeing with a register that was short."""
+    from tools.assessment_figures import register
+
+    counts = register()
+    assert counts["mass_total"] == (counts["mass_exact"]
+                                    + counts["mass_divergent"]
+                                    + counts["mass_broken"])
+    assert counts["mass_total"] > 30

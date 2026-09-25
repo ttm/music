@@ -19,7 +19,7 @@ python tools/mass_reconcile.py --write-fixture  # refresh the test fixture
 python tools/mass_reconcile.py --register RECONCILIATION.md   # this table
 ```
 
-**23 sample-exact, 8 divergent, 4 where the reference does not run.**
+**22 sample-exact, 9 divergent, 4 where the reference does not run.**
 
 ## How to read it
 
@@ -140,7 +140,7 @@ does, and the test asserts it.
 | `IIR` | `iir` | exact | sample-exact agreement (the reference multiplies its coefficients elementwise, so it requires arrays where the package accepts lists) |
 | `R` | `reverb` | reference does not run | the reference reads an undefined decay1 where its own signature declares decay, so R raises NameError on every call and has never run — `NameError` |
 | `mix2` | `mix2` | exact | sample-exact agreement (compared without an offset: the reference's offset branch zero-pads by the whole offset sequence rather than by each vector's own offset, and raises for any offset given) |
-| `rhythymToDurations` | `rhythm_to_durations` | exact | sample-exact agreement |
+| `rhythymToDurations` | `rhythm_to_durations` | divergent | the reference sets the base duration to BPM / 60 (2 seconds at 120 BPM) and chooses BPM over total_duration despite documenting that the total takes precedence; the package uses 60 / BPM seconds per beat and honors the explicit total duration; max&nbsp;\|Δ\|&nbsp;=&nbsp;2 |
 | `Tr` | `WAVEFORM_TRIANGULAR` | divergent | the reference builds the triangle as hstack((ramp, ramp[::-1])), which duplicates the sample at the peak and tops out at 1 - 2/8192 instead of 1; the package reaches full amplitude at the midpoint of its period; max&nbsp;\|Δ\|&nbsp;=&nbsp;0.000244 |
 | `S` | `WAVEFORM_SINE` | exact | sample-exact agreement |
 | `Q` | `WAVEFORM_SQUARE` | exact | sample-exact agreement |

@@ -55,6 +55,21 @@ def test_mix_stereo_keeps_a_real_stereo_vector_as_is():
     assert np.allclose(out[1], 3.0)
 
 
+@pytest.mark.parametrize("end", [False, True])
+def test_mix_stereo_keeps_a_stereo_second_vector_as_is(end):
+    first = np.array([[1.0, 2.0], [10.0, 20.0]])
+    second = np.array([[100.0, 200.0, 300.0],
+                       [1000.0, 2000.0, 3000.0]])
+
+    out = mix_stereo(first, second, end=end)
+
+    expected = ([[100.0, 201.0, 302.0],
+                 [1000.0, 2010.0, 3020.0]] if end else
+                [[101.0, 202.0, 300.0],
+                 [1010.0, 2020.0, 3000.0]])
+    np.testing.assert_array_equal(out, expected)
+
+
 def test_mix_stereo_does_not_mistake_a_two_sample_mono_for_stereo():
     """Regression: the stereo test was `len(x) != 2`, and a mono vector of
     two samples also has len 2. Its 'channels' were then scalars, and
@@ -124,6 +139,16 @@ def test_resolve_stereo_promotes_a_mono_argument_first():
     out = resolve_stereo(music.fade, {"sonic_vector": mono})
     assert out.shape == (2, 64)
     assert np.allclose(out[0], out[1])
+
+
+def test_resolve_stereo_does_not_replace_the_callers_arguments():
+    mono = np.array([1.0, 2.0, 3.0])
+    arguments = {"sonic_vector": mono}
+
+    resolve_stereo(music.fade, arguments)
+
+    assert arguments["sonic_vector"] is mono
+    np.testing.assert_array_equal(arguments["sonic_vector"], [1.0, 2.0, 3.0])
 
 
 def test_the_old_mixer_names_still_resolve():

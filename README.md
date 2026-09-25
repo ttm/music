@@ -272,7 +272,7 @@ The modules are:
 
 See [the findings and prioritized roadmap](ROADMAP.md) for the September
 2026 review, the correctness patches since 1.8.1, and the
-[targeted mutation audits](MUTATION_AUDIT.md) of five areas of the package.
+[targeted mutation audits](MUTATION_AUDIT.md) of six areas of the package.
 
 Concrete things the code itself is waiting for, rather than a wish list:
 
@@ -289,8 +289,8 @@ Concrete things the code itself is waiting for, rather than a wish list:
   paper describes and `music.theory` does not implement.
 * **Checking the routines MASS has no counterpart for.**
   [`RECONCILIATION.md`](RECONCILIATION.md) compares the package with the MASS
-  reference implementation routine by routine — 23 of 35 are reproduced sample
-  for sample, 8 diverge for reasons it states, and in 4 the reference itself
+  reference implementation routine by routine — 22 of 35 are reproduced sample
+  for sample, 9 diverge for reasons it states, and in 4 the reference itself
   does not run.
   [`tests/test_article.py`](tests/test_article.py) checks the article's
   equations instead of its code, and covers 46 of 47 labelled equations:
@@ -317,7 +317,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 4,096 tests, 100% line and branch coverage
+pytest                                       # 4,146 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

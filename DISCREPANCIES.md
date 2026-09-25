@@ -338,6 +338,10 @@ correctness.
 | `readHRTF` | the KEMAR responses, read from disk | reads them with a `data_type` that is defined in neither `HRTF.py` nor `functions.py`, so it raises `NameError` on every call and has never run |
 | `VV`, `PVV` | two vibratos, each with the waveform its own argument names | reads the *second* vibrato out of `tabv1`, so `tabv2` is accepted, documented and used only for its length: a square second vibrato under a sine first one gives back two sines, and two tables of different lengths index the shorter one with the longer one's modulus and raise `IndexError` |
 
+### `rhythymToDurations`: BPM and total-duration precedence
+
+The reference documents BPM as beats per second, even though the name conventionally means beats per minute, and computes the base duration as `BPM / 60`. At 120 BPM that makes one beat two seconds long. It also chooses the BPM branch before checking `total_duration`, contrary to its own parameter documentation. `music.rhythm_to_durations` treats one beat as `60 / bpm` seconds and lets an explicit `total_duration` determine the base unit. The earlier register compared the default-duration path and missed both cases; the current MASS comparison and `tests/test_mass_reconciliation.py` exercise BPM together with an explicit total duration.
+
 ## What the article states that this package does not implement
 
 Not disagreements: scope. `tools/article_coverage.py` lists these as `[-]`

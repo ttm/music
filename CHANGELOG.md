@@ -1,3 +1,23 @@
+## Unreleased
+
+### Note for anyone upgrading
+
+`rhythm_to_durations` now reads `bpm` as beats per minute: one beat lasts
+`60 / bpm` seconds. An explicit `total_duration` now takes precedence over
+both `bpm` and `duration`, as the parameter documentation has always said.
+Callers supplying `bpm` or `total_duration` will see different results. To
+set the beat length directly, pass `duration` and omit `total_duration`.
+
+### Fixed
+
+- `convert_to_stereo` now promotes integer PCM to `float64` before summing
+  extra channels, so downmixing cannot overflow the integer input type.
+- `profile` counts frames rather than channels for multichannel audio and
+  computes amplitude statistics without integer or `float32` square
+  overflow.
+- `resolve_stereo` no longer replaces stereo arguments in the caller's
+  dictionary.
+
 ## [1.9.0] - 2026-09-24
 
 ### Note for anyone upgrading

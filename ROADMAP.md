@@ -460,13 +460,39 @@ changelog section opens with a note for anyone upgrading. Zenodo archived
 it as 10.5281/zenodo.22947874, about ninety minutes after accepting the
 release event rather than the usual two.
 
-## Next: `utils.py`
+## Completed: the `utils.py` mutation audit
 
-`utils.py` is the largest module left unaudited and the one the others
-lean on most; the reviews found three defects in it by reading alone.
-Measure its test selection with `pytest --cov-context=test`.
+Reviewed 2026-09-25. The nine-file selection passes 996 tests and covers all
+154 branch outcomes in `music/utils.py`. The mutation run killed 821 of 915
+mutants, timed out four, and left 90 reviewed survivors; none were untested
+or skipped. `MUTATION_AUDIT.md` records the grouped survivor review.
 
-Things the five areas have taught, worth carrying into the next one:
+The audit found defects that line and branch coverage had not exposed:
+
+- `profile` squared narrow integer and `float32` samples before widening
+  them, and described a multichannel audio buffer's channel count as its
+  sample count. Statistics now use `float64`; multichannel duration uses the
+  last axis, and integer stereo is flattened before block analysis.
+- `convert_to_stereo` returned a one-row mono array as one channel and could
+  overflow while summing integer PCM. It now duplicates that row and sums in
+  `float64`.
+- `resolve_stereo` changed the caller's argument mapping while splitting its
+  channels. It now uses copied per-channel arguments.
+- `rhythm_to_durations` treated 120 BPM as a two-second beat and did not let
+  `total_duration` override BPM. It now uses `60 / BPM` seconds per beat,
+  honors the documented precedence and accepts NumPy frequency sequences.
+  The MASS comparison and release notes now record this deliberate API
+  correction.
+
+The final suite run passed 4,137 tests, with 9 optional skips.
+
+## Next: `core/filters/`
+
+The filters outside ADSR/fade and localization are the next frequently used
+unaudited area. Add a bounded area to `tools/mutation_audit.py` and select
+tests with per-test coverage contexts before generating mutants.
+
+Things the six areas have taught, worth carrying into the next one:
 
 - **An absent argument cannot be mutated.** The `cross_fade` and `trill`
   sample-rate defects were not found by any mutant, because no edit can
@@ -485,7 +511,7 @@ Things the five areas have taught, worth carrying into the next one:
   coverage, under arithmetic that nothing measured.
 
 Add an area to `AREAS` rather than widening an existing one. None of the
-five is a whole-package mutation score.
+six is a whole-package mutation score.
 
 ## Other maintenance
 

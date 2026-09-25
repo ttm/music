@@ -72,16 +72,17 @@ than a defect. :func:`music.adsr`, the next section, runs each note to
 silence at both ends and the joins go quiet. `tests/test_artifacts.py`
 measures both.
 
-If you would rather write rhythm in note values than in seconds,
+If you would rather write rhythm in beat units than in seconds,
 :func:`music.rhythm_to_durations` converts them. Its ``durations`` are
-denominators of a whole note, so ``4`` is a quarter note:
+relative counts of the beat unit. With ``bpm=120``, one unit lasts half a
+second:
 
 .. code-block:: python
 
-   >>> music.rhythm_to_durations([4, 2, 2, 4], duration=0.25)
-   [1.0, 0.5, 0.5, 1.0]
+   >>> music.rhythm_to_durations([1, 2, 2, 1], bpm=120)
+   [0.5, 1.0, 1.0, 0.5]
 
-Pass ``bpm`` instead of ``duration`` to give the tempo directly.
+Pass ``duration`` instead when you already know the duration of one beat.
 
 Shaping a note
 --------------

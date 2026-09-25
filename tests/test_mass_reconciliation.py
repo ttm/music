@@ -217,7 +217,24 @@ def test_the_exact_cases_reproduce_the_reference(cases, recorded):
             f'samples. Rounding moves a handful of lookups to the next '
             f'table entry; this is too many for that')
         checked.append(case.mass)
-    assert len(checked) == 23
+    assert len(checked) == 22
+
+
+def test_rhythm_bpm_and_total_duration_divergence_is_recorded(
+        cases, recorded):
+    """The reference's BPM branch defeats the documented total override."""
+    case = next(c for c in cases if c.mass == 'rhythymToDurations')
+    reference = recorded['rhythymToDurations.samples']
+    produced = np.asarray(case.package(), dtype=float)
+
+    np.testing.assert_array_equal(reference, [2, 4])
+    np.testing.assert_array_equal(produced, [1, 2])
+    case = replace(case, reference=lambda: reference)
+    case.result = run(case)
+
+    assert case.result['status'] == DIVERGENT
+    assert case.result['delta'] == 2
+    assert register_rows([case])[0]['agrees']
 
 
 @pytest.mark.parametrize('mass_name', ['trill', 'loc_', 'Tr', 'Sa',

@@ -183,6 +183,25 @@ AREAS = {
         ),
         'dataclass_adapter': None,
     },
+    # Shared utilities: conversions, mixing, waveform tables, profiles and
+    # rhythmic durations. Selected from pytest's per-test coverage contexts.
+    'utils': {
+        'sources': (
+            'music/utils.py',
+        ),
+        'tests': (
+            'tests/test_branches.py',
+            'tests/test_utils.py',
+            'tests/test_mixing.py',
+            'tests/test_remaining_paths.py',
+            'tests/test_artifacts.py',
+            'tests/test_degenerate.py',
+            'tests/test_fidelity.py',
+            'tests/test_envelopes.py',
+            'tests/test_additional.py',
+        ),
+        'dataclass_adapter': None,
+    },
 }
 
 

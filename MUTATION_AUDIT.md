@@ -18,6 +18,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `oscillators` | `synths/notes.py` | 2026-09-23 | 1462 | 1444 | 18 | all |
 | `stimuli` | `stimulation/stimuli.py` | 2026-09-23 | 427 | 423 | 4 | all |
 | `localization` | `filters/localization.py` | 2026-09-23 | 652 | 631 | 21 | all |
+| `utils` | `utils.py` | 2026-09-25 | 915 | 825 | 90 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -776,6 +777,64 @@ with `localization.py` SHA-256
 `8bd02c2a7940af55d808e1bfa2f69f2d02e75c88ad1d21cee1bf4f573be2ce74`.
 The run took 233 seconds with two workers.
 
+## `utils` — conversions, mixing, profiles and rhythmic durations
+
+Measured 2026-09-25 on Python 3.12.7, macOS, with `mutmut` 3.7.0. The
+selected set of nine files passed 996 tests and exercised all 154 branch
+outcomes in `music/utils.py`; the statement report's misses are imports,
+constants and definitions loaded before per-test coverage starts.
+
+The run covered `HEAD` at `2aaa207`, overlaid with the working-tree
+`music/utils.py` and its three edited selected test files. The runner normally
+archives committed revisions only; after these changes are committed, the
+standard command below reproduces the audit without an overlay.
+
+### Result
+
+The run killed 821 of 915 mutations and timed out four more, which mutmut
+counts as detected. Ninety survived and were reviewed. There were no
+untested, skipped or suspicious mutations, and no crashes. The selected tests
+also found real cases that line and branch coverage had missed.
+
+- `profile` squared `int16` and `float32` samples before widening them,
+  overflowing the mean square and RMS. It now measures real numeric arrays
+  in `float64`, rejects complex arrays as unmeasurable, and counts the last
+  axis as frames for multichannel audio.
+- `convert_to_stereo` returned a one-row mono array unchanged and accumulated
+  extra integer channels in the narrow source type. It now duplicates the
+  row and performs channel sums in `float64`.
+- `resolve_stereo` replaced stereo values in the caller's argument mapping.
+  It now works from copied per-channel arguments.
+- `rhythm_to_durations` used BPM as `bpm / 60`, let BPM defeat an explicit
+  `total_duration`, and mishandled NumPy and empty frequency sequences. It
+  now uses seconds per beat, honors the documented precedence and handles
+  the tested array, empty and nested cases. The corrected BPM path is a
+  documented divergence from MASS.
+- The tests now assert exact mixed samples, offsets, block statistics,
+  rhythm subdivisions and warning/error behavior. `mix` is also checked not
+  to mutate its longer input.
+
+### Accepted survivors
+
+| Function | Mutants | Review |
+|---|---|---|
+| `waveform_table`, `horizontal_stack` | 44; 1 | At the triangle midpoint both comparison branches return 1; `False` and `None` are both false in the stack flag. |
+| `mix` | 1–4, 9–15, 19 | Eleven change only the invalid-input message; 19 selects the other path for equal lengths and produces the same sum. |
+| `mix_stereo` | 4, 6, 15, 17, 22 | Explicit casts are redundant for real sample arrays because padding promotes the result; 22 changes only the equal-length path. |
+| `convert_to_stereo` | 19–24 | Warning text only. |
+| `_integrate_phase` | 1, 4, 6, 7, 12, 14 | Block size and branch-boundary variants retain the same bounded phase; omitted dtypes are NumPy's float64 default for these outputs. |
+| `mix_with_offset` | 32, 37, 39–52, 63, 66 | Equal-size bound, zero-buffer assignment and clipped slice-end variants are equivalent; the rest change debug logging. |
+| `mix_many_with_offsets` | 11, 22, 38 | Error wording, an erased typing cast, and an index increment beyond the final argument. |
+| `pan_transitions` | 42, 50, 52, 65 | At equal lengths the added repeat has zero columns; remaining differences are dtype defaults. |
+| `_describe_array` | 7, 9, 11, 47, 48, 66, 67, 69, 70, 112, 121, 127 | Equivalent reshape/index forms, NumPy dtype/copy defaults, or a block count that selects no additional samples. |
+| `_guess_role` | 41, 44, 76, 77, 90, 92, 95, 103–106, 110, 111 | Redundant heuristic boundaries, defaults with the same truth value, or explanation wording. |
+| `rhythm_to_durations` | 8, 15, 28, 30–32, 50, 78 | Refusal wording; mutant 60, `2 / i` in a normalized nested ratio, cancels during normalization. |
+
+The four timed-out mutants were `mix_many_with_offsets` 26, 31, 36 and 37;
+each hangs and is therefore detected. `tests/test_mass_reconciliation.py` now
+also checks that BPM and total-duration behavior against the fixture rather
+than leaving this routine marked exact from its default-duration case.
+
 ## Tool limitation and adapter
 
 This applies to the `export` area alone; the envelope modules are plain
@@ -811,6 +870,7 @@ python tools/mutation_audit.py --area envelopes --revision HEAD
 python tools/mutation_audit.py --area oscillators --revision HEAD
 python tools/mutation_audit.py --area stimuli --revision HEAD
 python tools/mutation_audit.py --area localization --revision HEAD
+python tools/mutation_audit.py --area utils --revision HEAD
 python tools/mutation_audit.py --area export --revision ef03962 --max-children 2
 ```
 
@@ -830,10 +890,9 @@ deliberately, read, and act on.
 
 ## Next
 
-**Expand to another bounded area when changing it.** All five areas are
-closed, with every survivor reviewed. `utils.py` is the largest module
-left, and the one the others lean on most; `core/filters/` beyond the
-envelopes and localization is the next most used. Add an area to
+**Expand to another bounded area when changing it.** All six areas are
+closed, with every survivor reviewed. `core/filters/` beyond the envelopes
+and localization is the next most used. Add an area to
 `AREAS` rather than widening an existing one, and pick the test selection
 by measuring which tests reach the module — `pytest --cov-context=test`
 and a query over the coverage database — rather than by guessing at names.

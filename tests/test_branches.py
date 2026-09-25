@@ -168,7 +168,17 @@ def test_tremolos_pads_a_shorter_sonic_vector():
 # --------------------------------------------------------------------------
 
 def test_rhythm_from_beats_per_minute():
-    assert _finite(rhythm_to_durations(durations=[4, 2, 2], bpm=120))
+    out = rhythm_to_durations(durations=[4, 2, 2], bpm=120)
+
+    assert out == pytest.approx([2, 1, 1])
+
+
+def test_tempo_sets_the_duration_of_one_beat():
+    by_tempo = rhythm_to_durations(durations=[1, 2], bpm=120)
+    by_duration = rhythm_to_durations(durations=[1, 2], duration=0.5)
+
+    assert by_tempo == pytest.approx([0.5, 1.0])
+    assert by_tempo == by_duration
 
 
 def test_rhythm_from_a_total_duration():
@@ -181,16 +191,84 @@ def test_rhythm_from_frequencies_and_a_total_duration():
     assert sum(out) == pytest.approx(2)
 
 
+def test_rhythm_refuses_a_zero_tempo():
+    with pytest.raises(ValueError, match="bpm must be positive"):
+        rhythm_to_durations(durations=[4], bpm=0)
+
+
+def test_rhythm_refuses_an_undistributable_total_duration():
+    with pytest.raises(ValueError, match="cannot distribute"):
+        rhythm_to_durations(durations=[0, 0], total_duration=4)
+
+
+def test_rhythm_refuses_a_negative_total_duration():
+    with pytest.raises(
+            ValueError, match="total_duration must not be negative"):
+        rhythm_to_durations(durations=[1], total_duration=-1)
+
+
+def test_rhythm_refuses_frequencies_that_cancel_to_no_duration():
+    with pytest.raises(ValueError, match="frequencies cannot distribute"):
+        rhythm_to_durations(freqs=[1, -1], total_duration=4)
+
+
+def test_empty_rhythms_stay_empty_when_total_duration_is_given():
+    assert rhythm_to_durations(durations=[], total_duration=0) == []
+    assert rhythm_to_durations(freqs=[], total_duration=0) == []
+
+
+def test_total_rhythm_duration_overrides_bpm_and_unit_duration():
+    out = rhythm_to_durations(
+        durations=[1, 1], duration=1, bpm=60, total_duration=10)
+
+    assert out == [5, 5]
+
+
+def test_rhythm_total_duration_scales_nested_temporal_and_frequency_patterns():
+    temporal = rhythm_to_durations(
+        durations=[4, [3, 1, 2], 1], total_duration=8)
+    frequential = rhythm_to_durations(
+        freqs=[4, [2, 1, 2], 4], total_duration=2)
+
+    assert temporal == pytest.approx([4, 1, 2, 1])
+    assert frequential == pytest.approx([0.5, 2 / 3, 1 / 3, 0.5])
+
+
+def test_rhythm_accepts_positive_bpm_below_one():
+    assert rhythm_to_durations(durations=[1], bpm=0.5) == [120]
+
+
+def test_rhythm_frequencies_accept_a_numpy_array():
+    out = rhythm_to_durations(freqs=np.array([2, 4]), duration=1)
+
+    assert out == [0.5, 0.25]
+
+
+def test_explicitly_empty_frequencies_produce_no_durations():
+    out = rhythm_to_durations(freqs=[], durations=[4], duration=0.25)
+
+    assert out == []
+
+
+def test_zero_total_rhythm_duration_produces_zero_durations():
+    out = rhythm_to_durations(
+        durations=[1, 1], duration=1, total_duration=0)
+
+    assert out == [0, 0]
+
+
 def test_rhythm_with_nested_tuplets():
     """A nested iterable is a tuplet: its first value is the cell's own
     duration and the rest divide it."""
-    out = rhythm_to_durations(durations=[4, [2, 1, 1], 2], duration=0.5)
-    assert _finite(out)
+    out = rhythm_to_durations(durations=[2, [3, 1, 2], 1], duration=0.25)
+
+    assert out == pytest.approx([0.5, 0.25, 0.5, 0.25])
 
 
 def test_rhythm_frequencies_with_nested_tuplets():
-    out = rhythm_to_durations(freqs=[4, [2, 3, 3], 4], duration=4)
-    assert _finite(out)
+    out = rhythm_to_durations(freqs=[4, [2, 2, 4], 4], duration=4)
+
+    assert out == pytest.approx([1, 4 / 3, 2 / 3, 1])
 
 
 # --------------------------------------------------------------------------

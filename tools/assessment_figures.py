@@ -52,6 +52,7 @@ ASSESSMENT = ROOT / "ASSESSMENT.md"
 README = ROOT / "README.md"
 RECONCILIATION = ROOT / "RECONCILIATION.md"
 DISCREPANCIES = ROOT / "DISCREPANCIES.md"
+ZENODO = ROOT / ".zenodo.json"
 
 
 def declared_version():
@@ -103,6 +104,23 @@ def loc(paths):
     return sum(len(p.read_text().splitlines()) for p in paths)
 
 
+def register():
+    """How many routines the reconciliation register puts in each state.
+
+    The register is RECONCILIATION.md's table, which
+    `tests/test_mass_reconciliation.py` re-establishes against the package
+    on every push, so counting its rows needs no MASS checkout. The counts
+    are quoted in four other places, and the Zenodo abstract said 26
+    sample-exact for three releases after it had become 23.
+    """
+    states = re.findall(r"^\| `[^|]+` \| `[^|]+` \| ([a-z ]+?) \|",
+                        RECONCILIATION.read_text(), re.MULTILINE)
+    return {"mass_total": len(states),
+            "mass_exact": states.count("exact"),
+            "mass_divergent": states.count("divergent"),
+            "mass_broken": states.count("reference does not run")}
+
+
 def scan():
     """The figures an AST walk can settle, without running anything."""
     sys.path.insert(0, str(ROOT))
@@ -135,7 +153,7 @@ def scan():
                     public += 1
                     documented += bool(ast.get_docstring(node))
 
-    return {
+    return register() | {
         "modules": len(package_files()),
         "package_loc": loc(package_files()),
         "tests_loc": loc(sorted((ROOT / "tests").glob("**/*.py"))),
@@ -258,6 +276,46 @@ def expectations(figures):
          str(figures["exported_pct"])),
         ("legacy LOC", r"(?<=\*\*`legacy/` is )[\d,]+(?= LOC\*\*)",
          thousands(figures["legacy_loc"])),
+    ]
+    # The reconciliation register, counted, wherever it is quoted.
+    exact, divergent, broken, total = (
+        str(figures[key]) for key in ("mass_exact", "mass_divergent",
+                                      "mass_broken", "mass_total"))
+    wanted += [
+        ("register summary, sample-exact",
+         r"(?<=\*\*)\d+(?= sample-exact, \d+ divergent)", exact,
+         RECONCILIATION),
+        ("register summary, divergent",
+         r"(?<=sample-exact, )\d+(?= divergent, )", divergent, RECONCILIATION),
+        ("register summary, not runnable",
+         r"(?<=divergent, )\d+(?= where the reference does not run\.)",
+         broken, RECONCILIATION),
+        ("MASS sample-exact",
+         r"(?<=\| \*\*)\d+(?= of \d+ routines sample-exact)", exact),
+        ("MASS routines", r"(?<= of )\d+(?= routines sample-exact)", total),
+        ("MASS divergent", r"(?<=sample-exact\*\*; )\d+(?= divergent)",
+         divergent),
+        ("MASS not runnable",
+         r"(?<=stated reason, )\d+(?= where the reference does not run)",
+         broken),
+        ("README MASS sample-exact",
+         r"(?<=routine by routine — )\d+(?= of \d+ are reproduced)", exact,
+         README),
+        ("README MASS routines", r"(?<= of )\d+(?= are reproduced sample)",
+         total, README),
+        ("README MASS divergent", r"\d+(?= diverge for reasons it states)",
+         divergent, README),
+        ("README MASS not runnable",
+         r"(?<=and in )\d+(?= the reference itself)", broken, README),
+        ("Zenodo abstract, sample-exact",
+         r"(?<=itself: )\d+(?= of the reference’s)", exact, ZENODO),
+        ("Zenodo abstract, routines",
+         r"(?<=of the reference’s )\d+(?= routines)", total, ZENODO),
+        ("Zenodo abstract, divergent", r"\d+(?= diverge for stated reasons)",
+         divergent, ZENODO),
+        ("Zenodo abstract, not runnable",
+         r"(?<=and in )\d+(?= the reference itself does not run)", broken,
+         ZENODO),
     ]
     if "tests" in figures:
         wanted += [

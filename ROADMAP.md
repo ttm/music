@@ -452,17 +452,19 @@ samples for a short fragment; a negative start in the sequencer failing
 as a broadcast error; and `convert_to_stereo` returning one channel for
 a single row.
 
-## Next: the next release, then `utils.py`
+## Released: 1.9.0, 2026-09-24
 
-The unreleased section of `CHANGELOG.md` holds the stimulus, localization
-and review corrections, and its note for anyone upgrading lists the calls
-that now return something different: a zero angle, a zero modulation
-rate and the far ear's first samples among them. It is worth releasing
-before another area adds to it.
+The stimulus, localization and review corrections went out as 1.9.0, a
+minor release because some calls now return something different; its
+changelog section opens with a note for anyone upgrading. Zenodo archived
+it as 10.5281/zenodo.22947874, about ninety minutes after accepting the
+release event rather than the usual two.
 
-After that, `utils.py` is the largest module left unaudited and the one
-the others lean on most. Measure its test selection with
-`pytest --cov-context=test`.
+## Next: `utils.py`
+
+`utils.py` is the largest module left unaudited and the one the others
+lean on most; the reviews found three defects in it by reading alone.
+Measure its test selection with `pytest --cov-context=test`.
 
 Things the five areas have taught, worth carrying into the next one:
 

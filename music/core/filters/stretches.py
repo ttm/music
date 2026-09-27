@@ -11,10 +11,10 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=44100):
     Parameters
     ----------
     x : array_like
-        The samples made to repeat as original or squeezed. Assumed to be in
-        the form (channels, samples), i.e. x[1][120] is the 120th sample of
-        the second channel.
-    durations : list of numbers
+        The mono samples to repeat, or two-channel stereo samples in the
+        form ``(2, samples)``; for stereo, ``x[1][120]`` is the 120th sample
+        of the second channel.
+    durations : iterable of numbers
         Durations in seconds for each repeat of x.
     sample_rate : integer
         The sample rate in Hertz, used to read the length of ``x`` as a
@@ -33,7 +33,8 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=44100):
         If any entry of ``durations`` is zero or negative. A duration of
         zero squeezes the fragment into no samples and a negative one
         reverses the step, so neither produces the repeat the caller
-        asked for.
+        asked for. Also if ``sample_rate`` is not positive, or ``x`` is not
+        mono or two-channel stereo.
 
     Examples
     --------
@@ -53,15 +54,24 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=44100):
 
     """
     x = np.array(x)
+    if x.ndim not in (1, 2) or (x.ndim == 2 and x.shape[0] != 2):
+        raise ValueError(
+            "stretches accepts mono or stereo audio; expected a one-"
+            f"dimensional array or shape (2, samples), got {x.shape}")
+    if sample_rate <= 0:
+        raise ValueError(f"sample_rate must be positive; got {sample_rate}")
+    durations = tuple(durations)
     if any(duration <= 0 for duration in durations):
         raise ValueError("every duration in durations must be positive")
 
-    if len(x.shape) == 1:
+    if x.ndim == 1:
         length = x.shape[0]
         stereo = False
     else:
         length = x.shape[1]
         stereo = True
+    if not durations:
+        return x[:, :0] if stereo else x[:0]
     if length == 0:
         # Nothing to repeat; the step through it divided by its length.
         return x

@@ -27,8 +27,9 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
         If True, the transition ends at the deviation.
         If False, the transition starts at the deviation.
     method : string
-        "exp" for an exponential transitions of amplitude (linear loudness).
-        "linear" for a linear transition of amplitude.
+        "lin" or "linear" for a linear transition of amplitude; "exp" or
+        "exponential" for an exponential transition of amplitude (linear
+        loudness).
     number_of_samples : integer
         The number of samples of the envelope.
         If supplied, duration is ignored.
@@ -47,6 +48,12 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
         A numpy array where each value is a value of the envelope for the PCM
         samples. If sonic_vector is supplied, e is the sonic vector with the
         envelope applied to it.
+
+    Raises
+    ------
+    ValueError
+        If `method` is not ``'lin'``, ``'linear'``, ``'exp'`` or
+        ``'exponential'``.
 
     See Also
     --------
@@ -84,11 +91,15 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
         n = number_of_samples
     else:
         n = int(sample_rate * duration)
+    if method not in ("lin", "linear", "exp", "exponential"):
+        raise ValueError(
+            f"method must be 'lin'/'linear' or 'exp'/'exponential'; "
+            f"got {method!r}")
     samples = np.arange(n)
     # A single-sample transition has no span to interpolate across; keeping
     # the divisor at 1 yields its start value instead of 0/0 -> NaN.
     n_ = max(n - 1, 1)
-    if 'lin' in method:
+    if method in ("lin", "linear"):
         if to:
             a0 = 1
             al = trans_dev
@@ -96,7 +107,7 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
             a0 = trans_dev
             al = 1
         e = a0 + (al - a0) * samples / n_
-    if 'exp' in method:
+    else:
         if to:
             if alpha != 1:
                 samples_ = (samples / n_) ** alpha
@@ -209,7 +220,7 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
         if len(e) < len(sonic_vector):
             e = np.hstack((e, np.ones(len(sonic_vector) - len(e)) * e[-1]))
         if len(e) > len(sonic_vector):
-            sonic_vector = np.hstack((sonic_vector, np.ones(
-                len(e) - len(sonic_vector)) * e[-1]))
+            sonic_vector = np.hstack((
+                sonic_vector, np.zeros(len(e) - len(sonic_vector))))
         return sonic_vector * e
     return e

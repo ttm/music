@@ -54,7 +54,7 @@ def fraction_of(freq: float, sample_rate: int = 44100) -> float:
     Raises
     ------
     ValueError
-        If `freq` is not positive.
+        If `freq` is not positive or `sample_rate` is not positive.
 
     Examples
     --------
@@ -64,6 +64,9 @@ def fraction_of(freq: float, sample_rate: int = 44100) -> float:
     """
     if freq <= 0:
         raise ValueError(f'freq must be positive; got {freq}')
+    if sample_rate <= 0:
+        raise ValueError(
+            f'sample_rate must be positive; got {sample_rate}')
     return freq / sample_rate
 
 

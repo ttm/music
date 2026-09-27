@@ -370,7 +370,9 @@ def test_noise_rejects_an_unknown_colour():
 
 
 def test_stretches_rejects_a_non_positive_duration():
-    with pytest.raises(ValueError, match="must be positive"):
+    with pytest.raises(
+            ValueError,
+            match="^every duration in durations must be positive$"):
         music.stretches(music.note(duration=0.05), durations=(1, 0))
 
 

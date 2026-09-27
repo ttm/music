@@ -11,10 +11,11 @@ because the output worth reading is the surviving mutants rather than a
 score. The default area is the one audited first, so the command recorded
 in MUTATION_AUDIT.md keeps reproducing that run.
 
-Only committed files at the requested revision are used. The scratch tree,
-per-mutant results and surviving diffs are retained outside the checkout.
-See MUTATION_AUDIT.md for each area's scope and the dataclass adapter's
-limits.
+By default only committed files at the requested revision are used; the
+optional working-tree overlay copies the selected area sources and tests into
+that snapshot. The scratch tree, per-mutant results and surviving diffs are
+retained outside the checkout. See MUTATION_AUDIT.md for each area's scope
+and the dataclass adapter's limits.
 """
 from __future__ import annotations
 
@@ -24,6 +25,7 @@ import io
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -202,6 +204,49 @@ AREAS = {
         ),
         'dataclass_adapter': None,
     },
+    # Filter design and application, loudness transitions, reverberation
+    # and time stretching. Selected from full-suite per-test coverage.
+    'filters': {
+        'sources': (
+            'music/core/filters/design.py',
+            'music/core/filters/impulse_response.py',
+            'music/core/filters/loud.py',
+            'music/core/filters/reverb.py',
+            'music/core/filters/stretches.py',
+        ),
+        'tests': (
+            'tests/test_filter_design.py',
+            'tests/test_filters_response.py',
+            'tests/test_filters.py',
+            'tests/test_filters_audit.py',
+            'tests/test_artifacts.py::test_a_one_pole_design_is_stable_at_any_cutoff[0.49-high_pass]',
+            'tests/test_artifacts.py::test_a_two_pole_design_is_stable_anywhere_in_its_grid[0.4-0.25-band_reject]',
+            'tests/test_branches.py::test_stretches_rejects_a_non_positive_duration',
+            'tests/test_article.py::test_iir_is_the_difference_equation_diferencas_writes',
+            'tests/test_article.py::test_the_reverberation_is_the_two_periods_equations_p1rev_and_p2rev',
+            'tests/test_article.py::test_the_reverberation_decays_by_exactly_the_curve_it_documents',
+            'tests/test_degenerate.py::test_a_parameter_at_zero_does_not_quietly_add_a_bias[band_pass-bandwidth]',
+            'tests/test_degenerate.py::test_a_parameter_at_zero_does_not_quietly_add_a_bias[high_pass-cutoff]',
+            'tests/test_degenerate.py::test_a_parameter_at_zero_works_or_is_refused_clearly[band_reject-centre]',
+            'tests/test_degenerate.py::test_a_parameter_at_zero_works_or_is_refused_clearly[reverb-duration]',
+            'tests/test_degenerate.py::test_a_parameter_at_zero_works_or_is_refused_clearly[low_pass-cutoff]',
+            'tests/test_fidelity.py::test_stretching_nothing_gives_nothing[shape0]',
+            'tests/test_fidelity.py::test_loud_is_the_decibel_curve_it_documents',
+            'tests/test_fidelity.py::test_loud_with_no_deviation_is_unity_gain',
+            'tests/test_fidelity.py::test_reverb_decays_by_the_decibels_it_was_given',
+            'tests/test_fidelity.py::test_stretches_gives_each_repeat_the_duration_it_asked_for',
+            'tests/test_fidelity.py::test_every_stretch_lasts_exactly_its_duration',
+            'tests/test_fidelity.py::test_stretches_squeezes_rather_than_truncates',
+            'tests/test_mass_reconciliation.py::test_the_exact_cases_reproduce_the_reference',
+            'tests/test_mass_reconciliation.py::test_the_package_runs_where_the_reference_cannot[FIR]',
+            'tests/test_public_api.py::test_louds_pads_the_envelope_to_the_signal',
+            'tests/test_public_api.py::test_sonic_vector_accepts_any_array_like[reverb]',
+            'tests/test_public_api.py::test_stretches_resamples_to_the_requested_durations',
+            'tests/test_tutorial.py::test_every_tutorial_block_runs',
+            'tests/test_filters_audit.py::test_louds_pads_a_short_signal_with_silence',
+        ),
+        'dataclass_adapter': None,
+    },
 }
 
 
@@ -239,6 +284,10 @@ def main():
                         help='print each area with its sources, and stop')
     parser.add_argument('--revision', default='HEAD')
     parser.add_argument('--max-children', type=int, default=2)
+    parser.add_argument(
+        '--overlay-working-tree', action='store_true',
+        help=('copy this area’s source and selected test files over the '
+              'archive'))
     args = parser.parse_args()
     if args.list_areas:
         for name, area in sorted(AREAS.items()):
@@ -261,6 +310,23 @@ def main():
           flush=True)
     with tarfile.open(fileobj=io.BytesIO(archived)) as archive:
         archive.extractall(tree, filter='data')
+    overlay = []
+    if args.overlay_working_tree:
+        paths = set(sources)
+        paths.update(test.split('::', 1)[0] for test in tests)
+        for relative in sorted(paths):
+            source = ROOT / relative
+            destination = tree / relative
+            if source.is_dir():
+                shutil.copytree(source, destination, dirs_exist_ok=True)
+            elif source.is_file():
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+            else:
+                raise SystemExit(
+                    f'working-tree overlay path does not exist: {relative}')
+            overlay.append(relative)
+        print(f'Overlaid {len(overlay)} working-tree paths', flush=True)
     adapted = area['dataclass_adapter']
     if adapted:
         expose_dataclasses(tree, adapted)
@@ -298,6 +364,7 @@ def main():
         'elapsed_seconds': round(elapsed, 2),
         'configuration': config,
         'dataclass_adapter': adapted,
+        'working_tree_overlay': overlay,
         'stats': stats,
         'exit_code_by_mutant': results,
     }

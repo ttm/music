@@ -19,6 +19,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `stimuli` | `stimulation/stimuli.py` | 2026-09-23 | 427 | 423 | 4 | all |
 | `localization` | `filters/localization.py` | 2026-09-23 | 652 | 631 | 21 | all |
 | `utils` | `utils.py` | 2026-09-25 | 915 | 825 | 90 | all |
+| `filters` | `filters/design.py`, `impulse_response.py`, `loud.py`, `reverb.py`, `stretches.py` | 2026-09-25 | 531 | 505 | 26 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -871,13 +872,16 @@ python tools/mutation_audit.py --area oscillators --revision HEAD
 python tools/mutation_audit.py --area stimuli --revision HEAD
 python tools/mutation_audit.py --area localization --revision HEAD
 python tools/mutation_audit.py --area utils --revision HEAD
+python tools/mutation_audit.py --area filters --revision HEAD
 python tools/mutation_audit.py --area export --revision ef03962 --max-children 2
 ```
 
 Omitting `--area` audits `export`, so the command the first audit recorded
-still reproduces it. Uncommitted changes are deliberately excluded: the
-runner archives the requested revision into a temporary tree and leaves the
-working checkout untouched. It prints the location of `audit.json`,
+still reproduces it. Uncommitted changes are excluded by default. For a
+deliberate working-tree run, `--overlay-working-tree` copies the area sources
+and selected tests into the revision's temporary archive; the report lists
+every overlaid path. The runner leaves the working checkout untouched. It
+prints the location of `audit.json`,
 `survivors.patch` and mutmut's cache. The JSON records the area, the full
 commit, the interpreter, the configuration, the runtime and every mutant's
 exit code. The selected tests are in `tools/mutation_audit.py`.
@@ -888,14 +892,74 @@ Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 is a candidate for CI at that cost — these are things to run
 deliberately, read, and act on.
 
-## Next
+## `filters` — design, FIR/IIR, loudness, reverb and stretching
 
-**Expand to another bounded area when changing it.** All six areas are
-closed, with every survivor reviewed. `core/filters/` beyond the envelopes
-and localization is the next most used. Add an area to
-`AREAS` rather than widening an existing one, and pick the test selection
-by measuring which tests reach the module — `pytest --cov-context=test`
-and a query over the coverage database — rather than by guessing at names.
+Measured 2026-09-25 on Python 3.12.7, macOS, with `mutmut` 3.7.0. The
+178-test selection was built from per-test coverage contexts, then extended
+with direct oracles for defaults, exact samples, frequency endpoints and
+randomized paths. It passed; every source mutant was exercised.
+
+The run covered `HEAD` at `700cc67`, with 17 working-tree paths overlaid:
+the five source modules and their selected tests/support files. It took 85
+seconds. Once committed, the standard command above reproduces this audit
+without the overlay.
+
+### Result
+
+The run detected 505 of 531 mutations. Twenty-six survivors were reviewed;
+none were untested, skipped, suspicious, timed out or crashed.
+
+The full suite at this tree passed 4,175 tests. Its nine skipped doctest
+items are `PrimaryTables.draw_tables`; the HRTF module examples,
+`available_azimuths`, `hrir` and `setup_hrtf`; `singing.bootstrap`'s
+`get_engine`, `setup_engine` and `make_test_song`; and `io.play_audio`. Each
+is explicitly marked `+SKIP` in its docstring, for table drawing, external
+HRTF or singing-engine setup, or audio-device playback. A focused run
+confirmed 8 neighboring doctest items pass and all 9 skips come from that
+option, not failures or missing-dependency skips.
+
+The audit found several behavioral gaps:
+
+- `louds` extended a shorter input signal with the final envelope gain,
+  creating sound beyond the input where its documentation promises silence.
+  It now pads with zeros.
+- `loud` treated method names by substring and could silently accept an
+  unknown method. It now accepts `lin`, `linear`, `exp` and `exponential`
+  explicitly and raises `ValueError` for other values.
+- `fraction_of`, `reverb` and `stretches` now reject nonpositive sample
+  rates. `reverb` also rejects a negative first-phase duration.
+- `stretches` now validates mono and two-channel stereo shapes, handles
+  duration generators without consuming them during validation, and returns
+  a correctly shaped empty result when no durations are requested.
+
+The new exact tests also caught gaps in assertions for the FIR default
+Nyquist endpoint, the reverb noise band and random stream, first-phase
+incidence boundaries, and no-tail output dtype. A transition test now uses
+a non-unit final gain so a wrong continuation formula cannot pass by
+coincidence.
+
+### Accepted survivors
+
+IDs are mutmut suffixes for the recorded snapshot and tool version.
+
+| Function | IDs | Why accepted |
+|---|---|---|
+| `fir` | 5, 7, 10, 12 | Removing either `float64` conversion leaves the other operand promoted to `float64`; the FFT path also yields a `float64` kernel. |
+| `iir` | 3, 5, 8, 10, 13, 15 | The casts are redundant for the documented real PCM and coefficient inputs; differences require extended-precision or non-real inputs, for which no precision behavior is specified. |
+| `iir` | 22, 28–30 | Error wording changes; invalid empty or zero divisors are still refused. |
+| `iir` | 50, 67 | The longer coefficient slice is capped at the coefficient array's length, so both forms include the same terms. |
+| `loud`, `louds` | 8; 2 | Replacing the scalar `0` sentinel with scalar `1` still makes `as_sonic_vector` return `None`. |
+| `louds` | 33, 41 | On equal lengths the changed comparison only appends zero samples; the result is unchanged. |
+| `reverb` | 23, 24 | The final explanatory wording changes; the duration refusal and its tested cause remain. |
+| `reverb` | 5 | Both scalar defaults are treated as the same no-signal sentinel. |
+| `reverb` | 78, 80 | `as_sonic_vector` and the response already produce `float64`, so the explicit result conversion is redundant. |
+| `stretches` | 32 | `False` and `None` are both false in the mono/stereo branch. |
+
+**Expand to another bounded area when changing it.** All seven areas now
+have reviewed survivors. Pick later areas by measuring which tests reach
+their modules with per-test coverage contexts, then add a separate entry to
+`AREAS` rather than widening an existing area. These bounded measurements
+are not a whole-package mutation score.
 
 What the areas have taught, worth carrying:
 

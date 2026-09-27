@@ -8,15 +8,28 @@ both `bpm` and `duration`, as the parameter documentation has always said.
 Callers supplying `bpm` or `total_duration` will see different results. To
 set the beat length directly, pass `duration` and omit `total_duration`.
 
+`louds` now pads a signal that is shorter than its envelope with silence, as
+its documentation promises. It previously filled those added samples with
+the last gain, so the output could add a constant-level tail.
+
 ### Fixed
 
-- `convert_to_stereo` now promotes integer PCM to `float64` before summing
-  extra channels, so downmixing cannot overflow the integer input type.
-- `profile` counts frames rather than channels for multichannel audio and
-  computes amplitude statistics without integer or `float32` square
+- **`convert_to_stereo` cannot overflow integer PCM.** It now promotes
+  integer samples to `float64` before summing extra channels.
+- **`profile` counts frames, not channels.** For multichannel audio it
+  also computes amplitude statistics without integer or `float32` square
   overflow.
-- `resolve_stereo` no longer replaces stereo arguments in the caller's
-  dictionary.
+- **`resolve_stereo` leaves the caller's dictionary alone.** It no longer
+  replaces the stereo arguments in it.
+- **`loud` refuses a method it does not know.** It accepts `lin`,
+  `linear`, `exp` and `exponential` explicitly, and reports other method
+  names with a clear `ValueError`, where it matched them by substring.
+- **`fraction_of`, `reverb` and `stretches` refuse a nonpositive sample
+  rate.** `reverb` also refuses a negative first-phase duration.
+- **`stretches` accepts any iterable of durations.** A generator is no
+  longer consumed by validation, an empty duration sequence gives an empty
+  result, and audio that is neither mono nor `(2, samples)` stereo is
+  refused by name.
 
 ## [1.9.0] - 2026-09-24
 

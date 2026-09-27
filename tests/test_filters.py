@@ -358,6 +358,7 @@ def test_a_reverb_of_only_its_first_period_has_no_tail():
     response = reverb(duration=.01, first_phase_duration=.01,
                       sample_rate=1000)
     assert len(response) == 10 and response[0] == 1
+    assert response.dtype == np.float64
 
 
 def test_a_one_sample_reverb_is_the_direct_sound():

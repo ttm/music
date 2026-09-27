@@ -71,8 +71,9 @@ shapes, endpoint fades, short middle phases, and arrays.
   checked matching transitions and output duration, and compared ordinary
   layouts with the previous implementation. It also found an unbalanced
   outer-ramp case, now covered by a regression test.
-- Validation completed: **3,488 passed, 9 skipped**, with **100% line and
-  branch coverage** (2,807 statements and 866 branches). Ruff and mypy
+- Validation completed: **3,488 passed, 9 doctest items skipped by explicit
+  `+SKIP` directives**, with **100% line and branch coverage** (2,807
+  statements and 866 branches). Ruff and mypy
   pass; Sphinx passes with warnings treated as errors; 13 examples pass
   and the external singing-engine example skips. Assessment figures have
   been remeasured.
@@ -484,15 +485,23 @@ The audit found defects that line and branch coverage had not exposed:
   The MASS comparison and release notes now record this deliberate API
   correction.
 
-The final suite run passed 4,137 tests, with 9 optional skips.
+The final suite run passed 4,137 tests; nine doctest items were skipped by
+explicit `+SKIP` directives.
 
-## Next: `core/filters/`
+## Completed: the remaining `core/filters/` mutation audit
 
-The filters outside ADSR/fade and localization are the next frequently used
-unaudited area. Add a bounded area to `tools/mutation_audit.py` and select
-tests with per-test coverage contexts before generating mutants.
+Reviewed 2026-09-25. The bounded selection covers filter design, FIR/IIR,
+loudness transitions, reverberation and stretching, beyond the earlier
+ADSR/fade and localization audits. Its 178 selected tests detect 505 of 531
+mutants; all 26 survivors were reviewed. The run found and fixed a loudness
+padding defect, stricter method validation, missing sample-rate and shape
+guards, and the loss of iterable stretch durations. See
+`MUTATION_AUDIT.md` for the scope, reproduction command and survivor review.
 
-Things the six areas have taught, worth carrying into the next one:
+The full repository suite passed 4,175 tests; nine doctest items were skipped
+by explicit `+SKIP` directives.
+
+The seven areas have taught, worth carrying into a later audit:
 
 - **An absent argument cannot be mutated.** The `cross_fade` and `trill`
   sample-rate defects were not found by any mutant, because no edit can
@@ -510,8 +519,10 @@ Things the six areas have taught, worth carrying into the next one:
   defects found so far sat inside branches with full line *and* branch
   coverage, under arithmetic that nothing measured.
 
-Add an area to `AREAS` rather than widening an existing one. None of the
-six is a whole-package mutation score.
+Add each area to `AREAS` rather than widening an existing one, and select
+its tests with per-test coverage contexts. None of the seven bounded audits
+is a whole-package mutation score. The next unaudited candidates include
+`music/theory/` and `music/structures/`.
 
 ## Other maintenance
 

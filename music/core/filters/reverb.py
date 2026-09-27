@@ -32,9 +32,10 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     Raises
     ------
     ValueError
-        If ``first_phase_duration`` is longer than ``duration``, or
-        ``duration`` is shorter than one sample: the response begins with
-        the direct sound, so it has at least that.
+        If ``first_phase_duration`` is negative or longer than ``duration``,
+        ``sample_rate`` is not positive, or ``duration`` is shorter than one
+        sample: the response begins with the direct sound, so it has at
+        least that.
 
     Returns
     -------
@@ -70,6 +71,12 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     >>> len(wet) > 44100                # longer than the note by its tail
     True
     """
+    if sample_rate <= 0:
+        raise ValueError(f"sample_rate must be positive; got {sample_rate}")
+    if first_phase_duration < 0:
+        raise ValueError(
+            "first_phase_duration must be non-negative; "
+            f"got {first_phase_duration}")
     lambda_r = int(duration * sample_rate)
     lambda1 = int(first_phase_duration * sample_rate)
     if lambda1 > lambda_r:

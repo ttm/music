@@ -196,16 +196,17 @@ def test_fraction_of_converts_hertz_to_what_the_designs_take():
     assert len(a) == 1 and len(b) == 2
 
 
-@pytest.mark.parametrize("design, kwargs", [
-    (music.low_pass, {"cutoff": 0.0}),
-    (music.low_pass, {"cutoff": 0.5}),
-    (music.high_pass, {"cutoff": -0.1}),
-    (music.band_pass, {"centre": 0.6, "bandwidth": 0.05}),
-    (music.band_reject, {"centre": 0.1, "bandwidth": 0.0}),
+@pytest.mark.parametrize("design, kwargs, parameter", [
+    (music.low_pass, {"cutoff": 0.0}, "cutoff"),
+    (music.low_pass, {"cutoff": 0.5}, "cutoff"),
+    (music.high_pass, {"cutoff": -0.1}, "cutoff"),
+    (music.band_pass, {"centre": 0.6, "bandwidth": 0.05}, "centre"),
+    (music.band_reject, {"centre": 0.1, "bandwidth": 0.0}, "bandwidth"),
 ])
-def test_a_frequency_outside_the_useful_range_is_refused(design, kwargs):
+def test_a_frequency_outside_the_useful_range_is_refused(
+        design, kwargs, parameter):
     """Above the Nyquist fraction there is nothing to filter."""
-    with pytest.raises(ValueError, match="fraction of the sample rate"):
+    with pytest.raises(ValueError, match=rf"^{parameter} is"):
         design(**kwargs)
 
 

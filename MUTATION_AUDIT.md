@@ -20,6 +20,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `localization` | `filters/localization.py` | 2026-09-23 | 652 | 631 | 21 | all |
 | `utils` | `utils.py` | 2026-09-25 | 915 | 825 | 90 | all |
 | `filters` | `filters/design.py`, `impulse_response.py`, `loud.py`, `reverb.py`, `stretches.py` | 2026-09-25 | 531 | 505 | 26 | all |
+| `theory` | `theory/chords.py`, `intervals.py`, `scales.py` | 2026-09-27 | 214 | 213 | 1 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -873,6 +874,7 @@ python tools/mutation_audit.py --area stimuli --revision HEAD
 python tools/mutation_audit.py --area localization --revision HEAD
 python tools/mutation_audit.py --area utils --revision HEAD
 python tools/mutation_audit.py --area filters --revision HEAD
+python tools/mutation_audit.py --area theory --revision HEAD
 python tools/mutation_audit.py --area export --revision ef03962 --max-children 2
 ```
 
@@ -888,7 +890,8 @@ exit code. The selected tests are in `tools/mutation_audit.py`.
 
 Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 `oscillators`, and 84 for `export` with two. The latest oscillator pass took
-582 seconds with two workers, `stimuli` 60 and `localization` 233. None
+582 seconds with two workers, `stimuli` 60 and `localization` 233, and
+`theory` 24 to 50 with four. None
 is a candidate for CI at that cost — these are things to run
 deliberately, read, and act on.
 
@@ -955,7 +958,72 @@ IDs are mutmut suffixes for the recorded snapshot and tool version.
 | `reverb` | 78, 80 | `as_sonic_vector` and the response already produce `float64`, so the explicit result conversion is redundant. |
 | `stretches` | 32 | `False` and `None` are both false in the mono/stereo branch. |
 
-**Expand to another bounded area when changing it.** All seven areas now
+## `theory` — scales, modes, chords, intervals and the harmonic series
+
+Measured 2026-09-27 on Python 3.12.7, macOS, with `mutmut` 3.7.0. Per-test
+coverage contexts over the full suite found that only `test_theory.py`,
+`test_theory_properties.py`, four `test_degenerate.py` cases and four
+`test_public_api.py` cases reach `music/theory/`; the selection is those,
+and `test_theory_audit.py`, 659 tests in all.
+
+The final run covered `HEAD` at `6f44763`, with 8 working-tree paths
+overlaid: the three source modules and the selected test files. It took 50
+seconds with four workers. Once committed, the standard command above
+reproduces it without the overlay.
+
+### Result
+
+The first run detected 192 of 204 mutations. Eleven of the twelve survivors
+were tests that did not exist:
+
+- The article's three worked compound intervals, `P11`, `M9` and `m16`,
+  and the simple ones read straight from the table left the parser
+  unasserted on degrees 6, 7, 8 and 13 and above. Counting octaves from
+  `degree + 1` rather than `degree - 1`, or taking the octave's degree 8
+  as one octave up, gave `aug6`, `dim7`, `aug8` and `M13` the wrong size
+  and passed.
+- Nothing classified or named a minor ninth, so treating 13 semitones as
+  a compound octave passed in both `consonance` and `interval_names`.
+- `interval_between` was never given a frequency below 1 Hz, nor an upper
+  frequency of zero with a message to check.
+- `invert` was never asked for two octaves, where `12 / octaves` and
+  `12 * octaves` part, and three defaults (`invert`'s degree,
+  `mode_by_rotation`'s kappa and `harmonic_series`'s count) were run but
+  not read.
+
+`test_theory_audit.py` checks every quality with every degree up to three
+octaves against an oracle built from the major scale rather than from the
+module's table, and names, reads back and classifies every size up to five
+octaves. The final run detected 213 of 214; the ten added mutations come
+from the fixes below.
+
+Reading the code around the mutants found four defects no mutant could
+show, because each is an input the tests never gave:
+
+- `interval_names(16.0)` returned `('M10.0',)`, a name `interval` cannot
+  read, and `interval_names(4.5)` returned an empty tuple.
+  `consonance(4.7)` truncated to 4 and called it a major third. Both now
+  take a whole number of any numeric type and refuse a fraction.
+- `interval` stripped whitespace only after looking the name up in the
+  table, so `" M3"` was read and `"TT "` refused. It now strips first.
+- `interval_between` passed NaN and infinity to `round()`, which failed
+  with a message about converting to an integer. They are now refused as
+  not positive and finite.
+- `invert` read a negative `degree` from the top, as Python indexes,
+  where its documentation promised an `IndexError`. That is useful and
+  now documented rather than refused.
+
+### Accepted survivor
+
+| Function | IDs | Why accepted |
+|---|---|---|
+| `interval_names` | 31 | `continue` becomes `break` after the one name without a degree. That is `TT`, the last name of the tritone once `tri` is filtered out, so nothing follows it to skip. |
+
+`interval("dim1")` is -1, as the article's rule gives it, where
+`consonance` and `interval_names` refuse a negative interval. It is left as
+the rule gives it, and `test_theory_audit.py` records the choice.
+
+**Expand to another bounded area when changing it.** All eight areas now
 have reviewed survivors. Pick later areas by measuring which tests reach
 their modules with per-test coverage contexts, then add a separate entry to
 `AREAS` rather than widening an existing area. These bounded measurements
@@ -983,6 +1051,11 @@ What the areas have taught, worth carrying:
 - **An apparent equivalent deserves an experiment.** Two `float64`
   conversions in `spatial_motion` looked redundant; one line of other
   input types showed they were not.
+- **A finite domain can be enumerated.** The interval notation has seven
+  qualities and a handful of degrees per octave. The article's examples
+  sampled three of them and happened to miss every degree where a wrong
+  octave count differs; checking all 154 against an independent oracle
+  takes a fraction of a second.
 
 Keep the sample-based assertions when refactoring these paths. Resolve the
 property/decorator coverage limitation before interpreting any future

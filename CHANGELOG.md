@@ -30,6 +30,16 @@ the last gain, so the output could add a constant-level tail.
   longer consumed by validation, an empty duration sequence gives an empty
   result, and audio that is neither mono nor `(2, samples)` stereo is
   refused by name.
+- **`interval_names` names a whole float as an integer.** `16.0` was
+  named `M10.0`, which `interval` cannot read back. A fraction of a
+  semitone, which returned no names, is now refused.
+- **`consonance` refuses a fraction of a semitone.** It truncated one, so
+  4.7 was classified as a major third.
+- **`interval` ignores surrounding whitespace for every name.** It
+  stripped it only after the table lookup, so `" M3"` was read and
+  `"TT "` refused.
+- **`interval_between` refuses NaN and infinity by name.** They reached
+  `round()`, which failed with a message about converting to an integer.
 
 ## [1.9.0] - 2026-09-24
 

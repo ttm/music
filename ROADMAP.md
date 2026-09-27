@@ -501,7 +501,24 @@ guards, and the loss of iterable stretch durations. See
 The full repository suite passed 4,175 tests; nine doctest items were skipped
 by explicit `+SKIP` directives.
 
-The seven areas have taught, worth carrying into a later audit:
+## Completed: the `music/theory/` mutation audit
+
+Reviewed 2026-09-27. Only the two theory test files and eight parametrized
+cases elsewhere reach scales, chords and intervals. The first run detected
+192 of 204 mutants; eleven of the twelve survivors were missing tests, on
+interval degrees the article's worked examples do not use, the minor
+ninth, sub-hertz frequencies and three unread defaults. With an exhaustive
+oracle for the interval notation, the final run detects 213 of 214, and the
+one survivor is equivalent. Reading around the mutants found four defects
+none could show: `interval_names(16.0)` named `M10.0`, `consonance`
+truncated a fractional interval, `interval` stripped whitespace after the
+table lookup, and `interval_between` failed inside `round()` for NaN and
+infinity. See `MUTATION_AUDIT.md`.
+
+The full repository suite passed 4,495 tests; nine doctest items were skipped
+by explicit `+SKIP` directives.
+
+The eight areas have taught, worth carrying into a later audit:
 
 - **An absent argument cannot be mutated.** The `cross_fade` and `trill`
   sample-rate defects were not found by any mutant, because no edit can
@@ -518,11 +535,14 @@ The seven areas have taught, worth carrying into a later audit:
 - **A branch can run under every test and still be unasserted.** The
   defects found so far sat inside branches with full line *and* branch
   coverage, under arithmetic that nothing measured.
+- **A finite domain can be enumerated.** The article's three compound
+  intervals missed every degree where a wrong octave count shows; all 154
+  quality and degree pairs to three octaves take a fraction of a second.
 
 Add each area to `AREAS` rather than widening an existing one, and select
-its tests with per-test coverage contexts. None of the seven bounded audits
-is a whole-package mutation score. The next unaudited candidates include
-`music/theory/` and `music/structures/`.
+its tests with per-test coverage contexts. None of the eight bounded audits
+is a whole-package mutation score. The next unaudited candidate is
+`music/structures/`: permutations, symmetry and the change-ringing peals.
 
 ## Other maintenance
 

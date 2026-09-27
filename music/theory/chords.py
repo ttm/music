@@ -33,7 +33,8 @@ TRIADS: dict[str, tuple[int, ...]] = {
 }
 
 #: The tetrads the article reaches by adding one more third: 10 semitones
-#: for a minor seventh, 11 for a major one.
+#: for a minor seventh, 11 for a major one. The diminished seventh takes 9,
+#: a third the article's sentence does not name.
 SEVENTHS: dict[str, tuple[int, ...]] = {
     'dominant seventh': TRIADS['major'] + (10,),
     'major seventh': TRIADS['major'] + (11,),
@@ -99,7 +100,8 @@ def add_seventh(notes: tuple[int, ...], major: bool = False) \
     Parameters
     ----------
     notes : tuple of integers
-        The triad, as :func:`chord` returns one.
+        The triad in root position, as :func:`chord` returns one: the
+        seventh is counted from its first note.
     major : boolean
         11 semitones rather than 10.
 
@@ -135,7 +137,8 @@ def invert(notes: tuple[int, ...], degree: int = 0, octaves: int = 1) \
     notes : tuple of integers
         The chord.
     degree : integer
-        Which note to move, indexed from the bottom.
+        Which note to move, indexed from the bottom. A negative one counts
+        from the top, as Python indexes: -1 is the highest note.
     octaves : integer
         How many octaves, and which way. Positive moves it up.
 
@@ -158,6 +161,8 @@ def invert(notes: tuple[int, ...], degree: int = 0, octaves: int = 1) \
     (-5, 0, 4)
     >>> invert(chord('major'), degree=2, octaves=1)  # an open position
     (0, 4, 19)
+    >>> invert(chord('major'), degree=-1) == invert(chord('major'), degree=2)
+    True
     """
     moved = list(notes)
     moved[degree] = moved[degree] + 12 * octaves

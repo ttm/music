@@ -79,6 +79,20 @@ def _simple(degree: int) -> tuple[int, int]:
     return ((degree - 1) % 7) + 1, (degree - 1) // 7
 
 
+def _whole(semitones: int) -> int:
+    """`semitones` as an integer, refusing a fraction of one.
+
+    A name stands for a whole number of semitones, so 4.5 has none, and
+    16.0 read as a float would be named ``"M10.0"``, which :func:`interval`
+    cannot read back.
+    """
+    whole = int(semitones)
+    if whole != semitones:
+        raise ValueError(
+            f'an interval is a whole number of semitones; got {semitones}')
+    return whole
+
+
 def interval(name: str) -> int:
     """The number of semitones in an interval, from its traditional name.
 
@@ -117,10 +131,11 @@ def interval(name: str) -> int:
     >>> interval("aug3")  # a major third raised by a semitone
     5
     """
-    if name in SIMPLE_INTERVALS:
-        return SIMPLE_INTERVALS[name]
+    key = name.strip()
+    if key in SIMPLE_INTERVALS:
+        return SIMPLE_INTERVALS[key]
 
-    match = _NOTATION.match(name.strip())
+    match = _NOTATION.match(key)
     if not match:
         raise ValueError(
             f'{name!r} is not an interval; write a quality and a degree, '
@@ -176,8 +191,8 @@ def interval_names(semitones: int) -> tuple[str, ...]:
     Raises
     ------
     ValueError
-        If `semitones` is negative. An interval is measured upward; use
-        the two notes the other way round.
+        If `semitones` is negative or not a whole number. An interval is
+        measured upward; use the two notes the other way round.
 
     See Also
     --------
@@ -192,6 +207,7 @@ def interval_names(semitones: int) -> tuple[str, ...]:
     >>> interval_names(14)
     ('M9',)
     """
+    semitones = _whole(semitones)
     if semitones < 0:
         raise ValueError(
             f'an interval is measured upward from the lower note; got '
@@ -238,7 +254,8 @@ def consonance(interval_or_semitones: str | int) -> str:
     Raises
     ------
     ValueError
-        If the interval is negative, or its name is not one.
+        If the interval is negative or not a whole number of semitones, or
+        its name is not one.
 
     See Also
     --------
@@ -261,7 +278,7 @@ def consonance(interval_or_semitones: str | int) -> str:
     """
     semitones = (interval(interval_or_semitones)
                  if isinstance(interval_or_semitones, str)
-                 else int(interval_or_semitones))
+                 else _whole(interval_or_semitones))
     if semitones < 0:
         raise ValueError(f'an interval is not negative; got {semitones}')
     octaves, within = divmod(semitones, 12)
@@ -288,7 +305,8 @@ def interval_between(lower: float, upper: float) -> int:
     Raises
     ------
     ValueError
-        If either frequency is not positive, or `upper` is below `lower`.
+        If either frequency is not positive and finite, or `upper` is below
+        `lower`.
 
     See Also
     --------
@@ -302,9 +320,12 @@ def interval_between(lower: float, upper: float) -> int:
     >>> interval_names(interval_between(220.0, 440.0))
     ('P8',)
     """
-    if lower <= 0 or upper <= 0:
+    # Written as bounds so that NaN, which fails every comparison, is
+    # refused here rather than by round() at the end.
+    if not (0 < lower < math.inf and 0 < upper < math.inf):
         raise ValueError(
-            f'frequencies must be positive; got {lower} and {upper}')
+            f'frequencies must be positive and finite; got {lower} and '
+            f'{upper}')
     if upper < lower:
         raise ValueError(
             f'{upper} is below {lower}; an interval is measured upward, so '

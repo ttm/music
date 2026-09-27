@@ -247,6 +247,29 @@ AREAS = {
         ),
         'dataclass_adapter': None,
     },
+    # Scales, modes, chords, intervals and the harmonic series of the MASS
+    # companion paper. Selected from full-suite per-test coverage.
+    'theory': {
+        'sources': (
+            'music/theory/chords.py',
+            'music/theory/intervals.py',
+            'music/theory/scales.py',
+        ),
+        'tests': (
+            'tests/test_theory.py',
+            'tests/test_theory_properties.py',
+            'tests/test_theory_audit.py',
+            'tests/test_degenerate.py::test_a_parameter_at_zero_does_not_quietly_add_a_bias[harmonic_series-partials]',
+            'tests/test_degenerate.py::test_a_parameter_at_zero_does_not_quietly_add_a_bias[mode_by_rotation-kappa]',
+            'tests/test_degenerate.py::test_a_parameter_at_zero_works_or_is_refused_clearly[harmonic_series-partials]',
+            'tests/test_degenerate.py::test_a_parameter_at_zero_works_or_is_refused_clearly[mode_by_rotation-kappa]',
+            'tests/test_public_api.py::test_export_runs_with_its_documented_defaults[chord]',
+            'tests/test_public_api.py::test_export_runs_with_its_documented_defaults[harmonic_series]',
+            'tests/test_public_api.py::test_export_runs_with_its_documented_defaults[mode_by_rotation]',
+            'tests/test_public_api.py::test_export_runs_with_its_documented_defaults[scale]',
+        ),
+        'dataclass_adapter': None,
+    },
 }
 
 

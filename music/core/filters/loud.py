@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from ...utils import as_sonic_vector
+from ...utils import _transition_is_linear, as_sonic_vector
 
 
 def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
@@ -91,15 +91,12 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
         n = number_of_samples
     else:
         n = int(sample_rate * duration)
-    if method not in ("lin", "linear", "exp", "exponential"):
-        raise ValueError(
-            f"method must be 'lin'/'linear' or 'exp'/'exponential'; "
-            f"got {method!r}")
+    linear = _transition_is_linear(method)
     samples = np.arange(n)
     # A single-sample transition has no span to interpolate across; keeping
     # the divisor at 1 yields its start value instead of 0/0 -> NaN.
     n_ = max(n - 1, 1)
-    if method in ("lin", "linear"):
+    if linear:
         if to:
             a0 = 1
             al = trans_dev

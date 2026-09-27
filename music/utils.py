@@ -603,6 +603,30 @@ def convert_to_stereo(sound_vector: ArrayLike) -> NDArray[np.float64]:
     return stereo_sound
 
 
+def _transition_is_linear(method: str, name: str = 'method') -> bool:
+    """Whether `method` names a linear transition rather than an exponential.
+
+    Every routine with a linear-or-exponential transition takes the same
+    four names. They used to read them three ways: `loud` by exact name,
+    `fade` by substring, so ``"explicit"`` was exponential, and the
+    glissandi by comparison with ``"exp"`` alone, so ``"exponential"``
+    swept linearly and an unknown name was linear without a word.
+
+    Raises
+    ------
+    ValueError
+        If `method` is none of ``'lin'``, ``'linear'``, ``'exp'`` and
+        ``'exponential'``. `name` is the parameter the caller knows it by.
+    """
+    if method in ('lin', 'linear'):
+        return True
+    if method in ('exp', 'exponential'):
+        return False
+    raise ValueError(
+        f"{name} must be 'lin'/'linear' or 'exp'/'exponential'; "
+        f"got {method!r}")
+
+
 def _signed_power(values, index):
     """Raise an oscillatory pattern to a distortion index, keeping its sign.
 

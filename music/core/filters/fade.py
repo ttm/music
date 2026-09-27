@@ -3,7 +3,7 @@
 import numpy as np
 from .loud import loud
 from ...utils import (resolve_stereo, mix_with_offset,
-                      as_sonic_vector)
+                      as_sonic_vector, _transition_is_linear)
 
 
 def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
@@ -21,8 +21,9 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
     fade_out : boolean
         If True, the fade is a fade out, else it is a fade in.
     method : string
-        "exp" for an exponential transition of amplitude (linear loudness).
-        "linear" for a linear transition of amplitude.
+        "exp" or "exponential" for an exponential transition of amplitude
+        (linear loudness); "lin" or "linear" for a linear transition of
+        amplitude.
     db : scalar
         The decibels from which to reach before using the linear transition to
         reach zero. Not used if method="linear".
@@ -51,10 +52,12 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
     Raises
     ------
     ValueError
-        If ``perc`` is outside [0, 100], or if ``method`` names neither
-        "lin" nor "exp". A percentage over 100 used to reach an
+        If ``perc`` is outside [0, 100], or if ``method`` is not one of
+        the four names above. A percentage over 100 used to reach an
         ``IndexError`` from inside the routine, and an unknown method an
         ``UnboundLocalError``, neither of which says what the caller did.
+        Names were once matched by substring, so ``"explicit"`` was
+        exponential; they are now the ones :func:`loud` takes.
 
     See Also
     --------
@@ -89,9 +92,6 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
         raise ValueError(
             "perc is the percentage of the fade that is linear and must lie "
             f"in [0, 100]; got {perc}")
-    if "lin" not in method and "exp" not in method:
-        raise ValueError(
-            f'method must name "lin" or "exp"; got {method!r}')
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
         if len(sonic_vector.shape) == 2:
@@ -101,6 +101,9 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
         n = number_of_samples
     else:
         n = int(sample_rate * duration)
+    # Checked after the stereo branch, which hands this call's locals to
+    # each channel's: a name bound before it would arrive as an argument.
+    linear = _transition_is_linear(method)
     if n < 1:
         # Both branches below hand `n` to `loud`, where a
         # number_of_samples of zero means "not supplied" and gives back
@@ -109,12 +112,12 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
         # sweep never reached because it only ever calls the default
         # method.
         return np.array([])
-    if 'lin' in method:
+    if linear:
         if fade_out:
             ai = loud(method="linear", trans_dev=0, number_of_samples=n)
         else:
             ai = loud(method="linear", to=0, trans_dev=0, number_of_samples=n)
-    if 'exp' in method:
+    else:
         n0 = int(n*perc/100)
         n1 = n - n0
         # `loud` reads number_of_samples=0 as "use the default duration",
@@ -163,7 +166,8 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
     duration : scalar
         The length of the crossfade in milliseconds.
     method : string
-        The fade shape, as :func:`fade` takes it: "lin" or "exp".
+        The fade shape, as :func:`fade` takes it: "lin" or "linear", "exp"
+        or "exponential".
     sample_rate : integer
         The sample rate in Hertz.
 

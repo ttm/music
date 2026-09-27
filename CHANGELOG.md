@@ -12,6 +12,14 @@ set the beat length directly, pass `duration` and omit `total_duration`.
 its documentation promises. It previously filled those added samples with
 the last gain, so the output could add a constant-level tail.
 
+Every linear-or-exponential transition now takes the same four names,
+`lin`, `linear`, `exp` and `exponential`, and refuses any other.
+`note_with_glissando` and `note_with_vibrato_seq_localization` read
+anything but `exp` as linear, so `method="exponential"` now sweeps
+exponentially where it swept linearly. `fade`, and `adsr` through it,
+matched by substring, so a name such as `"explicit"` that used to fade
+is now refused.
+
 ### Fixed
 
 - **`convert_to_stereo` cannot overflow integer PCM.** It now promotes
@@ -38,6 +46,11 @@ the last gain, so the output could add a constant-level tail.
 - **`interval` ignores surrounding whitespace for every name.** It
   stripped it only after the table lookup, so `" M3"` was read and
   `"TT "` refused.
+- **`loud`, `fade`, `adsr` and the glissandi agree on transition
+  names.** `fade` matched them by substring, `loud` exactly, and the
+  glissandi compared with `exp` alone, so one name could fade, be
+  refused by the next stage of an `adsr`, and sweep linearly. `adsr`
+  also checks its `transition` when every stage is empty.
 - **`interval_between` refuses NaN and infinity by name.** They reached
   `round()`, which failed with a message about converting to an integer.
 

@@ -2,7 +2,7 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from ...utils import (WAVEFORM_SINE, WAVEFORM_TRIANGULAR,
-                      _integrate_phase, _signed_power)
+                      _integrate_phase, _signed_power, _transition_is_linear)
 from ..filters.adsr import adsr
 
 
@@ -412,9 +412,9 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
     waveform_table : array_like
         The table with the waveform to synthesize the sound.
     method : string
-        "exp" for an exponential transition of frequency
-        (linear pitch).
-        "lin" for a linear transition of amplitude.
+        "exp" or "exponential" for an exponential transition of frequency
+        (linear pitch); "lin" or "linear" for a linear transition of
+        frequency.
     number_of_samples : integer
         The number of samples of the sound.
         If supplied, duration is not used.
@@ -435,6 +435,9 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
         negative frequency raised to a fractional power gave NaN, which
         was then cast to an integer table index and read as a sound. A
         linear glissando has no such restriction.
+
+        Also if `method` is not one of the four names above. Anything but
+        ``"exp"`` used to sweep linearly, ``"exponential"`` included.
 
     See Also
     --------
@@ -461,7 +464,7 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
     samples = np.arange(lambda_p)
     # A single sample sits at the start; it has no interval to divide by.
     intervals = max(lambda_p - 1, 1)
-    if method == "exp":
+    if not _transition_is_linear(method):
         _require_a_ratio(start_freq, end_freq, linear_option=True)
         if alpha != 1:
             f = start_freq * (end_freq / start_freq) ** \
@@ -669,11 +672,11 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     y : sequence of scalars
         The y positions at each end of the transitions.
     method : list of strings
-        An entry for each transition of location: 'exp' for
-        exponential and 'lin' (default) for linear. An exponential
-        transition moves each coordinate by a constant ratio, so a
-        coordinate that changes may not start or end at zero or change
-        sign; one that stays the same, zero included, is held.
+        An entry for each transition of location: 'exp' or 'exponential'
+        for exponential and 'lin' (default) or 'linear' for linear. An
+        exponential transition moves each coordinate by a constant ratio,
+        so a coordinate that changes may not start or end at zero or
+        change sign; one that stays the same, zero included, is held.
     waveform_tables : list of lists of array_likes
         The tables with the waveforms to synthesize the sound
         and then for the oscillatory patterns of the vibratos.
@@ -702,8 +705,10 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     ------
     ValueError
         If a pitch endpoint is not positive, a position transition
-        spans fewer than one sample, or an exponential position
-        transition has no ratio to move a coordinate by.
+        spans fewer than one sample, an exponential position transition
+        has no ratio to move a coordinate by, or an entry of `method` is
+        none of the four names above. Anything but 'exp' used to move
+        linearly, 'exponential' included.
 
     See Also
     --------
@@ -748,6 +753,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     if any(int(sample_rate * dur) < 1 for dur in durations[-1]):
         raise ValueError(
             "each location duration must span at least one sample")
+    linear = [_transition_is_linear(m) for m in method]
 
     # pitch transition contributions
     pitch_parts = []
@@ -797,10 +803,9 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     iid_parts: list = []
     if stereo:
         for i in range(len(method)):
-            m = method[i]
             a = alpha[-1][i]
             lambda_d = int(sample_rate * durations[-1][i])
-            if m == 'exp':
+            if not linear[i]:
                 if a == 1:
                     foo = np.arange(lambda_d + 1) / lambda_d
                 else:
@@ -829,10 +834,9 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
             iid_parts.append(np.vstack((iid_al[:-1], iid_ar[:-1])))
     else:
         for i in range(len(method)):
-            m = method[i]
             a = alpha[-1][i]
             lambda_d = int(sample_rate * durations[-1][i])
-            if m == 'exp':
+            if not linear[i]:
                 if a == 1:
                     foo = np.arange(lambda_d + 1) / lambda_d
                 else:

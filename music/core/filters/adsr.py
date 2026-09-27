@@ -3,7 +3,7 @@
 import numpy as np
 from .fade import fade
 from .loud import loud
-from ...utils import as_sonic_vector
+from ...utils import _transition_is_linear, as_sonic_vector
 
 
 def adsr(envelope_duration=2, attack_duration=20,
@@ -31,9 +31,9 @@ def adsr(envelope_duration=2, attack_duration=20,
     release_duration : scalar
         The duration of the Release in milliseconds.
     transition : string
-        "exp" for exponential transitions of amplitude
-        (linear loudness).
-        "linear" for linear transitions of amplitude.
+        "exp" or "exponential" for exponential transitions of amplitude
+        (linear loudness); "lin" or "linear" for linear transitions of
+        amplitude.
     alpha : scalar or array_like
         An index to make the exponential fade slower or faster [1]. Ignored it
         transitions="linear" or alpha=1. If it is an array_like, it should
@@ -63,6 +63,13 @@ def adsr(envelope_duration=2, attack_duration=20,
         samples if sonic_vector is 0. If sonic_vector is input, ad is the
         sonic vector with the ADSR envelope applied to it.
 
+    Raises
+    ------
+    ValueError
+        If `transition` is not one of the four names above. It is checked
+        here because a stage of zero length never reaches :func:`fade` or
+        :func:`loud`, so an envelope of no stages accepted any name.
+
     See Also
     --------
     tremolo : An oscillation of loudness.
@@ -91,6 +98,7 @@ def adsr(envelope_duration=2, attack_duration=20,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    _transition_is_linear(transition, 'transition')
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
         lambda_adsr = len(sonic_vector)
@@ -222,8 +230,9 @@ def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
     release_duration : scalar
         The duration of the Release in milliseconds.
     transition : string
-        "exp" for exponential transitions of amplitude (linear
-        loudness), "linear" for linear transitions of amplitude.
+        "exp" or "exponential" for exponential transitions of amplitude
+        (linear loudness), "lin" or "linear" for linear transitions of
+        amplitude.
     alpha : scalar or array_like
         An index to make the exponential fade slower or faster. Ignored
         if ``transition="linear"`` or ``alpha=1``. An array_like should

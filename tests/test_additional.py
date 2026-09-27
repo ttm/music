@@ -43,5 +43,7 @@ def test_permutation_helpers():
 
     perm = Permutation([2, 0, 1])
     transposed = permutations.transpose_permutation(perm, 1)
-    assert transposed == Permutation(1, 2, 3)
+    # (0 2 1) moved up one is (1 3 2). This read (1 2 3), the same points
+    # cycled the other way, which is what the transposition used to give.
+    assert transposed == Permutation(1, 3, 2)
     assert permutations.transpose_permutation(perm, 0) == perm

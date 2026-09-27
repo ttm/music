@@ -42,10 +42,18 @@ class InterestingPermutations:
         symmetric, alternating, cyclic, dihedral -- is the group on this
         many elements, so it also sets how many permutations there are.
     method : string
-        The generation method handed to sympy's group ``generate()``,
-        such as ``"dimino"`` or ``"coset"``. It changes the order the
+        The generation method handed to sympy's group ``generate()``:
+        ``"dimino"`` or ``"coset"``. It changes the order the
         permutations come out in, which is the sequence this class
         exists to make meaningful, and not which permutations they are.
+
+    Raises
+    ------
+    ValueError
+        If `nelements` is less than two, or `method` is neither of the
+        two sympy generates by. One element has no swaps, mirrors or
+        second rotation, and failed inside sympy; an unknown method
+        failed there as ``NotImplementedError``.
 
     Methods
     -------
@@ -77,6 +85,9 @@ class InterestingPermutations:
     # neither, so those keep their placeholder.
     permutations_by_sizes: list
     permutations: list
+    alternations: list
+    alternations_complement: list
+    alternations_by_sizes: list
     neighbor_swaps: list
     swaps_by_stepsizes: list
     swaps_as_comes: list
@@ -86,13 +97,17 @@ class InterestingPermutations:
     dihedral: list
 
     def __init__(self, nelements=4, method="dimino"):
+        if nelements < 2:
+            raise ValueError(
+                f"nelements must be at least 2; got {nelements}. One "
+                "element has no swap, mirror or second rotation")
+        if method not in ("dimino", "coset"):
+            raise ValueError(
+                f"method must be 'dimino' or 'coset'; got {method!r}")
         self.vertex_mirrors = None
         self.edge_mirrors = None
-        self.alternations_by_sizes = None
-        self.alternations_complement = None
-        self.alternations = None
         self.nelements = nelements
-        self.neutral_perm = Permutation([0], size=nelements)
+        self.neutral_perm = Permutation(size=nelements)
         self.method = method
         self.get_rotations()
         self.get_mirrors()
@@ -106,13 +121,19 @@ class InterestingPermutations:
         This method generates permutations in the alternating group of the
         specified size using the provided generation method.
         """
-        self.alternations = list(AlternatingGroup(self.nelements).
-                                 generate(method=self.method))
+        # sympy builds the alternating group of two elements on one point,
+        # so its rounds matched nothing in the dihedral group and was
+        # counted outside it. Rounds is the one even permutation of two.
+        if self.nelements > 2:
+            self.alternations = list(AlternatingGroup(self.nelements).
+                                     generate(method=self.method))
+        else:
+            self.alternations = [Permutation([0, 1])]
         self.alternations_complement = [i for i in self.alternations
                                         if i not in self.dihedral]
         length_max = self.nelements
         self.alternations_by_sizes = []
-        for length in range(0, 1 + length_max):
+        for length in range(length_max + 1):
             # while length in [i.length()
             #                  for i in self.alternations_complement]:
             self.alternations_by_sizes.append(
@@ -138,13 +159,15 @@ class InterestingPermutations:
         This method generates mirror permutations of the specified size using
         the provided generation method.
         """
-        if self.nelements > 2:  # bug in sympy?
+        # sympy builds the dihedral group of two elements on four points,
+        # as the Klein four-group, rather than on two, so the pair is
+        # written out: rounds and the swap.
+        if self.nelements > 2:
             self.dihedral = list(sympy.combinatorics.named_groups.
                                  DihedralGroup(self.nelements).
                                  generate(method=self.method))
         else:
-            self.dihedral = [Permutation([0], size=self.nelements),
-                             Permutation([1, 0], size=self.nelements)]
+            self.dihedral = [Permutation([0, 1]), Permutation([1, 0])]
         self.mirrors = [i for i in self.dihedral if i not in self.rotations]
         # even elements have edge and vertex mirrors
         if self.nelements % 2 == 0:
@@ -192,8 +215,19 @@ class InterestingPermutations:
             Either 'even' or 'odd' indicating the parity of the
             permutation.
 
+        Raises
+        ------
+        ValueError
+            If `sequence` is not a permutation of ``0`` to ``n - 1``. A
+            repeated entry used to be read as a cycle, so ``[1, 1]`` was
+            'odd'.
+
         """
         n = len(sequence)
+        if sorted(sequence) != list(range(n)):
+            raise ValueError(
+                f"sequence must hold each of 0 to {n - 1} once; got "
+                f"{list(sequence)}")
         visited = [False] * n
         parity = 0
 
@@ -250,10 +284,9 @@ def dist(swap):
 
     Notes
     -----
-    The distance is adjusted to account for the circular nature of the
-    permutation. If the difference is greater than or equal to half the size
-    of the permutation, the distance is calculated as the size of the
-    permutation minus the difference.
+    The elements are read as points on a circle of ``swap.size``, so the
+    distance is the shorter way round: the difference between the two, or
+    the size less it, whichever is smaller.
 
     This measures the two lowest displaced positions, so it is meaningful for
     a transposition. For a permutation with a larger support the remaining
@@ -277,19 +310,19 @@ def dist(swap):
         # The identity moves nothing, so there is no pair to measure
         # between. Any other permutation displaces at least two elements.
         return 0
-    if swap.size % 2 == 0:
-        half = swap.size / 2
-    else:
-        half = swap.size // 2 + 1
-    diff = abs(support[1] - support[0])
-    if diff >= half:
-        diff = swap.size - diff
-    return diff
+    # The support is sorted, so this is the difference going up.
+    diff = support[1] - support[0]
+    return min(diff, swap.size - diff)
 
 
 def transpose_permutation(permutation, step=1):
     """
-    Transposes (shifts) the elements of a permutation by a given step.
+    Shifts a permutation up or down by `step` positions.
+
+    Where `permutation` sends ``i`` to ``j``, the result sends
+    ``i + step`` to ``j + step``: every cycle keeps its order and its
+    direction, only moved along. A swap of neighbours becomes the swap of
+    the next pair, which is how a change moves along a row of bells.
 
     Parameters
     ----------
@@ -297,27 +330,52 @@ def transpose_permutation(permutation, step=1):
         The permutation to be transposed.
     step : int, optional
         The number of positions to shift each element of the permutation,
-        by default 1.
+        by default 1. Negative shifts it down.
 
     Returns
     -------
     sympy.combinatorics.Permutation
-        A new permutation with elements shifted by the specified step.
+        The shifted permutation, on as many elements as `permutation` or
+        more if the shifted points need them, so that it still acts on
+        the domain the original did.
+
+    Raises
+    ------
+    ValueError
+        If `step` would move a point below zero.
 
     Notes
     -----
     If `step` is 0, the function returns the original permutation.
+
+    It used to return one cycle through the moved points in ascending
+    order, which is right only for a single swap: ``(0 2 1)``
+    came back as ``(1 2 3)``, running the other way, and two swaps
+    ``(0 1)(2 3)`` as the four-cycle ``(1 2 3 4)``. It was also sized to
+    the highest point, so a shifted swap of four bells could not act on a
+    row of four.
 
     Examples
     --------
     >>> from sympy.combinatorics import Permutation
     >>> perm = Permutation([2, 0, 1])
     >>> transpose_permutation(perm, 1).array_form
-    [0, 2, 3, 1]
+    [0, 3, 1, 2]
     >>> transpose_permutation(perm, 0).array_form
     [2, 0, 1]
+    >>> transpose_permutation(Permutation(0, 1, size=4)).array_form
+    [0, 2, 1, 3]
     """
     if not step:
         return permutation
-    new_indexes = (i + step for i in permutation.support())
-    return sympy.combinatorics.Permutation(*new_indexes)
+    support = permutation.support()
+    if not support:
+        return permutation
+    if support[0] + step < 0:
+        raise ValueError(
+            f"a step of {step} moves point {support[0]} below zero")
+    cycles = [[point + step for point in cycle]
+              for cycle in permutation.cyclic_form]
+    # sympy grows the size to fit the highest point, and keeps this one
+    # when the shifted points fit inside it.
+    return sympy.combinatorics.Permutation(cycles, size=permutation.size)

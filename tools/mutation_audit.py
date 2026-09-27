@@ -274,6 +274,45 @@ AREAS = {
         ),
         'dataclass_adapter': None,
     },
+    # Permutation families and the change-ringing peals built from them.
+    # Selected from full-suite per-test coverage.
+    'structures': {
+        'sources': (
+            'music/structures/permutations.py',
+            'music/structures/peals/base.py',
+            'music/structures/peals/peals.py',
+            'music/structures/peals/plain_changes.py',
+        ),
+        'tests': (
+            'tests/test_structures.py',
+            'tests/test_peals_named.py',
+            'tests/test_structures_audit.py',
+            'tests/test_additional.py::test_permutation_helpers',
+            'tests/test_article.py::test_the_permutation_structures_satisfy_the_axioms_of_equation_groups',
+            'tests/test_article.py::test_the_rotations_are_a_group_in_their_own_right',
+            'tests/test_branches.py::test_a_generic_peal_acts_all_on_a_domain_it_is_given',
+            'tests/test_branches.py::test_a_peal_acts_all_of_them_on_a_domain_it_is_given',
+            'tests/test_branches.py::test_a_peal_acts_on_the_domain_and_peal_it_is_given',
+            'tests/test_branches.py::test_even_odd_agrees_with_sympy_for_every_permutation',
+            'tests/test_branches.py::test_generic_peal_needs_nelements_for_a_default_domain',
+            'tests/test_branches.py::test_interesting_permutations_of_a_pair',
+            'tests/test_branches.py::test_plain_changes_act_all_records_every_peal',
+            'tests/test_branches.py::test_plain_changes_acts_on_a_given_domain',
+            'tests/test_branches.py::test_plain_changes_acts_on_its_own_domain_by_default',
+            'tests/test_legacy.py::test_set_size_and_set_perms_record_what_they_are_given',
+            'tests/test_legacy.py::test_stay_accepts_a_numpy_domain',
+            'tests/test_legacy.py::test_stay_falls_back_to_the_grid_when_no_domain_is_set',
+            'tests/test_legacy.py::test_stay_permutes_the_domain',
+            'tests/test_remaining_paths.py::test_perform_peal_builds_its_own_hunts_when_given_none',
+            'tests/test_theory_properties.py::test_a_peal_becomes_a_melody_of_the_right_length',
+            'tests/test_theory_properties.py::test_each_change_swaps_one_adjacent_pair',
+            'tests/test_theory_properties.py::test_interesting_permutations_are_permutations',
+            'tests/test_theory_properties.py::test_plain_changes_ring_every_row_once',
+            'tests/test_theory_properties.py::test_transposing_a_permutation_shifts_what_it_moves',
+            'tests/test_tutorial.py::test_every_tutorial_block_runs',
+        ),
+        'dataclass_adapter': None,
+    },
 }
 
 

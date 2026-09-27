@@ -20,6 +20,14 @@ exponentially where it swept linearly. `fade`, and `adsr` through it,
 matched by substring, so a name such as `"explicit"` that used to fade
 is now refused.
 
+`transpose_permutation` now shifts a permutation rather than rebuilding it
+as one ascending cycle through the points it moves. A single swap shifts
+as before; anything else comes back different, since `(0 2 1)` used to
+give `(1 2 3)` and now gives `(1 3 2)`. The result also keeps the
+original's size where the shifted points fit, so it can act on the same
+row. `InterestingPermutations(2)` no longer counts rounds among the
+alternations outside the dihedral group.
+
 ### Fixed
 
 - **`convert_to_stereo` cannot overflow integer PCM.** It now promotes
@@ -51,6 +59,23 @@ is now refused.
   glissandi compared with `exp` alone, so one name could fade, be
   refused by the next stage of an `adsr`, and sweep linearly. `adsr`
   also checks its `transition` when every stage is empty.
+- **`transpose_permutation` keeps each cycle's direction.** It returned
+  one cycle through the moved points in ascending order, which reversed a
+  three-cycle and merged separate swaps into one cycle, and sized the
+  result so that a shifted swap could not act on its row. A shift below
+  zero is refused.
+- **`PlainChanges` refuses as many hunts as bells.** Only more than that
+  was refused, and exactly as many failed with an `IndexError`. One bell
+  and a negative number of hunts are refused by name too, and the
+  `hunts` argument, which has never been read, now warns that it is not.
+- **`print_peal` prints nine bells or more.** Its eight colours ran out
+  and raised `IndexError`; they now repeat.
+- **`even_odd` refuses a sequence that is not a permutation.** A repeated
+  entry was read as a cycle, so `[1, 1]` was odd.
+- **`InterestingPermutations` and `Peals` refuse one element and an
+  unknown generation method by name.** Both failed inside sympy.
+  sympy's alternating group of two sits on one point, so its rounds was
+  counted outside the dihedral group; the pair is now written out.
 - **`interval_between` refuses NaN and infinity by name.** They reached
   `round()`, which failed with a message about converting to an integer.
 

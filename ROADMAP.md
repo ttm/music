@@ -518,7 +518,33 @@ infinity. See `MUTATION_AUDIT.md`.
 The full repository suite passed 4,495 tests; nine doctest items were skipped
 by explicit `+SKIP` directives.
 
-The eight areas have taught, worth carrying into a later audit:
+## Completed: one set of transition names
+
+Reviewed 2026-09-27. `loud` matched its method exactly, `fade` by
+substring and the glissandi against `"exp"` alone, so `adsr` could accept
+a name in its attack and refuse it in its decay, and `"exponential"` swept
+a glissando linearly. All five routines now share one check. The four
+mutation areas that cover them were re-run at that commit; none had an
+untested mutant or a survivor in the new code.
+
+## Completed: the `music/structures/` mutation audit
+
+Reviewed 2026-09-27. Probing before the first run found
+`transpose_permutation` reversing three-cycles and merging swaps, an
+unread `hunts` argument, `print_peal` failing at nine bells, `even_odd`
+accepting non-permutations and one element failing inside sympy. The
+first run then left 179 of 725 mutants: `print_peal`'s colours, which no
+test could see without a terminal, and permutation families the tests
+counted rather than read. Tests against definitions that do not go
+through sympy's groups found two more: as many hunts as bells passed the
+check and crashed, and sympy's two-element alternating group sits on one
+point. The final run detects 669 of 684, and the 15 survivors are
+equivalent or write a trace nothing reads. See `MUTATION_AUDIT.md`.
+
+The full repository suite passed 4,779 tests; nine doctest items were skipped
+by explicit `+SKIP` directives.
+
+The nine areas have taught, worth carrying into a later audit:
 
 - **An absent argument cannot be mutated.** The `cross_fade` and `trill`
   sample-rate defects were not found by any mutant, because no edit can
@@ -538,11 +564,14 @@ The eight areas have taught, worth carrying into a later audit:
 - **A finite domain can be enumerated.** The article's three compound
   intervals missed every degree where a wrong octave count shows; all 154
   quality and degree pairs to three octaves take a fraction of a second.
+- **A survivor can be the fix.** `nhunts >= nelements` survived because
+  nothing tried as many hunts as bells, which crashed.
 
 Add each area to `AREAS` rather than widening an existing one, and select
-its tests with per-test coverage contexts. None of the eight bounded audits
-is a whole-package mutation score. The next unaudited candidate is
-`music/structures/`: permutations, symmetry and the change-ringing peals.
+its tests with per-test coverage contexts. None of the nine bounded audits
+is a whole-package mutation score. The most used modules outside every
+area are `core/synths/noises.py`, which reverb and the stimuli draw on, and
+`sequencer.py`; `bonds.py`, `tables.py` and `hrtf.py` follow.
 
 ## Other maintenance
 

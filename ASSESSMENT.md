@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-09-27**,
-`music` 1.9.0: 47 modules, 12,554 LOC package + 17,144 LOC tests, 126 names
+`music` 1.9.0: 47 modules, 12,639 LOC package + 17,609 LOC tests, 126 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,11 +59,11 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **4618 tests**, 4,609 passed; 9 doctest items skipped by explicit `+SKIP` |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,893 stmts, 0 missed) |
+| Test suite | `pytest -q` | **4788 tests**, 4,779 passed; 9 doctest items skipped by explicit `+SKIP` |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,906 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,190 findings |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,202 findings |
 | Annotation coverage | AST scan | **103 / 212 functions (49 %)**; 63 / 94 exported (67 %) |
 | Docstring coverage | AST scan | **174 / 180 public defs (97 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
@@ -218,21 +218,21 @@ either documented in the code or tracked in the issue list.
   degenerate parameters now checks the mean as well, with these seven
   registered, so the class has somewhere to be recorded.
 
-- **Mutation testing covers eighteen selected files across eight areas.**
-  The September 2026 audits change normalization, audio I/O, session
-  envelopes, amplitude envelopes, note synthesis, the stimulus generators,
-  the localization filters, the shared utilities, the remaining filters
-  and the music theory one operation at a time. All eight areas are
-  complete, with their surviving mutants individually reviewed. These
-  tests exposed timing, gain, modulation, envelope-rate, phase, padding,
-  naming and refusal defects that line and branch coverage had not
-  revealed.
+- **Mutation testing covers twenty-two selected files across nine
+  areas.** The September 2026 audits change normalization, audio I/O,
+  session envelopes, amplitude envelopes, note synthesis, the stimulus
+  generators, the localization filters, the shared utilities, the
+  remaining filters, the music theory and the permutation structures one
+  operation at a time. All nine areas are complete, with their surviving
+  mutants individually reviewed. These tests exposed timing, gain,
+  modulation, envelope-rate, phase, padding, naming, permutation and
+  refusal defects that line and branch coverage had not revealed.
 
   [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records the scope, assertions,
   survivor IDs and reproduction command. The tool skips decorated classes,
   so an isolated adapter was needed to reach session methods; properties
   remain outside mutation scope. The measured results apply to those
-  eighteen files and their selected tests. Expanding the audit remains
+  twenty-two files and their selected tests. Expanding the audit remains
   issue #113.
 
 - **The click measure is relative, so it is blind in fast passages.** A
@@ -391,7 +391,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,190 findings** on `music/`, almost all
+- **The extended lint set reports 2,202 findings** on `music/`, almost all
   stylistic: 658 quote-style, 308 missing argument annotations, 78 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
@@ -514,4 +514,4 @@ documented, and clean under both the default lint set and the type
 checker. Until the review after 1.8.3 it also built its noise tail at
 44.1 kHz whatever rate it was given, and nothing measured that. Coverage
 says a line ran; it cannot say the line was right. The mutation audits
-come closest to asking, and they cover eight areas, not the package.
+come closest to asking, and they cover nine areas, not the package.

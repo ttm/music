@@ -21,6 +21,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `utils` | `utils.py` | 2026-09-25 | 915 | 825 | 90 | all |
 | `filters` | `filters/design.py`, `impulse_response.py`, `loud.py`, `reverb.py`, `stretches.py` | 2026-09-25 | 531 | 505 | 26 | all |
 | `theory` | `theory/chords.py`, `intervals.py`, `scales.py` | 2026-09-27 | 214 | 213 | 1 | all |
+| `structures` | `structures/permutations.py`, `peals/base.py`, `peals.py`, `plain_changes.py` | 2026-09-27 | 684 | 669 | 15 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -875,6 +876,7 @@ python tools/mutation_audit.py --area localization --revision HEAD
 python tools/mutation_audit.py --area utils --revision HEAD
 python tools/mutation_audit.py --area filters --revision HEAD
 python tools/mutation_audit.py --area theory --revision HEAD
+python tools/mutation_audit.py --area structures --revision HEAD
 python tools/mutation_audit.py --area export --revision ef03962 --max-children 2
 ```
 
@@ -891,7 +893,7 @@ exit code. The selected tests are in `tools/mutation_audit.py`.
 Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 `oscillators`, and 84 for `export` with two. The latest oscillator pass took
 582 seconds with two workers, `stimuli` 60 and `localization` 233, and
-`theory` 24 to 50 with four. None
+`theory` 24 to 50 with four, and `structures` 172. None
 is a candidate for CI at that cost — these are things to run
 deliberately, read, and act on.
 
@@ -1023,7 +1025,112 @@ show, because each is an input the tests never gave:
 `consonance` and `interval_names` refuse a negative interval. It is left as
 the rule gives it, and `test_theory_audit.py` records the choice.
 
-**Expand to another bounded area when changing it.** All eight areas now
+## Transition names — four areas re-run, 2026-09-27
+
+`loud`, `fade`, `adsr`, `note_with_glissando` and
+`note_with_vibrato_seq_localization` now share one check of their
+transition names, `_transition_is_linear` in `utils.py`. The `utils`,
+`envelopes`, `filters` and `oscillators` areas each gained
+`tests/test_transition_methods.py`, and each was re-run at `bfd443f`, the
+commit that made the change. None had a mutant without tests, and no
+survivor was in the changed code: `utils` 836 of 930 with 4 hangs, 90
+surviving; `envelopes` 528 of 555, 27; `filters` 492 of 518, 26;
+`oscillators` 1435 of 1457 with 4 hangs, 18. `envelopes` lost eight
+survivors along with the substring branches that held them. The recorded
+results above are unchanged: they describe the revisions they name.
+
+## `structures` — permutation families and change ringing
+
+Measured 2026-09-27 on Python 3.12.7, macOS, with `mutmut` 3.7.0. Per-test
+coverage contexts found `test_structures.py`, `test_peals_named.py` and 30
+tests in seven other files reaching `music/structures/`, four of them
+through the legacy `Being`. The selection is those and `test_structures_audit.py`, 256
+tests. `symmetry.py` only re-exports, and is not mutated.
+
+The final run covered `HEAD` at `bfd443f`, with 14 working-tree paths
+overlaid: the four source modules and the selected test files. It took 172
+seconds with four workers. Twenty-one mutants hang a peal that never comes
+back to rounds, which the runner counts as detected.
+
+### What reading and probing found
+
+Before the first run, trying the routines on inputs their tests did not
+use found five defects:
+
+- `transpose_permutation` rebuilt the permutation as one cycle through
+  its moved points in ascending order. That is right for a single swap,
+  which is all the 2016 code used it for, and wrong for anything else:
+  `(0 2 1)` came back as `(1 2 3)`, the same points cycled the other
+  way, and two swaps `(0 1)(2 3)` as the four-cycle `(1 2 3 4)`. It was
+  also sized to its highest point, so a shifted swap of four bells could
+  not act on a row of four. It now shifts each cycle, keeps the size, and
+  refuses a shift below zero. `test_additional.py` had pinned the old
+  answer for `(0 2 1)`.
+- `PlainChanges` documented a `hunts` argument that it overwrote on its
+  first line, as it had since 2016. It now says so and warns when given
+  one; laying the hunts out another way could produce a peal that never
+  comes round.
+- `print_peal` has eight colours and raised `IndexError` at the ninth
+  bell. They now repeat.
+- `even_odd` read a repeated entry as a cycle, so `[1, 1]` was odd. It
+  refuses a sequence that is not a permutation.
+- One element failed inside sympy for `InterestingPermutations` and
+  `Peals`, and with an `IndexError` looking for a swap in `PlainChanges`;
+  a negative `nhunts` with a `KeyError`; an unknown generation method as
+  sympy's `NotImplementedError`. Each is now refused by name.
+
+### Result
+
+The first run, with those fixes and their tests in place, detected 546 of
+725 mutations and left 179. Fifty-three were `print_peal`: termcolor
+draws no colour when the output is not a terminal, so no test had ever
+seen one, and even joining the digits with `XXXX` passed. Most of the
+rest were the families `InterestingPermutations` builds, which the tests
+counted rather than read: the swaps' order, the neighbour swaps, the
+groupings by size and by step, the edge and vertex mirrors, the
+alternations outside the polygon, and `PlainChanges.peal_sequence`.
+`dist` survived `abs(a + b)` for `abs(a - b)`, as every swap it was given
+involved bell 0.
+
+`test_structures_audit.py` now describes each family without sympy's
+groups: the dihedral group as the polygon's rotations and reflections,
+the permutations by how many points they move, each distance as the
+shorter way round, parity against sympy at odd sizes as well as even,
+and `peal_sequence` as the change that takes each row to the next. It
+prints with termcolor's colour forced on and off.
+
+Two more defects came out of those tests:
+
+- Every number of hunts from the saturating one to one fewer than the
+  bells rang the same peal, as the warning says, but exactly as many
+  hunts as bells passed the check and failed with an `IndexError`. The
+  surviving mutant `nhunts >= nelements` was the correct check.
+- sympy builds the alternating group of two elements on one point, so
+  `InterestingPermutations(2)` counted rounds as an alternation outside
+  the dihedral group. The pair is now written out, as the dihedral group
+  of two already was.
+
+Three simplifications removed equivalent mutants by saying what the code
+meant: `dist` is `min(diff, size - diff)`, which its parity branches
+computed; `transpose_permutation` leaves the size to sympy, which grows it
+to fit; and attributes set to `None` and always overwritten are class
+annotations, as the other families already were.
+
+The final run detected 669 of 684.
+
+### Accepted survivors
+
+| Function | IDs | Why accepted |
+|---|---|---|
+| `an_eight_and_forty` | 35, 74 | Searching for rounds from the third row rather than the second: the second is one change from rounds, so it is never rounds. |
+| `an_eight_and_forty` | 58 | A hunt stopping one place short of the back: the other whole hunt then hunts down from there, and its first change is the swap the first would have made. The 48 rows are identical. |
+| `an_eight_and_forty` | 63 | `turn -= 1` alternates the two hunts as `turn += 1` does, modulo 2. |
+| `PlainChanges.__init__` | 12 | `stacklevel=3` for 2. Under mutmut's trampoline the extra frame is the caller's, so the warning lands in the test either way; the test checks it is not attributed to `plain_changes.py`. |
+| `initialize_hunts` | 11, 12 | `nhunts <= 0` and `< 1` for `< 0`: zero has already been replaced by the saturating count, so for integers the three are one test. |
+| `perform_change` | 47, 78, 80, 81, 102 | `domains` is a trace of the change procedure that nothing in the package or its tests reads. |
+| `even_odd` | 25, 28, 29 | Counting cycle lengths down, subtracting them, or adding one rather than taking one per cycle changes the total by an even amount, so the parity is the same. |
+
+**Expand to another bounded area when changing it.** All nine areas now
 have reviewed survivors. Pick later areas by measuring which tests reach
 their modules with per-test coverage contexts, then add a separate entry to
 `AREAS` rather than widening an existing area. These bounded measurements
@@ -1056,6 +1163,13 @@ What the areas have taught, worth carrying:
   sampled three of them and happened to miss every degree where a wrong
   octave count differs; checking all 154 against an independent oracle
   takes a fraction of a second.
+- **A survivor can be the fix.** `nhunts >= nelements` survived because
+  no test tried as many hunts as bells, and that was the check the code
+  needed: the original let them through to an `IndexError`. Try the
+  mutant's boundary before calling it equivalent.
+- **Output that depends on the terminal must be forced.** termcolor drew
+  no colour under pytest, so fifty-three edits to `print_peal` changed
+  nothing any test could see.
 
 Keep the sample-based assertions when refactoring these paths. Resolve the
 property/decorator coverage limitation before interpreting any future

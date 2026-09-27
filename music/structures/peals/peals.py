@@ -23,6 +23,11 @@ def print_peal(peal, hunts=(0, 1)):
         The indices of hunted elements. Defaults to
         [0, 1].
 
+    Notes
+    -----
+    There are eight colours, so from the ninth bell on they repeat. A
+    ninth bell used to raise an ``IndexError`` instead.
+
 
     Examples
     --------
@@ -39,9 +44,10 @@ def print_peal(peal, hunts=(0, 1)):
     final_string = ''
     for sequence in peal:
         final_string += ''.join(
-            colored(i, colors[i], hcolors[-(i + 1)]) if i in hunts else
-            colored(i, colors[i], "on_white", ["bold"]) for i in sequence) + \
-            '\n'
+            colored(i, colors[i % len(colors)],
+                    hcolors[-(i % len(hcolors) + 1)]) if i in hunts else
+            colored(i, colors[i % len(colors)], "on_white", ["bold"])
+            for i in sequence) + '\n'
     print(final_string)
 
 

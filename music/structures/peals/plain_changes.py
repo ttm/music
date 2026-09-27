@@ -27,6 +27,11 @@ class PlainChanges:
     >>> write_wav_mono(horizontal_stack(*notes), "peal.wav")
     """
 
+    # Filled by perform_peal, which __init__ always calls.
+    peal_direct: list
+    peal_sequence: list
+    peals: dict
+
     def __init__(self, nelements=4, nhunts=None, hunts=None):
         """
         Initializes a PlainChanges object.
@@ -36,25 +41,28 @@ class PlainChanges:
         nelements : int, optional
             The number of elements. Defaults to 4.
         nhunts : int, optional
-            The number of hunts. Defaults to None.
+            The number of hunts. Defaults to
+            :meth:`saturating_hunts`, which rings every row once.
         hunts : dict, optional
-            The hunts dictionary. Defaults to None.
+            Not read. It was meant for hunts that start somewhere other
+            than the lead, which was never implemented, and was always
+            replaced by the layout `nhunts` gives. Passing it warns.
 
         Raises
         ------
         ValueError
-            If the number of hunts is invalid.
+            If there are fewer than two elements, or the number of hunts
+            is negative or not fewer than the elements.
 
         """
-        self.peal_direct = None
-        self.peal_sequence = None
-        # Filled by perform_peal below, which __init__ always calls.
-        self.peals: dict = {}
+        if hunts is not None:
+            warnings.warn(
+                "PlainChanges does not read hunts; the hunts are laid out "
+                "by nhunts", stacklevel=2)
         self.domain = None
         self.acted_peals = None
         hunts = self.initialize_hunts(nelements, nhunts)
-        self.neutral_perm = sympy.combinatorics.Permutation([0],
-                                                            size=nelements)
+        self.neutral_perm = sympy.combinatorics.Permutation(size=nelements)
         self.neighbor_swaps = [
             sympy.combinatorics.Permutation(i, i + 1, size=nelements)
             for i in range(nelements - 1)]
@@ -109,15 +117,28 @@ class PlainChanges:
         Raises
         ------
         ValueError
-            If the number of hunts is invalid.
+            If there are fewer than two elements, or the number of hunts
+            is negative or not fewer than the elements. A change swaps two
+            bells, so one bell has none: it failed with an ``IndexError``
+            looking for its swap, and a negative number of hunts with a
+            ``KeyError`` looking for the first. As many hunts as bells
+            leave the last hunt no bell to pass, and failed with an
+            ``IndexError`` too, though only more than that was refused.
 
         """
+        if nelements < 2:
+            raise ValueError(
+                f"nelements must be at least 2; got {nelements}. A change "
+                "swaps two bells")
         saturating = self.saturating_hunts(nelements)
         if not nhunts:
             nhunts = saturating
-        assert nelements > 0
-        if nhunts > nelements:
-            raise ValueError("There cannot be more hunts than elements")
+        if nhunts < 0:
+            raise ValueError(f"nhunts cannot be negative; got {nhunts}")
+        if nhunts >= nelements:
+            raise ValueError(
+                f"there must be fewer hunts than elements; got {nhunts} "
+                f"for {nelements}. The last hunt needs a bell to pass")
         elif nhunts > saturating:
             warnings.warn(
                 f"peals are the same if there are {nhunts - saturating} "

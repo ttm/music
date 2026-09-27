@@ -107,9 +107,12 @@ def test_more_hunts_than_saturating_warns_but_still_completes():
     assert len(set(rows)) == len(rows)
 
 
-def test_more_hunts_than_elements_is_rejected():
-    with pytest.raises(ValueError, match="more hunts than elements"):
-        PlainChanges(4, nhunts=5)
+@pytest.mark.parametrize("nhunts", [4, 5])
+def test_as_many_hunts_as_elements_or_more_is_rejected(nhunts):
+    """Four hunts on four bells used to pass this check and fail with an
+    IndexError, the last hunt having no bell left to pass."""
+    with pytest.raises(ValueError, match="fewer hunts than elements"):
+        PlainChanges(4, nhunts=nhunts)
 
 
 @pytest.mark.parametrize("nelements", [2, 3, 4])

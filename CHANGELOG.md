@@ -28,6 +28,15 @@ original's size where the shifted points fit, so it can act on the same
 row. `InterestingPermutations(2)` no longer counts rounds among the
 alternations outside the dihedral group.
 
+`noise` now keeps every component from `min_freq` to `max_freq`, both
+included. It rounded the band down at both ends, so the components it
+keeps change wherever an edge falls between two, and one at `max_freq` is
+now kept. An odd-length noise gains the highest component it always
+lacked, and draws one more random number for it, so seeded draws after it
+change; an even length draws what it did. `gaussian_noise`'s band stops at
+the Nyquist frequency rather than doubling the level of what lay past it,
+and `std=0` is refused rather than rendered.
+
 ### Fixed
 
 - **`convert_to_stereo` cannot overflow integer PCM.** It now promotes
@@ -76,6 +85,19 @@ alternations outside the dihedral group.
   unknown generation method by name.** Both failed inside sympy.
   sympy's alternating group of two sits on one point, so its rounds was
   counted outside the dihedral group; the pair is now written out.
+- **`noise` refuses a band upside down, a slope that is not finite and
+  a sample rate that is not positive.** They rendered silence, NaN, and a
+  division by zero. A band above the Nyquist frequency is refused too,
+  and all of them before the samples are counted.
+- **`gaussian_noise` refuses a sample rate that is not positive and a
+  band of no width.**
+- **`silence` of a negative duration is empty,** as `noise` and `note`
+  are, rather than numpy's "negative dimensions are not allowed".
+- **`Sequencer` refuses what used to fail when it rendered.** A start of
+  NaN or infinity, `adsr_params` or `spatial` naming the `sample_rate` or
+  `sonic_vector` the sequencer supplies, and a sample rate that is not
+  positive are refused when given. Writing a sequencer with no notes says
+  so rather than blaming a duration computed as zero.
 - **`interval_between` refuses NaN and infinity by name.** They reached
   `round()`, which failed with a message about converting to an integer.
 

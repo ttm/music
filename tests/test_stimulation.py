@@ -340,9 +340,22 @@ def test_noise_colour_changes_the_spectral_tilt():
 
 
 def test_full_depth_takes_the_noise_envelope_to_silence():
+    """The envelope is the modulated noise over the same bed unmodulated.
+
+    This used to read the smallest modulated sample, unseeded, which is
+    the envelope's lowest point times whatever noise lay under it: one
+    random state in four left it above the bound, so the test passed or
+    failed with the tests run before it.
+    """
+    np.random.seed(0)
+    bed = music.modulated_noise(modulation_freq=10, modulation_depth=0,
+                                duration=1)
+    np.random.seed(0)
     out = music.modulated_noise(modulation_freq=10, modulation_depth=1,
                                 duration=1)
-    assert np.abs(out).min() < 1e-9
+    envelope = out / bed
+    assert envelope.min() < 1e-6
+    assert envelope.max() == pytest.approx(1, abs=1e-6)
 
 
 def test_zero_depth_leaves_the_noise_bed_alone():

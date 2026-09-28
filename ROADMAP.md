@@ -544,7 +544,23 @@ equivalent or write a trace nothing reads. See `MUTATION_AUDIT.md`.
 The full repository suite passed 4,779 tests; nine doctest items were skipped
 by explicit `+SKIP` directives.
 
-The nine areas have taught, worth carrying into a later audit:
+## Completed: the `noises` and `sequencer` mutation audits
+
+Reviewed 2026-09-28. `noise` rounded its band down at both ends and never
+drew a phase for an odd length's highest component; `gaussian_noise`
+doubled what lay past the Nyquist frequency; both, and `silence`, took
+degenerate arguments to silence, NaN or numpy errors. The sequencer's
+tests never compared a render with the notes it is made of, so 44 of 176
+mutants survived at first; all 157 of the final run are detected, and
+`noises` detects 280 of 285. A surprising kill led to an unseeded test
+that failed for one random state in four; eight runs of the whole suite
+with every test seeded differently found no other. See
+`MUTATION_AUDIT.md`.
+
+The full repository suite passed 4,867 tests; nine doctest items were skipped
+by explicit `+SKIP` directives.
+
+The eleven areas have taught, worth carrying into a later audit:
 
 - **An absent argument cannot be mutated.** The `cross_fade` and `trill`
   sample-rate defects were not found by any mutant, because no edit can
@@ -566,12 +582,14 @@ The nine areas have taught, worth carrying into a later audit:
   quality and degree pairs to three octaves take a fraction of a second.
 - **A survivor can be the fix.** `nhunts >= nelements` survived because
   nothing tried as many hunts as bells, which crashed.
+- **A kill can be a flake.** mutmut reorders tests; a surprising kill is
+  worth running by hand in its order.
 
 Add each area to `AREAS` rather than widening an existing one, and select
-its tests with per-test coverage contexts. None of the nine bounded audits
-is a whole-package mutation score. The most used modules outside every
-area are `core/synths/noises.py`, which reverb and the stimuli draw on, and
-`sequencer.py`; `bonds.py`, `tables.py` and `hrtf.py` follow.
+its tests with per-test coverage contexts. None of the eleven bounded
+audits is a whole-package mutation score. Outside every area are
+`bonds.py`, `tables.py` and `hrtf.py`, the `singing` subpackage and the
+`legacy` one.
 
 ## Other maintenance
 

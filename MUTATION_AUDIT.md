@@ -22,6 +22,8 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `filters` | `filters/design.py`, `impulse_response.py`, `loud.py`, `reverb.py`, `stretches.py` | 2026-09-25 | 531 | 505 | 26 | all |
 | `theory` | `theory/chords.py`, `intervals.py`, `scales.py` | 2026-09-27 | 214 | 213 | 1 | all |
 | `structures` | `structures/permutations.py`, `peals/base.py`, `peals.py`, `plain_changes.py` | 2026-09-27 | 684 | 669 | 15 | all |
+| `noises` | `synths/noises.py` | 2026-09-28 | 285 | 280 | 5 | all |
+| `sequencer` | `sequencer.py` | 2026-09-28 | 157 | 157 | 0 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -840,15 +842,17 @@ than leaving this routine marked exact from its default-duration case.
 
 ## Tool limitation and adapter
 
-This applies to the `export` area alone; the envelope modules are plain
-functions and need no adapter.
+This applies to the `export` and `sequencer` areas; the other modules
+define plain functions or undecorated classes.
 
 `mutmut` 3.7.0 skips decorated classes and property-decorated methods.
 Without an adapter, the session file contributes only `_ramp_shape`:
 18 mutations, leaving all of the session methods out.
 
-The runner removes the two `@dataclass` decorators in the temporary copy
-and applies `dataclass(ClassName)` immediately after each class instead.
+The runner removes each bare `@dataclass` decorator in the temporary copy
+and applies `dataclass(ClassName)` immediately after the class instead.
+It finds them by parsing the file, which the `sequencer` area needed: the
+adapter had named the session's two classes.
 Both classes are still dataclasses before any code uses them. Mutmut then
 visits the ordinary methods. The adapted baseline tests and mutmut's
 forced-failure check must pass before mutation results are collected.
@@ -877,6 +881,8 @@ python tools/mutation_audit.py --area utils --revision HEAD
 python tools/mutation_audit.py --area filters --revision HEAD
 python tools/mutation_audit.py --area theory --revision HEAD
 python tools/mutation_audit.py --area structures --revision HEAD
+python tools/mutation_audit.py --area noises --revision HEAD
+python tools/mutation_audit.py --area sequencer --revision HEAD
 python tools/mutation_audit.py --area export --revision ef03962 --max-children 2
 ```
 
@@ -893,7 +899,8 @@ exit code. The selected tests are in `tools/mutation_audit.py`.
 Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 `oscillators`, and 84 for `export` with two. The latest oscillator pass took
 582 seconds with two workers, `stimuli` 60 and `localization` 233, and
-`theory` 24 to 50 with four, and `structures` 172. None
+`theory` 24 to 50 with four, `structures` 172, `noises` 117 and
+`sequencer` 24. None
 is a candidate for CI at that cost — these are things to run
 deliberately, read, and act on.
 
@@ -1130,7 +1137,113 @@ The final run detected 669 of 684.
 | `perform_change` | 47, 78, 80, 81, 102 | `domains` is a trace of the change procedure that nothing in the package or its tests reads. |
 | `even_odd` | 25, 28, 29 | Counting cycle lengths down, subtracting them, or adding one rather than taking one per cycle changes the total by an even amount, so the parity is the same. |
 
-**Expand to another bounded area when changing it.** All nine areas now
+## `noises` — coloured noise, Gaussian bands and silence
+
+Measured 2026-09-28 on Python 3.12.7, macOS, with `mutmut` 3.7.0. The
+selection is `test_noises_audit.py` and the 42 test files and functions
+that per-test coverage contexts found reaching `noises.py`: 705 tests, the
+reverb, stimulus and article checks among them. The final run covered
+`HEAD` at `27bece4` with 16 working-tree paths overlaid, in 117 seconds.
+
+### What probing found
+
+- `noise` rounded its band down at both ends. A `min_freq` between two
+  components let in the one below it, and a component exactly at
+  `max_freq` was always left out. The band is now every component from
+  `min_freq` to `max_freq`, both included; an edge the resolution divides
+  exactly is not lost to rounding in the division.
+- `noise` drew `length // 2` phases, one too few for an odd length, so
+  its highest component, `(N - 1) / 2`, was always silent: a reverb tail
+  of odd length lost the top of its band. An odd length now draws one
+  more; an even length draws what it did, so a seeded render after one is
+  unchanged.
+- `noise` returned silence for a band upside down, NaN for a slope of NaN
+  or infinity, and divided by zero at a sample rate of zero. It refuses
+  each, and a band above the Nyquist frequency, before counting samples,
+  so a noise of no samples still says what was wrong with its arguments.
+- `gaussian_noise` zeroed its band after mirroring the spectrum, so a
+  band reaching past the Nyquist frequency kept mirrored components at
+  twice the level of the rest. It now zeroes, then mirrors, and stops at
+  the Nyquist frequency. It also scaled its samples onto [-1, 1] before
+  a normalization that takes out the mean and divides by the peak, which
+  undoes that; the line is gone, and the output is unchanged.
+- With both band ends included, `gaussian_noise(std=0)` became a sine at
+  the one component its zero-width band held. A width that is not
+  positive is now refused by name rather than by the grid.
+- `silence(-1)` raised numpy's "negative dimensions"; like `noise` and
+  `note`, it now gives no samples.
+
+### A test that depended on the tests before it
+
+The first runs marked three reference-frequency mutants as killed that
+the selection passed when run by hand. mutmut runs a mutant's tests
+fastest first, and in that order
+`test_full_depth_takes_the_noise_envelope_to_silence` failed. It read the
+smallest modulated sample, unseeded: the envelope's lowest point times
+whatever noise lay under it, above the bound for 46 of 200 random states.
+It passed in the suite only because of the state the tests before it
+left. It now seeds, and measures the envelope against the same noise
+unmodulated.
+
+To look for others, the whole suite ran eight more times with numpy's
+generator seeded before each test from its name and a changing base.
+That test was the only failure.
+
+### Result
+
+The first run detected 251 of 303 mutations. The survivors were the
+random phases, which nothing compared with the draws they came from; the
+defaults of both routines and of `silence`; the flatness of the band at
+its highest component; the message for an unknown colour; and every
+change to `gaussian_noise`'s redundant rescaling. The final run, after
+the fixes and `test_noises_audit.py`, detected 280 of 285.
+
+### Accepted survivors
+
+| Function | IDs | Why accepted |
+|---|---|---|
+| `_band` | 9, 19 | Rounding the edge to ten decimals rather than nine: both absorb the error of the division, which is near 1e-16. |
+| `noise` | 107, 133, 145 | Each rescales the frequency the slope is measured from, which multiplies every component by one constant. The normalization takes it out; the article's test divides it out too. |
+
+## `sequencer` — scheduling, rendering and mixing notes
+
+Measured 2026-09-28 on Python 3.12.7, macOS, with `mutmut` 3.7.0. Eleven
+tests reached `sequencer.py`; with `test_sequencer_audit.py` the selection
+is 39. The module's two dataclasses needed the adapter above. The final
+run covered `HEAD` at `27bece4` with 6 working-tree paths overlaid, in
+24 seconds.
+
+### What probing found
+
+- A start of NaN or infinity was accepted and failed in `round()` when
+  the sequence rendered. It is refused when the note is added.
+- `adsr_params` or `spatial` naming `sample_rate` or `sonic_vector`,
+  which the sequencer passes itself, failed as a `TypeError` when the
+  note rendered. They are refused when it is added.
+- A sample rate of zero rendered every note as no samples. It is refused
+  when the sequencer is built.
+- Writing a sequencer with no notes reached the normalization, which
+  blamed a duration computed as zero. It now says there are no notes.
+
+### Result
+
+The first run detected 132 of 176 mutations. The 44 survivors showed that
+nothing compared a render with what it is made of: a note's frequency,
+duration and rate could be dropped, overlapping notes could replace
+rather than add to one another, and a written file could lose its
+samples or its rate, and every test still passed. `test_sequencer_audit.py`
+checks each note against the routine the sequencer hands it to, sample
+for sample, overlapping mono and stereo mixes against their sums, and a
+written file against the render. A vibrato test at a depth of 2 missed a
+dropped depth, since that is `note_with_vibrato`'s default; it uses 3.
+
+Two simplifications removed the equivalent survivors that were left:
+`render` starts from no samples, which the first stereo note makes stereo
+as any later one would, rather than choosing a stereo start itself; and
+mixing copies the sequence so far into its silence rather than adding it.
+The final run detected all 157.
+
+**Expand to another bounded area when changing it.** All eleven areas now
 have reviewed survivors. Pick later areas by measuring which tests reach
 their modules with per-test coverage contexts, then add a separate entry to
 `AREAS` rather than widening an existing area. These bounded measurements
@@ -1170,6 +1283,13 @@ What the areas have taught, worth carrying:
 - **Output that depends on the terminal must be forced.** termcolor drew
   no colour under pytest, so fifty-three edits to `print_peal` changed
   nothing any test could see.
+- **A kill can be a flake.** mutmut reorders tests, so an unseeded test
+  that passes in the suite's order can fail in another and kill a mutant
+  that changes nothing. When a result is surprising, run the selection by
+  hand, in mutmut's order.
+- **Compare with what the result is made of.** The sequencer delegates
+  every note to another routine, so the test of a render is that routine
+  called the same way, not a length or a peak.
 
 Keep the sample-based assertions when refactoring these paths. Resolve the
 property/decorator coverage limitation before interpreting any future

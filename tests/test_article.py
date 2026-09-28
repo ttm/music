@@ -127,10 +127,12 @@ def test_noise_scales_each_coefficient_by_the_articles_alpha(
     coloured_spectrum = np.abs(np.fft.fft(coloured))
     white_spectrum = np.abs(np.fft.fft(white))
 
-    first = max(1, int(np.floor(min_freq / spacing)))
-    last = int(np.floor(max_freq / spacing))
+    # The band holds both of its ends: 16 Hz is the first component at
+    # or above 15, and 15,000 Hz is one.
+    first = max(1, int(np.ceil(min_freq / spacing)))
+    last = int(np.floor(max_freq / spacing)) + 1
     index = np.arange(first, last)
-    freqs = np.clip(index * spacing, spacing, None)
+    freqs = index * spacing
     denom = max(min_freq, spacing)
 
     expected = (10. ** (decibels_per_octave / 20.)) ** np.log2(freqs / denom)

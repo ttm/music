@@ -20,6 +20,7 @@ and the dataclass adapter's limits.
 from __future__ import annotations
 
 import argparse
+import ast
 import importlib.metadata
 import io
 import json
@@ -312,6 +313,79 @@ AREAS = {
             'tests/test_tutorial.py::test_every_tutorial_block_runs',
         ),
         'dataclass_adapter': None,
+    },    # Coloured, Gaussian-band and silent noise. Selected from full-suite
+    # per-test coverage.
+    'noises': {
+        'sources': (
+            'music/core/synths/noises.py',
+        ),
+        'tests': (
+            'tests/test_noises_audit.py',
+            'tests/test_article.py',
+            'tests/test_stimulation.py::test_full_depth_takes_the_noise_envelope_to_silence',
+            'tests/test_stimulation.py::test_modulated_noise_puts_the_envelope_at_the_modulation_rate',
+            'tests/test_stimulation.py::test_noise_colour_changes_the_spectral_tilt',
+            'tests/test_stimulation.py::test_spatial_motion_can_move_a_sound_it_did_not_synthesize',
+            'tests/test_stimulation.py::test_unmodulated_noise_is_the_bare_noise_bed',
+            'tests/test_stimulation.py::test_zero_depth_leaves_the_noise_bed_alone',
+            'tests/test_degenerate.py::test_a_gaussian_noise_refuses_a_band_with_nothing_in_it',
+            'tests/test_degenerate.py::test_a_parameter_at_zero_does_not_quietly_add_a_bias',
+            'tests/test_degenerate.py::test_a_parameter_at_zero_works_or_is_refused_clearly',
+            'tests/test_degenerate.py::test_a_zero_duration_renders_nothing',
+            'tests/test_degenerate.py::test_a_zero_duration_renders_nothing_down_every_branch',
+            'tests/test_properties.py::test_a_noise_spectrum_describes_a_real_signal',
+            'tests/test_properties.py::test_a_render_is_as_long_as_the_duration_and_rate_it_was_given',
+            'tests/test_properties.py::test_a_whole_short_piece_renders_at_either_rate',
+            'tests/test_properties.py::test_noise_renders_at_any_rate_including_an_odd_number_of_samples',
+            'tests/test_properties.py::test_the_energy_in_the_samples_is_the_energy_in_the_spectrum',
+            'tests/test_stimuli_audit.py::test_a_bare_call_renders_the_defaults_it_declares',
+            'tests/test_stimuli_audit.py::test_a_one_sample_stimulus_is_one_sample',
+            'tests/test_stimuli_audit.py::test_the_noise_and_the_orbit_honour_number_of_samples',
+            'tests/test_stimuli_audit.py::test_the_noise_envelope_is_the_same_envelope_on_the_same_bed',
+            'tests/test_stimuli_audit.py::test_unmodulated_noise_is_the_band_it_was_asked_for_at_its_rate',
+            'tests/test_filters_audit.py::test_filter_defaults_keep_their_documented_sample_spans',
+            'tests/test_filters_audit.py::test_reverb_applies_the_response_by_convolution',
+            'tests/test_filters_audit.py::test_reverb_defaults_to_a_point_one_five_second_first_phase',
+            'tests/test_filters_audit.py::test_reverb_with_no_first_phase_leaves_the_noise_random_stream_alone',
+            'tests/test_fidelity.py::test_noise_colour_has_its_documented_spectral_slope',
+            'tests/test_fidelity.py::test_numeric_noise_type_is_taken_as_decibels_per_octave',
+            'tests/test_fidelity.py::test_reverb_decays_by_the_decibels_it_was_given',
+            'tests/test_filters.py::test_a_one_sample_reverb_is_the_direct_sound',
+            'tests/test_filters.py::test_reverb_minimal_operation',
+            'tests/test_filters.py::test_the_reverb_tail_spans_the_band_at_any_rate',
+            'tests/test_public_api.py::test_export_runs_with_its_documented_defaults',
+            'tests/test_public_api.py::test_noise_accepts_a_numeric_gain_per_octave',
+            'tests/test_public_api.py::test_sonic_vector_accepts_any_array_like',
+            'tests/test_synths.py::test_gaussian_noise_takes_a_fractional_duration',
+            'tests/test_synths.py::test_noise_and_silence_generation',
+            'tests/test_synths.py::test_noise_no_warnings',
+            'tests/test_artifacts.py::test_what_the_click_measure_can_and_cannot_see',
+            'tests/test_branches.py::test_noise_rejects_an_unknown_colour',
+            'tests/test_mass_reconciliation.py::test_the_package_runs_where_the_reference_cannot',
+            'tests/test_tutorial.py::test_every_tutorial_block_runs',
+        ),
+        'dataclass_adapter': None,
+    },    # The note sequencer: scheduling, per-note rendering and mixing.
+    # Selected from full-suite per-test coverage.
+    'sequencer': {
+        'sources': (
+            'music/sequencer.py',
+        ),
+        'tests': (
+            'tests/test_sequencer_audit.py',
+            'tests/test_remaining_paths.py::test_sequencer_applies_an_adsr_envelope',
+            'tests/test_remaining_paths.py::test_sequencer_mixes_mono_and_stereo_notes_together',
+            'tests/test_remaining_paths.py::test_sequencer_mixes_stereo_then_mono',
+            'tests/test_remaining_paths.py::test_sequencer_places_a_note_in_space_and_writes_stereo',
+            'tests/test_remaining_paths.py::test_sequencer_renders_a_vibrato_note',
+            'tests/test_sequencer.py::test_a_note_cannot_start_before_the_sequence',
+            'tests/test_sequencer.py::test_sequencer_basic_mono',
+            'tests/test_sequencer.py::test_sequencer_stereo_spatial',
+            'tests/test_sequencer.py::test_sequencer_write',
+            'tests/test_theory_properties.py::test_a_sequencer_puts_its_notes_where_it_was_told',
+            'tests/test_tutorial.py::test_every_tutorial_block_runs',
+        ),
+        'dataclass_adapter': 'music/sequencer.py',
     },
 }
 
@@ -320,26 +394,37 @@ def expose_dataclasses(tree, relative_path):
     """Apply dataclass after each class so mutmut visits its methods.
 
     mutmut 3.7.0 skips decorated classes. This changes only the scratch
-    copy; both classes still become dataclasses before anything uses them.
-    Property-decorated methods remain outside mutmut's scope.
+    copy: each class decorated with a bare ``@dataclass`` loses the
+    decorator and is followed by ``Name = dataclass(Name)``, so it is
+    still a dataclass before anything uses it. Property-decorated methods
+    remain outside mutmut's scope.
 
-    Only an area whose sources define decorated classes needs this, which
-    today is ``export`` alone; the envelope modules are plain functions.
+    Only an area whose sources define decorated classes needs this:
+    ``export`` for the session, and ``sequencer``.
     """
     path = tree / relative_path
     source = path.read_text()
-    for name in ('StimulusPhase', 'StimulationSession'):
-        marker = f'@dataclass\nclass {name}:'
-        if source.count(marker) != 1:
-            raise SystemExit(f'dataclass adapter no longer matches {name}')
-        source = source.replace(marker, f'class {name}:', 1)
-    marker = '\n\ndef _ramp_shape('
-    if source.count(marker) != 1:
-        raise SystemExit('dataclass adapter no longer matches _ramp_shape')
-    source = source.replace(
-        marker, '\n\nStimulusPhase = dataclass(StimulusPhase)' + marker, 1)
-    source += '\n\nStimulationSession = dataclass(StimulationSession)\n'
-    path.write_text(source)
+    lines = source.splitlines(keepends=True)
+    classes = [node for node in ast.parse(source).body
+               if isinstance(node, ast.ClassDef)
+               and any(isinstance(decorator, ast.Name)
+                       and decorator.id == 'dataclass'
+                       for decorator in node.decorator_list)]
+    if not classes:
+        raise SystemExit(f'dataclass adapter found no dataclass in '
+                         f'{relative_path}')
+    # From the end, so earlier line numbers stay put.
+    for node in reversed(classes):
+        lines.insert(node.end_lineno,
+                     f'\n\n{node.name} = dataclass({node.name})\n')
+        decorator = next(decorator for decorator in node.decorator_list
+                         if isinstance(decorator, ast.Name)
+                         and decorator.id == 'dataclass')
+        if lines[decorator.lineno - 1].strip() != '@dataclass':
+            raise SystemExit(f'dataclass adapter no longer matches '
+                             f'{node.name}')
+        del lines[decorator.lineno - 1]
+    path.write_text(''.join(lines))
 
 
 def main():

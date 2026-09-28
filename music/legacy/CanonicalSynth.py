@@ -26,18 +26,13 @@ class CanonicalSynth:
 
     Parameters
     ----------
-    f : scalar
-        The frequency of the note in Hertz.
-    d : scalar
-        The duration of the note in seconds.
-    fv : scalar
-        The frequency of the vibrato oscillations in Hertz.
-    nu : scalar
-        The maximum deviation of pitch in the vibrato in semitones.
-    tab : array_like
-        The table with the waveform to synthesize the sound.
-    tabv : array_like
-        The table with the waveform of the vibrato oscillatory pattern.
+    **statevars
+        Any attribute, set before the synth is set up. The ones it reads
+        are those of :meth:`synthSetup` and :meth:`adsrSetup`, and
+        ``tables`` and ``samplerate``: ``fundamental_frequency``,
+        ``duration``, ``vibrato_frequency``, ``vibrato_depth``,
+        ``tremolo_frequency``, ``tremolo_depth`` and the three tables.
+        Every render method takes them too, and keeps them.
 
     Examples
     --------
@@ -45,8 +40,8 @@ class CanonicalSynth:
     >>> sound = synth.render(duration=0.2)
     >>> sound.shape
     (8820,)
-    >>> quieter = synth.render(duration=0.2, fundamental_frequency=110)
-    >>> len(quieter) == len(sound)
+    >>> lower = synth.render(duration=0.2, fundamental_frequency=110)
+    >>> len(lower) == len(sound)
     True
     """
 
@@ -166,9 +161,11 @@ class CanonicalSynth:
         R : int, optional
             Release time in milliseconds, by default 50.
         render_note : bool, optional
-            Whether to render the note immediately, by default False.
+            Stored as an attribute and not read: rendering the note here
+            was never implemented. By default False.
         adsr_method : str, optional
-            The ADSR method, by default "absolute".
+            The ADSR method, by default "absolute". Stored and not read
+            either: "absolute" is the only one there is.
         """
         adsr_method = adsr_method  # implement relative and False
         a_S = 10 ** (S / 20.)
@@ -176,11 +173,14 @@ class CanonicalSynth:
         Lambda_D = int(D * self.samplerate * 0.001)
         Lambda_R = int(R * self.samplerate * 0.001)
 
+        # A stage of one sample has no span to divide across: it holds
+        # its first value, as `loud` does, rather than dividing zero by
+        # zero into NaN.
         ii = n.arange(Lambda_A, dtype=n.float64)
-        A_ = ii / (Lambda_A - 1)
+        A_ = ii / max(Lambda_A - 1, 1)
         A_i = n.copy(A_)
         ii = n.arange(Lambda_A, Lambda_D + Lambda_A, dtype=n.float64)
-        D = 1 - (1 - a_S) * ((ii - Lambda_A) / (Lambda_D - 1))
+        D = 1 - (1 - a_S) * ((ii - Lambda_A) / max(Lambda_D - 1, 1))
         D_i = n.copy(D)
         R = a_S * n.linspace(1, 0, Lambda_R)
         R_i = n.copy(R)
@@ -333,22 +333,13 @@ class CanonicalSynth:
         -------
         array_like
             Rendered audio vector with applied ADSR envelope.
+
+        Notes
+        -----
+        This is :meth:`rawRender` with the envelope, and no tremolo. It
+        used to repeat that routine but for the table's length, which it
+        took from ``tables.size`` rather than from ``table``: a table of
+        any other length played at the wrong rate and read only part of
+        itself.
         """
-        self.absorbState(**statevars)
-        Lambda = n.floor(self.samplerate * self.duration)
-        ii = n.arange(Lambda)
-        Lv = len(self.vibrato_table)
-        Gammav_i = n.floor(ii * self.vibrato_frequency * Lv /
-                           self.samplerate)
-        Gammav_i = n.array(Gammav_i, n.int64)
-        Tv_i = self.vibrato_table[Gammav_i % Lv]
-        F_i = self.fundamental_frequency * (2. **
-                                            (Tv_i * self.vibrato_depth / 12.))
-        Lt = self.tables.size
-        D_gamma_i = F_i * (Lt / self.samplerate)
-        Gamma_i = n.cumsum(D_gamma_i)
-        Gamma_i = n.floor(Gamma_i)
-        Gamma_i = n.array(Gamma_i, dtype=n.int64)
-        sound = self.table[Gamma_i % int(Lt)]
-        sound = self.adsrApply(sound)
-        return sound
+        return self.adsrApply(self.rawRender(**statevars))

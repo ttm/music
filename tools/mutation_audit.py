@@ -386,6 +386,98 @@ AREAS = {
             'tests/test_tutorial.py::test_every_tutorial_block_runs',
         ),
         'dataclass_adapter': 'music/sequencer.py',
+    },    # Bonds between a note's characteristics and its frequency. Selected
+    # from full-suite per-test coverage.
+    'bonds': {
+        'sources': (
+            'music/bonds.py',
+        ),
+        'tests': (
+            'tests/test_bonds_audit.py',
+            'tests/test_bonds.py',
+            'tests/test_theory_properties.py::test_a_proportional_bond_is_the_line_it_describes',
+            'tests/test_theory_properties.py::test_a_stepped_bond_takes_the_value_of_the_threshold_it_falls_under',
+            'tests/test_theory_properties.py::test_an_inversely_proportional_bond_is_the_curve_it_describes',
+            'tests/test_degenerate.py::test_a_parameter_at_zero_does_not_quietly_add_a_bias',
+            'tests/test_degenerate.py::test_a_parameter_at_zero_works_or_is_refused_clearly',
+            'tests/test_public_api.py::test_export_runs_with_its_documented_defaults',
+        ),
+        'dataclass_adapter': None,
+    },
+    # The waveform tables PrimaryTables holds and draws. Selected from
+    # full-suite per-test coverage.
+    'tables': {
+        'sources': (
+            'music/tables.py',
+        ),
+        'tests': (
+            'tests/test_tables_audit.py',
+            'tests/test_legacy.py',
+            'tests/test_tables.py::test_draw_tables_plots_all_four',
+            'tests/test_tables.py::test_draw_tables_says_what_to_install_when_matplotlib_is_absent',
+            'tests/test_tables.py::test_primary_tables_delegates_to_the_one_generator',
+            'tests/test_tables.py::test_primary_tables_holds_exactly_the_size_requested',
+            'tests/test_tables.py::test_primary_tables_records_its_size',
+            'tests/test_tables.py::test_primary_tables_shapes',
+            'tests/test_remaining_paths.py::test_adsr_with_a_note_rendered_during_setup',
+            'tests/test_remaining_paths.py::test_synth_still_modulates_with_its_defaults',
+            'tests/test_remaining_paths.py::test_synth_without_vibrato_or_tremolo',
+            'tests/test_remaining_paths.py::test_tremolo_envelope_applied_to_a_sonic_vector',
+            'tests/test_branches.py::test_a_canonical_synth_keeps_tables_it_was_constructed_with',
+            'tests/test_branches.py::test_a_canonical_synth_sets_up_with_the_tables_it_is_given',
+            'tests/test_fidelity.py::test_every_table_source_agrees',
+        ),
+        'dataclass_adapter': None,
+    },
+    # Reading and fetching the KEMAR head-related impulse responses.
+    # Only the dataset tests reach it, on a synthetic copy.
+    'hrtf': {
+        'sources': (
+            'music/hrtf.py',
+        ),
+        'tests': (
+            'tests/test_hrtf_audit.py',
+            'tests/test_hrtf_dataset.py',
+        ),
+        'dataclass_adapter': None,
+    },
+    # Writing the score for the eCantorix singing engine, and finding and
+    # installing the engine. Selected from full-suite per-test coverage.
+    'singing': {
+        'sources': (
+            'music/singing/bootstrap.py',
+            'music/singing/paths.py',
+            'music/singing/perform.py',
+        ),
+        'tests': (
+            'tests/test_singing_audit.py',
+            'tests/test_singing.py',
+            'tests/test_abc_notation.py',
+            'tests/test_remaining_paths.py::test_make_test_song_sings_its_phrase',
+            'tests/test_remaining_paths.py::test_sing_reports_a_missing_makefile',
+        ),
+        'dataclass_adapter': None,
+    },
+    # The legacy synthesizers, the Being and the demonstration piece.
+    # Selected from full-suite per-test coverage.
+    'legacy': {
+        'sources': (
+            'music/legacy/CanonicalSynth.py',
+            'music/legacy/IteratorSynth.py',
+            'music/legacy/classes.py',
+            'music/legacy/tables.py',
+            'music/legacy/pieces/testSong2.py',
+        ),
+        'tests': (
+            'tests/test_legacy_audit.py',
+            'tests/test_legacy.py',
+            'tests/test_remaining_paths.py',
+            'tests/test_branches.py::test_a_being_can_sequence_by_permutation',
+            'tests/test_branches.py::test_a_being_refuses_a_way_of_sequencing_it_does_not_have',
+            'tests/test_branches.py::test_a_canonical_synth_keeps_tables_it_was_constructed_with',
+            'tests/test_branches.py::test_a_canonical_synth_sets_up_with_the_tables_it_is_given',
+        ),
+        'dataclass_adapter': None,
     },
 }
 

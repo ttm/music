@@ -560,7 +560,19 @@ with every test seeded differently found no other. See
 The full repository suite passed 4,867 tests; nine doctest items were skipped
 by explicit `+SKIP` directives.
 
-The eleven areas have taught, worth carrying into a later audit:
+## Completed: the rest of the package
+
+Reviewed 2026-09-28: `bonds`, `tables`, `hrtf`, `singing` and `legacy`,
+which leaves no module outside a mutation area but `symmetry.py`, which
+only re-exports. Among what they found: a stepped bond that read a
+generator of thresholds from where it last stopped; a NaN elevation read
+as -40 degrees; a singing requirement, `abc2midi`, the check left out;
+scores written an octave above their reference, which the default
+transposition made up for; fractional durations written into ABC as
+decimals; and a legacy `V_` that passed on only the pitch, so every
+note a `Being` played lasted two seconds. See `MUTATION_AUDIT.md`.
+
+The sixteen areas have taught, worth carrying into a later audit:
 
 - **An absent argument cannot be mutated.** The `cross_fade` and `trill`
   sample-rate defects were not found by any mutant, because no edit can
@@ -584,12 +596,15 @@ The eleven areas have taught, worth carrying into a later audit:
   nothing tried as many hunts as bells, which crashed.
 - **A kill can be a flake.** mutmut reorders tests; a surprising kill is
   worth running by hand in its order.
+- **The filesystem and the import can hide a mutant.** macOS finds
+  `FULL` as `full`, and a table built at import is built before mutmut
+  forks. Record what is used, and build afresh in the test.
 
 Add each area to `AREAS` rather than widening an existing one, and select
-its tests with per-test coverage contexts. None of the eleven bounded
-audits is a whole-package mutation score. Outside every area are
-`bonds.py`, `tables.py` and `hrtf.py`, the `singing` subpackage and the
-`legacy` one.
+its tests with per-test coverage contexts. Every module is now in an
+area, but the sixteen bounded audits are still not a whole-package
+mutation score: each measures its own sources against its own
+selection. A change to a module is the time to re-run its area.
 
 ## Other maintenance
 

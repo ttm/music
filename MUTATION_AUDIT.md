@@ -24,6 +24,11 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `structures` | `structures/permutations.py`, `peals/base.py`, `peals.py`, `plain_changes.py` | 2026-09-27 | 684 | 669 | 15 | all |
 | `noises` | `synths/noises.py` | 2026-09-28 | 285 | 280 | 5 | all |
 | `sequencer` | `sequencer.py` | 2026-09-28 | 157 | 157 | 0 | all |
+| `bonds` | `bonds.py` | 2026-09-28 | 106 | 103 | 3 | all |
+| `tables` | `tables.py` | 2026-09-28 | 77 | 77 | 0 | all |
+| `hrtf` | `hrtf.py` | 2026-09-28 | 224 | 217 | 7 | all |
+| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py` | 2026-09-28 | 383 | 376 | 7 | all |
+| `legacy` | `legacy/CanonicalSynth.py`, `IteratorSynth.py`, `classes.py`, `tables.py`, `pieces/testSong2.py` | 2026-09-28 | 1640 | 1114 | 526 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -883,6 +888,11 @@ python tools/mutation_audit.py --area theory --revision HEAD
 python tools/mutation_audit.py --area structures --revision HEAD
 python tools/mutation_audit.py --area noises --revision HEAD
 python tools/mutation_audit.py --area sequencer --revision HEAD
+python tools/mutation_audit.py --area bonds --revision HEAD
+python tools/mutation_audit.py --area tables --revision HEAD
+python tools/mutation_audit.py --area hrtf --revision HEAD
+python tools/mutation_audit.py --area singing --revision HEAD
+python tools/mutation_audit.py --area legacy --revision HEAD
 python tools/mutation_audit.py --area export --revision ef03962 --max-children 2
 ```
 
@@ -899,8 +909,9 @@ exit code. The selected tests are in `tools/mutation_audit.py`.
 Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 `oscillators`, and 84 for `export` with two. The latest oscillator pass took
 582 seconds with two workers, `stimuli` 60 and `localization` 233, and
-`theory` 24 to 50 with four, `structures` 172, `noises` 117 and
-`sequencer` 24. None
+`theory` 24 to 50 with four, `structures` 172, `noises` 117,
+`sequencer` 24, `bonds` 24, `tables` 12, `hrtf` 235, `singing` 27 and
+`legacy` 313. None
 is a candidate for CI at that cost — these are things to run
 deliberately, read, and act on.
 
@@ -1243,8 +1254,139 @@ as any later one would, rather than choosing a stereo start itself; and
 mixing copies the sequence so far into its silence rather than adding it.
 The final run detected all 157.
 
-**Expand to another bounded area when changing it.** All eleven areas now
-have reviewed survivors. Pick later areas by measuring which tests reach
+## `bonds`, `tables`, `hrtf` and `singing`
+
+Measured 2026-09-28 on Python 3.12.7, macOS, with `mutmut` 3.7.0, each
+over `HEAD` at `c2fd5d1` with its sources and tests overlaid. Each
+selection is the tests per-test coverage contexts found reaching it and a
+new `test_<area>_audit.py`: 378 tests for `bonds`, 62 for `tables`, 54
+for `hrtf` and 86 for `singing`.
+
+### What reading, probing and the survivors found
+
+- `stepped` read its thresholds on every call, so a generator of them
+  was read where the last call left off: 220 Hz fell in the first step
+  and, a note later, the second. They are read once, when the bond is
+  made.
+- `Bonds.note` filled an unbound vibrato or tremolo value with a copy of
+  the routine's default. It now passes only what is bound, so the
+  routine's own default applies. The copies matched; nothing kept them
+  matching.
+- `PrimaryTables.make_tables` rebuilt the tables at a new size and left
+  `size` at the old one, which `draw_tables` sized its axes by.
+- `hrir` took a NaN elevation to -40 degrees: NaN compared false with
+  every measurement, so the search kept the first. A NaN or infinite
+  azimuth failed in `round()`. Both are refused.
+- The singing engine's Makefile turns the score into MIDI with
+  `abc2midi`, which the requirements check did not ask for: it passed,
+  and the build failed inside `make`. It is a requirement now, and the
+  install hint names its package, `abcmidi`.
+- The note table named MIDI 60 `c`, which `abc2midi` reads as 72, so every
+  score was an octave above its `reference`, and the default
+  transposition, -36, made up for it. eCantorix sings
+  `440 * 2 ** ((note - 69 + transpose) / 12)`, so the table now names 60
+  `C` and the default is eCantorix's own -24: the default renders as it
+  did, and a call passing `transpose` sings an octave lower.
+- A duration of 0.5 went into the score as `0.5`, which is not ABC, and
+  `make_test_song` used halves and quarters. A number is now written as
+  the fraction ABC takes, `/2` for a half; `-n` still means `1/n`.
+- `setup_engine` ran `git clone` into a directory holding something else,
+  and reported git's exit status. It refuses, and leaves it alone. An
+  unknown `effect` is refused before the engine is looked for.
+
+### What the survivors showed unasserted
+
+`bonds` left its messages and three defaults unread, and a render at
+another rate unchecked. `tables` left its install message unread.
+
+`hrtf` surviving mutants were half of them invisible on this machine:
+macOS's filesystem is case-insensitive, so `FULL` for `full`, `l` for
+`L` and `GZIP` for `gzip` found the same files and program. The tests now
+record the paths read, the program asked for and the command run, which
+holds on any filesystem. The real measurements are installed here, so
+`available_azimuths` without its directory read them and still passed;
+the test now uses an elevation where the synthetic grid differs. The
+download is now checked for its timeout, for staging beside the target,
+for decoding gzip's message when it is not UTF-8, and for the `data`
+filter refusing a member that climbs out of the staging directory.
+
+`singing` read the note table through `converter`, built when the module
+is imported, before mutmut forks for each mutant, so no change to the
+table-building code could reach a test. The tests now build the table
+afresh, and record what `sing` hands the engine: the files it writes,
+the `make` command, the file it reads back and how.
+
+### Accepted survivors
+
+| Function | IDs | Why accepted |
+|---|---|---|
+| `Bonds.note` | 40, 42 | Dropping the `float64` conversion: every routine it calls already returns `float64`. |
+| `Bonds.render` | 14 | `cast`'s type argument, which does nothing at run time. |
+| `hrir` | 1, 2 | A default one degree off rounds to the same measurement. |
+| `hrir` | 53 | `astype(None)` is `float64`. |
+| `setup_hrtf` | 43, 44, 69, 70 | The names of the decompressed archive and the unpacked tree, inside a temporary directory nothing else reads. |
+| `_abc_length` | 22, 23 | Limiting the fraction to 1001 rather than 1000, and `<= 0` for `< 0` after zero is refused. |
+| `Notes.make_dict` | 29 | The octave with three apostrophes lies above MIDI 96, and is sliced off. |
+| `Notes.make_dict` | 46, 49, 57 | `strict` on a zip of two lengths the slice makes equal. |
+| `Notes.make_dict` | 8 | `XX` around the names' string: the pattern does not match `X`. |
+
+## `legacy` — the synthesizers, the Being and the demonstration piece
+
+Measured 2026-09-28 on Python 3.12.7, macOS, with `mutmut` 3.7.0, over
+`HEAD` at `c2fd5d1` with its five sources and tests overlaid. The
+selection is 106 tests: `test_legacy.py`, `test_remaining_paths.py`,
+four more that reach the legacy classes, and `test_legacy_audit.py`.
+
+### What reading and probing found
+
+- `V_` passed only the pitch to `note_with_vibrato`: the duration, the
+  vibrato and the table were two seconds, 2 Hz, two semitones and a
+  triangle whatever it was given, as they have been since 2017. So every
+  note `Being.render` played lasted two seconds, whatever `d_` said.
+- `CanonicalSynth.render2` took the table's length from `tables.size`,
+  2048, rather than from the table it read, so any other table played at
+  the wrong rate and read part of itself. It is now `rawRender` with the
+  envelope, which it had repeated but for that.
+- `adsrSetup` built a stage of one sample by dividing zero by zero.
+- The demonstration piece passed `sounduration=` and `tre_freq=`, names a
+  rename of `d` to `duration` had made of `sound=` two keywords ago.
+  `absorbState` stored both as attributes nothing reads, so the note its
+  comment says sounds like the next one was the tremolo envelope alone,
+  and its tremolo rates changed nothing.
+- `Being`'s `rhythm4` was `[1/4, 1/4, 1/3]` under the comment its three
+  siblings share, "repetition of one second". It is four quarters.
+
+### Result
+
+The first run detected 999 of 1637 mutations, five of them by hanging.
+Of the 638 survivors, 549 were content rather than logic, and are below.
+The other 89 were values the legacy tests never read: they checked
+shapes and that samples were finite. `test_legacy_audit.py` checks
+`rawRender` against the article's vibrato and phase equations, each ADSR
+stage against the ramp it describes, `_fit` at both ends,
+`IteratorSynth`'s cycling, and the walks, stays, defaults and written
+file of a `Being`, exactly. The final run detected 1114 of
+1640.
+
+### Accepted survivors
+
+| Function | IDs | Why accepted |
+|---|---|---|
+| `TestSong2.__init__`, `TestSong2.render` | 444 mutants | The piece: every note, duration, rate and depth in it. A change to one is a different piece rather than a wrong one. The tests check that it renders, writes its files, and that the two notes its comment says sound alike do. |
+| `Being.__init__` | 73 mutants | The reference sequences it stores in `resources` and no method reads: spectra, symmetric scales, diatonic rows and intensities. The rhythms are checked to fill a second. `freq_sym` takes `j` notes `j` semitones apart rather than dividing the octave, which may not be what was meant; it is left as it is. |
+| `adsrSetup` | 30, 32, 47, 50 | The `float64` of an integer range that is divided into floats anyway. |
+| `adsrApply` | 33, 35 | The `float64` of `ones`, which is its default. |
+| `adsrApply` | 6 | Compressing the stages when they exactly fill the note: at a ratio of one, `_fit` returns each stage as it is. |
+| `_fit` | 1 | Returning the empty stage for a count of zero before `linspace` would: both are empty. |
+| `Being.stay` | 23 | Adding one permutation more than it needs: the sequence is cut to `n`. |
+
+`Being.stay(method='straight')` cycles through the first `seqsize`
+elements of the grid from `pointer % seqsize`, not through the window at
+the pointer that `method='perm'` reads. A test pins that, as a decision;
+its docstring now says what it does, and it is left for the maintainer.
+
+**Expand to another bounded area when changing it.** All sixteen areas
+now have reviewed survivors. Pick later areas by measuring which tests reach
 their modules with per-test coverage contexts, then add a separate entry to
 `AREAS` rather than widening an existing area. These bounded measurements
 are not a whole-package mutation score.
@@ -1290,6 +1432,11 @@ What the areas have taught, worth carrying:
 - **Compare with what the result is made of.** The sequencer delegates
   every note to another routine, so the test of a render is that routine
   called the same way, not a length or a peak.
+- **A case-insensitive filesystem hides path mutants.** On macOS `FULL`
+  finds `full`. Record the path a routine uses rather than whether it
+  found something.
+- **Work done at import is out of mutmut's reach.** A table built when
+  the module loads is built before the fork, with the original code.
 
 Keep the sample-based assertions when refactoring these paths. Resolve the
 property/decorator coverage limitation before interpreting any future

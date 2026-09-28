@@ -1,0 +1,261 @@
+"""What the `singing` mutation audit found untested or wrong.
+
+The engine is Perl driving espeak, and its Makefile turns the score into
+MIDI with abc2midi before eCantorix sings it at
+``440 * 2 ** ((note - 69 + ESPEAK_TRANSPOSE) / 12)``. Everything before
+that hand-over is checked here without it.
+"""
+
+import re
+
+import numpy as np
+import pytest
+
+import music.singing.bootstrap as bootstrap
+import music.singing.paths as paths
+import music.singing.perform as perform
+
+
+@pytest.fixture
+def engine(tmp_path, monkeypatch):
+    """A stand-in engine: a Makefile, a cache, and every program found."""
+    root = tmp_path / "engine"
+    (root / "cache").mkdir(parents=True)
+    (root / "Makefile").write_text("all:\n\ttrue\n")
+    monkeypatch.setenv(paths.ENV_VAR, str(root))
+    monkeypatch.setattr(paths, "missing_requirements", lambda: [])
+    monkeypatch.setattr(perform.subprocess, "run", lambda *a, **k: None)
+    monkeypatch.setattr(perform.sf, "read",
+                        lambda path, dtype=None: (np.array([0.0, 1.0]),
+                                                  44100))
+    return root
+
+
+# --------------------------------------------------------------------------
+# The octave: MIDI 60 is ABC's C
+# --------------------------------------------------------------------------
+
+@pytest.mark.parametrize("midi, name", [
+    (12, "=C,,,,"), (24, "=C,,,"), (36, "=C,,"), (48, "=C,"), (60, "=C"),
+    (69, "=A"), (72, "=c"), (84, "=c'"), (96, "=c''"), (61, "^C"),
+    (71, "B"), (83, "b"),
+])
+def test_each_midi_note_has_its_abc_name(midi, name):
+    """abc2midi reads C as middle C, MIDI 60. This named 60 c, which it
+    reads as 72, so every score was an octave above its reference."""
+    assert perform.converter.notes_dict[midi] == name
+
+
+def test_the_default_sings_where_it_always_did(engine):
+    """An octave down in the score and an octave up in the transposition:
+    eCantorix sings reference + note - 24, as before."""
+    perform.sing()
+    conf = (engine / "cache" / "achant.conf").read_text()
+    assert "$ESPEAK_TRANSPOSE = -24;" in conf
+    score = (engine / "cache" / "achant.abc").read_text()
+    assert "\nE=D=C=DEEE2\nw: " in score
+
+
+# --------------------------------------------------------------------------
+# Durations, as ABC writes a length
+# --------------------------------------------------------------------------
+
+@pytest.mark.parametrize("duration, written", [
+    (1, ""), (1.0, ""), (2, "2"), (0.5, "/2"), (0.25, "/4"), (1.5, "3/2"),
+    (0.75, "3/4"), (-2, "/2"), (-3, "/3"), (np.float64(0.5), "/2"),
+    ("3/2", "3/2"), ("1-2", "1/2"), ("1", ""),
+])
+def test_a_duration_is_written_as_abc_writes_a_length(duration, written):
+    """0.5 went into the score as "0.5", which is not ABC."""
+    assert perform.translate_to_abc((0,), (duration,), 60) == "=C" + written
+
+
+def test_a_note_of_no_length_is_refused():
+    with pytest.raises(ValueError, match="^a note cannot last no time; "
+                       "got a duration of 0$"):
+        perform.translate_to_abc((0,), (0,), 60)
+
+
+def test_the_test_song_is_a_score_abc_can_read(engine, monkeypatch):
+    """Its halves and quarters were written as 0.5 and 0.25."""
+    bootstrap.make_test_song()
+    body = (engine / "cache" / "achant.abc").read_text().split("\n")[-2]
+    assert body == "=G/2=C/2=F/4=G/4B=c/4=G/2"
+    assert "." not in body
+
+
+# --------------------------------------------------------------------------
+# Effects, requirements and the engine directory
+# --------------------------------------------------------------------------
+
+def test_a_wrong_effect_is_refused_before_anything_else(tmp_path,
+                                                        monkeypatch):
+    """Even with no engine installed, and without touching the cache."""
+    monkeypatch.setenv(paths.ENV_VAR, str(tmp_path / "nowhere"))
+    with pytest.raises(ValueError, match=re.escape(
+            "effect not understood: 'reverse-cathedral'; expected one of "
+            "['flint', 'flite', 'melt', 'tremolo'], or None for the plain "
+            "voice")):
+        perform.sing(effect="reverse-cathedral")
+    assert not (tmp_path / "nowhere").exists()
+
+
+@pytest.mark.parametrize("effect", [None, "", False])
+def test_no_effect_sings_with_the_plain_voice(engine, effect):
+    perform.sing(effect=effect)
+    conf = (engine / "cache" / "achant.conf").read_text()
+    assert "extravoices" not in conf
+
+
+def test_abc2midi_is_a_requirement_named_by_its_package(monkeypatch):
+    """The Makefile runs it, and the check did not ask for it."""
+    assert "abc2midi" in paths.SYSTEM_REQUIREMENTS
+    monkeypatch.setattr(paths, "missing_requirements",
+                        lambda: ["espeak", "abc2midi"])
+    with pytest.raises(RuntimeError, match=re.escape(
+            "the singing engine needs these programs, which are not "
+            "installed: espeak, abc2midi. On Debian or Ubuntu: sudo apt "
+            "install espeak abcmidi. On macOS with Homebrew: brew install "
+            "espeak abcmidi.")):
+        paths.require_system_dependencies()
+
+
+def test_missing_requirements_asks_for_each_program(monkeypatch):
+    asked = []
+    monkeypatch.setattr(paths.shutil, "which",
+                        lambda name: asked.append(name) or
+                        (None if name == "perl" else f"/bin/{name}"))
+    assert paths.missing_requirements() == ["perl"]
+    assert asked == list(paths.SYSTEM_REQUIREMENTS)
+
+
+def test_the_engine_is_not_cloned_over_something_else(tmp_path,
+                                                      monkeypatch):
+    """git refused, and the error was its exit status."""
+    target = tmp_path / "ecantorix"
+    target.mkdir()
+    (target / "notes.txt").write_text("mine")
+    monkeypatch.setenv(paths.ENV_VAR, str(target))
+    cloned = []
+    monkeypatch.setattr(bootstrap.subprocess, "run",
+                        lambda *a, **k: cloned.append(a))
+    with pytest.raises(RuntimeError, match=re.escape(
+            f"{target} is not empty but holds no eCantorix engine; move it "
+            "aside, or set $MUSIC_ECANTORIX_DIR to install the engine "
+            "somewhere else")):
+        bootstrap.setup_engine()
+    assert cloned == [] and (target / "notes.txt").read_text() == "mine"
+
+
+def test_an_empty_directory_is_cloned_into(tmp_path, monkeypatch):
+    target = tmp_path / "ecantorix"
+    target.mkdir()
+    monkeypatch.setenv(paths.ENV_VAR, str(target))
+    monkeypatch.setattr(paths, "missing_requirements", lambda: [])
+    cloned = []
+    monkeypatch.setattr(bootstrap.subprocess, "run",
+                        lambda *a, **k: cloned.append((a, k)))
+    assert bootstrap.setup_engine() == str(target)
+    assert cloned == [((["git", "clone", "https://github.com/ttm/ecantorix",
+                         str(target)],), {"check": True})]
+
+
+# --------------------------------------------------------------------------
+# The table, built fresh: `converter` is built when the module is imported
+# --------------------------------------------------------------------------
+
+def test_a_fresh_table_names_every_octave_with_its_marks():
+    table = perform.Notes().notes_dict
+    assert [table[midi] for midi in range(12, 97, 12)] == [
+        "=C,,,,", "=C,,,", "=C,,", "=C,", "=C", "=c", "=c'", "=c''"]
+    assert [table[midi] for midi in range(60, 72)] == [
+        "=C", "^C", "=D", "^D", "E", "=F", "^F", "=G", "^G", "=A", "^A",
+        "B"]
+    assert len(table) == 85
+
+
+# --------------------------------------------------------------------------
+# What sing() hands the engine, recorded
+# --------------------------------------------------------------------------
+
+@pytest.fixture
+def recorded(engine, monkeypatch):
+    calls = {"run": [], "read": [], "copy": []}
+    monkeypatch.setattr(perform.subprocess, "run", lambda *a, **k:
+                        calls["run"].append((a, k)))
+    monkeypatch.setattr(perform.sf, "read", lambda path, **k: (
+        calls["read"].append((path, k)) or (np.array([0.0, 1.0]), 44100)))
+    original = perform.shutil.copy
+    monkeypatch.setattr(perform.shutil, "copy", lambda source, target: (
+        calls["copy"].append((source, target)) or original(source,
+                                                           target)))
+    return calls
+
+
+def test_sing_writes_the_score_and_conf_the_engine_reads(engine, recorded):
+    import os
+
+    perform.sing(effect="melt")
+    cache = engine / "cache"
+    assert sorted(os.listdir(cache)) == ["Makefile", "achant.abc",
+                                         "achant.conf"]
+    assert (cache / "achant.conf").read_text() == (
+        '$ESPEAK_VOICE = "en";\n$ESPEAK_TRANSPOSE = -24;\n'
+        "do 'extravoices/melt.inc';")
+    assert (cache / "achant.abc").read_text() == (
+        "X:1\nT:Some chanting for music python package\nM:4/4\nL:1/4\n"
+        "Q:120\nV:1\nK:C\nE=D=C=DEEE2\nw: Mar-ry had a litt-le lamb")
+    assert recorded["copy"] == [(engine / "Makefile", cache / "Makefile")]
+    assert recorded["run"] == [((["make", "-C", str(cache)],),
+                                {"check": True})]
+    assert recorded["read"] == [(str(cache / "achant.wav"),
+                                 {"dtype": "float64"})]
+
+
+def test_sing_passes_its_score_settings_through(engine, recorded):
+    perform.sing(text="la la", notes=(0, 7), durs=(1, 1), M="3/4",
+                 L="1/8", Q=90, K="G", reference=48)
+    score = (engine / "cache" / "achant.abc").read_text()
+    assert "\nM:3/4\nL:1/8\nQ:90\nV:1\nK:G\n=C,=G,\nw: la la" in score
+
+
+def test_the_test_song_sings_its_own_words(engine, recorded):
+    bootstrap.make_test_song()
+    score = (engine / "cache" / "achant.abc").read_text()
+    assert score.endswith("\nw: hey ma bro, why fly while dive?")
+
+
+@pytest.mark.parametrize("prepare, detail", [
+    (lambda root: None, "nothing is there"),
+    (lambda root: root.mkdir(), "the directory exists but has no Makefile"),
+])
+def test_a_missing_engine_says_what_is_there(tmp_path, monkeypatch,
+                                             prepare, detail):
+    root = tmp_path / "engine"
+    prepare(root)
+    monkeypatch.setenv(paths.ENV_VAR, str(root))
+    with pytest.raises(RuntimeError, match=re.escape(
+            f"no usable eCantorix engine at {root}: {detail}. Run "
+            "music.singing.setup_engine() to install it.")):
+        perform.sing()
+    with pytest.raises(RuntimeError, match=re.escape(
+            f"no usable eCantorix engine at {root}. Run 'setup_engine()' "
+            "to install it.")):
+        bootstrap.get_engine()
+
+
+def test_the_engine_is_cloned_into_a_directory_that_does_not_exist_yet(
+        tmp_path, monkeypatch):
+    target = tmp_path / "a" / "b" / "ecantorix"
+    monkeypatch.setenv(paths.ENV_VAR, str(target))
+    monkeypatch.setattr(paths, "missing_requirements", lambda: [])
+    monkeypatch.setattr(bootstrap.subprocess, "run", lambda *a, **k: None)
+    assert bootstrap.setup_engine() == str(target)
+    assert target.parent.is_dir()
+
+
+def test_a_bare_score_is_common_time_in_c_at_120(engine):
+    perform.write_abc("la", (0,), (1,))
+    assert (engine / "cache" / "achant.abc").read_text() == (
+        "X:1\nT:Some chanting for music python package\nM:4/4\nL:1/4\n"
+        "Q:120\nV:1\nK:C\n=C\nw: la")

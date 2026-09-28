@@ -27,7 +27,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from numbers import Real
-from typing import cast
+from typing import Any, cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -130,14 +130,23 @@ def stepped(thresholds: Sequence[tuple[float, float]],
     callable
         A function of one frequency, for :class:`Bonds`.
 
+    Notes
+    -----
+    The thresholds are read once, when the bond is made. A generator of
+    them used to be read by each call where the last one stopped, so the
+    same frequency could fall in a different step from one note to the
+    next.
+
     Examples
     --------
     >>> register = stepped([(262, 3.0), (523, 6.0)], otherwise=12.0)
     >>> register(220), register(440), register(880)
     (3.0, 6.0, 12.0)
     """
+    steps = tuple(thresholds)
+
     def bond(freq: float) -> float:
-        for below, value in thresholds:
+        for below, value in steps:
             if freq < below:
                 return value
         return otherwise
@@ -255,27 +264,25 @@ class Bonds:
         True
         """
         values = self.characteristics(freq)
-        vibrato = {key: values[key] for key in
-                   ('vibrato_freq', 'max_pitch_dev') if key in values}
-        tremolo_values = {key: values[key] for key in
-                          ('tremolo_freq', 'max_db_dev') if key in values}
+        vibrato: dict[str, Any] = {
+            key: values[key] for key in ('vibrato_freq', 'max_pitch_dev')
+            if key in values}
+        tremolo_values: dict[str, Any] = {
+            key: values[key] for key in ('tremolo_freq', 'max_db_dev')
+            if key in values}
 
+        # Only what is bound is passed, so what is not keeps the routine's
+        # own default rather than a copy of it written here.
         if vibrato:
-            sound = note_with_vibrato(
-                freq=freq, duration=duration,
-                vibrato_freq=vibrato.get('vibrato_freq', 4),
-                max_pitch_dev=vibrato.get('max_pitch_dev', 2),
-                sample_rate=sample_rate)
+            sound = note_with_vibrato(freq=freq, duration=duration,
+                                      sample_rate=sample_rate, **vibrato)
         else:
             sound = note(freq=freq, duration=duration,
                          sample_rate=sample_rate)
 
         if tremolo_values:
-            sound = tremolo(
-                duration=duration, sonic_vector=sound,
-                tremolo_freq=tremolo_values.get('tremolo_freq', 2),
-                max_db_dev=tremolo_values.get('max_db_dev', 10),
-                sample_rate=sample_rate)
+            sound = tremolo(sonic_vector=sound, sample_rate=sample_rate,
+                            **tremolo_values)
         return np.asarray(sound, dtype=np.float64)
 
     def render(self, freqs: Sequence[float],

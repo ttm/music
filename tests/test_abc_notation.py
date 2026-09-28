@@ -25,21 +25,23 @@ def cache(tmp_path, monkeypatch):
 # --------------------------------------------------------------------------
 
 def test_semitones_become_abc_pitch_names():
-    """Relative to a reference of 60, zero is middle c."""
+    """Relative to a reference of 60, zero is middle C, which ABC writes
+    in upper case. These said lower case, which is the octave above: the
+    table was an octave high and so was every score."""
     assert perform.converter.convert((0, 4, 7, 12), 60) == \
-        ["=c", "e", "=g", "=c'"]
+        ["=C", "E", "=G", "=c"]
 
 
 def test_octaves_change_case_and_add_marks():
-    """ABC writes the octave below in upper case and the one above with a
-    prime."""
-    assert perform.converter.convert((-12, 0, 12), 60) == ["=C", "=c", "=c'"]
+    """ABC writes the octave above middle C in lower case, and marks the
+    ones below with commas."""
+    assert perform.converter.convert((-12, 0, 12), 60) == ["=C,", "=C", "=c"]
 
 
 def test_the_dictionary_is_rebuilt_if_it_goes_missing():
     notes = perform.Notes()
     notes.notes_dict = None
-    assert notes.convert((0,), 60) == ["=c"]
+    assert notes.convert((0,), 60) == ["=C"]
 
 
 # --------------------------------------------------------------------------
@@ -49,16 +51,16 @@ def test_the_dictionary_is_rebuilt_if_it_goes_missing():
 def test_a_duration_of_one_is_left_implicit():
     """ABC takes the unit length as the default, so 1 is written as
     nothing."""
-    assert perform.translate_to_abc((0,), (1,), 60) == "=c"
+    assert perform.translate_to_abc((0,), (1,), 60) == "=C"
 
 
 def test_other_durations_follow_their_note():
-    assert perform.translate_to_abc((0, 4), (1, 2), 60) == "=ce2"
+    assert perform.translate_to_abc((0, 4), (1, 2), 60) == "=CE2"
 
 
 def test_a_negative_duration_becomes_a_division():
     """`-2` is written `/2`, ABC's notation for a half-length note."""
-    assert perform.translate_to_abc((0,), (-2,), 60) == "=c/2"
+    assert perform.translate_to_abc((0,), (-2,), 60) == "=C/2"
 
 
 # --------------------------------------------------------------------------
@@ -78,7 +80,7 @@ def test_write_abc_carries_the_lyric_line(cache):
     perform.write_abc("hey ma bro", (0, 4, 7), (1, 1, 1))
     written = (cache / "achant.abc").read_text()
     assert written.rstrip().endswith("w: hey ma bro")
-    assert "=ce=g" in written
+    assert "=CE=G" in written
 
 
 # --------------------------------------------------------------------------
@@ -156,7 +158,7 @@ def test_translate_to_abc_rejects_a_length_mismatch():
     line separately, the words then pointed at notes that were gone."""
     from music.singing.perform import translate_to_abc
 
-    assert translate_to_abc([0, 2, 4], [1, 1, 1], reference=60) == "=c=de"
+    assert translate_to_abc([0, 2, 4], [1, 1, 1], reference=60) == "=C=DE"
 
     with pytest.raises(ValueError, match="5 notes and 3 durations"):
         translate_to_abc([0, 2, 4, 5, 7], [1, 1, 1], reference=60)
@@ -166,7 +168,7 @@ def test_translate_to_abc_rejects_a_length_mismatch():
 
 
 def test_the_note_dictionary_covers_the_midi_range_it_claims():
-    """The eight octaves of names are longer than the MIDI range the
+    """The nine octaves of names are longer than the MIDI range the
     dictionary maps, and the surplus is sliced off deliberately."""
     from music.singing.perform import Notes
 

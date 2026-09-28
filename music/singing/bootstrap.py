@@ -31,7 +31,7 @@ def get_engine():
     Examples
     --------
     >>> get_engine()                        # doctest: +SKIP
-    PosixPath('.../music/ecantorix')
+    '.../music/ecantorix'
     """
     directory = engine_dir()
     if not is_engine(directory):
@@ -65,16 +65,25 @@ def setup_engine(method="http"):
     ValueError
         If `method` is not 'http' or 'ssh'.
     RuntimeError
-        If a required external program is missing, or the clone fails.
+        If a required external program is missing, the clone fails, or
+        the directory already holds something that is not the engine.
+        git refuses to clone into a directory that is not empty, and said
+        so as an exit status; this says which directory, and leaves what
+        is in it alone.
 
     Examples
     --------
     >>> setup_engine()                      # doctest: +SKIP
-    PosixPath('.../music/ecantorix')
+    '.../music/ecantorix'
     """
     directory = engine_dir()
     if is_engine(directory):
         return str(directory)
+    if directory.is_dir() and any(directory.iterdir()):
+        raise RuntimeError(
+            f"{directory} is not empty but holds no eCantorix engine; "
+            "move it aside, or set $MUSIC_ECANTORIX_DIR to install the "
+            "engine somewhere else")
 
     if method not in REPO_URLS:
         raise ValueError(

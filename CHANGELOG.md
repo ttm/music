@@ -37,6 +37,16 @@ change; an even length draws what it did. `gaussian_noise`'s band stops at
 the Nyquist frequency rather than doubling the level of what lay past it,
 and `std=0` is refused rather than rendered.
 
+`sing` writes its score at the MIDI `reference` it is given, where it
+wrote it an octave above, and its default `transpose` is now eCantorix's
+own -24 rather than -36. The default sings as it did; a call that passes
+`transpose` sings an octave lower, and adding 12 to it restores that.
+
+The legacy `Being.render` plays each note for its `d_`, with its own
+vibrato and table. Every note lasted two seconds, because the `V_` it
+renders through passed on only the pitch. `CanonicalSynth.render2` reads a
+table of any length at its own length.
+
 ### Fixed
 
 - **`convert_to_stereo` cannot overflow integer PCM.** It now promotes
@@ -98,6 +108,30 @@ and `std=0` is refused rather than rendered.
   `sonic_vector` the sequencer supplies, and a sample rate that is not
   positive are refused when given. Writing a sequencer with no notes says
   so rather than blaming a duration computed as zero.
+- **`stepped` reads its thresholds once.** A generator of them was
+  read where the last call left off, so one frequency could fall in two
+  different steps on two notes.
+- **`Bonds.note` leaves what is not bound to the routine's own
+  default,** rather than to a copy of it written in.
+- **`PrimaryTables.make_tables` updates `size`,** which `draw_tables`
+  sizes its axes by.
+- **`hrir` refuses an angle that is not a finite number.** A NaN
+  elevation read the measurements at -40 degrees.
+- **The singing engine's requirements include `abc2midi`,** which its
+  Makefile runs; the check passed without it and the build failed.
+- **`sing` writes fractional durations as ABC does,** `/2` for a half,
+  where `0.5` went into the score as it is. An unknown `effect` is
+  refused before the engine is looked for.
+- **`setup_engine` will not clone over a directory holding something
+  else,** and says which directory, rather than reporting git's exit
+  status.
+- **`CanonicalSynth` builds a stage of one sample without NaN.** It
+  divided zero by zero.
+- **The legacy test song's tremolo section changes its tremolo.** Two
+  keywords renamed long ago, `sounduration` and `tre_freq`, were stored
+  as attributes nothing reads.
+- **`Being`'s `rhythm4` fills one second,** as its three siblings do. It
+  read `[1/4, 1/4, 1/3]`.
 - **`interval_between` refuses NaN and infinity by name.** They reached
   `round()`, which failed with a message about converting to an integer.
 

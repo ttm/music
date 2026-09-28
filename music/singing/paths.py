@@ -16,8 +16,14 @@ from ..utils import cache_root
 ENV_VAR = "MUSIC_ECANTORIX_DIR"
 
 #: External programs eCantorix shells out to. It is Perl driving espeak
-#: through a Makefile, so none of these can be pip-installed.
-SYSTEM_REQUIREMENTS = ("git", "make", "perl", "espeak")
+#: through a Makefile, so none of these can be pip-installed. Its Makefile
+#: turns the score into MIDI with abc2midi, which this list used to leave
+#: out, so the check passed and the build failed inside make.
+SYSTEM_REQUIREMENTS = ("git", "make", "perl", "espeak", "abc2midi")
+
+#: The package that provides a program, where it is not named after it,
+#: for the install command the error suggests.
+_PACKAGES = {"abc2midi": "abcmidi"}
 
 _LEGACY_DIR = Path(__file__).resolve().parent / "ecantorix"
 
@@ -108,9 +114,10 @@ def require_system_dependencies() -> None:
     """
     missing = missing_requirements()
     if missing:
+        packages = ' '.join(_PACKAGES.get(name, name) for name in missing)
         raise RuntimeError(
             "the singing engine needs these programs, which are not "
             f"installed: {', '.join(missing)}. On Debian or Ubuntu: "
-            f"sudo apt install {' '.join(missing)}. On macOS with Homebrew: "
-            f"brew install {' '.join(missing)}."
+            f"sudo apt install {packages}. On macOS with Homebrew: "
+            f"brew install {packages}."
         )

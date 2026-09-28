@@ -43,12 +43,21 @@ def V_(st=0, freq=220, duration=2., vibrato_freq=2., max_pitch_dev=2.,
     array
         A note with vibrato.
 
+    Notes
+    -----
+    Every argument but ``st`` and ``freq`` used to be ignored: the note
+    was two seconds long, with a vibrato of 2 Hz and two semitones on a
+    triangle wave, whatever it was given. It has been so since this was
+    written, in 2017, and it made every note :meth:`Being.render` played
+    last two seconds, whatever its ``d_`` said.
+
     """
     f_ = freq * 2 ** (st / 12)
-    return note_with_vibrato(freq=f_, duration=2., vibrato_freq=2.,
-                             max_pitch_dev=2.,
-                             waveform_table=WAVEFORM_TRIANGULAR,
-                             vibrato_waveform_table=WAVEFORM_SINE)
+    return note_with_vibrato(freq=f_, duration=duration,
+                             vibrato_freq=vibrato_freq,
+                             max_pitch_dev=max_pitch_dev,
+                             waveform_table=waveform_table,
+                             vibrato_waveform_table=vibrato_waveform_table)
 
 
 def ADV(note_dict={}, adsr_dict={}):
@@ -115,7 +124,9 @@ class Being:
         rhythm = [1.]  # repetition of one second
         rhythm2 = [1/2, 1/2]  # repetition of one second
         rhythm3 = [1/3, 1/3, 1/3]  # repetition of one second
-        rhythm4 = [1/4, 1/4, 1/3]  # repetition of one second
+        # Four quarters: this read [1/4, 1/4, 1/3], five sixths of the
+        # second its comment and its three neighbours fill.
+        rhythm4 = [1/4, 1/4, 1/4, 1/4]  # repetition of one second
 
         # assume duration = 1 (be 1 second, minute or whatnot):
         rhythmic_spectrum = [[1. / i] * i for i in range(1, 300)]
@@ -299,12 +310,22 @@ class Being:
         n : int
             Number of notes.
         method : str
-            Method of staying.
+            ``'perm'`` cycles ``perms`` over ``domain``, or over the
+            ``seqsize`` elements of the grid from ``pointer`` when no
+            domain is set. ``'straight'`` cycles through the first
+            ``seqsize`` elements of the grid, starting at
+            ``pointer % seqsize``: it does not read the window at the
+            pointer, as ``'perm'`` does.
 
         Returns
         -------
-        array
-            Sequence of stayed notes.
+        None
+            The notes are appended to the sequence named by ``curseq``.
+
+        Raises
+        ------
+        ValueError
+            If ``method`` is neither of the two above.
 
         """
         if method == 'straight':

@@ -37,6 +37,7 @@ References
 """
 from __future__ import annotations
 
+import math
 import os
 from pathlib import Path
 
@@ -294,7 +295,10 @@ def hrir(elevation: float = 0, azimuth: float = 90,
     FileNotFoundError
         If the measurements are not there. Run :func:`setup_hrtf`.
     ValueError
-        If the elevation is outside the measured range.
+        If the elevation is outside the measured range, or either angle
+        is not a finite number. A NaN elevation compared false with every
+        measurement and read the lowest, -40 degrees; a NaN azimuth failed
+        in ``round()``.
 
     See Also
     --------
@@ -315,6 +319,9 @@ def hrir(elevation: float = 0, azimuth: float = 90,
     further.
     """
     root = _dataset(directory)
+    if not math.isfinite(azimuth):
+        raise ValueError(
+            f'azimuth must be a finite number of degrees; got {azimuth}')
     nearest_elevation = _nearest_elevation(elevation)
     measured = root / 'full' / f'elev{nearest_elevation}'
 
@@ -366,7 +373,8 @@ def _nearest_elevation(elevation: float) -> int:
     """
     nearest = min(ELEVATIONS,
                   key=lambda measured: abs(measured - elevation))
-    if abs(nearest - elevation) > 5:
+    # Written so that NaN, which compares false with everything, fails it.
+    if not abs(nearest - elevation) <= 5:
         raise ValueError(
             f'{elevation} is outside the measured elevations, which run '
             f'from {ELEVATIONS[0]} to {ELEVATIONS[-1]} degrees in steps '

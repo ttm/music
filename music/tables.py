@@ -60,11 +60,6 @@ class PrimaryTables:
         size : int, optional
             The number of samples for each waveform table, by default 2048.
         """
-        self.triangle = None
-        self.square = None
-        self.saw = None
-        self.sine = None
-        self.size = size
         self.make_tables(size)
 
     def make_tables(self, size):
@@ -73,8 +68,11 @@ class PrimaryTables:
         Parameters
         ----------
         size : int
-            The number of samples for each waveform table.
+            The number of samples for each waveform table. It becomes
+            :attr:`size`, which used to keep the size the object was made
+            with, so the axes :meth:`draw_tables` drew fitted neither.
         """
+        self.size = size
         self.sine = waveform_table("sine", size)
         self.saw = waveform_table("sawtooth", size)
         self.square = waveform_table("square", size)

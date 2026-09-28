@@ -67,17 +67,22 @@ class TestSong2:
         T = synth.tremoloEnvelope
         A = synth.adsrApply
         # == T(duration=4.) * R(duration=4.)
-        notes = [T(sounduration=R(duration=4.)),
-                 T(duration=4.) * R(duration=4.),  # sould sound the same
-                 T(tre_freq=4., duration=4.) * R(duration=4.),
-                 T(tre_freq=2., duration=4.) * R(duration=4.,
-                                                 vibrato_frequency=4.),
-                 T(tre_freq=4., duration=4.) * R(duration=4.,
-                                                 vibrato_frequency=4.),
-                 T(tre_freq=8., duration=4.) * R(duration=4.,
-                                                 vibrato_frequency=4.),
-                 T(tre_freq=4., duration=4.) * R(duration=4.,
-                                                 vibrato_frequency=8.)]
+        # `sonic_vector` and `tremolo_frequency` were `sounduration` and
+        # `tre_freq`: a rename of `d` to `duration` had turned `sound=`
+        # into `sounduration=`, and absorbState took both as attributes
+        # nothing reads. So the first note was the envelope alone, and
+        # none of the tremolo rates below changed anything.
+        notes = [T(sonic_vector=R(duration=4.)),
+                 T(duration=4.) * R(duration=4.),  # should sound the same
+                 T(tremolo_frequency=4., duration=4.) * R(duration=4.),
+                 T(tremolo_frequency=2., duration=4.) *
+                 R(duration=4., vibrato_frequency=4.),
+                 T(tremolo_frequency=4., duration=4.) *
+                 R(duration=4., vibrato_frequency=4.),
+                 T(tremolo_frequency=8., duration=4.) *
+                 R(duration=4., vibrato_frequency=4.),
+                 T(tremolo_frequency=4., duration=4.) *
+                 R(duration=4., vibrato_frequency=8.)]
         notes = [synth.adsrApply(i) for i in notes]
         tremolos = np.hstack(notes)
         M.core.io.write_wav_mono(tremolos, "TV.wav")  # saved to fooname.wav

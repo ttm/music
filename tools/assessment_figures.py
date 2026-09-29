@@ -200,6 +200,14 @@ def measured_by_running():
         [sys.executable, "-m", "ruff", "check", "--select", "ALL", "music"],
         cwd=ROOT, capture_output=True, text=True)
     found = re.search(r"Found (\d+) error", lint.stdout)
+    # The three largest kinds, which the file names beside the total and
+    # which drifted by hand while the total was measured.
+    statistics = subprocess.run(
+        [sys.executable, "-m", "ruff", "check", "--select", "ALL",
+         "--statistics", "music"],
+        cwd=ROOT, capture_output=True, text=True).stdout
+    kinds = {code: int(number) for number, code in re.findall(
+        r"^\s*(\d+)\s+([A-Z]+\d+)\b", statistics, re.M)}
 
     return {
         "tests": int(count.group(1)),
@@ -208,6 +216,9 @@ def measured_by_running():
         "missed": int(total_line.group(2)),
         "coverage_pct": int(total_line.group(3)),
         "ruff_all": int(found.group(1)) if found else 0,
+        "ruff_quotes": kinds.get("Q000", 0),
+        "ruff_untyped_arguments": kinds.get("ANN001", 0),
+        "ruff_untyped_returns": kinds.get("ANN201", 0),
     }
 
 
@@ -336,6 +347,15 @@ def expectations(figures):
             ("extended lint, restated",
              r"(?<=extended lint set reports )[\d,]+(?= findings\*\*)",
              thousands(figures["ruff_all"])),
+            ("extended lint, quote style",
+             r"(?<=stylistic: )[\d,]+(?= quote-style)",
+             thousands(figures["ruff_quotes"])),
+            ("extended lint, argument annotations",
+             r"(?<=quote-style, )[\d,]+(?= missing argument)",
+             thousands(figures["ruff_untyped_arguments"])),
+            ("extended lint, return annotations",
+             r"(?<=missing argument annotations, )[\d,]+(?= missing)",
+             thousands(figures["ruff_untyped_returns"])),
         ]
     # Most figures live in ASSESSMENT.md; a few name their own file.
     return [entry if len(entry) == 4 else (*entry, ASSESSMENT)

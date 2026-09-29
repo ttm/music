@@ -19,7 +19,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `stimuli` | `stimulation/stimuli.py` | 2026-09-23 | 427 | 423 | 4 | all |
 | `localization` | `filters/localization.py` | 2026-09-23 | 652 | 631 | 21 | all |
 | `utils` | `utils.py` | 2026-09-25 | 915 | 825 | 90 | all |
-| `filters` | `filters/design.py`, `impulse_response.py`, `loud.py`, `reverb.py`, `stretches.py` | 2026-09-25 | 531 | 505 | 26 | all |
+| `filters` | `filters/design.py`, `impulse_response.py`, `loud.py`, `reverb.py`, `stretches.py` | 2026-09-30 | 527 | 501 | 26 | all |
 | `theory` | `theory/chords.py`, `intervals.py`, `scales.py` | 2026-09-27 | 214 | 213 | 1 | all |
 | `structures` | `structures/permutations.py`, `peals/base.py`, `peals.py`, `plain_changes.py` | 2026-09-27 | 684 | 669 | 15 | all |
 | `noises` | `synths/noises.py` | 2026-09-28 | 285 | 280 | 5 | all |
@@ -27,8 +27,8 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `bonds` | `bonds.py` | 2026-09-28 | 106 | 103 | 3 | all |
 | `tables` | `tables.py` | 2026-09-28 | 77 | 77 | 0 | all |
 | `hrtf` | `hrtf.py` | 2026-09-28 | 224 | 217 | 7 | all |
-| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py` | 2026-09-29 | 517 | 510 | 7 | all |
-| `legacy` | `legacy/CanonicalSynth.py`, `IteratorSynth.py`, `classes.py`, `tables.py`, `pieces/testSong2.py` | 2026-09-29 | 1643 | 1152 | 491 | all |
+| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py` | 2026-09-30 | 527 | 520 | 7 | all |
+| `legacy` | `legacy/CanonicalSynth.py`, `IteratorSynth.py`, `classes.py`, `tables.py`, `pieces/testSong2.py` | 2026-09-30 | 1645 | 1154 | 491 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -978,6 +978,11 @@ IDs are mutmut suffixes for the recorded snapshot and tool version.
 | `reverb` | 78, 80 | `as_sonic_vector` and the response already produce `float64`, so the explicit result conversion is redundant. |
 | `stretches` | 32 | `False` and `None` are both false in the mono/stereo branch. |
 
+Remeasured 2026-09-30 at `841e809`, after `reverb` began holding its
+noise's floor at the Nyquist frequency below 30 Hz, with the two tests of
+that added to the selection: 501 of 527. The accepted survivors are
+those above; `reverb`'s 78 and 80 are numbered 87 and 89 there.
+
 ## `theory` — scales, modes, chords, intervals and the harmonic series
 
 Measured 2026-09-27 on Python 3.12.7, macOS, with `mutmut` 3.7.0. Per-test
@@ -1262,7 +1267,9 @@ selection is the tests per-test coverage contexts found reaching it and a
 new `test_<area>_audit.py`: 378 tests for `bonds`, 62 for `tables`, 54
 for `hrtf` and 86 for `singing`. Running the engine itself, below,
 changed `singing`: it was remeasured on 2026-09-29 at `d3acf37`, over 99
-tests, and detects 510 of 517.
+tests, detecting 510 of 517, and again on 2026-09-30 at `be262cc`, after
+`lang` and `transpose` were checked, detecting 520 of 527. The accepted
+survivors are the same seven.
 
 ### What reading, probing and the survivors found
 
@@ -1415,8 +1422,8 @@ shapes and that samples were finite. `test_legacy_audit.py` checks
 `rawRender` against the article's vibrato and phase equations, each ADSR
 stage against the ramp it describes, `_fit` at both ends,
 `IteratorSynth`'s cycling, and the walks, stays, defaults and written
-file of a `Being`, exactly. The final run detected 1152 of 1643, five
-by hanging.
+file of a `Being`, exactly. The final run, on 2026-09-30 at `be262cc`,
+detected 1154 of 1645, five by hanging.
 
 ### Accepted survivors
 

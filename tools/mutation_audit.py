@@ -248,6 +248,8 @@ AREAS = {
             'tests/test_public_api.py::test_stretches_resamples_to_the_requested_durations',
             'tests/test_tutorial.py::test_every_tutorial_block_runs',
             'tests/test_filters_audit.py::test_louds_pads_a_short_signal_with_silence',
+            'tests/test_noises_audit.py::test_a_reverb_at_a_rate_below_the_noise_floor_still_has_a_tail',
+            'tests/test_noises_audit.py::test_a_reverb_at_an_ordinary_rate_keeps_the_15_hz_floor',
             'tests/test_transition_methods.py',
         ),
         'dataclass_adapter': None,

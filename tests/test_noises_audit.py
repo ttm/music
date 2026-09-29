@@ -305,7 +305,10 @@ def test_a_reverb_at_an_ordinary_rate_keeps_the_15_hz_floor(monkeypatch):
     monkeypatch.setattr(module, "noise", lambda kind, **kwargs: (
         asked.append(kwargs) or np.ones(kwargs["number_of_samples"])))
     module.reverb(duration=0.1, first_phase_duration=0, sample_rate=8000)
+    module.reverb(duration=2, first_phase_duration=0, sample_rate=20)
     assert asked[0]["min_freq"] == 15 and asked[0]["max_freq"] == 4000
+    # Below 30 Hz the floor is the Nyquist frequency itself.
+    assert asked[1]["min_freq"] == 10 and asked[1]["max_freq"] == 10
 
 
 def test_a_modulated_noise_says_its_band_holds_nothing():

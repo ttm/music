@@ -6,9 +6,10 @@ import logging
 import shutil
 import subprocess
 from fractions import Fraction
+from pathlib import Path
 from numbers import Real
 import soundfile as sf
-from music.core import normalize_mono
+from music.core import normalize_mono, normalize_stereo
 from .paths import (ENGINE_MARKER, cache_dir, engine_dir, is_engine,
                     require_system_dependencies)
 
@@ -23,7 +24,7 @@ EFFECTS = {'flite': 'flite', 'flint': 'flite', 'tremolo': 'tremolo',
 def sing(text="Mar-ry had a litt-le lamb",
          notes=(4, 2, 0, 2, 4, 4, 4), durs=(1, 1, 1, 1, 1, 1, 2),
          M='4/4', L='1/4', Q=120, K='C', reference=60,
-         lang='en', transpose=-24, effect=None):
+         lang='en', transpose=-12, effect=None):
     """Sing a line of text to a melody, with the eCantorix engine.
 
     The melody is written as ABC notation, the engine renders it through
@@ -49,8 +50,8 @@ def sing(text="Mar-ry had a litt-le lamb",
         The espeak voice, which sets the language the text is sung in.
     transpose : int
         Semitones added to every note as it is sung: the engine sings
-        MIDI ``reference + note + transpose``. The default, -24, is
-        eCantorix's own, and sings two octaves below the score.
+        MIDI ``reference + note + transpose``. The default, -12, sings an
+        octave below the score, where every note used to be sung.
     effect : str or None
         A voice from the engine's extras: ``"flite"`` (also accepted as
         ``"flint"``, its earlier spelling here), ``"tremolo"`` or
@@ -59,7 +60,10 @@ def sing(text="Mar-ry had a litt-le lamb",
     Returns
     -------
     ndarray
-        The sung line, normalized, at 44,100 Hz.
+        The sung line, normalized, at 44,100 Hz: mono, or ``(2, nsamples)``
+        for the ``tremolo`` and ``melt`` effects, which render in stereo.
+        They used to come back as ``(nsamples, 2)``, as the file holds
+        them, and be normalized as one channel.
 
     Raises
     ------
@@ -75,11 +79,18 @@ def sing(text="Mar-ry had a litt-le lamb",
 
     Notes
     -----
-    The score used to be written an octave above ``reference`` -- MIDI 60
-    as ABC's ``c``, which is 72 -- and the default transposition was -36
-    to sing where eCantorix's -24 would have. The default renders as it
-    did; a call that passed ``transpose`` sings an octave lower than it
-    used to, and adding 12 to it restores that.
+    Measured on the engine, a note of 0 at the defaults sings at 130.3 Hz,
+    MIDI 48, and at ``transpose=0`` at 262.5 Hz, middle C.
+
+    Three things kept these parameters from reaching the engine. It loads
+    the configuration with Perl's ``do "achant.conf"``, which since Perl
+    5.26 no longer looks in the current directory, so ``lang``,
+    ``transpose`` and ``effect`` were never read and it sang at its own
+    -24. The score was written an octave above ``reference``, MIDI 60 as
+    ABC's ``c``. And the effects load files from the engine's examples,
+    which were not in the cache. Together, every note was sung at
+    ``reference + note - 12`` in the default voice, whatever was asked;
+    the default transposition, -12, keeps that.
     """
     if effect and effect not in EFFECTS:
         raise ValueError(
@@ -106,21 +117,78 @@ def sing(text="Mar-ry had a litt-le lamb",
     with open(cache / 'achant.conf', 'w') as f:
         f.write(conf_text)
     try:
-        shutil.copy(engine / 'Makefile', cache / 'Makefile')
+        _prepare_cache(engine, cache)
     except OSError as exc:
         raise RuntimeError(f'Failed to prepare singing cache: {exc}') from exc
+    # A render left from an earlier call would otherwise be read back as
+    # this one's when the engine writes nothing.
+    rendered = cache / 'achant.wav'
+    rendered.unlink(missing_ok=True)
+    # The script is run with the perl the requirements were checked
+    # against, rather than by its #!/usr/bin/perl, which is another Perl
+    # on macOS and one without the modules; and with the cache on @INC,
+    # where its `do "achant.conf"` looks since Perl 5.26 took the current
+    # directory off it.
     try:
-        subprocess.run(['make', '-C', str(cache)], check=True)
+        result = subprocess.run(
+            ['make', '-C', str(cache), 'ECANTORIX=perl -I. ../ecantorix.pl'],
+            check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as exc:
-        raise RuntimeError(f'Failed to build singing cache: {exc}') from exc
+        raise RuntimeError(
+            f'Failed to build singing cache: {exc}\n'
+            f'{_tail(exc.stdout, exc.stderr)}') from exc
+    if not rendered.is_file():
+        # The Makefile pipes the script through tee, so make succeeds
+        # when the script fails.
+        raise RuntimeError(
+            'the singing engine ran but wrote no achant.wav; what it '
+            f'said:\n{_tail(result.stdout, result.stderr)}')
 
-    samples, sample_rate = sf.read(str(cache / 'achant.wav'),
-                                   dtype='float64')
+    samples, sample_rate = sf.read(str(rendered), dtype='float64')
     if sample_rate != 44100:
         raise RuntimeError(
             f'expected the engine to render at 44100 Hz, got {sample_rate}'
         )
+    if samples.ndim == 2:
+        return normalize_stereo(samples.T)
     return normalize_mono(samples)
+
+
+def _prepare_cache(engine, cache):
+    """Put in the cache what the engine reads from it when it sings.
+
+    Its Makefile; the effects' files, which the configuration loads by a
+    path relative to the cache; and, for the effects that give espeak a
+    voice of their own, a copy of espeak's data with those voices in it.
+    The engine's Makefile makes that copy from a Linux path,
+    ``/usr/lib/x86_64-linux-gnu/espeak-data``, and does not try again
+    once the directory exists, so this makes it from wherever espeak says
+    its data is.
+    """
+    shutil.copy(engine / 'Makefile', cache / 'Makefile')
+    voices = engine / 'examples' / 'extravoices'
+    if voices.is_dir():
+        shutil.copytree(voices, cache / 'extravoices', dirs_exist_ok=True)
+    data = cache / 'espeak-data'
+    source = _espeak_data()
+    if source is not None and not (data / 'phontab').is_file():
+        shutil.copytree(source, data, dirs_exist_ok=True)
+    if voices.is_dir() and data.is_dir():
+        shutil.copytree(voices, data / 'voices' / '!v', dirs_exist_ok=True)
+
+
+def _espeak_data():
+    """Where espeak keeps its data, as its version line says, or None."""
+    result = subprocess.run(['espeak', '--version'], capture_output=True,
+                            text=True)
+    found = re.search(r'Data at: (.+)', result.stdout)
+    return Path(found.group(1).strip()) if found else None
+
+
+def _tail(*outputs, lines=20):
+    """The last lines of what a command printed, to put in an error."""
+    text = '\n'.join(output for output in outputs if output)
+    return '\n'.join(text.strip().splitlines()[-lines:])
 
 
 def write_abc(text, notes, durs, M='4/4', L='1/4', Q=120, K='C', reference=60):

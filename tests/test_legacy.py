@@ -421,11 +421,16 @@ def test_a_straight_walk_runs_off_the_end_of_the_grid_and_says_so():
 
 
 def test_a_straight_stay_wraps_where_a_walk_does_not():
-    """The comparison that makes the line above a decision, not a slip."""
+    """The comparison that makes the line above a decision, not a slip.
+
+    It stays on the window at the pointer, 8, 9 and round to 0. This
+    pinned 2, 0, 1, which were the first three elements from 8 % 3: the
+    window at the start of the grid rather than the one it stood on.
+    """
     being = _being(pointer=8)
     being.stay(4, "straight")
     assert len(being.f_) == 4
-    assert [float(x) for x in being.f_] == [2.0, 0.0, 1.0, 2.0]
+    assert [float(x) for x in being.f_] == [8.0, 9.0, 0.0, 8.0]
 
 
 def test_a_domain_given_as_a_list_permutes_like_one_given_as_an_array():

@@ -295,3 +295,39 @@ def test_a_two_sample_stage_runs_from_one_end_to_the_other():
     synth.adsrSetup(A=2, D=2, S=-6, R=2)
     np.testing.assert_allclose(synth.A_i, [0.0, 1.0])
     np.testing.assert_allclose(synth.D_i, [1.0, 10 ** (-6 / 20)])
+
+
+@pytest.mark.parametrize("method", ["straight", "perm"])
+def test_staying_stays_on_the_window_at_the_pointer(method):
+    """'straight' read the window at the start of the grid, and 'perm' at
+    the end of it came up short and was refused."""
+    from sympy.combinatorics import Permutation
+    being = _being(grid=10, pointer=8, seqsize=3)
+    being.domain = None
+    being.perms = [Permutation([0, 1, 2])]
+    being.stay(6, method=method)
+    assert being.f_ == [8, 9, 0, 8, 9, 0]
+    assert being.pointer == 8
+
+
+def test_each_symmetric_scale_is_one_octave_in_equal_steps():
+    """freq_sym took j notes of each step j: two of the whole-tone scale,
+    six tritones over two and a half octaves."""
+    resources = Being().resources
+    for row, extended, step in zip(resources["freq_sym"],
+                                   resources["freq_sym_"], (2, 3, 4, 6)):
+        assert len(row) == 12 // step
+        assert row == extended[:12 // step]
+        np.testing.assert_allclose(np.diff(np.log2(row)), step / 12)
+        assert extended[12 // step] == pytest.approx(2 * row[0])
+
+
+def test_each_diatonic_row_is_one_degree_in_every_octave():
+    """Every row was the octaves of 110 Hz: the degree added to each was
+    a whole rotation's sum, which is always 12."""
+    resources = Being().resources
+    assert resources["notes_diatonic_"] == [0, 2, 4, 5, 7, 9, 11]
+    for degree, row in zip([0, 2, 4, 5, 7, 9, 11],
+                           resources["freq_diatonic"]):
+        assert row[:3] == pytest.approx(
+            [110 * 2 ** ((12 * octave + degree) / 12) for octave in range(3)])

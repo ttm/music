@@ -137,13 +137,22 @@ class Being:
         freq_spectrum = [i*f for i in range(1, 300)]
         neg_spec = [f/i for i in range(2, 300)]
 
-        freq_sym = [[f*2**((i*j)/12) for i in range(j)] for j in [2, 3, 4, 6]]
+        # The symmetric scales, which divide the octave into equal steps
+        # of j semitones: whole tones, minor thirds, major thirds and
+        # tritones. One octave of each, 12 // j notes; this took j notes
+        # instead, so the whole-tone row was two notes and the tritone
+        # row six, two and a half octaves. freq_sym_ runs each on.
+        freq_sym = [[f*2**((i*j)/12) for i in range(12 // j)]
+                    for j in [2, 3, 4, 6]]
         freq_sym_ = [[f*2**((i*j)/12) for i in range(300)]
                      for j in [2, 3, 4, 6]]
 
         dia = [2, 2, 1, 2, 2, 2, 1]
         notes_diatonic = [[dia[(j+i) % 7] for i in range(7)] for j in range(7)]
-        notes_diatonic_ = [sum(notes_diatonic[i]) for i in range(7)]
+        # The seven degrees, from the steps up to each: 0, 2, 4, 5, 7, 9
+        # and 11. This summed each rotation whole, which is 12 every time,
+        # so all seven rows of freq_diatonic were the same octaves of f.
+        notes_diatonic_ = [sum(dia[:i]) for i in range(7)]
         freq_diatonic = [[f*2**((12 * i + notes_diatonic_[j])/12)
                           for i in range(30)] for j in range(7)]
 
@@ -228,9 +237,7 @@ class Being:
             sequence = []
             count = 0
             while len(sequence) < n:
-                start = self.pointer + count * self.seqsize
-                window = [self.grid[(start + i) % len(self.grid)]
-                          for i in range(self.seqsize)]
+                window = self._window(self.pointer + count * self.seqsize)
                 perm = self.perms[count % len(self.perms)]
                 sequence.extend(perm(window))
                 count += 1
@@ -310,12 +317,11 @@ class Being:
         n : int
             Number of notes.
         method : str
-            ``'perm'`` cycles ``perms`` over ``domain``, or over the
-            ``seqsize`` elements of the grid from ``pointer`` when no
-            domain is set. ``'straight'`` cycles through the first
-            ``seqsize`` elements of the grid, starting at
-            ``pointer % seqsize``: it does not read the window at the
-            pointer, as ``'perm'`` does.
+            Both read the ``seqsize`` elements of the grid from
+            ``pointer``, wrapping round its end as a ``'perm-walk'``
+            window does. ``'straight'`` cycles through them in order;
+            ``'perm'`` cycles ``perms`` over them, or over ``domain`` when
+            one is set.
 
         Returns
         -------
@@ -327,16 +333,23 @@ class Being:
         ValueError
             If ``method`` is neither of the two above.
 
+        Notes
+        -----
+        ``'straight'`` used to read the first ``seqsize`` elements of the
+        grid from ``pointer % seqsize``, not the window at the pointer:
+        at ``pointer=8`` with ``seqsize=3`` it stayed on elements 2, 0 and
+        1. And ``'perm'`` sliced the window without wrapping, so near the
+        end of the grid it came up short and the permutation refused it.
+
         """
         if method == 'straight':
-            sequence = [self.grid[(self.pointer + i) % self.seqsize]
-                        for i in range(n)]
+            window = self._window(self.pointer)
+            sequence = [window[i % self.seqsize] for i in range(n)]
         elif method == 'perm':
             sequence = []
             if not isinstance(self.domain, n_.ndarray):
                 if not self.domain:
-                    domain = self.grid[self.pointer: self.pointer +
-                                       self.seqsize]
+                    domain = self._window(self.pointer)
                 else:
                     # A domain given as a list, which is the same as one
                     # given as an array once it is one: the two produce
@@ -361,6 +374,11 @@ class Being:
                 f'method must be "straight" or "perm"; got {method!r}')
         self.addSeq(sequence)
         self.total_notes += n
+
+    def _window(self, start):
+        """The ``seqsize`` elements of the grid from `start`, wrapping."""
+        return [self.grid[(start + i) % len(self.grid)]
+                for i in range(self.seqsize)]
 
     def addSeq(self, sequence):
         """Add sequence to the Being.

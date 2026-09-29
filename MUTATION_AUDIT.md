@@ -1282,11 +1282,42 @@ for `hrtf` and 86 for `singing`.
   and the build failed inside `make`. It is a requirement now, and the
   install hint names its package, `abcmidi`.
 - The note table named MIDI 60 `c`, which `abc2midi` reads as 72, so every
-  score was an octave above its `reference`, and the default
-  transposition, -36, made up for it. eCantorix sings
-  `440 * 2 ** ((note - 69 + transpose) / 12)`, so the table now names 60
-  `C` and the default is eCantorix's own -24: the default renders as it
-  did, and a call passing `transpose` sings an octave lower.
+  score was an octave above its `reference`. It now names 60 `C`.
+
+### Running the engine
+
+With `abc2midi`, `sox` and the Perl modules installed on 2026-09-29, the
+engine was run end to end for the first time in this work, and it would
+not sing until four more things were fixed.
+
+- `ecantorix.pl` loads `MIDI`, `Math::FFT`, `URI::Escape` and
+  `Digest::SHA`, and shapes every syllable with `sox`. The requirements
+  check now asks for all of them. Its `#!/usr/bin/perl` is the system
+  Perl on macOS, not the one the check found, so `sing` runs it with the
+  `perl` on PATH.
+- The Makefile pipes the script through `tee`, so `make` succeeded when
+  the script failed, and `sing` read the missing file as libsndfile's
+  "System error", or read an earlier render back as this one's. It now
+  removes the old render first and says what the engine printed.
+- The engine loads the configuration with Perl's `do "achant.conf"`,
+  which since Perl 5.26 no longer looks in the current directory. So
+  `lang`, `transpose` and `effect` had never reached it, and it sang
+  everything at its own -24: measured, a note of 0 at every
+  transposition came out at 64.6 Hz. Running it with the cache on
+  `@INC` fixes that. With the table an octave high, every note had been
+  sung at `reference + note - 12`; the default is now -12, which keeps
+  it there, and `transpose=0` sings middle C at 262.5 Hz.
+- The effects load their files from the engine's `examples/`, relative
+  to the directory the engine runs in, and `melt` gives espeak a voice
+  of its own, for which the Makefile copies espeak's data from a Linux
+  path. `sing` now puts both in the cache. `tremolo` and `melt` render in
+  stereo, and came back as `(nsamples, 2)`; they are `(2, nsamples)`.
+
+`test_singing_engine.py` sings and measures: middle C and the C above at
+`transpose=0`, the default an octave below the score, another language,
+and each effect. It skips where the engine is not set up, and it is not
+in the mutation selection: four workers rendering in one cache would
+overwrite each other's files.
 - A duration of 0.5 went into the score as `0.5`, which is not ABC, and
   `make_test_song` used halves and quarters. A number is now written as
   the fraction ABC takes, `/2` for a half; `-n` still means `1/n`.

@@ -14,6 +14,7 @@ import pytest
 import music.singing.bootstrap as bootstrap
 import music.singing.paths as paths
 import music.singing.perform as perform
+from _singing_stub import fake_run
 
 
 def make_engine(directory):
@@ -105,7 +106,8 @@ def test_require_system_dependencies_names_what_is_missing():
 
 
 def test_require_system_dependencies_is_quiet_when_satisfied():
-    with patch.object(paths, "missing_requirements", return_value=[]):
+    with patch.object(paths, "missing_requirements", return_value=[]), \
+         patch.object(paths, "missing_perl_modules", return_value=[]):
         paths.require_system_dependencies()
 
 
@@ -118,6 +120,7 @@ def test_setup_engine_clones_when_absent(monkeypatch, tmp_path):
     monkeypatch.setenv(paths.ENV_VAR, str(target))
 
     with patch.object(paths, "missing_requirements", return_value=[]), \
+         patch.object(paths, "missing_perl_modules", return_value=[]), \
          patch.object(bootstrap.subprocess, "run") as run:
         returned = bootstrap.setup_engine()
 
@@ -144,6 +147,7 @@ def test_setup_engine_returns_the_path_when_already_present(monkeypatch,
 def test_setup_engine_uses_ssh_when_asked(monkeypatch, tmp_path):
     monkeypatch.setenv(paths.ENV_VAR, str(tmp_path / "engine"))
     with patch.object(paths, "missing_requirements", return_value=[]), \
+         patch.object(paths, "missing_perl_modules", return_value=[]), \
          patch.object(bootstrap.subprocess, "run") as run:
         bootstrap.setup_engine(method="ssh")
     assert run.call_args[0][0][2] == bootstrap.REPO_URLS["ssh"]
@@ -169,6 +173,7 @@ def test_setup_engine_wraps_a_failed_clone(monkeypatch, tmp_path):
     monkeypatch.setenv(paths.ENV_VAR, str(tmp_path / "engine"))
     failure = subprocess.CalledProcessError(1, ["git"])
     with patch.object(paths, "missing_requirements", return_value=[]), \
+         patch.object(paths, "missing_perl_modules", return_value=[]), \
          patch.object(bootstrap.subprocess, "run", side_effect=failure):
         with pytest.raises(RuntimeError, match="Failed to clone"):
             bootstrap.setup_engine()
@@ -205,8 +210,10 @@ def test_sing_wraps_a_failed_make(monkeypatch, tmp_path):
 
     failure = subprocess.CalledProcessError(1, ["make"])
     with patch.object(paths, "missing_requirements", return_value=[]), \
+         patch.object(paths, "missing_perl_modules", return_value=[]), \
          patch.object(perform, "write_abc"), \
-         patch.object(perform.subprocess, "run", side_effect=failure):
+         patch.object(perform.subprocess, "run",
+                      fake_run(engine / "cache", make_fails=failure)):
         with pytest.raises(RuntimeError, match="Failed to build singing"):
             perform.sing()
 
@@ -226,6 +233,7 @@ def test_sing_rejects_an_unknown_effect(monkeypatch, tmp_path):
     monkeypatch.setenv(paths.ENV_VAR, str(engine))
 
     with patch.object(paths, "missing_requirements", return_value=[]), \
+         patch.object(paths, "missing_perl_modules", return_value=[]), \
          patch.object(perform, "write_abc"):
         with pytest.raises(ValueError, match="effect not understood"):
             perform.sing(effect="reverse-cathedral")

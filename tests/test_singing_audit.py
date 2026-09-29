@@ -14,6 +14,7 @@ import pytest
 import music.singing.bootstrap as bootstrap
 import music.singing.paths as paths
 import music.singing.perform as perform
+from _singing_stub import fake_run
 
 
 @pytest.fixture
@@ -24,7 +25,9 @@ def engine(tmp_path, monkeypatch):
     (root / "Makefile").write_text("all:\n\ttrue\n")
     monkeypatch.setenv(paths.ENV_VAR, str(root))
     monkeypatch.setattr(paths, "missing_requirements", lambda: [])
-    monkeypatch.setattr(perform.subprocess, "run", lambda *a, **k: None)
+    monkeypatch.setattr(paths, "missing_perl_modules", lambda: [])
+    monkeypatch.setattr(perform.subprocess, "run",
+                        fake_run(root / "cache"))
     monkeypatch.setattr(perform.sf, "read",
                         lambda path, dtype=None: (np.array([0.0, 1.0]),
                                                   44100))
@@ -47,11 +50,12 @@ def test_each_midi_note_has_its_abc_name(midi, name):
 
 
 def test_the_default_sings_where_it_always_did(engine):
-    """An octave down in the score and an octave up in the transposition:
-    eCantorix sings reference + note - 24, as before."""
+    """The engine never read the conf and sang at its own -24, a score an
+    octave above its reference: reference + note - 12, which the default
+    transposition now asks for."""
     perform.sing()
     conf = (engine / "cache" / "achant.conf").read_text()
-    assert "$ESPEAK_TRANSPOSE = -24;" in conf
+    assert "$ESPEAK_TRANSPOSE = -12;" in conf
     score = (engine / "cache" / "achant.abc").read_text()
     assert "\nE=D=C=DEEE2\nw: " in score
 
@@ -152,6 +156,7 @@ def test_an_empty_directory_is_cloned_into(tmp_path, monkeypatch):
     target.mkdir()
     monkeypatch.setenv(paths.ENV_VAR, str(target))
     monkeypatch.setattr(paths, "missing_requirements", lambda: [])
+    monkeypatch.setattr(paths, "missing_perl_modules", lambda: [])
     cloned = []
     monkeypatch.setattr(bootstrap.subprocess, "run",
                         lambda *a, **k: cloned.append((a, k)))
@@ -181,8 +186,8 @@ def test_a_fresh_table_names_every_octave_with_its_marks():
 @pytest.fixture
 def recorded(engine, monkeypatch):
     calls = {"run": [], "read": [], "copy": []}
-    monkeypatch.setattr(perform.subprocess, "run", lambda *a, **k:
-                        calls["run"].append((a, k)))
+    monkeypatch.setattr(perform.subprocess, "run",
+                        fake_run(engine / "cache", calls["run"]))
     monkeypatch.setattr(perform.sf, "read", lambda path, **k: (
         calls["read"].append((path, k)) or (np.array([0.0, 1.0]), 44100)))
     original = perform.shutil.copy
@@ -198,16 +203,18 @@ def test_sing_writes_the_score_and_conf_the_engine_reads(engine, recorded):
     perform.sing(effect="melt")
     cache = engine / "cache"
     assert sorted(os.listdir(cache)) == ["Makefile", "achant.abc",
-                                         "achant.conf"]
+                                         "achant.conf", "achant.wav"]
     assert (cache / "achant.conf").read_text() == (
-        '$ESPEAK_VOICE = "en";\n$ESPEAK_TRANSPOSE = -24;\n'
+        '$ESPEAK_VOICE = "en";\n$ESPEAK_TRANSPOSE = -12;\n'
         "do 'extravoices/melt.inc';")
     assert (cache / "achant.abc").read_text() == (
         "X:1\nT:Some chanting for music python package\nM:4/4\nL:1/4\n"
         "Q:120\nV:1\nK:C\nE=D=C=DEEE2\nw: Mar-ry had a litt-le lamb")
     assert recorded["copy"] == [(engine / "Makefile", cache / "Makefile")]
-    assert recorded["run"] == [((["make", "-C", str(cache)],),
-                                {"check": True})]
+    assert recorded["run"] == [
+        (["espeak", "--version"], {"capture_output": True, "text": True}),
+        (["make", "-C", str(cache), "ECANTORIX=perl -I. ../ecantorix.pl"],
+         {"check": True, "capture_output": True, "text": True})]
     assert recorded["read"] == [(str(cache / "achant.wav"),
                                  {"dtype": "float64"})]
 
@@ -249,6 +256,7 @@ def test_the_engine_is_cloned_into_a_directory_that_does_not_exist_yet(
     target = tmp_path / "a" / "b" / "ecantorix"
     monkeypatch.setenv(paths.ENV_VAR, str(target))
     monkeypatch.setattr(paths, "missing_requirements", lambda: [])
+    monkeypatch.setattr(paths, "missing_perl_modules", lambda: [])
     monkeypatch.setattr(bootstrap.subprocess, "run", lambda *a, **k: None)
     assert bootstrap.setup_engine() == str(target)
     assert target.parent.is_dir()
@@ -259,3 +267,142 @@ def test_a_bare_score_is_common_time_in_c_at_120(engine):
     assert (engine / "cache" / "achant.abc").read_text() == (
         "X:1\nT:Some chanting for music python package\nM:4/4\nL:1/4\n"
         "Q:120\nV:1\nK:C\n=C\nw: la")
+
+
+# --------------------------------------------------------------------------
+# What the engine needs, and what it answers with
+# --------------------------------------------------------------------------
+
+def test_a_render_that_writes_nothing_says_what_the_engine_said(
+        engine, monkeypatch):
+    """The Makefile pipes the script through tee, so make succeeded
+    when the script failed, and the missing file was read as libsndfile's
+    "System error". A render left from an earlier call was read back as
+    this one's."""
+    import types
+
+    stale = engine / "cache" / "achant.wav"
+    stale.write_bytes(b"an earlier song")
+
+    def silent_make(command, *args, **kwargs):
+        return types.SimpleNamespace(
+            returncode=0, stdout="",
+            stderr="Can't locate MIDI.pm in @INC")
+
+    monkeypatch.setattr(perform.subprocess, "run", silent_make)
+    with pytest.raises(RuntimeError, match=re.escape(
+            "the singing engine ran but wrote no achant.wav; what it "
+            "said:\nCan't locate MIDI.pm in @INC")):
+        perform.sing()
+    assert not stale.exists()
+
+
+def test_a_failed_make_says_what_it_printed(engine, monkeypatch):
+    import subprocess
+
+    failure = subprocess.CalledProcessError(2, ["make"], output="made",
+                                            stderr="broke")
+    monkeypatch.setattr(perform.subprocess, "run",
+                        fake_run(engine / "cache", make_fails=failure))
+    with pytest.raises(RuntimeError, match=re.escape(
+            "Failed to build singing cache: Command '['make']' returned "
+            "non-zero exit status 2.\nmade\nbroke")):
+        perform.sing()
+
+
+def test_a_stereo_render_comes_back_as_two_channels(engine, monkeypatch):
+    """The tremolo and melt effects render in stereo, which the file holds
+    as (frames, 2) and which came back so, normalized as one channel."""
+    frames = np.array([[0.0, 2.0], [1.0, -2.0], [0.5, 0.0]])
+    monkeypatch.setattr(perform.sf, "read",
+                        lambda path, dtype=None: (frames, 44100))
+    sung = perform.sing(effect="tremolo")
+    np.testing.assert_array_equal(sung, perform.normalize_stereo(frames.T))
+    assert sung.shape == (2, 3)
+
+
+def test_the_perl_modules_are_asked_of_the_perl_on_path(monkeypatch):
+    import types
+
+    asked = []
+
+    def run(command, capture_output):
+        asked.append(command)
+        missing = command[1] in ("-MMIDI", "-MMath::FFT")
+        return types.SimpleNamespace(returncode=int(missing))
+
+    monkeypatch.setattr(paths.shutil, "which", lambda name: f"/bin/{name}")
+    monkeypatch.setattr(paths.subprocess, "run", run)
+    assert paths.missing_perl_modules() == ["MIDI", "Math::FFT"]
+    assert asked == [["perl", f"-M{module}", "-e1"]
+                     for module in paths.PERL_MODULES]
+
+
+def test_without_perl_the_modules_are_not_asked_about(monkeypatch):
+    monkeypatch.setattr(paths.shutil, "which", lambda name: None)
+    assert paths.missing_perl_modules() == []
+
+
+def test_missing_modules_are_named_with_how_to_install_them(monkeypatch):
+    monkeypatch.setattr(paths, "missing_requirements", lambda: [])
+    monkeypatch.setattr(paths, "missing_perl_modules",
+                        lambda: ["MIDI", "Math::FFT"])
+    with pytest.raises(RuntimeError, match=re.escape(
+            "the singing engine's Perl script needs these modules, which the "
+            "perl on PATH cannot load: MIDI, Math::FFT. Install them with: "
+            "cpan MIDI Math::FFT")):
+        paths.require_system_dependencies()
+
+
+def test_sox_and_the_modules_are_requirements():
+    assert "sox" in paths.SYSTEM_REQUIREMENTS
+    assert paths.PERL_MODULES == ("MIDI", "Math::FFT", "URI::Escape",
+                                  "Digest::SHA")
+
+
+def test_espeak_s_data_is_where_its_version_line_says(monkeypatch):
+    import types
+
+    monkeypatch.setattr(perform.subprocess, "run", lambda command, **k: (
+        types.SimpleNamespace(stdout="eSpeak text-to-speech: 1.48.03  "
+                              "Data at: /opt/espeak/espeak-data\n")))
+    assert perform._espeak_data() == perform.Path("/opt/espeak/espeak-data")
+    monkeypatch.setattr(perform.subprocess, "run", lambda command, **k: (
+        types.SimpleNamespace(stdout="")))
+    assert perform._espeak_data() is None
+
+
+def test_the_cache_gets_the_effects_and_espeak_s_data(tmp_path,
+                                                      monkeypatch):
+    engine, cache = tmp_path / "engine", tmp_path / "engine" / "cache"
+    (engine / "examples" / "extravoices").mkdir(parents=True)
+    cache.mkdir()
+    (engine / "Makefile").write_text("all:\n")
+    (engine / "examples" / "extravoices" / "melt.inc").write_text("melt")
+    data = tmp_path / "espeak-data"
+    (data / "voices").mkdir(parents=True)
+    (data / "phontab").write_text("phonemes")
+    monkeypatch.setattr(perform, "_espeak_data", lambda: data)
+
+    perform._prepare_cache(engine, cache)
+
+    assert (cache / "Makefile").read_text() == "all:\n"
+    assert (cache / "extravoices" / "melt.inc").read_text() == "melt"
+    assert (cache / "espeak-data" / "phontab").read_text() == "phonemes"
+    assert (cache / "espeak-data" / "voices" / "!v" / "melt.inc").is_file()
+
+
+def test_espeak_s_data_is_copied_once(tmp_path, monkeypatch):
+    engine, cache = tmp_path / "engine", tmp_path / "engine" / "cache"
+    cache.mkdir(parents=True)
+    (engine / "Makefile").write_text("all:\n")
+    (cache / "espeak-data").mkdir()
+    (cache / "espeak-data" / "phontab").write_text("ours")
+    copied = []
+    monkeypatch.setattr(perform, "_espeak_data", lambda: tmp_path)
+    original = perform.shutil.copytree
+    monkeypatch.setattr(perform.shutil, "copytree", lambda *a, **k: (
+        copied.append(a) or original(*a, **k)))
+    perform._prepare_cache(engine, cache)
+    assert copied == []
+    assert (cache / "espeak-data" / "phontab").read_text() == "ours"

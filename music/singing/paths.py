@@ -8,6 +8,7 @@ user's cache directory instead.
 
 import os
 import shutil
+import subprocess
 from pathlib import Path
 
 from ..utils import cache_root
@@ -17,9 +18,13 @@ ENV_VAR = "MUSIC_ECANTORIX_DIR"
 
 #: External programs eCantorix shells out to. It is Perl driving espeak
 #: through a Makefile, so none of these can be pip-installed. Its Makefile
-#: turns the score into MIDI with abc2midi, which this list used to leave
-#: out, so the check passed and the build failed inside make.
-SYSTEM_REQUIREMENTS = ("git", "make", "perl", "espeak", "abc2midi")
+#: turns the score into MIDI with abc2midi, and the script shapes each
+#: syllable with sox; this list used to leave both out, so the check
+#: passed and the render failed inside make.
+SYSTEM_REQUIREMENTS = ("git", "make", "perl", "espeak", "abc2midi", "sox")
+
+#: The Perl modules the script loads that Perl does not ship with.
+PERL_MODULES = ("MIDI", "Math::FFT", "URI::Escape", "Digest::SHA")
 
 #: The package that provides a program, where it is not named after it,
 #: for the install command the error suggests.
@@ -104,13 +109,31 @@ def missing_requirements() -> list[str]:
     return [name for name in SYSTEM_REQUIREMENTS if shutil.which(name) is None]
 
 
+def missing_perl_modules() -> list[str]:
+    """Return the Perl modules the ``perl`` on PATH cannot load.
+
+    Returns
+    -------
+    list of str
+        A subset of PERL_MODULES, empty when every one loads, or when
+        there is no ``perl`` to ask: :func:`missing_requirements` reports
+        that.
+    """
+    if shutil.which("perl") is None:
+        return []
+    return [module for module in PERL_MODULES
+            if subprocess.run(["perl", f"-M{module}", "-e1"],
+                              capture_output=True).returncode]
+
+
 def require_system_dependencies() -> None:
-    """Raise RuntimeError naming whatever external program is missing.
+    """Raise RuntimeError naming whatever the engine needs and lacks.
 
     Raises
     ------
     RuntimeError
-        If any of SYSTEM_REQUIREMENTS is not on PATH.
+        If any of SYSTEM_REQUIREMENTS is not on PATH, or the ``perl`` on
+        PATH cannot load one of PERL_MODULES.
     """
     missing = missing_requirements()
     if missing:
@@ -120,4 +143,11 @@ def require_system_dependencies() -> None:
             f"installed: {', '.join(missing)}. On Debian or Ubuntu: "
             f"sudo apt install {packages}. On macOS with Homebrew: "
             f"brew install {packages}."
+        )
+    modules = missing_perl_modules()
+    if modules:
+        raise RuntimeError(
+            "the singing engine's Perl script needs these modules, which "
+            f"the perl on PATH cannot load: {', '.join(modules)}. Install "
+            f"them with: cpan {' '.join(modules)}"
         )

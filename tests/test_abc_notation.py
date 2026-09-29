@@ -9,6 +9,7 @@ import pytest
 
 import music.singing.paths as paths
 import music.singing.perform as perform
+from _singing_stub import fake_run
 
 
 @pytest.fixture
@@ -99,7 +100,8 @@ def test_each_effect_selects_its_include(cache, effect, expected,
     engine = cache.parent
     (engine / "Makefile").write_text("all:\n\ttrue\n")
     monkeypatch.setattr(paths, "missing_requirements", lambda: [])
-    monkeypatch.setattr(perform.subprocess, "run", lambda *a, **k: None)
+    monkeypatch.setattr(paths, "missing_perl_modules", lambda: [])
+    monkeypatch.setattr(perform.subprocess, "run", fake_run(cache))
     monkeypatch.setattr(perform.sf, "read",
                         lambda path, dtype=None: (np.zeros(4), 44100))
 
@@ -112,7 +114,8 @@ def test_the_language_and_transposition_reach_the_conf(cache, monkeypatch):
     engine = cache.parent
     (engine / "Makefile").write_text("all:\n\ttrue\n")
     monkeypatch.setattr(paths, "missing_requirements", lambda: [])
-    monkeypatch.setattr(perform.subprocess, "run", lambda *a, **k: None)
+    monkeypatch.setattr(paths, "missing_perl_modules", lambda: [])
+    monkeypatch.setattr(perform.subprocess, "run", fake_run(cache))
     monkeypatch.setattr(perform.sf, "read",
                         lambda path, dtype=None: (np.zeros(4), 44100))
 
@@ -127,7 +130,8 @@ def test_sing_returns_normalized_samples(cache, monkeypatch):
     engine = cache.parent
     (engine / "Makefile").write_text("all:\n\ttrue\n")
     monkeypatch.setattr(paths, "missing_requirements", lambda: [])
-    monkeypatch.setattr(perform.subprocess, "run", lambda *a, **k: None)
+    monkeypatch.setattr(paths, "missing_perl_modules", lambda: [])
+    monkeypatch.setattr(perform.subprocess, "run", fake_run(cache))
     monkeypatch.setattr(perform.sf, "read",
                         lambda path, dtype=None: (np.array([0.0, 1.0, 2.0]),
                                                   44100))
@@ -143,7 +147,8 @@ def test_sing_rejects_a_render_at_the_wrong_sample_rate(cache, monkeypatch):
     engine = cache.parent
     (engine / "Makefile").write_text("all:\n\ttrue\n")
     monkeypatch.setattr(paths, "missing_requirements", lambda: [])
-    monkeypatch.setattr(perform.subprocess, "run", lambda *a, **k: None)
+    monkeypatch.setattr(paths, "missing_perl_modules", lambda: [])
+    monkeypatch.setattr(perform.subprocess, "run", fake_run(cache))
     monkeypatch.setattr(perform.sf, "read",
                         lambda path, dtype=None: (np.zeros(4), 22050))
 

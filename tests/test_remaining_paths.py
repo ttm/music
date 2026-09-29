@@ -151,6 +151,7 @@ def test_sing_reports_a_missing_makefile(tmp_path, monkeypatch):
     (engine / "Makefile").write_text("all:\n\ttrue\n")
     monkeypatch.setenv(paths.ENV_VAR, str(engine))
     monkeypatch.setattr(paths, "missing_requirements", lambda: [])
+    monkeypatch.setattr(paths, "missing_perl_modules", lambda: [])
     monkeypatch.setattr(perform, "write_abc", lambda *a, **k: None)
 
     with patch.object(perform.shutil, "copy",

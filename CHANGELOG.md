@@ -37,10 +37,21 @@ change; an even length draws what it did. `gaussian_noise`'s band stops at
 the Nyquist frequency rather than doubling the level of what lay past it,
 and `std=0` is refused rather than rendered.
 
-`sing` writes its score at the MIDI `reference` it is given, where it
-wrote it an octave above, and its default `transpose` is now eCantorix's
-own -24 rather than -36. The default sings as it did; a call that passes
-`transpose` sings an octave lower, and adding 12 to it restores that.
+`sing`'s `lang`, `transpose` and `effect` now reach the engine. It never
+read them: eCantorix loads its configuration with Perl's `do`, which has
+not looked in the current directory since Perl 5.26, and the effects'
+files were not where it looked. It also wrote the score an octave above
+`reference`, so every note was sung at `reference + note - 12` in the
+default voice. The default `transpose` is now -12, which sings there
+still; a call that passes `transpose`, `lang` or `effect` now gets what
+it asks for. The `tremolo` and `melt` effects render in stereo, and come
+back as `(2, nsamples)`.
+
+The legacy `Being.stay` stays on the window of the grid at `pointer`:
+`method='straight'` read the window at the start of the grid instead.
+Two of the Being's reference tables change: each row of `freq_sym` is
+one octave of a symmetric scale, and each row of `freq_diatonic` one
+degree of the scale, where all seven were the same octaves.
 
 The legacy `Being.render` plays each note for its `d_`, with its own
 vibrato and table. Every note lasted two seconds, because the `V_` it
@@ -117,8 +128,19 @@ table of any length at its own length.
   sizes its axes by.
 - **`hrir` refuses an angle that is not a finite number.** A NaN
   elevation read the measurements at -40 degrees.
-- **The singing engine's requirements include `abc2midi`,** which its
-  Makefile runs; the check passed without it and the build failed.
+- **The singing engine's requirements include what it runs.**
+  `abc2midi` and `sox`, and the Perl modules `MIDI`, `Math::FFT`,
+  `URI::Escape` and `Digest::SHA`, which the check did not ask for; it
+  passed, and the render failed.
+- **`sing` runs the engine with the `perl` it checked.** The script's
+  `#!/usr/bin/perl` is another Perl on macOS, without the modules.
+- **A render that writes nothing says what the engine said.** The
+  Makefile pipes the script through `tee`, so `make` succeeded when it
+  failed, and the missing file was read as libsndfile's "System error";
+  a render left from an earlier call was read back as this one's.
+- **`sing` prepares the cache the effects read from,** copying their
+  files and espeak's data, which the engine's Makefile copies from a
+  Linux path.
 - **`sing` writes fractional durations as ABC does,** `/2` for a half,
   where `0.5` went into the score as it is. An unknown `effect` is
   refused before the engine is looked for.

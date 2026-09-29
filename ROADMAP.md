@@ -572,6 +572,14 @@ transposition made up for; fractional durations written into ABC as
 decimals; and a legacy `V_` that passed on only the pitch, so every
 note a `Being` played lasted two seconds. See `MUTATION_AUDIT.md`.
 
+On 2026-09-29 the singing engine was installed with everything it needs
+and run end to end, which it had not been in this work. It had never read
+its configuration, since Perl 5.26 stopped `do` looking in the current
+directory, so `lang`, `transpose` and `effect` did nothing; it needed
+`sox` and four Perl modules the check did not ask for; and a failed
+render passed `make` unseen. `test_singing_engine.py` now sings and
+measures the pitch wherever the engine is set up.
+
 The sixteen areas have taught, worth carrying into a later audit:
 
 - **An absent argument cannot be mutated.** The `cross_fade` and `trill`

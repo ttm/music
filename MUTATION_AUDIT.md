@@ -27,8 +27,8 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `bonds` | `bonds.py` | 2026-09-28 | 106 | 103 | 3 | all |
 | `tables` | `tables.py` | 2026-09-28 | 77 | 77 | 0 | all |
 | `hrtf` | `hrtf.py` | 2026-09-28 | 224 | 217 | 7 | all |
-| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py` | 2026-09-28 | 383 | 376 | 7 | all |
-| `legacy` | `legacy/CanonicalSynth.py`, `IteratorSynth.py`, `classes.py`, `tables.py`, `pieces/testSong2.py` | 2026-09-28 | 1640 | 1114 | 526 | all |
+| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py` | 2026-09-29 | 517 | 510 | 7 | all |
+| `legacy` | `legacy/CanonicalSynth.py`, `IteratorSynth.py`, `classes.py`, `tables.py`, `pieces/testSong2.py` | 2026-09-29 | 1643 | 1152 | 491 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -910,8 +910,8 @@ Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 `oscillators`, and 84 for `export` with two. The latest oscillator pass took
 582 seconds with two workers, `stimuli` 60 and `localization` 233, and
 `theory` 24 to 50 with four, `structures` 172, `noises` 117,
-`sequencer` 24, `bonds` 24, `tables` 12, `hrtf` 235, `singing` 27 and
-`legacy` 313. None
+`sequencer` 24, `bonds` 24, `tables` 12, `hrtf` 235, `singing` 23 and
+`legacy` 321. None
 is a candidate for CI at that cost — these are things to run
 deliberately, read, and act on.
 
@@ -1260,7 +1260,9 @@ Measured 2026-09-28 on Python 3.12.7, macOS, with `mutmut` 3.7.0, each
 over `HEAD` at `c2fd5d1` with its sources and tests overlaid. Each
 selection is the tests per-test coverage contexts found reaching it and a
 new `test_<area>_audit.py`: 378 tests for `bonds`, 62 for `tables`, 54
-for `hrtf` and 86 for `singing`.
+for `hrtf` and 86 for `singing`. Running the engine itself, below,
+changed `singing`: it was remeasured on 2026-09-29 at `d3acf37`, over 99
+tests, and detects 510 of 517.
 
 ### What reading, probing and the survivors found
 
@@ -1364,9 +1366,11 @@ the `make` command, the file it reads back and how.
 ## `legacy` — the synthesizers, the Being and the demonstration piece
 
 Measured 2026-09-28 on Python 3.12.7, macOS, with `mutmut` 3.7.0, over
-`HEAD` at `c2fd5d1` with its five sources and tests overlaid. The
-selection is 106 tests: `test_legacy.py`, `test_remaining_paths.py`,
-four more that reach the legacy classes, and `test_legacy_audit.py`.
+`HEAD` at `c2fd5d1` with its five sources and tests overlaid, and again
+on 2026-09-29 at `4d54ece`, after the fixes to `stay` and two reference
+tables below. The selection is `test_legacy.py`,
+`test_remaining_paths.py`, four more tests that reach the legacy
+classes, and `test_legacy_audit.py`.
 
 ### What reading and probing found
 
@@ -1386,6 +1390,21 @@ four more that reach the legacy classes, and `test_legacy_audit.py`.
   and its tremolo rates changed nothing.
 - `Being`'s `rhythm4` was `[1/4, 1/4, 1/3]` under the comment its three
   siblings share, "repetition of one second". It is four quarters.
+- `freq_sym` took `j` notes of each symmetric step `j`, so its whole-tone
+  row was two notes and its tritone row six, two and a half octaves. Each
+  row is now one octave, `12 // j` notes, the start of the matching
+  `freq_sym_` row.
+- `notes_diatonic_` summed each rotation of the diatonic steps, which is
+  12 every time, so all seven rows of `freq_diatonic` were the same
+  octaves of 110 Hz. It is the scale's degrees, and each row one degree
+  in every octave.
+- `stay(method='straight')` read the first `seqsize` elements of the grid
+  from `pointer % seqsize`, not the window at the pointer that
+  `method='perm'` reads, and `'perm'` sliced that window without
+  wrapping, so near the grid's end it came up short and the permutation
+  refused it. Both now read the window at the pointer, wrapping round the
+  end as a `'perm-walk'` window does. A test had pinned the old values;
+  they were the window at the start of the grid, and it pins the new.
 
 ### Result
 
@@ -1396,25 +1415,26 @@ shapes and that samples were finite. `test_legacy_audit.py` checks
 `rawRender` against the article's vibrato and phase equations, each ADSR
 stage against the ramp it describes, `_fit` at both ends,
 `IteratorSynth`'s cycling, and the walks, stays, defaults and written
-file of a `Being`, exactly. The final run detected 1114 of
-1640.
+file of a `Being`, exactly. The final run detected 1152 of 1643, five
+by hanging.
 
 ### Accepted survivors
 
 | Function | IDs | Why accepted |
 |---|---|---|
 | `TestSong2.__init__`, `TestSong2.render` | 444 mutants | The piece: every note, duration, rate and depth in it. A change to one is a different piece rather than a wrong one. The tests check that it renders, writes its files, and that the two notes its comment says sound alike do. |
-| `Being.__init__` | 73 mutants | The reference sequences it stores in `resources` and no method reads: spectra, symmetric scales, diatonic rows and intensities. The rhythms are checked to fill a second. `freq_sym` takes `j` notes `j` semitones apart rather than dividing the octave, which may not be what was meant; it is left as it is. |
+| `Being.__init__` | 38 mutants | The reference sequences it stores in `resources` and no method reads: the harmonic and subharmonic spectra, the extended symmetric scales and the intensities. The rhythms, the one-octave symmetric scales and the diatonic rows are checked against what their names and comments say; these have nothing to check them against but themselves. |
 | `adsrSetup` | 30, 32, 47, 50 | The `float64` of an integer range that is divided into floats anyway. |
 | `adsrApply` | 33, 35 | The `float64` of `ones`, which is its default. |
 | `adsrApply` | 6 | Compressing the stages when they exactly fill the note: at a ratio of one, `_fit` returns each stage as it is. |
 | `_fit` | 1 | Returning the empty stage for a count of zero before `linspace` would: both are empty. |
-| `Being.stay` | 23 | Adding one permutation more than it needs: the sequence is cut to `n`. |
+| `Being.stay` | 24 | Adding one permutation more than it needs: the sequence is cut to `n`. |
 
-`Being.stay(method='straight')` cycles through the first `seqsize`
-elements of the grid from `pointer % seqsize`, not through the window at
-the pointer that `method='perm'` reads. A test pins that, as a decision;
-its docstring now says what it does, and it is left for the maintainer.
+The piece and the tables are left unpinned deliberately. Pinning the
+piece would pin a performance: any edit to it, and any change in how a
+platform rounds a phase, would fail, and nothing it caught would be a
+defect. The tables that are pinned are the ones with a statement of
+intent to check against, and that is where the three wrong ones were.
 
 **Expand to another bounded area when changing it.** All sixteen areas
 now have reviewed survivors. Pick later areas by measuring which tests reach

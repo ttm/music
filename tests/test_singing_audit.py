@@ -286,13 +286,13 @@ def test_a_render_that_writes_nothing_says_what_the_engine_said(
 
     def silent_make(command, *args, **kwargs):
         return types.SimpleNamespace(
-            returncode=0, stdout="",
+            returncode=0, stdout="abc2midi achant.abc",
             stderr="Can't locate MIDI.pm in @INC")
 
     monkeypatch.setattr(perform.subprocess, "run", silent_make)
     with pytest.raises(RuntimeError, match=re.escape(
             "the singing engine ran but wrote no achant.wav; what it "
-            "said:\nCan't locate MIDI.pm in @INC")):
+            "said:\nabc2midi achant.abc\nCan't locate MIDI.pm in @INC")):
         perform.sing()
     assert not stale.exists()
 
@@ -327,14 +327,17 @@ def test_the_perl_modules_are_asked_of_the_perl_on_path(monkeypatch):
     asked = []
 
     def run(command, capture_output):
-        asked.append(command)
+        asked.append((command, capture_output))
         missing = command[1] in ("-MMIDI", "-MMath::FFT")
         return types.SimpleNamespace(returncode=int(missing))
 
-    monkeypatch.setattr(paths.shutil, "which", lambda name: f"/bin/{name}")
+    found = []
+    monkeypatch.setattr(paths.shutil, "which",
+                        lambda name: found.append(name) or f"/bin/{name}")
     monkeypatch.setattr(paths.subprocess, "run", run)
     assert paths.missing_perl_modules() == ["MIDI", "Math::FFT"]
-    assert asked == [["perl", f"-M{module}", "-e1"]
+    assert found == ["perl"]
+    assert asked == [(["perl", f"-M{module}", "-e1"], True)
                      for module in paths.PERL_MODULES]
 
 
@@ -406,3 +409,67 @@ def test_espeak_s_data_is_copied_once(tmp_path, monkeypatch):
     perform._prepare_cache(engine, cache)
     assert copied == []
     assert (cache / "espeak-data" / "phontab").read_text() == "ours"
+
+
+def test_only_the_last_twenty_lines_of_what_was_said_are_kept():
+    printed = "\n".join(f"line {i}" for i in range(30))
+    assert perform._tail(printed, "last") == "\n".join(
+        [f"line {i}" for i in range(11, 30)] + ["last"])
+
+
+def _engine_with_voices(tmp_path):
+    engine, cache = tmp_path / "engine", tmp_path / "engine" / "cache"
+    (engine / "examples" / "extravoices").mkdir(parents=True)
+    cache.mkdir()
+    (engine / "Makefile").write_text("all:\n")
+    (engine / "examples" / "extravoices" / "melt.inc").write_text("melt")
+    data = tmp_path / "espeak-data"
+    (data / "voices").mkdir(parents=True)
+    (data / "phontab").write_text("phonemes")
+    return engine, cache, data
+
+
+def test_the_cache_is_prepared_by_these_exact_paths(tmp_path, monkeypatch):
+    """Recorded, not found: on a case-insensitive filesystem EXTRAVOICES
+    finds extravoices."""
+    import os
+    engine, cache, data = _engine_with_voices(tmp_path)
+    monkeypatch.setattr(perform, "_espeak_data", lambda: data)
+    copied = []
+    original = perform.shutil.copytree
+
+    def copytree(*args, **kwargs):
+        # copytree calls itself for each subdirectory, with more arguments.
+        if len(args) == 2:
+            copied.append((*args, kwargs))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(perform.shutil, "copytree", copytree)
+    checked = []
+    original_is_file = perform.Path.is_file
+    monkeypatch.setattr(perform.Path, "is_file", lambda self: (
+        checked.append(self) or original_is_file(self)))
+
+    perform._prepare_cache(engine, cache)
+
+    voices = engine / "examples" / "extravoices"
+    assert copied == [
+        (voices, cache / "extravoices", {"dirs_exist_ok": True}),
+        (data, cache / "espeak-data", {"dirs_exist_ok": True}),
+        (voices, cache / "espeak-data" / "voices" / "!v",
+         {"dirs_exist_ok": True})]
+    assert checked == [cache / "espeak-data" / "phontab"]
+    assert sorted(os.listdir(cache)) == ["Makefile", "espeak-data",
+                                         "extravoices"]
+    assert os.listdir(cache / "espeak-data" / "voices") == ["!v"]
+
+
+def test_the_cache_can_be_prepared_again(tmp_path, monkeypatch):
+    """Over what an earlier call copied, and over an empty espeak-data,
+    which is what the engine's Makefile leaves when it cannot copy."""
+    engine, cache, data = _engine_with_voices(tmp_path)
+    (cache / "espeak-data").mkdir()
+    monkeypatch.setattr(perform, "_espeak_data", lambda: data)
+    perform._prepare_cache(engine, cache)
+    perform._prepare_cache(engine, cache)
+    assert (cache / "espeak-data" / "phontab").read_text() == "phonemes"

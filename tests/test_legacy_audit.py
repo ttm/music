@@ -97,6 +97,8 @@ def test_the_test_song_s_first_two_notes_sound_the_same(tmp_path,
     np.testing.assert_array_equal(samples[:note], samples[note:2 * note])
     stray = {"sounduration", "tre_freq"} & set(vars(testSong2.synth))
     assert not stray
+    # The later sections keep the rate they have always had.
+    assert testSong2.synth.tremolo_frequency == 0.2
 
 
 # --------------------------------------------------------------------------

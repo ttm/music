@@ -293,8 +293,10 @@ Singing
 
 Text-to-speech built on the external `eCantorix
 <https://github.com/ttm/ecantorix>`_ engine. Run :func:`setup_engine` once to
-clone it; it also needs ``git``, ``make``, ``perl`` and ``espeak`` on the
-system.
+clone it; it also needs ``git``, ``make``, ``perl``, ``espeak``,
+``abc2midi`` (the ``abcmidi`` package) and ``sox`` on the system, and the Perl
+modules ``MIDI``, ``Math::FFT``, ``URI::Escape`` and ``Digest::SHA``.
+:func:`setup_engine` and ``sing`` say which are missing.
 
 .. autosummary::
    :toctree: generated

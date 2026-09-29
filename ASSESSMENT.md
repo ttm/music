@@ -59,7 +59,7 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **5026 tests**, 5,017 passed; 9 doctest items skipped by explicit `+SKIP`, and the 6 singing-engine tests skip where the engine is not set up |
+| Test suite | `pytest -q` | **5026 tests**; 9 doctest items skip by explicit `+SKIP`, and the 6 singing-engine tests where the engine is not set up |
 | Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (2,965 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
@@ -362,9 +362,13 @@ either documented in the code or tracked in the issue list.
 ### Scope and dependencies
 
 - **Singing needs an external engine.** `music.singing` drives eCantorix,
-  which `setup_engine()` clones into the user's cache directory. Without it,
-  `singing_demo.py` is the one example that cannot run. Issue #5 tracks
-  doing synthesis natively from per-phoneme spectra.
+  which `setup_engine()` clones into the user's cache directory. It also
+  needs `abc2midi`, `sox`, espeak and four Perl modules, which the
+  requirements check names. Without them, `singing_demo.py` is the one
+  example that cannot run, and `test_singing_engine.py` skips. With them,
+  it was run and its pitch measured on 2026-09-29, on macOS; nothing
+  exercises it on Linux or in CI. Issue #5 tracks doing synthesis natively
+  from per-phoneme spectra.
 - **Waveform tables are synthetic only.** No SoundFont or WAV-derived
   tables; issue #3.
 - **matplotlib is an extra**, needed only by `PrimaryTables.draw_tables()`.

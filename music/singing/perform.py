@@ -3,6 +3,7 @@
 
 import re
 import logging
+import math
 import shutil
 import subprocess
 from fractions import Fraction
@@ -15,6 +16,11 @@ from .paths import (ENGINE_MARKER, cache_dir, engine_dir, is_engine,
 
 
 # def sing(text="ba-na-nin-ha pra vo-cê",
+#: What an espeak voice name is made of: a language such as ``en`` or
+#: ``pt-br``, and a variant after ``+``. ``lang`` is written into the
+#: configuration the engine runs as Perl, so nothing else may reach it.
+_VOICE = re.compile(r'[A-Za-z0-9_-]+(\+[A-Za-z0-9_-]+)?')
+
 #: The voices from the engine's extras that ``effect`` may name, and the
 #: file each loads. ``flint`` is an earlier spelling of ``flite``.
 EFFECTS = {'flite': 'flite', 'flint': 'flite', 'tremolo': 'tremolo',
@@ -72,10 +78,13 @@ def sing(text="Mar-ry had a litt-le lamb",
         :func:`music.singing.setup_engine`), cannot be built in the cache,
         or renders at a rate other than 44,100 Hz.
     ValueError
-        If ``effect`` is not one of those above, there is not exactly one
-        duration per note, a duration is zero, or a note falls outside
-        MIDI 12 to 96. The effect is checked first, so a wrong one is
-        reported whether or not the engine is installed.
+        If ``effect`` is not one of those above, ``lang`` is not a voice
+        name, ``transpose`` is not a finite number, there is not exactly
+        one duration per note, a duration is zero, or a note falls outside
+        MIDI 12 to 96. These are checked first, so a wrong one is reported
+        whether or not the engine is installed. The voice and the
+        transposition are written into a configuration the engine runs as
+        Perl, so anything else there would be run as code.
 
     Notes
     -----
@@ -96,6 +105,15 @@ def sing(text="Mar-ry had a litt-le lamb",
         raise ValueError(
             f"effect not understood: {effect!r}; expected one of "
             f"{sorted(EFFECTS)}, or None for the plain voice")
+    if not (isinstance(lang, str) and _VOICE.fullmatch(lang)):
+        raise ValueError(
+            f"lang must be an espeak voice name, such as 'en' or 'pt-br'; "
+            f"got {lang!r}")
+    if (isinstance(transpose, bool) or not isinstance(transpose, Real)
+            or not math.isfinite(transpose)):
+        raise ValueError(
+            f"transpose must be a finite number of semitones; got "
+            f"{transpose!r}")
     engine = engine_dir()
     cache = cache_dir()
     if not is_engine(engine):

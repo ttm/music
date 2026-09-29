@@ -473,3 +473,42 @@ def test_the_cache_can_be_prepared_again(tmp_path, monkeypatch):
     perform._prepare_cache(engine, cache)
     perform._prepare_cache(engine, cache)
     assert (cache / "espeak-data" / "phontab").read_text() == "phonemes"
+
+
+@pytest.mark.parametrize("lang", [
+    'en"; system("touch pwned"); "', "en\n", "", "en us", "../x", 3])
+def test_a_voice_that_is_not_a_voice_name_is_refused(tmp_path, monkeypatch,
+                                                     lang):
+    """The configuration is Perl the engine runs; since it reads it, a
+    lang with a quote in it would have been run as code."""
+    monkeypatch.setenv(paths.ENV_VAR, str(tmp_path / "nowhere"))
+    with pytest.raises(ValueError, match=re.escape(
+            "lang must be an espeak voice name, such as 'en' or 'pt-br'; "
+            f"got {lang!r}")):
+        perform.sing(lang=lang)
+
+
+@pytest.mark.parametrize("lang", ["en", "pt-br", "en-us", "en+m3", "de"])
+def test_voice_names_espeak_uses_are_accepted(engine, lang):
+    perform.sing(lang=lang)
+    conf = (engine / "cache" / "achant.conf").read_text()
+    assert conf.startswith(f'$ESPEAK_VOICE = "{lang}";\n')
+
+
+@pytest.mark.parametrize("transpose", [
+    float("nan"), float("inf"), "0; system('x')", None, True])
+def test_a_transposition_that_is_not_a_number_is_refused(tmp_path,
+                                                         monkeypatch,
+                                                         transpose):
+    monkeypatch.setenv(paths.ENV_VAR, str(tmp_path / "nowhere"))
+    with pytest.raises(ValueError, match=re.escape(
+            "transpose must be a finite number of semitones; got "
+            f"{transpose!r}")):
+        perform.sing(transpose=transpose)
+
+
+@pytest.mark.parametrize("transpose", [0, -12, 7.5, np.int64(-24)])
+def test_any_finite_transposition_reaches_the_conf(engine, transpose):
+    perform.sing(transpose=transpose)
+    conf = (engine / "cache" / "achant.conf").read_text()
+    assert f"$ESPEAK_TRANSPOSE = {transpose};" in conf

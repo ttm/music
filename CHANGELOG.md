@@ -84,6 +84,8 @@ table of any length at its own length.
 - **`interval` ignores surrounding whitespace for every name.** It
   stripped it only after the table lookup, so `" M3"` was read and
   `"TT "` refused.
+- **`interval_between` refuses NaN and infinity by name.** They reached
+  `round()`, which failed with a message about converting to an integer.
 - **`loud`, `fade`, `adsr` and the glissandi agree on transition
   names.** `fade` matched them by substring, `loud` exactly, and the
   glissandi compared with `exp` alone, so one name could fade, be
@@ -112,6 +114,9 @@ table of any length at its own length.
   and all of them before the samples are counted.
 - **`gaussian_noise` refuses a sample rate that is not positive and a
   band of no width.**
+- **`reverb` at a rate below 30 Hz has a tail.** Its noise started at 15
+  Hz, above the Nyquist frequency, so the tail was silence; the floor is
+  now held at the Nyquist frequency there.
 - **`silence` of a negative duration is empty,** as `noise` and `note`
   are, rather than numpy's "negative dimensions are not allowed".
 - **`Sequencer` refuses what used to fail when it rendered.** A start of
@@ -141,6 +146,10 @@ table of any length at its own length.
 - **`sing` prepares the cache the effects read from,** copying their
   files and espeak's data, which the engine's Makefile copies from a
   Linux path.
+- **`sing` refuses a `lang` or `transpose` that could run as code.** The
+  engine reads its configuration as Perl, which it now does, so a voice
+  name with a quote in it would have been run. `lang` must be an espeak
+  voice name and `transpose` a finite number.
 - **`sing` writes fractional durations as ABC does,** `/2` for a half,
   where `0.5` went into the score as it is. An unknown `effect` is
   refused before the engine is looked for.
@@ -151,11 +160,10 @@ table of any length at its own length.
   divided zero by zero.
 - **The legacy test song's tremolo section changes its tremolo.** Two
   keywords renamed long ago, `sounduration` and `tre_freq`, were stored
-  as attributes nothing reads.
+  as attributes nothing reads. The sections after it keep the default
+  rate they have always been heard at.
 - **`Being`'s `rhythm4` fills one second,** as its three siblings do. It
   read `[1/4, 1/4, 1/3]`.
-- **`interval_between` refuses NaN and infinity by name.** They reached
-  `round()`, which failed with a message about converting to an integer.
 
 ## [1.9.0] - 2026-09-24
 

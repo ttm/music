@@ -46,9 +46,10 @@ def setup_engine(method="http"):
     """Clone the eCantorix repository into the user's cache directory.
 
     The engine is a Perl program driving espeak through a Makefile, so it is
-    cloned rather than installed from PyPI, and it needs git, make, perl and
-    espeak on the system. Set ``$MUSIC_ECANTORIX_DIR`` to choose a different
-    location.
+    cloned rather than installed from PyPI, and it needs git, make, perl,
+    espeak, abc2midi and sox on the system, and the Perl modules in
+    :data:`~music.singing.paths.PERL_MODULES`. Set ``$MUSIC_ECANTORIX_DIR``
+    to choose a different location.
 
     Parameters
     ----------

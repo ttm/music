@@ -193,6 +193,7 @@ def test_reverb_asks_for_noise_through_its_sample_rate_nyquist(monkeypatch):
                   noise_type="white", sample_rate=8000)
 
     assert calls == [("white", {
+        "min_freq": 15,
         "max_freq": 4000,
         "number_of_samples": 64,
         "sample_rate": 8000,

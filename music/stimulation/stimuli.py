@@ -608,6 +608,11 @@ def modulated_noise(noise_type: str | float = 'pink',
         modulation as its absolute value for a symmetric table and a
         different one otherwise, which makes it a mistake rather than a
         choice.
+    ValueError
+        If :func:`noise` refuses the band: ``min_freq`` above
+        ``max_freq``, or above the Nyquist frequency, as the default 15 Hz
+        is at a sample rate of 30 Hz or less. The band used to render as
+        silence.
 
     Notes
     -----

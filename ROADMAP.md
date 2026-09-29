@@ -614,6 +614,52 @@ area, but the sixteen bounded audits are still not a whole-package
 mutation score: each measures its own sources against its own
 selection. A change to a module is the time to re-run its area.
 
+## Open after the September 2026 audits
+
+What the audits found and did not fix, and why. Each is recorded where
+the behaviour is, too; this is the list in one place.
+
+- **eCantorix's own defects are worked around, not fixed.** The engine
+  loads its configuration with `do "achant.conf"`, which Perl 5.26 and
+  later look for only on `@INC`; its `#!/usr/bin/perl` is not the Perl on
+  PATH on macOS; its Makefile copies espeak's data from a Linux-only
+  path, and pipes the script through `tee`, so a failed render passes
+  `make`. `sing` works round all four (`perl -I.`, the PATH `perl`, its
+  own copy of espeak's data, a check for the output file). The fixes
+  belong in ttm/ecantorix, which is another repository; until they are
+  made there, running the engine by hand still fails.
+- **Singing is verified on one machine.** The engine was run and its pitch
+  measured on macOS on 2026-09-29. `test_singing_engine.py` skips in CI,
+  where nothing installs the engine, and the `melt` effect has not been
+  tried with espeak-ng, whose data directory is laid out differently.
+  The engine's other extra voices (`poly`, `rubberband`, `mb-en1`, the
+  last needing mbrola) are not offered through `effect`.
+- **`Being.walk(method='straight')` does not wrap** where every other
+  window does. A caller that walks off the grid gets an `IndexError`;
+  wrapping would change what an existing caller gets. `stay` was
+  changed, because what it read was not the window at all.
+- **`Being`'s `intensity_octaves` may stop one short.** Its comment says
+  its steps run from 10 dB to half a decibel; `range(1, 20)` stops at
+  10/19 dB. Whether 20 was meant is not clear enough to change a table
+  someone may read.
+- **`print_peal` runs two-digit bells together.** From ten bells on, a
+  row such as `1011` could be four bells or two. Ringers write 0, E and T
+  for ten to twelve; changing what the function prints was not done
+  without someone who reads its output asking for it.
+- **`interval("dim1")` is -1**, as the article's rule gives it, where the
+  routines that measure upward refuse a negative interval.
+- **`PlainChanges` does not read `hunts`.** It now warns. Laying hunts out
+  another way needs a check that the peal still comes round, which was
+  not written.
+- **The legacy demonstration piece and the rest of `Being`'s tables are
+  not pinned by tests.** A test of the piece would pin a performance, not
+  a correctness; the spectra, the extended scales and the intensities
+  have nothing to be checked against but themselves. `MUTATION_AUDIT.md` counts them as content.
+- **The mutation audits are bounded and are not run in CI.** Each takes
+  from seconds to ten minutes, measures its own sources against its own
+  selection, and misses what mutmut cannot reach: decorated properties,
+  work done at import, and on macOS any path that differs only in case.
+
 ## Other maintenance
 
 - **Completed:** correct stale assessment and roadmap prose: interval

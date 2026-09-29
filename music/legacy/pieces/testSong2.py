@@ -86,6 +86,10 @@ class TestSong2:
         notes = [synth.adsrApply(i) for i in notes]
         tremolos = np.hstack(notes)
         M.core.io.write_wav_mono(tremolos, "TV.wav")  # saved to fooname.wav
+        # The synth keeps what it is given, and the rates above were never
+        # read until they were spelt `tremolo_frequency`: the sections
+        # below were written, and have always sounded, at the default.
+        synth.absorbState(tremolo_frequency=0.2)
 
         f0 = 220.
         M_ = M.utils.midi_to_hz_interval

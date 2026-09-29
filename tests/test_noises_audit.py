@@ -283,3 +283,33 @@ def test_a_noise_takes_one_draw_a_component_from_the_random_stream(
     np.random.seed(41)
     np.random.uniform(0, 2 * np.pi, draws)
     assert after == np.random.random()
+
+
+@pytest.mark.parametrize("sample_rate", [20, 10])
+def test_a_reverb_at_a_rate_below_the_noise_floor_still_has_a_tail(
+        sample_rate):
+    """reverb leaves the band's floor to noise, 15 Hz, which at 20 Hz is
+    above the Nyquist frequency: the band was refused for a floor the
+    caller never set."""
+    np.random.seed(43)
+    response = music.reverb(duration=2, first_phase_duration=0,
+                            sample_rate=sample_rate)
+    assert response.shape == (2 * sample_rate,)
+    assert response[0] == 1.0
+
+
+def test_a_reverb_at_an_ordinary_rate_keeps_the_15_hz_floor(monkeypatch):
+    from importlib import import_module
+    module = import_module("music.core.filters.reverb")
+    asked = []
+    monkeypatch.setattr(module, "noise", lambda kind, **kwargs: (
+        asked.append(kwargs) or np.ones(kwargs["number_of_samples"])))
+    module.reverb(duration=0.1, first_phase_duration=0, sample_rate=8000)
+    assert asked[0]["min_freq"] == 15 and asked[0]["max_freq"] == 4000
+
+
+def test_a_modulated_noise_says_its_band_holds_nothing():
+    with pytest.raises(ValueError, match=_exactly(
+            "min_freq (15.0 Hz) is above the Nyquist frequency (10.0 Hz), "
+            "so the band holds nothing")):
+        music.modulated_noise(duration=1, sample_rate=20)

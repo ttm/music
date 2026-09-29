@@ -283,6 +283,21 @@ and a duration of the same length give the same envelope. The `L_` row of
 `RECONCILIATION.md` stays sample-exact, since it passes durations.
 `tests/test_filters.py` checks that the two branches agree.
 
+### Transitions take one set of four names
+
+The reference names its transitions inconsistently. `L` and `F` compare
+`method` with `"linear"` and `"exp"` exactly, and anything else leaves
+their envelope unbound, a `NameError`; `P`, the glissando, compares with
+`"exp"` alone and sweeps linearly for anything else, `"exponential"`
+included. The package's `loud`, `fade`, `adsr`, `note_with_glissando` and
+`note_with_vibrato_seq_localization` all take `"lin"`, `"linear"`,
+`"exp"` and `"exponential"`, and refuse any other name by it. So where the
+reference's `P` sweeps `"exponential"` linearly, the package sweeps it
+exponentially. The `L`, `F` and `P` rows of `RECONCILIATION.md` stay
+sample-exact, since they pass `"linear"` or `"exp"`.
+`tests/test_transition_methods.py` checks every routine against every
+name.
+
 ### `localize2` implements a model the article does not give
 
 The frequency-dependent ITD and IID in `music.localize2` — a crossover at

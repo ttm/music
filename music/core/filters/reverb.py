@@ -111,9 +111,13 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     # `noise` reads number_of_samples=0 as "not given" and returns two
     # seconds, so a response that is all first period builds its empty
     # second period here; asking for it failed with a broadcast error.
+    # The band's floor is noise's own 15 Hz, held at the Nyquist frequency
+    # for a rate too low to reach it: noise refuses a band upside down,
+    # and at 20 Hz this one would be, for a floor the caller never set.
     tail = lambda_r - lambda1
-    noise_ = (noise(noise_type, max_freq=sample_rate / 2,
-                    number_of_samples=tail, sample_rate=sample_rate)
+    noise_ = (noise(noise_type, min_freq=min(15, sample_rate / 2),
+                    max_freq=sample_rate / 2, number_of_samples=tail,
+                    sample_rate=sample_rate)
               if tail else np.array([]))
     r2 = noise_ * a[lambda1:lambda_r]
 

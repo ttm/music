@@ -21,6 +21,9 @@ from .paths import (ENGINE_MARKER, cache_dir, engine_dir, is_engine,
 #: configuration the engine runs as Perl, so nothing else may reach it.
 _VOICE = re.compile(r'[A-Za-z0-9_-]+(\+[A-Za-z0-9_-]+)?')
 
+#: The singers :func:`sing` can use.
+BACKENDS = ('ecantorix', 'psola')
+
 #: The voices from the engine's extras that ``effect`` may name, and the
 #: file each loads. ``flint`` is an earlier spelling of ``flite``.
 EFFECTS = {'flite': 'flite', 'flint': 'flite', 'tremolo': 'tremolo',
@@ -30,11 +33,16 @@ EFFECTS = {'flite': 'flite', 'flint': 'flite', 'tremolo': 'tremolo',
 def sing(text="Mar-ry had a litt-le lamb",
          notes=(4, 2, 0, 2, 4, 4, 4), durs=(1, 1, 1, 1, 1, 1, 2),
          M='4/4', L='1/4', Q=120, K='C', reference=60,
-         lang='en', transpose=-12, effect=None):
-    """Sing a line of text to a melody, with the eCantorix engine.
+         lang='en', transpose=-12, effect=None, backend='ecantorix'):
+    """Sing a line of text to a melody.
 
-    The melody is written as ABC notation, the engine renders it through
-    espeak, and the result is read back as samples.
+    With the default backend, eCantorix, the melody is written as ABC
+    notation, the engine renders it through espeak, and the result is read
+    back as samples. With ``backend="psola"``, espeak-ng says each
+    syllable and Praat's PSOLA holds it at its note's pitch and length:
+    see :mod:`music.singing.psola`. Both sing MIDI
+    ``reference + note + transpose`` for the same lengths, so the two can
+    be compared.
 
     Parameters
     ----------
@@ -48,7 +56,10 @@ def sing(text="Mar-ry had a litt-le lamb",
         0.5, a string of ABC such as ``"3/2"``, or a negative number
         ``-n`` for ``1/n``, which this has always accepted.
     M, L, Q, K : str or int
-        The ABC meter, unit note length, tempo in beats per minute and key.
+        The ABC meter, unit note length, tempo and key. A number for ``Q``
+        is units of ``L`` a minute, as ABC reads a bare ``Q:``; see
+        :func:`unit_seconds`. The psola backend reads ``L`` and ``Q``
+        and has no use for the meter or the key.
     reference : int
         The MIDI note that pitch zero refers to, which is the note the
         score is written at.
@@ -59,9 +70,16 @@ def sing(text="Mar-ry had a litt-le lamb",
         MIDI ``reference + note + transpose``. The default, -12, sings an
         octave below the score, where every note used to be sung.
     effect : str or None
-        A voice from the engine's extras: ``"flite"`` (also accepted as
-        ``"flint"``, its earlier spelling here), ``"tremolo"`` or
-        ``"melt"``. None sings with the plain voice.
+        A voice from the eCantorix engine's extras: ``"flite"`` (also
+        accepted as ``"flint"``, its earlier spelling here), ``"tremolo"``
+        or ``"melt"``. None sings with the plain voice. ``"flite"`` says
+        each syllable with the flite synthesizer instead of espeak, so it
+        needs ``flite`` and ``bc`` installed, and ``lang`` names one of
+        flite's voices, such as ``"rms"`` or ``"slt"``.
+    backend : {'ecantorix', 'psola'}
+        Which singer. eCantorix is the reference this package has always
+        used; ``"psola"`` needs espeak-ng and
+        ``pip install 'music[singing]'``, and has no effects.
 
     Returns
     -------
@@ -76,10 +94,14 @@ def sing(text="Mar-ry had a litt-le lamb",
     RuntimeError
         If the engine is not installed (run
         :func:`music.singing.setup_engine`), cannot be built in the cache,
-        or renders at a rate other than 44,100 Hz.
+        or renders at a rate other than 44,100 Hz; if the flite effect is
+        asked for without ``flite`` and ``bc``; or, with
+        ``backend="psola"``, if espeak-ng or praat-parselmouth is missing.
     ValueError
         If ``effect`` is not one of those above, ``lang`` is not a voice
-        name, ``transpose`` is not a finite number, there is not exactly
+        name, ``transpose`` is not a finite number, ``L`` or ``Q`` is not
+        a length or tempo ABC can read (see :func:`unit_seconds`), there is
+        not exactly
         one duration per note, a duration is zero, or a note falls outside
         MIDI 12 to 96. These are checked first, so a wrong one is reported
         whether or not the engine is installed. The voice and the
@@ -101,10 +123,17 @@ def sing(text="Mar-ry had a litt-le lamb",
     ``reference + note - 12`` in the default voice, whatever was asked;
     the default transposition, -12, keeps that.
     """
+    if backend not in BACKENDS:
+        raise ValueError(
+            f"backend must be one of {BACKENDS}; got {backend!r}")
     if effect and effect not in EFFECTS:
         raise ValueError(
             f"effect not understood: {effect!r}; expected one of "
             f"{sorted(EFFECTS)}, or None for the plain voice")
+    if effect and backend != 'ecantorix':
+        raise ValueError(
+            f"effect {effect!r} is one of eCantorix's voices; the "
+            f"{backend} backend sings the plain voice only")
     if not (isinstance(lang, str) and _VOICE.fullmatch(lang)):
         raise ValueError(
             f"lang must be an espeak voice name, such as 'en' or 'pt-br'; "
@@ -114,6 +143,16 @@ def sing(text="Mar-ry had a litt-le lamb",
         raise ValueError(
             f"transpose must be a finite number of semitones; got "
             f"{transpose!r}")
+    # The tempo is read here for both backends: eCantorix handed a Q of
+    # 0 to abc2midi, which called it malformed and stopped the build.
+    unit_seconds(L, Q)
+    if backend == 'psola':
+        from . import psola
+        # The notes the score could be written with, as eCantorix's are,
+        # so that the two backends refuse the same melodies.
+        translate_to_abc(notes, durs, reference)
+        return psola.sing(text, notes, durs, L=L, Q=Q, reference=reference,
+                          lang=lang, transpose=transpose)
     engine = engine_dir()
     cache = cache_dir()
     if not is_engine(engine):
@@ -124,6 +163,8 @@ def sing(text="Mar-ry had a litt-le lamb",
             "Run music.singing.setup_engine() to install it."
         )
     require_system_dependencies()
+    if effect and EFFECTS[effect] == 'flite':
+        _require_flite(lang)
     # Inside the engine, which is there: is_engine said so.
     cache.mkdir(exist_ok=True)
 
@@ -170,6 +211,29 @@ def sing(text="Mar-ry had a litt-le lamb",
     if samples.ndim == 2:
         return normalize_stereo(samples.T)
     return normalize_mono(samples)
+
+
+def _require_flite(lang):
+    """flite and bc, which the flite effect runs, and a voice flite has.
+
+    The effect has the engine say each syllable with flite rather than
+    espeak, in the voice ``lang`` names, so ``lang`` is one of flite's
+    voices -- ``rms``, ``slt`` -- not a language.
+    """
+    missing = [name for name in ('flite', 'bc') if shutil.which(name) is None]
+    if missing:
+        raise RuntimeError(
+            f"the flite effect runs {' and '.join(missing)}, which "
+            f"{'is' if len(missing) == 1 else 'are'} not installed. On "
+            f"Debian or Ubuntu: sudo apt install {' '.join(missing)}. On "
+            "macOS with Homebrew: brew install flite.")
+    listed = subprocess.run(['flite', '-lv'], capture_output=True,
+                            text=True).stdout
+    voices = listed.partition(':')[2].split()
+    if lang not in voices:
+        raise ValueError(
+            f"with the flite effect, lang names one of flite's voices, "
+            f"{voices}; got {lang!r}")
 
 
 def _prepare_cache(engine, cache):
@@ -271,6 +335,103 @@ def translate_to_abc(notes, durs, reference):
     return ''.join([i + j for i, j in zip(notes, durs)])
 
 
+def _note_length(duration):
+    """A note's duration in units of ``L``, as a fraction.
+
+    A number is that many units, and a negative one ``-n`` is ``1/n``, the
+    convention the ``-`` to ``/`` replacement gave it. A string is ABC's
+    length notation, with ``-`` read as ``/``: ``"3/2"``, ``"/2"`` for a
+    half, ``"3/"`` for three halves and ``"//"`` for a quarter.
+
+    Raises
+    ------
+    ValueError
+        If the duration is zero, or a string ABC cannot read as a length.
+    """
+    if isinstance(duration, Real):
+        if duration == 0:
+            raise ValueError(
+                'a note cannot last no time; got a duration of 0')
+        length = Fraction(float(duration)).limit_denominator(1000)
+        return 1 / -length if length < 0 else length
+    text = str(duration).replace('-', '/')
+    written = _ABC_LENGTH.fullmatch(text)
+    if not written:
+        raise ValueError(
+            f'{duration!r} is not a length ABC can read, such as "3/2" or '
+            f'"/2"')
+    numerator, slashes, denominator = written.groups()
+    if not slashes:
+        length = Fraction(int(numerator))
+    else:
+        halves = 2 ** len(slashes) if not denominator else int(denominator)
+        length = Fraction(int(numerator or 1), halves)
+    if length == 0:
+        raise ValueError(
+            f'a note cannot last no time; got a duration of {duration!r}')
+    return length
+
+
+#: ABC's lengths: a whole number, a fraction, or slashes that halve.
+_ABC_LENGTH = re.compile(r'(\d*)(/*)(\d*)')
+
+
+def unit_seconds(L='1/4', Q=120):
+    """How long one unit of ``L`` lasts, in seconds, at the tempo ``Q``.
+
+    Parameters
+    ----------
+    L : str
+        The unit note length, as ABC writes it: ``"1/4"`` for a quarter.
+    Q : int or str
+        The tempo. A number is that many units of ``L`` a minute, which is
+        how ABC reads a bare ``Q:``; ``"1/4=120"`` is 120 quarters a minute
+        whatever ``L`` is.
+
+    Returns
+    -------
+    Fraction
+        Seconds per unit.
+
+    Raises
+    ------
+    ValueError
+        If either is not what ABC writes there, or the tempo is not
+        positive.
+
+    Examples
+    --------
+    >>> float(unit_seconds('1/4', 120)), float(unit_seconds('1/8', '1/4=120'))
+    (0.5, 0.25)
+    """
+    unit = _abc_fraction(L, 'L')
+    if isinstance(Q, Real) and not isinstance(Q, bool):
+        beat, per_minute = unit, Fraction(float(Q)).limit_denominator(1000)
+    else:
+        beat_text, equals, rate = str(Q).partition('=')
+        if not equals:
+            raise ValueError(
+                f'Q must be a number or "beat=count", such as "1/4=120"; '
+                f'got {Q!r}')
+        beat = _abc_fraction(beat_text, 'the beat in Q')
+        per_minute = _abc_fraction(rate, 'the count in Q')
+    if per_minute <= 0:
+        raise ValueError(f'the tempo must be positive; got Q={Q!r}')
+    return Fraction(60) / per_minute * unit / beat
+
+
+def _abc_fraction(text, name):
+    """A positive fraction such as ``1/4``, for `name`, or an error."""
+    try:
+        value = Fraction(str(text).strip())
+    except (ValueError, ZeroDivisionError):
+        raise ValueError(
+            f'{name} must be a fraction such as "1/4"; got {text!r}') from None
+    if value <= 0:
+        raise ValueError(f'{name} must be positive; got {text!r}')
+    return value
+
+
 def _abc_length(duration):
     """A duration in units of ``L``, as ABC writes a note's length.
 
@@ -284,11 +445,7 @@ def _abc_length(duration):
     if not isinstance(duration, Real):
         text = str(duration).replace('-', '/')
         return '' if text == '1' else text
-    if duration == 0:
-        raise ValueError('a note cannot last no time; got a duration of 0')
-    length = Fraction(float(duration)).limit_denominator(1000)
-    if length < 0:
-        length = 1 / -length
+    length = _note_length(duration)
     if length.denominator == 1:
         return '' if length == 1 else str(length.numerator)
     numerator = '' if length.numerator == 1 else str(length.numerator)

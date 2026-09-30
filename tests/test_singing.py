@@ -126,9 +126,9 @@ def test_setup_engine_clones_when_absent(monkeypatch, tmp_path):
 
     run.assert_called_once()
     argv = run.call_args[0][0]
-    assert argv[:2] == ["git", "clone"]
-    assert argv[2] == bootstrap.REPO_URLS["http"]
-    assert argv[3] == str(target)
+    assert argv[:4] == ["git", "clone", "--branch", "music-2"]
+    assert argv[4] == bootstrap.REPO_URLS["http"]
+    assert argv[5] == str(target)
     assert returned == str(target)
 
 
@@ -150,7 +150,7 @@ def test_setup_engine_uses_ssh_when_asked(monkeypatch, tmp_path):
          patch.object(paths, "missing_perl_modules", return_value=[]), \
          patch.object(bootstrap.subprocess, "run") as run:
         bootstrap.setup_engine(method="ssh")
-    assert run.call_args[0][0][2] == bootstrap.REPO_URLS["ssh"]
+    assert run.call_args[0][0][4] == bootstrap.REPO_URLS["ssh"]
 
 
 def test_setup_engine_rejects_an_unknown_method(monkeypatch, tmp_path):

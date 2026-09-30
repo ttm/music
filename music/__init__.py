@@ -96,7 +96,7 @@ from .stimulation import (
     monaural_beats,
     spatial_motion,
 )
-from .singing import get_engine, make_test_song, setup_engine
+from .singing import get_engine, make_test_song, setup_engine, sing
 from .legacy import Being, CanonicalSynth, IteratorSynth
 from .bonds import (Bonds, inversely_proportional, proportional,
                     stepped)
@@ -244,6 +244,7 @@ __all__ = [
     'GenericPeal',
     'get_engine',
     'setup_engine',
+    'sing',
     'horizontal_stack',
     'hz_to_midi',
     'iir',

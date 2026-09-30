@@ -1,19 +1,22 @@
-"""The eCantorix engine itself, when it is installed.
+"""The singing backends themselves, where they are installed.
 
-These sing, and measure what was sung. They skip unless the engine is set
-up with everything it needs, as the KEMAR tests skip without the
+These sing, and measure what was sung, with the measurement
+``tools/compare_singing.py`` reports. Each backend's tests skip unless it
+is set up with everything it needs, as the KEMAR tests skip without the
 measurements; the rest of the singing tests check what is handed to the
-engine without running it.
+engines without running them.
 """
 
 import numpy as np
 import pytest
 
-from music.singing import paths
+from music.singing import paths, psola
 import music.singing.perform as perform
+from tools.compare_singing import (SCORES, cents, expected_pitches,
+                                   expected_seconds, note_pitches)
 
 
-def _ready():
+def _ecantorix_ready():
     try:
         return (paths.is_engine(paths.engine_dir())
                 and not paths.missing_requirements()
@@ -22,39 +25,13 @@ def _ready():
         return False
 
 
-pytestmark = pytest.mark.skipif(
-    not _ready(), reason="the eCantorix engine is not installed with all "
-    "it needs; run music.singing.setup_engine()")
-
-
-def _fundamental(segment, rate=44100, low=40, high=1500):
-    """The autocorrelation peak between `low` and `high` Hz."""
-    segment = segment - segment.mean()
-    correlation = np.correlate(segment, segment, "full")[len(segment) - 1:]
-    lags = np.arange(len(correlation))
-    usable = (lags >= rate / high) & (lags <= rate / low)
-    lag = lags[usable][np.argmax(correlation[usable])]
-    left, peak, right = correlation[lag - 1:lag + 2]
-    return rate / (lag + 0.5 * (left - right) / (left - 2 * peak + right))
-
-
-def _pitches(sound, notes, windows=9):
-    """The pitch of each of `notes` equal-length notes.
-
-    The median over windows spread across the note, of those at least
-    half as loud as its loudest: a sung syllable can fall nearly silent
-    for a moment, and a window there measures nothing.
-    """
-    length = len(sound) // notes
-    pitches = []
-    for i in range(notes):
-        centres = i * length + np.linspace(0.15, 0.85, windows) * length
-        segments = [sound[int(c) - 4096:int(c) + 4096] for c in centres]
-        loudest = max(np.abs(segment).max() for segment in segments)
-        pitches.append(np.median([
-            _fundamental(segment) for segment in segments
-            if np.abs(segment).max() >= loudest / 2]))
-    return pitches
+ECANTORIX = pytest.param("ecantorix", marks=pytest.mark.skipif(
+    not _ecantorix_ready(), reason="the eCantorix engine is not installed "
+    "with all it needs; run music.singing.setup_engine()"))
+PSOLA = pytest.param("psola", marks=pytest.mark.skipif(
+    bool(psola.missing_requirements()), reason="the psola backend needs "
+    "espeak-ng and pip install 'music[singing]'"))
+BACKENDS = [ECANTORIX, PSOLA]
 
 
 def _midi(hertz):
@@ -62,42 +39,91 @@ def _midi(hertz):
 
 
 @pytest.fixture(scope="module")
-def octave_at_middle_c():
-    return perform.sing(text="laa laa", notes=(0, 12), durs=(8, 8),
-                        transpose=0)
+def sung():
+    """Each score each backend has sung, rendered once."""
+    cache = {}
+
+    def render(backend, name):
+        if (backend, name) not in cache:
+            cache[backend, name] = perform.sing(backend=backend,
+                                                **SCORES[name])
+        return cache[backend, name]
+    return render
 
 
-def test_the_engine_sings_reference_plus_note_plus_transpose(
-        octave_at_middle_c):
-    """Middle C and the C above, at transpose=0. The engine never read
-    the transposition, and the score was an octave high, so these came out
-    at 130 and 261 Hz whatever was asked."""
-    low, high = _pitches(octave_at_middle_c, 2)
-    assert _midi(low) == pytest.approx(60, abs=0.35)
-    assert _midi(high) == pytest.approx(72, abs=0.35)
+@pytest.mark.parametrize("backend", BACKENDS)
+def test_the_engine_sings_reference_plus_note_plus_transpose(backend, sung):
+    """Middle C up an octave at transpose=0. eCantorix never read the
+    transposition, and the score was an octave high, so these came out at
+    130 and 261 Hz whatever was asked."""
+    score = SCORES["octave"]
+    pitches = note_pitches(sung(backend, "octave"), expected_seconds(score))
+    assert [round(float(_midi(p))) for p in pitches] == [60, 64, 67, 72, 60]
+    assert all(abs(cents(p, e)) < 35 for p, e
+               in zip(pitches, expected_pitches(score)))
 
 
-def test_the_default_sings_an_octave_below_the_score():
+@pytest.mark.parametrize("backend", BACKENDS)
+def test_the_default_sings_an_octave_below_the_score(backend):
     """Where every note used to be sung: reference + note - 12."""
-    sound = perform.sing(text="laa", notes=(0,), durs=(8,))
-    assert _midi(_pitches(sound, 1)[0]) == pytest.approx(48, abs=0.35)
+    sound = perform.sing(text="laa", notes=(0,), durs=(8,), backend=backend)
+    pitch, = note_pitches(sound, [4.0])
+    assert _midi(pitch) == pytest.approx(48, abs=0.35)
 
 
-def test_the_language_reaches_the_voice(octave_at_middle_c):
-    other = perform.sing(text="laa laa", notes=(0, 12), durs=(8, 8),
-                         transpose=0, lang="de")
-    assert other.shape != octave_at_middle_c.shape or not np.allclose(
-        other, octave_at_middle_c)
+@pytest.mark.parametrize("backend", BACKENDS)
+@pytest.mark.parametrize("name", ["mary", "quick", "test song"])
+def test_every_note_is_in_tune_and_the_line_as_long_as_its_score(
+        backend, name, sung):
+    score = SCORES[name]
+    sound = sung(backend, name)
+    seconds = expected_seconds(score)
+    assert abs(len(sound) / 44100 - sum(seconds)) < 0.01
+    pitches = note_pitches(sound, seconds)
+    measured = [(p, e) for p, e in zip(pitches, expected_pitches(score))
+                if p is not None]
+    assert len(measured) >= len(pitches) - 1
+    assert all(abs(cents(p, e)) < 35 for p, e in measured)
 
 
-@pytest.mark.parametrize("effect, shape", [
-    ("flite", 1), ("tremolo", 2), ("melt", 2)])
-def test_every_effect_renders(effect, shape):
+@pytest.mark.parametrize("backend", BACKENDS)
+def test_the_language_reaches_the_voice(backend, sung):
+    english = perform.sing(backend=backend, **dict(SCORES["german"],
+                                                   lang="en"))
+    german = sung(backend, "german")
+    assert english.shape != german.shape or not np.allclose(english, german)
+
+
+@pytest.mark.skipif(not _ecantorix_ready(),
+                    reason="the eCantorix engine is not installed")
+@pytest.mark.parametrize("effect, lang, shape", [
+    pytest.param("flite", "rms", 1, marks=pytest.mark.skipif(
+        not (psola.shutil.which("flite") and psola.shutil.which("bc")),
+        reason="the flite effect runs flite and bc")),
+    ("tremolo", "en", 2), ("melt", "en", 2)])
+def test_every_effect_renders(effect, lang, shape):
     """Their files are in the engine's examples, which were not where the
     configuration loaded them from; melt also needs a copy of espeak's
-    data, which the engine's Makefile makes from a Linux path."""
-    sound = perform.sing(text="laa", notes=(0,), durs=(4,), effect=effect)
+    data, which the engine's Makefile made from a Linux path."""
+    sound = perform.sing(text="laa", notes=(0,), durs=(4,), effect=effect,
+                         lang=lang)
     assert sound.ndim == shape
     if shape == 2:
         assert sound.shape[0] == 2
     assert np.abs(sound).max() == pytest.approx(1)
+
+
+@pytest.mark.skipif(not (_ecantorix_ready()
+                         and not psola.missing_requirements()),
+                    reason="comparing needs both backends")
+def test_the_two_backends_sing_the_same_notes(sung):
+    """The comparison the psola backend exists for: the same score, the
+    same pitches, the same length."""
+    score = SCORES["mary"]
+    seconds = expected_seconds(score)
+    ecantorix = sung("ecantorix", "mary")
+    ours = sung("psola", "mary")
+    assert abs(len(ecantorix) - len(ours)) < 0.01 * 44100
+    for one, other in zip(note_pitches(ecantorix, seconds),
+                          note_pitches(ours, seconds)):
+        assert abs(cents(one, other)) < 50

@@ -10,6 +10,14 @@ REPO_URLS = {
     "ssh": "git@github.com:ttm/ecantorix.git",
 }
 
+#: The eCantorix revision this package sings with: a tag of ttm/ecantorix,
+#: so that every clone is the same engine. It was whatever the default
+#: branch held when a clone was made. ``music-2`` reads its control files
+#: on Perl 5.26 and later, runs with the ``perl`` on PATH, finds espeak's
+#: data where espeak says it is, and keeps flite's renders out of
+#: espeak's cache.
+ENGINE_REVISION = "music-2"
+
 
 def get_engine():
     """Return the path to the local eCantorix engine.
@@ -60,6 +68,10 @@ def setup_engine(method="http"):
     -------
     str
         The engine directory, whether it was just cloned or already present.
+        A new clone is of :data:`ENGINE_REVISION`; one already present is
+        used as it is, so an engine cloned before the revision was pinned
+        stays what it was until its directory is removed and this is run
+        again.
 
     Raises
     ------
@@ -96,7 +108,8 @@ def setup_engine(method="http"):
     directory.parent.mkdir(parents=True, exist_ok=True)
     try:
         subprocess.run(
-            ["git", "clone", REPO_URLS[method], str(directory)], check=True
+            ["git", "clone", "--branch", ENGINE_REVISION, REPO_URLS[method],
+             str(directory)], check=True
         )
     except Exception as exc:
         raise RuntimeError(f"Failed to clone repository: {exc}") from exc

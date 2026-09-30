@@ -96,7 +96,9 @@ def test_write_abc_carries_the_lyric_line(cache):
 ])
 def test_each_effect_selects_its_include(cache, effect, expected,
                                          monkeypatch):
-    """The effect names an extra voice for the engine to `do`."""
+    """The effect names an extra voice for the engine to `do`. What the
+    flite effect needs installed is checked in test_singing_audit.py."""
+    monkeypatch.setattr(perform, "_require_flite", lambda lang: None)
     engine = cache.parent
     (engine / "Makefile").write_text("all:\n\ttrue\n")
     monkeypatch.setattr(paths, "missing_requirements", lambda: [])

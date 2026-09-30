@@ -248,7 +248,7 @@ Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) 
 * [bonds](https://github.com/ttm/music/tree/master/examples/bonds.py): plays one line three times, changing only how its characteristics are bound to its pitch.
 * [binaural_beats](https://github.com/ttm/music/tree/master/examples/binaural_beats.py): generates binaural beats using two pure tones with tremolo for relaxation or focus.
 * [sensory_stimulation](https://github.com/ttm/music/tree/master/examples/sensory_stimulation.py): writes one file per SSTIM technique with `music.stimulation`, and one three-phase session, which is the form these stimuli are actually delivered in.
-* The `music.singing` module provides basic text-to-speech utilities. Run `music.singing.setup_engine()` once to clone the [eCantorix](https://github.com/ttm/ecantorix) engine before using these features. It is cloned into your user cache directory; set `MUSIC_ECANTORIX_DIR` to put it elsewhere. Because eCantorix is a Perl program driving espeak through a Makefile, it also needs `git`, `make`, `perl`, `espeak`, `abc2midi` (the `abcmidi` package) and `sox` installed on the system, and the Perl modules `MIDI`, `Math::FFT`, `URI::Escape` and `Digest::SHA` for the `perl` on your PATH (`cpan MIDI Math::FFT URI::Escape`) — `setup_engine()` will tell you which are missing.
+* `music.sing` sings a lyric to a melody, one syllable a note, with either of two backends that sing the same score at the same pitches. The default is the [eCantorix](https://github.com/ttm/ecantorix) engine: run `music.singing.setup_engine()` once to clone it, at the revision this package is pinned to, into your user cache directory (set `MUSIC_ECANTORIX_DIR` to put it elsewhere). Because eCantorix is a Perl program driving espeak through a Makefile, it also needs `git`, `make`, `perl`, `espeak`, `abc2midi` (the `abcmidi` package) and `sox` installed on the system, and the Perl modules `MIDI`, `Math::FFT`, `URI::Escape` and `Digest::SHA` for the `perl` on your PATH (`cpan MIDI Math::FFT URI::Escape`) — `setup_engine()` will tell you which are missing. `music.sing(backend="psola")` needs none of that: espeak-ng says each syllable and Praat's PSOLA holds it at its note's pitch and length, with `pip install 'music[singing]'` and espeak-ng installed. `python tools/compare_singing.py` sings the same scores with both and measures their pitch, length and render time.
 
 ## Package structure
 
@@ -317,7 +317,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 5,050 tests, 100% line and branch coverage
+pytest                                       # 5,213 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

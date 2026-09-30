@@ -58,6 +58,28 @@ vibrato and table. Every note lasted two seconds, because the `V_` it
 renders through passed on only the pitch. `CanonicalSynth.render2` reads a
 table of any length at its own length.
 
+### Added
+
+- **A second singing backend, `sing(backend="psola")`.** espeak-ng says
+  each syllable, and Praat's PSOLA, through praat-parselmouth, holds it at
+  its note's pitch and stretches its voiced part to the note's length. It
+  sings the same score at the same pitches as eCantorix, which stays the
+  default, and needs espeak-ng and `pip install 'music[singing]'` rather
+  than Perl, abc2midi and sox.
+- **`music.sing`,** the singing entry point, is exported, as its engine's
+  setup already was.
+- **`tools/compare_singing.py` sings the same scores with both
+  backends,** measures every note's pitch against the score in cents, the
+  line's length and the render time, and writes the WAVs for listening.
+- **CI sings.** A job installs both backends on Linux, clones the pinned
+  engine, and runs the tests that sing and measure, which skip elsewhere.
+- **`setup_engine` clones a pinned revision of eCantorix, `music-2`,**
+  where it cloned whatever the default branch held. That revision of the
+  fork reads its control files on Perl 5.26 and later, runs with the
+  `perl` on PATH, finds espeak's data where espeak says it is, and keeps
+  flite's renders out of espeak's cache; the fixes are offered upstream
+  as divVerent/ecantorix#11.
+
 ### Fixed
 
 - **`convert_to_stereo` cannot overflow integer PCM.** It now promotes
@@ -153,6 +175,12 @@ table of any length at its own length.
 - **`sing` writes fractional durations as ABC does,** `/2` for a half,
   where `0.5` went into the score as it is. An unknown `effect` is
   refused before the engine is looked for.
+- **The flite effect says what it needs.** It runs `flite` and `bc`, not
+  espeak, and `lang` must name one of flite's voices. It "rendered"
+  before only because the engine's cache held espeak's renders of the
+  same syllables, which flite's shared.
+- **`sing` reads the tempo before anything is sung.** eCantorix handed a
+  `Q` of 0 to abc2midi, which called it malformed and stopped the build.
 - **`setup_engine` will not clone over a directory holding something
   else,** and says which directory, rather than reporting git's exit
   status.

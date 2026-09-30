@@ -291,17 +291,27 @@ They are re-exported from the top level like everything else, so
 Singing
 -------
 
-Text-to-speech built on the external `eCantorix
-<https://github.com/ttm/ecantorix>`_ engine. Run :func:`setup_engine` once to
-clone it; it also needs ``git``, ``make``, ``perl``, ``espeak``,
-``abc2midi`` (the ``abcmidi`` package) and ``sox`` on the system, and the Perl
-modules ``MIDI``, ``Math::FFT``, ``URI::Escape`` and ``Digest::SHA``.
-:func:`setup_engine` and ``sing`` say which are missing.
+:func:`sing` sings a lyric to a melody, one syllable a note, with either of
+two backends that sing the same score at the same pitches.
+
+The default is the external `eCantorix <https://github.com/ttm/ecantorix>`_
+engine. Run :func:`setup_engine` once to clone it; it also needs ``git``,
+``make``, ``perl``, ``espeak``, ``abc2midi`` (the ``abcmidi`` package) and
+``sox`` on the system, and the Perl modules ``MIDI``, ``Math::FFT``,
+``URI::Escape`` and ``Digest::SHA``. :func:`setup_engine` and :func:`sing`
+say which are missing.
+
+``sing(backend="psola")`` has espeak-ng say each syllable and Praat's PSOLA
+hold it at its note's pitch and length. It needs ``espeak-ng`` and
+``pip install 'music[singing]'``, and nothing of eCantorix's.
+``tools/compare_singing.py`` sings the same scores with both and measures
+them.
 
 .. autosummary::
    :toctree: generated
    :nosignatures:
 
+   sing
    setup_engine
    get_engine
    make_test_song

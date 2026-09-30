@@ -68,6 +68,37 @@ jobs:
         # the examples are the only callers this repository has.
         run: python tools/run_examples.py
 
+  singing:
+    name: Singing, with both backends
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install what the singers run
+        # eCantorix is Perl driving espeak, with abc2midi and sox; the
+        # psola backend needs espeak-ng. Both are measured, not stubbed,
+        # in tests/test_singing_engine.py, which skips everywhere else.
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes espeak espeak-ng sox abcmidi \
+              libmidi-perl liburi-perl libmath-fft-perl
+      - name: Install the package and its singing extra
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e '.[dev,singing]'
+      - name: Clone the pinned engine
+        run: python -c "import music.singing as s; print(s.setup_engine())"
+      - name: Sing, and measure it
+        run: pytest -v tests/test_singing_engine.py
+      - name: Compare the backends
+        run: python tools/compare_singing.py --out singing-comparison
+      - uses: actions/upload-artifact@v7
+        with:
+          name: singing-comparison
+          path: singing-comparison
+
   wheel:
     name: Installed wheel (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

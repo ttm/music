@@ -34,6 +34,8 @@ SIDE_EFFECTING = {
     "get_engine",
     "setup_engine",
     "make_test_song",
+    # Runs the eCantorix engine on its defaults, writing into its cache.
+    "sing",
     "print_peal",
     # Downloads about 1.3 MB from MIT.
     "setup_hrtf",

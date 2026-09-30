@@ -161,8 +161,9 @@ def test_an_empty_directory_is_cloned_into(tmp_path, monkeypatch):
     monkeypatch.setattr(bootstrap.subprocess, "run",
                         lambda *a, **k: cloned.append((a, k)))
     assert bootstrap.setup_engine() == str(target)
-    assert cloned == [((["git", "clone", "https://github.com/ttm/ecantorix",
-                         str(target)],), {"check": True})]
+    assert cloned == [((["git", "clone", "--branch", "music-2",
+                         "https://github.com/ttm/ecantorix", str(target)],),
+                       {"check": True})]
 
 
 # --------------------------------------------------------------------------
@@ -512,3 +513,80 @@ def test_any_finite_transposition_reaches_the_conf(engine, transpose):
     perform.sing(transpose=transpose)
     conf = (engine / "cache" / "achant.conf").read_text()
     assert f"$ESPEAK_TRANSPOSE = {transpose};" in conf
+
+
+# --------------------------------------------------------------------------
+# The flite effect, which runs flite rather than espeak
+# --------------------------------------------------------------------------
+
+@pytest.mark.parametrize("missing, message", [
+    (["flite"], "the flite effect runs flite, which is not installed. On "
+     "Debian or Ubuntu: sudo apt install flite. On macOS with Homebrew: "
+     "brew install flite."),
+    (["flite", "bc"], "the flite effect runs flite and bc, which are not "
+     "installed. On Debian or Ubuntu: sudo apt install flite bc. On macOS "
+     "with Homebrew: brew install flite."),
+])
+def test_the_flite_effect_names_what_it_runs(engine, monkeypatch, missing,
+                                             message):
+    """It "rendered" before: the cache held espeak's renders of the same
+    syllable, which flite's shared, so flite was never run."""
+    monkeypatch.setattr(perform.shutil, "which", lambda name: (
+        None if name in missing else f"/bin/{name}"))
+    with pytest.raises(RuntimeError, match=re.escape(message)):
+        perform.sing(effect="flite", lang="rms")
+
+
+def test_the_flite_effect_needs_one_of_flite_s_voices(engine, monkeypatch):
+    import types
+
+    monkeypatch.setattr(perform.shutil, "which", lambda name: f"/bin/{name}")
+    asked = []
+
+    def run(command, **kwargs):
+        asked.append(command)
+        if command[0] == "flite":
+            return types.SimpleNamespace(
+                stdout="Voices available: kal awb rms slt\n")
+        return fake_run(engine / "cache")(command, **kwargs)
+
+    monkeypatch.setattr(perform.subprocess, "run", run)
+    with pytest.raises(ValueError, match=re.escape(
+            "with the flite effect, lang names one of flite's voices, "
+            "['kal', 'awb', 'rms', 'slt']; got 'en'")):
+        perform.sing(effect="flite")
+    assert asked == [["flite", "-lv"]]
+    perform.sing(effect="flint", lang="slt")
+    assert "flite.inc" in (engine / "cache" / "achant.conf").read_text()
+
+
+def test_flite_s_voices_are_read_from_its_captured_output(engine,
+                                                          monkeypatch):
+    import types
+
+    monkeypatch.setattr(perform.shutil, "which", lambda name: f"/bin/{name}")
+    given = []
+
+    def run(command, **kwargs):
+        if command[0] == "flite":
+            given.append(kwargs)
+            return types.SimpleNamespace(stdout="Voices available: rms\n")
+        return fake_run(engine / "cache")(command, **kwargs)
+
+    monkeypatch.setattr(perform.subprocess, "run", run)
+    perform.sing(effect="flite", lang="rms")
+    assert given == [{"capture_output": True, "text": True}]
+
+
+@pytest.mark.parametrize("backend", ["ecantorix", "psola"])
+@pytest.mark.parametrize("L, Q, message", [
+    ("1/4", 0, "the tempo must be positive; got Q=0"),
+    ("x", 120, "L must be a fraction such as \"1/4\"; got 'x'"),
+])
+def test_a_tempo_is_read_before_anything_is_sung(tmp_path, monkeypatch,
+                                                 backend, L, Q, message):
+    """eCantorix handed Q:0 to abc2midi, which called it malformed and
+    stopped the build."""
+    monkeypatch.setenv(paths.ENV_VAR, str(tmp_path / "nowhere"))
+    with pytest.raises(ValueError, match=re.escape(message)):
+        perform.sing(L=L, Q=Q, backend=backend)

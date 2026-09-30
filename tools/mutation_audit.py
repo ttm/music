@@ -450,9 +450,11 @@ AREAS = {
             'music/singing/bootstrap.py',
             'music/singing/paths.py',
             'music/singing/perform.py',
+            'music/singing/psola.py',
         ),
         'tests': (
             'tests/test_singing_audit.py',
+            'tests/test_singing_psola.py',
             'tests/test_singing.py',
             'tests/test_abc_notation.py',
             'tests/test_remaining_paths.py::test_make_test_song_sings_its_phrase',

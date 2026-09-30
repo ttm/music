@@ -614,26 +614,55 @@ area, but the sixteen bounded audits are still not a whole-package
 mutation score: each measures its own sources against its own
 selection. A change to a module is the time to re-run its area.
 
+## Singing: next
+
+Decided on 2026-09-30: keep eCantorix as the reference, fix it where it
+lives, and build the package's own singer beside it, so the two can be
+compared. Done: the fork's fixes and pin, the upstream pull request, the
+`psola` backend and `tools/compare_singing.py`. Next, in order:
+
+1. **Listen.** Compare the two backends' WAVs for intelligibility and
+   naturalness, which the measurements do not reach.
+2. **Shape each syllable.** PSOLA holds a syllable at one pitch and
+   stretches its voiced part evenly; a sung vowel wants a short attack,
+   vibrato and a release, which the package's envelopes and vibratos
+   already provide.
+3. **Own the PSOLA.** praat-parselmouth is a compiled dependency; a
+   pitch-synchronous overlap-add in numpy would remove it, and belongs in
+   a package about discrete-time synthesis. Worth it only if it sounds as
+   good.
+4. **Sing vowels from their spectra**, as issue #5 proposes: a glottal
+   source through formant filters, with exact pitch and no speech engine,
+   weak on consonants, so beside a speech engine rather than instead of
+   it.
+
 ## Open after the September 2026 audits
 
 What the audits found and did not fix, and why. Each is recorded where
 the behaviour is, too; this is the list in one place.
 
-- **eCantorix's own defects are worked around, not fixed.** The engine
-  loads its configuration with `do "achant.conf"`, which Perl 5.26 and
-  later look for only on `@INC`; its `#!/usr/bin/perl` is not the Perl on
-  PATH on macOS; its Makefile copies espeak's data from a Linux-only
-  path, and pipes the script through `tee`, so a failed render passes
-  `make`. `sing` works round all four (`perl -I.`, the PATH `perl`, its
-  own copy of espeak's data, a check for the output file). The fixes
-  belong in ttm/ecantorix, which is another repository; until they are
-  made there, running the engine by hand still fails.
-- **Singing is verified on one machine.** The engine was run and its pitch
-  measured on macOS on 2026-09-29. `test_singing_engine.py` skips in CI,
-  where nothing installs the engine, and the `melt` effect has not been
-  tried with espeak-ng, whose data directory is laid out differently.
-  The engine's other extra voices (`poly`, `rubberband`, `mb-en1`, the
-  last needing mbrola) are not offered through `effect`.
+- **eCantorix's defects are fixed in the fork, and offered upstream.**
+  `ttm/ecantorix` at `music-2` reads its control files on Perl 5.26 and
+  later, runs with the `perl` on PATH, finds espeak's data where espeak
+  says it is, reports a failed render, and keeps flite's renders out of
+  espeak's cache; `setup_engine` clones that tag. divVerent/ecantorix#11
+  offers the general fixes to the original, which still has them. `sing`
+  keeps its workarounds, because an engine cloned before the pin stays
+  what it was until its directory is removed.
+- **Singing is verified on macOS and in CI, not everywhere.** Both
+  backends were run and measured on macOS, and the CI job sings with both
+  on Ubuntu. The `melt` effect has not been tried with espeak-ng, whose
+  data directory is laid out differently, and the engine's other extra
+  voices (`poly`, `rubberband`, `mb-en1`, the last needing mbrola) are not
+  offered through `effect`.
+- **The two backends are compared by pitch, length and time, not by
+  ear.** `tools/compare_singing.py` measures what can be measured. On
+  2026-09-30, on macOS, eCantorix sang every note within five cents and
+  PSOLA within three, and both lines were as long as their scores. PSOLA
+  rendered each score in about a quarter of a second; eCantorix took from
+  under a second, where its cache already held the syllables, to half a
+  minute for a voice it had not met. Which sounds better, and which is
+  easier to understand, is for listening to the WAVs it writes.
 - **`Being.walk(method='straight')` does not wrap** where every other
   window does. A caller that walks off the grid gets an `IndexError`;
   wrapping would change what an existing caller gets. `stay` was

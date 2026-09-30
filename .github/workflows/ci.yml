@@ -84,8 +84,8 @@ jobs:
         # it does in eCantorix's own CI.
         run: |
           sudo apt-get update
-          sudo apt-get install --yes espeak espeak-ng sox abcmidi \
-              libmidi-perl liburi-perl cpanminus
+          sudo apt-get install --yes espeak espeak-ng sox abcmidi flite \
+              bc libmidi-perl liburi-perl cpanminus
           sudo cpanm --notest Math::FFT
       - name: Install the package and its singing extra
         run: |

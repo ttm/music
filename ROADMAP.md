@@ -651,14 +651,15 @@ the behaviour is, too; this is the list in one place.
   what it was until its directory is removed.
 - **Singing is verified on macOS and in CI, not everywhere.** Both
   backends were run and measured on macOS, and the CI job sings with both
-  on Ubuntu. The `melt` effect has not been tried with espeak-ng, whose
+  on Ubuntu, with every effect. The `melt` effect has not been tried with espeak-ng, whose
   data directory is laid out differently, and the engine's other extra
   voices (`poly`, `rubberband`, `mb-en1`, the last needing mbrola) are not
   offered through `effect`.
 - **The two backends are compared by pitch, length and time, not by
   ear.** `tools/compare_singing.py` measures what can be measured. On
-  2026-09-30, on macOS, eCantorix sang every note within five cents and
-  PSOLA within three, and both lines were as long as their scores. PSOLA
+  2026-09-30 eCantorix sang every note within five cents on macOS and ten
+  on Ubuntu, in CI, and PSOLA within three on both; both lines were as
+  long as their scores. PSOLA
   rendered each score in about a quarter of a second; eCantorix took from
   under a second, where its cache already held the syllables, to half a
   minute for a voice it had not met. Which sounds better, and which is

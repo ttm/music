@@ -80,10 +80,13 @@ jobs:
         # eCantorix is Perl driving espeak, with abc2midi and sox; the
         # psola backend needs espeak-ng. Both are measured, not stubbed,
         # in tests/test_singing_engine.py, which skips everywhere else.
+        # Math::FFT is not packaged for Ubuntu, so it comes from CPAN, as
+        # it does in eCantorix's own CI.
         run: |
           sudo apt-get update
           sudo apt-get install --yes espeak espeak-ng sox abcmidi \
-              libmidi-perl liburi-perl libmath-fft-perl
+              libmidi-perl liburi-perl cpanminus
+          sudo cpanm --notest Math::FFT
       - name: Install the package and its singing extra
         run: |
           python -m pip install --upgrade pip

@@ -27,7 +27,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `bonds` | `bonds.py` | 2026-09-28 | 106 | 103 | 3 | all |
 | `tables` | `tables.py` | 2026-09-28 | 77 | 77 | 0 | all |
 | `hrtf` | `hrtf.py` | 2026-09-28 | 224 | 217 | 7 | all |
-| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py` | 2026-09-30 | 527 | 520 | 7 | all |
+| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py`, `psola.py` | 2026-09-30 | 1101 | 1090 | 11 | all |
 | `legacy` | `legacy/CanonicalSynth.py`, `IteratorSynth.py`, `classes.py`, `tables.py`, `pieces/testSong2.py` | 2026-09-30 | 1645 | 1154 | 491 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
@@ -910,7 +910,7 @@ Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 `oscillators`, and 84 for `export` with two. The latest oscillator pass took
 582 seconds with two workers, `stimuli` 60 and `localization` 233, and
 `theory` 24 to 50 with four, `structures` 172, `noises` 117,
-`sequencer` 24, `bonds` 24, `tables` 12, `hrtf` 235, `singing` 23 and
+`sequencer` 24, `bonds` 24, `tables` 12, `hrtf` 235, `singing` 55 and
 `legacy` 321. None
 is a candidate for CI at that cost — these are things to run
 deliberately, read, and act on.
@@ -1269,7 +1269,8 @@ for `hrtf` and 86 for `singing`. Running the engine itself, below,
 changed `singing`: it was remeasured on 2026-09-29 at `d3acf37`, over 99
 tests, detecting 510 of 517, and again on 2026-09-30 at `be262cc`, after
 `lang` and `transpose` were checked, detecting 520 of 527. The accepted
-survivors are the same seven.
+survivors are the same seven. The `psola` backend joined the area on
+2026-09-30; see below.
 
 ### What reading, probing and the survivors found
 
@@ -1369,6 +1370,34 @@ the `make` command, the file it reads back and how.
 | `Notes.make_dict` | 29 | The octave with three apostrophes lies above MIDI 96, and is sliced off. |
 | `Notes.make_dict` | 46, 49, 57 | `strict` on a zip of two lengths the slice makes equal. |
 | `Notes.make_dict` | 8 | `XX` around the names' string: the pattern does not match `X`. |
+
+## `singing` with the `psola` backend
+
+Measured 2026-09-30 at `ed193c7`, over 1101 mutations of the four singing
+modules, with `test_singing_psola.py` added to the selection. That file
+runs the backend against stand-ins for espeak-ng and Parselmouth, so it
+covers every line where neither is installed; `test_singing_engine.py`
+sings with the real ones and is left out of the selection, where four
+workers rendering in one engine cache would overwrite each other.
+
+The first run with the new module left 71 of 1097 alive. Most were in
+the length and tempo parsers both backends share, `_note_length` and
+`unit_seconds`, which nothing yet read exactly: ABC's slashes that
+halve, a bare `Q` against `"beat=count"`, and the refusals, word for
+word. The rest were the keyword arguments the backend hands
+`subprocess.run`, the trim threshold, two boundaries in `_sung`, and the
+backend's own defaults, which `sing` never leaves it to use. The final
+run detected 1090 of 1101.
+
+| Function | IDs | Why accepted |
+|---|---|---|
+| `_require_flite` | 38 | `rpartition(":")` for `partition`: flite's voice line has one colon. |
+| `Notes.make_dict` | 8, 29, 46, 49, 57 | As above: the `XX` the pattern ignores, the octave above 96, and `strict` on equal lengths. |
+| `psola._fit` | 21 | `endpoint=None` is false, as `False` is. |
+| `psola._sung` | 14 | A voiced frame above 1 Hz rather than 0: Praat gives an unvoiced frame 0 and a voiced one at least the 60 Hz floor. |
+| `psola._sung` | 92 | Starting an unvoiced syllable's voiced stretch at 1 s: its end, 0, is before its start, so the stretch is not used either way. |
+| `psola.sing` | 22 | Note edges left as floats: each is taken `int()` before use. |
+| `psola.sing` | 88 | The peak of an empty line taken as 1 rather than 0: nothing divided is nothing. |
 
 ## `legacy` — the synthesizers, the Being and the demonstration piece
 

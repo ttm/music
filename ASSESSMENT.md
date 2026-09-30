@@ -219,7 +219,7 @@ either documented in the code or tracked in the issue list.
   registered, so the class has somewhere to be recorded.
 
 - **Mutation testing covers every module, in sixteen areas.** The
-  September 2026 audits change each of the package's 35 modules with
+  September 2026 audits change each of the package's 36 modules with
   code to mutate, one operation at a time: everything but
   `structures/symmetry.py`, which only re-exports. All sixteen areas are
   complete, with their surviving mutants individually reviewed. These tests exposed timing, gain,

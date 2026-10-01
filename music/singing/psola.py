@@ -134,7 +134,7 @@ def sing(text, notes, durs, L="1/4", Q=120, reference=60, lang="en",
         If there is not one syllable of ``text`` and one duration for
         each note.
     """
-    from .perform import _note_length, unit_seconds
+    from .perform import _note_length, sung_phonemes, unit_seconds
 
     require()
     words = syllables(text)
@@ -148,13 +148,16 @@ def sing(text, notes, durs, L="1/4", Q=120, reference=60, lang="en",
     edges = np.round(np.cumsum([0.0] + lengths) * RATE).astype(np.int64)
     line = np.zeros(int(edges[-1]))
     program = speaker()
+    # A syllable said without a vowel is sung with a schwa.
+    sung = sung_phonemes(program, lang,
+                         [said for said in map(_clean, words) if said])
     with tempfile.TemporaryDirectory() as scratch:
         for index, (word, note) in enumerate(zip(words, notes)):
             start, end = int(edges[index]), int(edges[index + 1])
             said = _clean(word)
             if not said or end == start:
                 continue  # a syllable of punctuation alone is a rest
-            spoken = _speak(program, said, lang,
+            spoken = _speak(program, sung.get(said, said), lang,
                             Path(scratch) / f"{index}.wav")
             frequency = 440 * 2 ** ((reference + note + transpose - 69) / 12)
             line[start:end] = _fit(_sung(spoken, frequency, (end - start)

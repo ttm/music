@@ -27,7 +27,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `bonds` | `bonds.py` | 2026-09-28 | 106 | 103 | 3 | all |
 | `tables` | `tables.py` | 2026-09-28 | 77 | 77 | 0 | all |
 | `hrtf` | `hrtf.py` | 2026-09-28 | 224 | 217 | 7 | all |
-| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py`, `psola.py` | 2026-10-01 | 1137 | 1126 | 11 | all |
+| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py`, `psola.py` | 2026-10-01 | 1247 | 1236 | 11 | all |
 | `legacy` | `legacy/CanonicalSynth.py`, `IteratorSynth.py`, `classes.py`, `tables.py`, `pieces/testSong2.py` | 2026-09-30 | 1645 | 1154 | 491 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
@@ -1398,6 +1398,14 @@ short: a four-second "laa" was sung for one second, then silence.
 The fixes' 36 mutations were all detected, 1126 of 1137 in all, and
 the same 11 survive, two of `_sung`'s renumbered.
 
+And again the same day, over `8179776` with the schwa overlaid: a
+syllable espeak says without a vowel is handed to either backend as
+its phonemes and a schwa, to eCantorix through `$EDIT_SYLLABLES` in
+the configuration it runs as Perl, where a test runs the generated
+Perl on hostile syllables. Its 110 mutations were all detected, 1236
+of 1247 in all, with the same 11 survivors; `psola.sing`'s 88 is now
+103.
+
 | Function | IDs | Why accepted |
 |---|---|---|
 | `_require_flite` | 38 | `rpartition(":")` for `partition`: flite's voice line has one colon. |
@@ -1406,7 +1414,7 @@ the same 11 survive, two of `_sung`'s renumbered.
 | `psola._sung` | 28 | A voiced frame above 1 Hz rather than 0: Praat gives an unvoiced frame 0 and a voiced one at least the 60 Hz floor. |
 | `psola._sung` | 33 | Starting an unvoiced syllable's voiced stretch at 1 s: its end, 0, is before its start, so the stretch is not used either way. |
 | `psola.sing` | 22 | Note edges left as floats: each is taken `int()` before use. |
-| `psola.sing` | 88 | The peak of an empty line taken as 1 rather than 0: nothing divided is nothing. |
+| `psola.sing` | 103 | The peak of an empty line taken as 1 rather than 0: nothing divided is nothing. |
 
 ## `legacy` — the synthesizers, the Being and the demonstration piece
 

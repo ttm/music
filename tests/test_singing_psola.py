@@ -114,11 +114,18 @@ def stand_ins(monkeypatch):
 
     `_speak` gives back the syllable it was asked for, and `_sung` a
     constant as long as it was asked for, at the note's frequency, so a
-    sung line can be read back note by note.
+    sung line can be read back note by note. No syllable is said without
+    a vowel, unless a test puts one in ``calls["phonemes"]``.
     """
-    calls = {"speak": [], "sung": []}
+    calls = {"speak": [], "sung": [], "transcribed": [], "phonemes": {}}
     monkeypatch.setattr(psola, "require", lambda: None)
     monkeypatch.setattr(psola, "speaker", lambda: "/bin/espeak-ng")
+
+    def phonemes(program, voice, syllables):
+        calls["transcribed"].append((program, voice, list(syllables)))
+        return calls["phonemes"]
+
+    monkeypatch.setattr(perform, "sung_phonemes", phonemes)
 
     def speak(program, syllable, voice, path):
         calls["speak"].append((program, syllable, voice, path.name))
@@ -625,6 +632,16 @@ def test_padding_keeps_a_sound_s_rate_and_adds_whole_samples(parselmouth):
     padded = psola._padded(spoken, 0.21)
     np.testing.assert_array_equal(padded.values[0], [1.0, 2.0, 0, 0, 0])
     assert padded.sampling_frequency == 10.0
+
+
+def test_a_syllable_said_without_a_vowel_is_said_with_a_schwa(stand_ins):
+    """espeak says French "ques" as a bare /k/, which left its note with
+    nothing to sing."""
+    stand_ins["phonemes"]["ques"] = "[[k@]]"
+    psola.sing("Jac-ques, !", notes=(4, 0, 2), durs=(1, 1, 1), lang="fr")
+    assert stand_ins["transcribed"] == [
+        ("/bin/espeak-ng", "fr", ["Jac", "ques"])]
+    assert [call[1] for call in stand_ins["speak"]] == ["Jac", "[[k@]]"]
 
 
 def test_psola_s_own_defaults_are_sing_s(stand_ins):

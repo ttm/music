@@ -102,12 +102,15 @@ def test_a_long_note_is_sung_to_its_end(backend):
 
 @pytest.mark.parametrize("backend", BACKENDS)
 def test_a_syllable_said_as_a_consonant_alone_is_sung(backend):
-    """espeak says French "ques" as a /k/ 41 ms long, too short for
-    Praat to find a pitch in; the psola backend stopped there."""
+    """espeak says French "ques" as a bare /k/, 41 ms long: the psola
+    backend stopped there, too short for Praat to find a pitch in, and
+    neither backend had a vowel to sing the note on. A singer sings the
+    silent e, and so do both."""
     sound = perform.sing(text="Jac-ques", notes=(4, 0), durs=(1, 1),
                          lang="fr", backend=backend)
     assert abs(len(sound) / 44100 - 1) < 0.01
-    assert np.abs(sound[len(sound) // 2:]).max() > 0
+    jac, ques = note_pitches(sound, [0.5, 0.5])
+    assert ques is not None and abs(cents(ques, 130.81)) < 35
 
 
 @pytest.mark.parametrize("backend", BACKENDS)

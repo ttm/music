@@ -11,6 +11,7 @@ from pathlib import Path
 from numbers import Real
 import soundfile as sf
 from music.core import normalize_mono, normalize_stereo
+from .psola import syllables
 from .paths import (ENGINE_MARKER, cache_dir, engine_dir, is_engine,
                     require_system_dependencies)
 
@@ -48,7 +49,10 @@ def sing(text="Mar-ry had a litt-le lamb",
     ----------
     text : str
         The lyric, one syllable per note: syllables within a word joined
-        by hyphens, words separated by spaces.
+        by hyphens, words separated by spaces. A syllable espeak says
+        without a vowel is sung with a schwa after it, as a singer sings
+        the e that spoken French leaves silent: alone, the "ques" of
+        "Jac-ques" is a bare /k/, and its note had nothing to sing.
     notes : sequence of int
         Each note's pitch, in semitones above ``reference``.
     durs : sequence
@@ -173,6 +177,11 @@ def sing(text="Mar-ry had a litt-le lamb",
     conf_text += '$ESPEAK_TRANSPOSE = {};'.format(transpose)
     if effect:
         conf_text += f"\ndo 'extravoices/{EFFECTS[effect]}.inc';"
+    if not (effect and EFFECTS[effect] == 'flite'):
+        # flite reads no espeak phonemes, and lang names a flite voice.
+        sung = sung_phonemes('espeak', lang, syllables(text))
+        if sung:
+            conf_text += '\n' + _edit_syllables(sung)
     with open(cache / 'achant.conf', 'w') as f:
         f.write(conf_text)
     try:
@@ -333,6 +342,82 @@ def translate_to_abc(notes, durs, reference):
     durs = [_abc_length(i) for i in durs]
     notes = converter.convert(notes, reference)
     return ''.join([i + j for i, j in zip(notes, durs)])
+
+
+#: What a syllable is sung on: a vowel of the IPA, as espeak writes them,
+#: or the mark of a consonant that makes a syllable of itself.
+_NUCLEUS = re.compile('[aeiouyæøœɐɑɒɔəɘɛɜɞɤɪɨɯɵɶʉʊʌʏᵻɚɝ̩]')
+
+
+def sung_phonemes(program, voice, syllables):
+    """The phonemes to sing each syllable espeak says without a vowel.
+
+    espeak says a syllable as it is spoken, and spoken French leaves the e
+    of "Jacques" silent: "ques" alone is a bare /k/, 41 ms long, with
+    nothing to hold a note on. A singer gives that e its note, as a
+    schwa, and so do both backends of :func:`sing`: the phonemes espeak
+    says, then a schwa.
+
+    Parameters
+    ----------
+    program : str
+        The espeak that will sing them.
+    voice : str
+        The espeak voice, as :func:`sing`'s ``lang``.
+    syllables : iterable of str
+        The syllables, each as the singer will be handed it.
+
+    Returns
+    -------
+    dict
+        Each syllable espeak says without a vowel, mapped to espeak's
+        phoneme input for it with a schwa after, such as ``"[[k@]]"``. A
+        syllable said with a vowel, or said as nothing, is left out; so is
+        every one if `program` cannot speak in `voice`.
+    """
+    sung = {}
+    for syllable in dict.fromkeys(syllables):
+        ipa = _transcribe(program, voice, syllable, '--ipa')
+        if not ipa or _NUCLEUS.search(ipa):
+            continue
+        phonemes = _transcribe(program, voice, syllable, '-x')
+        if phonemes:
+            sung[syllable] = f'[[{phonemes}@]]'
+    return sung
+
+
+def _transcribe(program, voice, text, notation):
+    """`text` as `program` says it in `voice`, written in `notation`.
+
+    ``"--ipa"`` for the IPA, ``"-x"`` for espeak's phoneme mnemonics;
+    None where `program` fails, as for a voice it does not have.
+    """
+    result = subprocess.run([program, '-q', notation, '-v', voice, text],
+                            capture_output=True, text=True)
+    if result.returncode:
+        return None
+    return ''.join(result.stdout.split())
+
+
+def _edit_syllables(sung):
+    """Perl that has eCantorix sing each syllable of `sung` as mapped.
+
+    The engine hands ``$EDIT_SYLLABLES`` each syllable as abc2midi wrote
+    it, after a space or a line break, with its punctuation; and it sings
+    the part of a syllable in ``[[ ]]``, showing the rest. Each syllable
+    is written as a Perl string and only ever read as one.
+    """
+    pairs = ', '.join(f'{_perl_string(said)} => {_perl_string(phonemes)}'
+                      for said, phonemes in sung.items())
+    return ('my %sung = (' + pairs + ');\n'
+            '$EDIT_SYLLABLES = sub { (my $said = $_) =~ s/^\\s+|\\s+$//g; '
+            '$_ .= $sung{$said} if exists $sung{$said}; };')
+
+
+def _perl_string(text):
+    """`text` as a single-quoted Perl string, in which only ``\\\\`` and
+    ``\\'`` are read as anything but themselves."""
+    return "'" + text.replace('\\', '\\\\').replace("'", "\\'") + "'"
 
 
 def _note_length(duration):

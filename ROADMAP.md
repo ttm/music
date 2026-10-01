@@ -621,17 +621,32 @@ lives, and build the package's own singer beside it, so the two can be
 compared. Done: the fork's fixes and pin, the upstream pull request, the
 `psola` backend and `tools/compare_singing.py`. Next, in order:
 
-1. **Listen.** Compare the two backends' WAVs for intelligibility and
-   naturalness, which the measurements do not reach.
-2. **Shape each syllable.** PSOLA holds a syllable at one pitch and
-   stretches its voiced part evenly; a sung vowel wants a short attack,
-   vibrato and a release, which the package's envelopes and vibratos
-   already provide.
-3. **Own the PSOLA.** praat-parselmouth is a compiled dependency; a
+1. **Listened, on 2026-10-01**, to ten scores sung by both from the same
+   espeak, matched in loudness: PSOLA ties, and wins in some, sounding
+   less artificial, but some of its syllables are less clear. Listening
+   also found two of the backend's bugs, fixed, and that neither backend
+   sang French "ques": espeak says it as a bare /k/, and both now give it
+   a schwa, as a singer does.
+2. **Clearer syllables.** eCantorix asks espeak for the speed that fits
+   each note, down to 80 words a minute, so most of a syllable's length
+   comes from espeak's own timing; PSOLA takes the syllable at espeak's
+   speaking speed and stretches its whole voiced part evenly, consonant
+   transitions included. Asking espeak for the note's speed, and
+   stretching only the vowel's steady part, would test whether that is
+   the difference.
+3. **Shape each syllable.** PSOLA holds a syllable at one pitch; a sung
+   vowel wants a short attack, vibrato and a release, which the
+   package's envelopes and vibratos already provide.
+4. **Effects for PSOLA.** eCantorix's tremolo is sox's tremolo and reverb
+   in stereo, its melt a female voice at a fixed 440 Hz resampled to each
+   note, and flite another speaker: the package's own tremolo, reverb and
+   localization, resampling, and flite as a second speaker would give the
+   psola backend all three.
+5. **Own the PSOLA.** praat-parselmouth is a compiled dependency; a
    pitch-synchronous overlap-add in numpy would remove it, and belongs in
    a package about discrete-time synthesis. Worth it only if it sounds as
    good.
-4. **Sing vowels from their spectra**, as issue #5 proposes: a glottal
+6. **Sing vowels from their spectra**, as issue #5 proposes: a glottal
    source through formant filters, with exact pitch and no speech engine,
    weak on consonants, so beside a speech engine rather than instead of
    it.

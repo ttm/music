@@ -7,6 +7,9 @@ that hand-over is checked here without it.
 """
 
 import re
+import shutil
+import subprocess
+import types
 
 import numpy as np
 import pytest
@@ -213,11 +216,51 @@ def test_sing_writes_the_score_and_conf_the_engine_reads(engine, recorded):
         "Q:120\nV:1\nK:C\nE=D=C=DEEE2\nw: Mar-ry had a litt-le lamb")
     assert recorded["copy"] == [(engine / "Makefile", cache / "Makefile")]
     assert recorded["run"] == [
+        (["espeak", "-q", "--ipa", "-v", "en", syllable],
+         {"capture_output": True, "text": True})
+        for syllable in ["Mar", "ry", "had", "a", "litt", "le", "lamb"]] + [
         (["espeak", "--version"], {"capture_output": True, "text": True}),
         (["make", "-C", str(cache), "ECANTORIX=perl -I. ../ecantorix.pl"],
          {"check": True, "capture_output": True, "text": True})]
     assert recorded["read"] == [(str(cache / "achant.wav"),
                                  {"dtype": "float64"})]
+
+
+def test_the_engine_sings_a_syllable_without_a_vowel_with_a_schwa(
+        engine, recorded, monkeypatch):
+    """espeak says French "ques" as a bare /k/, which left its note with
+    nothing to sing."""
+    asked = []
+    monkeypatch.setattr(perform, "sung_phonemes", lambda *args: (
+        asked.append(args) or {"ques,": "[[k@]]"}))
+    perform.sing(text="Jac-ques, Jac", notes=(4, 0, 4), durs=(1, 1, 1),
+                 lang="fr", effect="tremolo")
+    assert asked == [("espeak", "fr", ["Jac", "ques,", "Jac"])]
+    assert (engine / "cache" / "achant.conf").read_text() == (
+        '$ESPEAK_VOICE = "fr";\n$ESPEAK_TRANSPOSE = -12;\n'
+        "do 'extravoices/tremolo.inc';\n"
+        + perform._edit_syllables({"ques,": "[[k@]]"}))
+
+
+def test_a_lyric_with_a_vowel_in_every_syllable_edits_none(engine, recorded,
+                                                         monkeypatch):
+    monkeypatch.setattr(perform, "sung_phonemes", lambda *args: {})
+    perform.sing()
+    assert "EDIT_SYLLABLES" not in (engine / "cache" /
+                                    "achant.conf").read_text()
+
+
+def test_with_flite_no_syllable_is_looked_up(engine, recorded, monkeypatch):
+    """flite reads no espeak phonemes, and lang names a flite voice."""
+    monkeypatch.setattr(perform, "_require_flite", lambda lang: None)
+    asked = []
+    monkeypatch.setattr(perform, "sung_phonemes", lambda *args: (
+        asked.append(args) or {"ques": "[[k@]]"}))
+    perform.sing(text="Jac-ques", notes=(4, 0), durs=(1, 1), lang="rms",
+                 effect="flite")
+    assert asked == []
+    assert "EDIT_SYLLABLES" not in (engine / "cache" /
+                                    "achant.conf").read_text()
 
 
 def test_sing_passes_its_score_settings_through(engine, recorded):
@@ -590,3 +633,114 @@ def test_a_tempo_is_read_before_anything_is_sung(tmp_path, monkeypatch,
     monkeypatch.setenv(paths.ENV_VAR, str(tmp_path / "nowhere"))
     with pytest.raises(ValueError, match=re.escape(message)):
         perform.sing(L=L, Q=Q, backend=backend)
+
+
+# --------------------------------------------------------------------------
+# A syllable said without a vowel, sung with a schwa
+# --------------------------------------------------------------------------
+
+def _transcriber(monkeypatch, answers, returncode=0):
+    """espeak, as `answers` maps (notation, syllable) to what it prints."""
+    ran = []
+
+    def run(command, capture_output, text):
+        ran.append(command)
+        notation, syllable = command[2], command[-1]
+        return types.SimpleNamespace(
+            returncode=returncode,
+            stdout=answers.get((notation, syllable), ""), stderr="")
+
+    monkeypatch.setattr(perform.subprocess, "run", run)
+    return ran
+
+
+def test_a_syllable_without_a_vowel_gets_its_phonemes_and_a_schwa(
+        monkeypatch):
+    ran = _transcriber(monkeypatch, {
+        ("--ipa", "Jac"): "ʒˈak\n", ("--ipa", "ques"): " k\n",
+        ("-x", "ques"): " k\n", ("--ipa", "ble"): "bl\n",
+        ("-x", "ble"): "b l\n"})
+    sung = perform.sung_phonemes("/bin/espeak", "fr",
+                                 ["Jac", "ques", "Jac", "ble", "ques"])
+    assert sung == {"ques": "[[k@]]", "ble": "[[bl@]]"}
+    assert ran == [
+        ["/bin/espeak", "-q", "--ipa", "-v", "fr", "Jac"],
+        ["/bin/espeak", "-q", "--ipa", "-v", "fr", "ques"],
+        ["/bin/espeak", "-q", "-x", "-v", "fr", "ques"],
+        ["/bin/espeak", "-q", "--ipa", "-v", "fr", "ble"],
+        ["/bin/espeak", "-q", "-x", "-v", "fr", "ble"]]
+
+
+@pytest.mark.parametrize("ipa", [
+    "ʒˈak", "lˈɑː", "ʁˈə-", "kˈø", "fʁˈɛ", "tˈuː", "ɡˈɪv", "bˈʌt", "ɪt",
+    "lˈʊk", "bˈɔːl", "mˈæn", "nˈʏ", "ʃˈœn", "vˈɐ", "hˈɜː", "ɡˈɒt",
+    "lˈɪtᵻl", "fˈɚ", "ˈaɪ", "mˈe", "zˈi", "ʃˈy", "tˈo", "bˈu",
+    "bˈʉ", "kˈɨ", "sˈɯ", "pˈɤ", "ɵ", "ɘ", "ɞ", "ɶ", "ɝ", "n\u0329"])
+def test_a_syllable_with_a_vowel_or_a_syllabic_consonant_is_left(
+        monkeypatch, ipa):
+    _transcriber(monkeypatch, {("--ipa", "la"): ipa})
+    assert perform.sung_phonemes("espeak", "en", ["la"]) == {}
+
+
+@pytest.mark.parametrize("ipa, phonemes", [
+    ("", "k"),          # said as nothing: a rest, as it was
+    ("k", ""),          # no mnemonics to sing
+])
+def test_a_syllable_said_as_nothing_is_left(monkeypatch, ipa, phonemes):
+    _transcriber(monkeypatch, {("--ipa", "-"): ipa, ("-x", "-"): phonemes})
+    assert perform.sung_phonemes("espeak", "fr", ["-"]) == {}
+
+
+def test_a_voice_espeak_lacks_edits_nothing(monkeypatch):
+    ran = _transcriber(monkeypatch, {("--ipa", "ques"): "k",
+                                     ("-x", "ques"): "k"}, returncode=1)
+    assert perform.sung_phonemes("espeak", "xx", ["ques"]) == {}
+    assert ran == [["espeak", "-q", "--ipa", "-v", "xx", "ques"]]
+
+
+def test_the_transcription_is_asked_for_as_text():
+    asked = []
+
+    def run(command, **kwargs):
+        asked.append(kwargs)
+        return types.SimpleNamespace(returncode=0, stdout="a", stderr="")
+
+    original = perform.subprocess.run
+    perform.subprocess.run = run
+    try:
+        assert perform._transcribe("espeak", "en", "a", "--ipa") == "a"
+    finally:
+        perform.subprocess.run = original
+    assert asked == [{"capture_output": True, "text": True}]
+
+
+@pytest.mark.parametrize("text, written", [
+    ("ques", "'ques'"), ("qu'", "'qu\\''"), ("a\\b", "'a\\\\b'"),
+    ("[[k@]]", "'[[k@]]'")])
+def test_a_syllable_is_written_as_a_perl_string(text, written):
+    assert perform._perl_string(text) == written
+
+
+@pytest.mark.skipif(not shutil.which("perl"), reason="needs perl")
+def test_the_engine_s_edit_sings_each_mapped_syllable_and_runs_nothing(
+        tmp_path):
+    """The configuration is run as Perl, and the syllables are the
+    user's: each must be a string to Perl and never code."""
+    sung = {"ques,": "[[k@]]", "qu'": "[[k@]]", "a\\b": "[[b@]]",
+            "'; print 'ran'; '": "[[r@]]", "Frè": "[[f@]]",
+            "$x @y": "[[d@]]"}
+    script = tmp_path / "edit.pl"
+    script.write_text(
+        perform._edit_syllables(sung) + "\n"
+        "binmode STDOUT;\n"
+        "while (my $line = <STDIN>) { chomp $line; local $_ = $line; "
+        "$EDIT_SYLLABLES->(); print \"$_\\n\"; }\n", encoding="utf-8")
+    heard = ["\nFrè", " ques,", "qu'", " a\\b", "'; print 'ran'; '",
+             "$x @y", " Jac", "ques"]
+    result = subprocess.run(["perl", str(script)], capture_output=True,
+                            input="\n".join(h.replace("\n", "")
+                                            for h in heard).encode() + b"\n",
+                            check=True)
+    assert result.stdout.decode().splitlines() == [
+        "Frè[[f@]]", " ques,[[k@]]", "qu'[[k@]]", " a\\b[[b@]]",
+        "'; print 'ran'; '[[r@]]", "$x @y[[d@]]", " Jac", "ques"]

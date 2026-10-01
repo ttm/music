@@ -181,6 +181,12 @@ table of any length at its own length.
   same syllables, which flite's shared.
 - **`sing` reads the tempo before anything is sung.** eCantorix handed a
   `Q` of 0 to abc2midi, which called it malformed and stopped the build.
+- **A syllable spoken without a vowel is sung.** espeak says a syllable
+  as it is spoken, and spoken French leaves the e of "Jacques" silent, so
+  the "ques" of "Frè-re Jac-ques" was a bare /k/ with nothing to hold its
+  note. Both backends now sing such a syllable as a singer does, with a
+  schwa after it: espeak is asked for each syllable's IPA, and one with
+  no vowel is handed over as its phonemes and `@`.
 - **`setup_engine` will not clone over a directory holding something
   else,** and says which directory, rather than reporting git's exit
   status.

@@ -107,7 +107,7 @@ def test_each_effect_selects_its_include(cache, effect, expected,
     monkeypatch.setattr(perform.sf, "read",
                         lambda path, dtype=None: (np.zeros(4), 44100))
 
-    perform.sing(effect=effect)
+    perform.sing(effect=effect, backend="ecantorix")
 
     assert expected in (cache / "achant.conf").read_text()
 
@@ -121,7 +121,7 @@ def test_the_language_and_transposition_reach_the_conf(cache, monkeypatch):
     monkeypatch.setattr(perform.sf, "read",
                         lambda path, dtype=None: (np.zeros(4), 44100))
 
-    perform.sing(lang="pt", transpose=-24)
+    perform.sing(lang="pt", transpose=-24, backend="ecantorix")
 
     conf = (cache / "achant.conf").read_text()
     assert '$ESPEAK_VOICE = "pt";' in conf
@@ -138,7 +138,7 @@ def test_sing_returns_normalized_samples(cache, monkeypatch):
                         lambda path, dtype=None: (np.array([0.0, 1.0, 2.0]),
                                                   44100))
 
-    out = perform.sing()
+    out = perform.sing(backend="ecantorix")
 
     assert np.allclose(out, [-1.0, 0.0, 1.0])
 
@@ -155,7 +155,7 @@ def test_sing_rejects_a_render_at_the_wrong_sample_rate(cache, monkeypatch):
                         lambda path, dtype=None: (np.zeros(4), 22050))
 
     with pytest.raises(RuntimeError, match="44100"):
-        perform.sing()
+        perform.sing(backend="ecantorix")
 
 
 def test_translate_to_abc_rejects_a_length_mismatch():

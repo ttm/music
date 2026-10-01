@@ -157,7 +157,7 @@ def test_sing_reports_a_missing_makefile(tmp_path, monkeypatch):
     with patch.object(perform.shutil, "copy",
                       side_effect=OSError("disk full")):
         with pytest.raises(RuntimeError, match="Failed to prepare"):
-            perform.sing()
+            perform.sing(backend="ecantorix")
 
 
 # --------------------------------------------------------------------------

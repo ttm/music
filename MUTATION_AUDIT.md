@@ -27,7 +27,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `bonds` | `bonds.py` | 2026-09-28 | 106 | 103 | 3 | all |
 | `tables` | `tables.py` | 2026-09-28 | 77 | 77 | 0 | all |
 | `hrtf` | `hrtf.py` | 2026-09-28 | 224 | 217 | 7 | all |
-| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py`, `psola.py` | 2026-10-01 | 1247 | 1236 | 11 | all |
+| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py`, `psola.py` | 2026-10-01 | 1252 | 1239 | 11 | all |
 | `legacy` | `legacy/CanonicalSynth.py`, `IteratorSynth.py`, `classes.py`, `tables.py`, `pieces/testSong2.py` | 2026-09-30 | 1645 | 1154 | 491 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
@@ -1406,7 +1406,12 @@ Perl on hostile syllables. Its 110 mutations were all detected, 1236
 of 1247 in all, with the same 11 survivors; `psola.sing`'s 88 is now
 103. Over `e007b90`, with the natural signs on E and B and the lookup
 that leaves a lyric alone when espeak cannot be run, the figures and
-the survivors are the same.
+the survivors are the same. Over `fc6c4e5`, with psola made the
+default, its 5 new mutations were all detected, 1239 of 1252, with the
+same survivors. A full test run made while that audit ran failed on
+one of eCantorix's renders, and passed alone: a mutant that ignores
+the engine directory's override can send the stubbed tests into the
+real engine's cache. Sing for real only when no audit is running.
 
 | Function | IDs | Why accepted |
 |---|---|---|

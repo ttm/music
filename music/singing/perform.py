@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Utilities to synthesize singing from text using eCantorix."""
+"""Singing a lyric to a melody: :func:`sing`, and the score and
+configuration it writes for the eCantorix backend."""
 
 import re
 import logging
@@ -22,8 +23,8 @@ from .paths import (ENGINE_MARKER, cache_dir, engine_dir, is_engine,
 #: configuration the engine runs as Perl, so nothing else may reach it.
 _VOICE = re.compile(r'[A-Za-z0-9_-]+(\+[A-Za-z0-9_-]+)?')
 
-#: The singers :func:`sing` can use.
-BACKENDS = ('ecantorix', 'psola')
+#: The singers :func:`sing` can use, the default first.
+BACKENDS = ('psola', 'ecantorix')
 
 #: The voices from the engine's extras that ``effect`` may name, and the
 #: file each loads. ``flint`` is an earlier spelling of ``flite``.
@@ -34,16 +35,18 @@ EFFECTS = {'flite': 'flite', 'flint': 'flite', 'tremolo': 'tremolo',
 def sing(text="Mar-ry had a litt-le lamb",
          notes=(4, 2, 0, 2, 4, 4, 4), durs=(1, 1, 1, 1, 1, 1, 2),
          M='4/4', L='1/4', Q=120, K='C', reference=60,
-         lang='en', transpose=-12, effect=None, backend='ecantorix'):
+         lang='en', transpose=-12, effect=None, backend='psola'):
     """Sing a line of text to a melody.
 
-    With the default backend, eCantorix, the melody is written as ABC
-    notation, the engine renders it through espeak, and the result is read
-    back as samples. With ``backend="psola"``, espeak-ng says each
-    syllable and Praat's PSOLA holds it at its note's pitch and length:
-    see :mod:`music.singing.psola`. Both sing MIDI
-    ``reference + note + transpose`` for the same lengths, so the two can
-    be compared.
+    By default espeak-ng says each syllable, and Praat's PSOLA holds it at
+    its note's pitch and length: see :mod:`music.singing.psola`. It needs
+    espeak-ng and ``pip install 'music[singing]'``. With
+    ``backend="ecantorix"``, the melody is written as ABC notation, the
+    eCantorix engine renders it through espeak, and the result is read
+    back as samples; that needs the engine, which
+    :func:`~music.singing.setup_engine` clones, and Perl, abc2midi and sox.
+    Both sing MIDI ``reference + note + transpose`` for the same lengths,
+    so the two can be compared.
 
     Parameters
     ----------
@@ -78,16 +81,19 @@ def sing(text="Mar-ry had a litt-le lamb",
         MIDI ``reference + note + transpose``. The default, -12, sings an
         octave below the score, where every note used to be sung.
     effect : str or None
-        A voice from the eCantorix engine's extras: ``"flite"`` (also
+        A voice from the eCantorix engine's extras, so only with
+        ``backend="ecantorix"``: ``"flite"`` (also
         accepted as ``"flint"``, its earlier spelling here), ``"tremolo"``
         or ``"melt"``. None sings with the plain voice. ``"flite"`` says
         each syllable with the flite synthesizer instead of espeak, so it
         needs ``flite`` and ``bc`` installed, and ``lang`` names one of
         flite's voices, such as ``"rms"`` or ``"slt"``.
-    backend : {'ecantorix', 'psola'}
-        Which singer. eCantorix is the reference this package has always
-        used; ``"psola"`` needs espeak-ng and
-        ``pip install 'music[singing]'``, and has no effects.
+    backend : {'psola', 'ecantorix'}
+        Which singer. ``"psola"``, the default, needs espeak-ng and
+        ``pip install 'music[singing]'``, and has no effects yet.
+        ``"ecantorix"`` is the engine this package sang with by default
+        until PSOLA, kept as the reference it is compared with, and for
+        its effects.
 
     Returns
     -------
@@ -100,13 +106,14 @@ def sing(text="Mar-ry had a litt-le lamb",
     Raises
     ------
     RuntimeError
-        If the engine is not installed (run
+        If espeak-ng or praat-parselmouth is missing; or, with
+        ``backend="ecantorix"``, if the engine is not installed (run
         :func:`music.singing.setup_engine`), cannot be built in the cache,
-        or renders at a rate other than 44,100 Hz; if the flite effect is
-        asked for without ``flite`` and ``bc``; or, with
-        ``backend="psola"``, if espeak-ng or praat-parselmouth is missing.
+        or renders at a rate other than 44,100 Hz, or the flite effect is
+        asked for without ``flite`` and ``bc``.
     ValueError
-        If ``effect`` is not one of those above, ``lang`` is not a voice
+        If ``backend`` is not one of those above, ``effect`` is not one of
+        those above or is asked of the psola backend, ``lang`` is not a voice
         name, ``transpose`` is not a finite number, ``L`` or ``Q`` is not
         a length or tempo ABC can read (see :func:`unit_seconds`), there is
         not exactly
@@ -118,8 +125,9 @@ def sing(text="Mar-ry had a litt-le lamb",
 
     Notes
     -----
-    Measured on the engine, a note of 0 at the defaults sings at 130.3 Hz,
-    MIDI 48, and at ``transpose=0`` at 262.5 Hz, middle C.
+    Measured, a note of 0 at the defaults sings at 130.8 Hz, MIDI 48, and
+    at ``transpose=0`` at 261.6 Hz, middle C; eCantorix sings them at
+    130.3 Hz and 262.5 Hz.
 
     Three things kept these parameters from reaching the engine. It loads
     the configuration with Perl's ``do "achant.conf"``, which since Perl
@@ -141,7 +149,8 @@ def sing(text="Mar-ry had a litt-le lamb",
     if effect and backend != 'ecantorix':
         raise ValueError(
             f"effect {effect!r} is one of eCantorix's voices; the "
-            f"{backend} backend sings the plain voice only")
+            f"{backend} backend sings the plain voice only. Pass "
+            f"backend='ecantorix' for it")
     if not (isinstance(lang, str) and _VOICE.fullmatch(lang)):
         raise ValueError(
             f"lang must be an espeak voice name, such as 'en' or 'pt-br'; "

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Sing the same scores with every singing backend, and measure them.
 
-``music.singing.sing`` has two backends: eCantorix, the Perl engine this
-package has always used, and ``psola``, espeak-ng with Praat's PSOLA. They
+``music.singing.sing`` has two backends: ``psola``, espeak-ng with
+Praat's PSOLA, the default, and eCantorix, the Perl engine it replaced as
+the default and is measured against. They
 sing the same scores to the same pitches, MIDI ``reference + note +
 transpose``, for the same lengths, so they can be measured against the
 score and against each other. This renders each score below with each

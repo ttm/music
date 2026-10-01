@@ -294,16 +294,17 @@ Singing
 :func:`sing` sings a lyric to a melody, one syllable a note, with either of
 two backends that sing the same score at the same pitches.
 
-The default is the external `eCantorix <https://github.com/ttm/ecantorix>`_
-engine. Run :func:`setup_engine` once to clone it; it also needs ``git``,
-``make``, ``perl``, ``espeak``, ``abc2midi`` (the ``abcmidi`` package) and
-``sox`` on the system, and the Perl modules ``MIDI``, ``Math::FFT``,
-``URI::Escape`` and ``Digest::SHA``. :func:`setup_engine` and :func:`sing`
-say which are missing.
+By default espeak-ng says each syllable and Praat's PSOLA holds it at its
+note's pitch and length. It needs ``espeak-ng`` and
+``pip install 'music[singing]'``, and :func:`sing` says which is missing.
 
-``sing(backend="psola")`` has espeak-ng say each syllable and Praat's PSOLA
-hold it at its note's pitch and length. It needs ``espeak-ng`` and
-``pip install 'music[singing]'``, and nothing of eCantorix's.
+``sing(backend="ecantorix")`` sings the same score with the external
+`eCantorix <https://github.com/ttm/ecantorix>`_ engine, the default until
+PSOLA, kept as the reference and for its effects. Run :func:`setup_engine`
+once to clone it; it also needs ``git``, ``make``, ``perl``, ``espeak``,
+``abc2midi`` (the ``abcmidi`` package) and ``sox`` on the system, and the
+Perl modules ``MIDI``, ``Math::FFT``, ``URI::Escape`` and ``Digest::SHA``.
+:func:`setup_engine` and :func:`sing` say which are missing.
 ``tools/compare_singing.py`` sings the same scores with both and measures
 them.
 

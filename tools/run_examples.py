@@ -41,11 +41,7 @@ EXAMPLES = ROOT / "examples"
 #: is expected to run to completion with a zero exit status, so a new
 #: example is covered the moment it is added rather than when someone
 #: remembers to list it.
-SKIP = {
-    "singing_demo.py":
-        "needs the external eCantorix engine, which setup_engine() clones "
-        "at runtime and which needs git, make, perl and espeak",
-}
+SKIP: dict[str, str] = {}
 
 
 def examples() -> list[pathlib.Path]:

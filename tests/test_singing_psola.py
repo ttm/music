@@ -235,17 +235,35 @@ def test_sing_hands_psola_its_score(monkeypatch):
                             transpose=5))]
 
 
+def test_sing_sings_with_psola_by_default(monkeypatch):
+    """eCantorix was the default, and needed its engine cloned, Perl and
+    four of its modules, abc2midi and sox; PSOLA needs espeak-ng and a pip
+    extra."""
+    handed = []
+    monkeypatch.setattr(psola, "sing", lambda *a, **k: (
+        handed.append((a, k)) or np.zeros(3)))
+    perform.sing()
+    assert handed == [(("Mar-ry had a litt-le lamb", (4, 2, 0, 2, 4, 4, 4),
+                        (1, 1, 1, 1, 1, 1, 2)),
+                       dict(L="1/4", Q=120, reference=60, lang="en",
+                            transpose=-12))]
+
+
 def test_sing_refuses_an_unknown_backend():
     with pytest.raises(ValueError, match=_exactly(
-            "backend must be one of ('ecantorix', 'psola'); got 'festival'")):
+            "backend must be one of ('psola', 'ecantorix'); got 'festival'")):
         perform.sing(backend="festival")
 
 
-def test_sing_refuses_an_effect_with_psola():
+@pytest.mark.parametrize("chosen", [{}, {"backend": "psola"}],
+                         ids=["by default", "by name"])
+def test_sing_refuses_an_effect_with_psola(chosen):
+    """Only eCantorix has effects, so an effect alone, which the default
+    sang until PSOLA, says which backend to ask."""
     with pytest.raises(ValueError, match=_exactly(
             "effect 'melt' is one of eCantorix's voices; the psola backend "
-            "sings the plain voice only")):
-        perform.sing(effect="melt", backend="psola")
+            "sings the plain voice only. Pass backend='ecantorix' for it")):
+        perform.sing(effect="melt", **chosen)
 
 
 def test_sing_refuses_the_notes_ecantorix_would(monkeypatch):

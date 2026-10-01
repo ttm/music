@@ -32,6 +32,11 @@ _PACKAGES = {"abc2midi": "abcmidi"}
 
 _LEGACY_DIR = Path(__file__).resolve().parent / "ecantorix"
 
+#: Said whenever eCantorix lacks something: sing() needs none of it.
+_DEFAULT_NEEDS_NONE = ("sing's default backend, psola, needs none of "
+                       "these: only espeak-ng and pip install "
+                       "'music[singing]'.")
+
 #: eCantorix drives its own build from this file, so its presence is what
 #: distinguishes a usable clone from an empty or half-finished directory.
 ENGINE_MARKER = "Makefile"
@@ -139,15 +144,15 @@ def require_system_dependencies() -> None:
     if missing:
         packages = ' '.join(_PACKAGES.get(name, name) for name in missing)
         raise RuntimeError(
-            "the singing engine needs these programs, which are not "
+            "the eCantorix engine needs these programs, which are not "
             f"installed: {', '.join(missing)}. On Debian or Ubuntu: "
             f"sudo apt install {packages}. On macOS with Homebrew: "
-            f"brew install {packages}."
+            f"brew install {packages}. {_DEFAULT_NEEDS_NONE}"
         )
     modules = missing_perl_modules()
     if modules:
         raise RuntimeError(
-            "the singing engine's Perl script needs these modules, which "
+            "the eCantorix engine's Perl script needs these modules, which "
             f"the perl on PATH cannot load: {', '.join(modules)}. Install "
-            f"them with: cpan {' '.join(modules)}"
+            f"them with: cpan {' '.join(modules)}. {_DEFAULT_NEEDS_NONE}"
         )

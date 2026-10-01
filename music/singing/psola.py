@@ -1,4 +1,4 @@
-"""Singing by speech synthesis and PSOLA: the second backend of ``sing``.
+"""Singing by speech synthesis and PSOLA: the default backend of ``sing``.
 
 espeak-ng says each syllable of the lyric, and Praat's pitch-synchronous
 overlap-add, through praat-parselmouth, holds it at its note's pitch and

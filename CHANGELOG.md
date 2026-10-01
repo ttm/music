@@ -37,6 +37,14 @@ change; an even length draws what it did. `gaussian_noise`'s band stops at
 the Nyquist frequency rather than doubling the level of what lay past it,
 and `std=0` is refused rather than rendered.
 
+`sing` now sings with `backend="psola"` by default: espeak-ng says each
+syllable and Praat's PSOLA holds it at its note's pitch and length. It
+needs espeak-ng and `pip install 'music[singing]'` rather than the
+eCantorix engine, Perl and its modules, abc2midi and sox, and it sounds
+different. Pass `backend="ecantorix"` to sing with the engine as before,
+and for an `effect`, which only eCantorix has: `sing(effect=...)` alone
+is now refused, and says so.
+
 `sing`'s `lang`, `transpose` and `effect` now reach the engine. It never
 read them: eCantorix loads its configuration with Perl's `do`, which has
 not looked in the current directory since Perl 5.26, and the effects'
@@ -63,9 +71,9 @@ table of any length at its own length.
 - **A second singing backend, `sing(backend="psola")`.** espeak-ng says
   each syllable, and Praat's PSOLA, through praat-parselmouth, holds it at
   its note's pitch and stretches its voiced part to the note's length. It
-  sings the same score at the same pitches as eCantorix, which stays the
-  default, and needs espeak-ng and `pip install 'music[singing]'` rather
-  than Perl, abc2midi and sox.
+  sings the same score at the same pitches as eCantorix, and needs
+  espeak-ng and `pip install 'music[singing]'` rather than Perl, abc2midi
+  and sox. It is now the default; see Changed.
 - **`music.sing`,** the singing entry point, is exported, as its engine's
   setup already was.
 - **`tools/compare_singing.py` sings the same scores with both
@@ -79,6 +87,15 @@ table of any length at its own length.
   `perl` on PATH, finds espeak's data where espeak says it is, and keeps
   flite's renders out of espeak's cache; the fixes are offered upstream
   as divVerent/ecantorix#11.
+
+### Changed
+
+- **`sing` sings with PSOLA by default,** which installs with a system
+  package and a pip extra, where eCantorix is a cloned Perl engine
+  needing four Perl modules, abc2midi and sox. eCantorix stays, behind
+  `backend="ecantorix"`, as the reference PSOLA is compared with, and
+  for its effects. `examples/singing_demo.py` sings with the default,
+  and CI's examples job now runs it.
 
 ### Fixed
 

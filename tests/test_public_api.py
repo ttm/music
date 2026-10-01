@@ -34,7 +34,7 @@ SIDE_EFFECTING = {
     "get_engine",
     "setup_engine",
     "make_test_song",
-    # Runs the eCantorix engine on its defaults, writing into its cache.
+    # Runs espeak-ng and Praat on its defaults, or the eCantorix engine.
     "sing",
     "print_peal",
     # Downloads about 1.3 MB from MIT.

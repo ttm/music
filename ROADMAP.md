@@ -619,7 +619,12 @@ selection. A change to a module is the time to re-run its area.
 Decided on 2026-09-30: keep eCantorix as the reference, fix it where it
 lives, and build the package's own singer beside it, so the two can be
 compared. Done: the fork's fixes and pin, the upstream pull request, the
-`psola` backend and `tools/compare_singing.py`. Next, in order:
+`psola` backend and `tools/compare_singing.py`. Decided on 2026-10-01,
+after listening: PSOLA is the default, since it installs with a system
+package and a pip extra, where eCantorix is a cloned Perl engine with
+four Perl modules, abc2midi and sox; eCantorix stays, behind
+`backend="ecantorix"`, as the reference and for its effects. Next, in
+order:
 
 1. **Listened, on 2026-10-01**, to ten scores sung by both from the same
    espeak, matched in loudness: PSOLA ties, and wins in some, sounding

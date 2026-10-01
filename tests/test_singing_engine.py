@@ -146,7 +146,7 @@ def test_every_effect_renders(effect, lang, shape):
     configuration loaded them from; melt also needs a copy of espeak's
     data, which the engine's Makefile made from a Linux path."""
     sound = perform.sing(text="laa", notes=(0,), durs=(4,), effect=effect,
-                         lang=lang)
+                         lang=lang, backend="ecantorix")
     assert sound.ndim == shape
     if shape == 2:
         assert sound.shape[0] == 2

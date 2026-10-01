@@ -56,7 +56,7 @@ def test_the_default_sings_where_it_always_did(engine):
     """The engine never read the conf and sang at its own -24, a score an
     octave above its reference: reference + note - 12, which the default
     transposition now asks for."""
-    perform.sing()
+    perform.sing(backend="ecantorix")
     conf = (engine / "cache" / "achant.conf").read_text()
     assert "$ESPEAK_TRANSPOSE = -12;" in conf
     score = (engine / "cache" / "achant.abc").read_text()
@@ -103,13 +103,13 @@ def test_a_wrong_effect_is_refused_before_anything_else(tmp_path,
             "effect not understood: 'reverse-cathedral'; expected one of "
             "['flint', 'flite', 'melt', 'tremolo'], or None for the plain "
             "voice")):
-        perform.sing(effect="reverse-cathedral")
+        perform.sing(effect="reverse-cathedral", backend="ecantorix")
     assert not (tmp_path / "nowhere").exists()
 
 
 @pytest.mark.parametrize("effect", [None, "", False])
 def test_no_effect_sings_with_the_plain_voice(engine, effect):
-    perform.sing(effect=effect)
+    perform.sing(effect=effect, backend="ecantorix")
     conf = (engine / "cache" / "achant.conf").read_text()
     assert "extravoices" not in conf
 
@@ -120,10 +120,11 @@ def test_abc2midi_is_a_requirement_named_by_its_package(monkeypatch):
     monkeypatch.setattr(paths, "missing_requirements",
                         lambda: ["espeak", "abc2midi"])
     with pytest.raises(RuntimeError, match=re.escape(
-            "the singing engine needs these programs, which are not "
+            "the eCantorix engine needs these programs, which are not "
             "installed: espeak, abc2midi. On Debian or Ubuntu: sudo apt "
             "install espeak abcmidi. On macOS with Homebrew: brew install "
-            "espeak abcmidi.")):
+            "espeak abcmidi. sing's default backend, psola, needs none of "
+            "these: only espeak-ng and pip install 'music[singing]'.")):
         paths.require_system_dependencies()
 
 
@@ -204,7 +205,7 @@ def recorded(engine, monkeypatch):
 def test_sing_writes_the_score_and_conf_the_engine_reads(engine, recorded):
     import os
 
-    perform.sing(effect="melt")
+    perform.sing(effect="melt", backend="ecantorix")
     cache = engine / "cache"
     assert sorted(os.listdir(cache)) == ["Makefile", "achant.abc",
                                          "achant.conf", "achant.wav"]
@@ -234,7 +235,7 @@ def test_the_engine_sings_a_syllable_without_a_vowel_with_a_schwa(
     monkeypatch.setattr(perform, "sung_phonemes", lambda *args: (
         asked.append(args) or {"ques,": "[[k@]]"}))
     perform.sing(text="Jac-ques, Jac", notes=(4, 0, 4), durs=(1, 1, 1),
-                 lang="fr", effect="tremolo")
+                 lang="fr", effect="tremolo", backend="ecantorix")
     assert asked == [("espeak", "fr", ["Jac", "ques,", "Jac"])]
     assert (engine / "cache" / "achant.conf").read_text() == (
         '$ESPEAK_VOICE = "fr";\n$ESPEAK_TRANSPOSE = -12;\n'
@@ -245,7 +246,7 @@ def test_the_engine_sings_a_syllable_without_a_vowel_with_a_schwa(
 def test_a_lyric_with_a_vowel_in_every_syllable_edits_none(engine, recorded,
                                                          monkeypatch):
     monkeypatch.setattr(perform, "sung_phonemes", lambda *args: {})
-    perform.sing()
+    perform.sing(backend="ecantorix")
     assert "EDIT_SYLLABLES" not in (engine / "cache" /
                                     "achant.conf").read_text()
 
@@ -257,7 +258,7 @@ def test_with_flite_no_syllable_is_looked_up(engine, recorded, monkeypatch):
     monkeypatch.setattr(perform, "sung_phonemes", lambda *args: (
         asked.append(args) or {"ques": "[[k@]]"}))
     perform.sing(text="Jac-ques", notes=(4, 0), durs=(1, 1), lang="rms",
-                 effect="flite")
+                 effect="flite", backend="ecantorix")
     assert asked == []
     assert "EDIT_SYLLABLES" not in (engine / "cache" /
                                     "achant.conf").read_text()
@@ -265,7 +266,7 @@ def test_with_flite_no_syllable_is_looked_up(engine, recorded, monkeypatch):
 
 def test_sing_passes_its_score_settings_through(engine, recorded):
     perform.sing(text="la la", notes=(0, 7), durs=(1, 1), M="3/4",
-                 L="1/8", Q=90, K="G", reference=48)
+                 L="1/8", Q=90, K="G", reference=48, backend="ecantorix")
     score = (engine / "cache" / "achant.abc").read_text()
     assert "\nM:3/4\nL:1/8\nQ:90\nV:1\nK:G\n=C,=G,\nw: la la" in score
 
@@ -288,7 +289,7 @@ def test_a_missing_engine_says_what_is_there(tmp_path, monkeypatch,
     with pytest.raises(RuntimeError, match=re.escape(
             f"no usable eCantorix engine at {root}: {detail}. Run "
             "music.singing.setup_engine() to install it.")):
-        perform.sing()
+        perform.sing(backend="ecantorix")
     with pytest.raises(RuntimeError, match=re.escape(
             f"no usable eCantorix engine at {root}. Run 'setup_engine()' "
             "to install it.")):
@@ -337,7 +338,7 @@ def test_a_render_that_writes_nothing_says_what_the_engine_said(
     with pytest.raises(RuntimeError, match=re.escape(
             "the singing engine ran but wrote no achant.wav; what it "
             "said:\nabc2midi achant.abc\nCan't locate MIDI.pm in @INC")):
-        perform.sing()
+        perform.sing(backend="ecantorix")
     assert not stale.exists()
 
 
@@ -351,7 +352,7 @@ def test_a_failed_make_says_what_it_printed(engine, monkeypatch):
     with pytest.raises(RuntimeError, match=re.escape(
             "Failed to build singing cache: Command '['make']' returned "
             "non-zero exit status 2.\nmade\nbroke")):
-        perform.sing()
+        perform.sing(backend="ecantorix")
 
 
 def test_a_stereo_render_comes_back_as_two_channels(engine, monkeypatch):
@@ -360,7 +361,7 @@ def test_a_stereo_render_comes_back_as_two_channels(engine, monkeypatch):
     frames = np.array([[0.0, 2.0], [1.0, -2.0], [0.5, 0.0]])
     monkeypatch.setattr(perform.sf, "read",
                         lambda path, dtype=None: (frames, 44100))
-    sung = perform.sing(effect="tremolo")
+    sung = perform.sing(effect="tremolo", backend="ecantorix")
     np.testing.assert_array_equal(sung, perform.normalize_stereo(frames.T))
     assert sung.shape == (2, 3)
 
@@ -395,9 +396,11 @@ def test_missing_modules_are_named_with_how_to_install_them(monkeypatch):
     monkeypatch.setattr(paths, "missing_perl_modules",
                         lambda: ["MIDI", "Math::FFT"])
     with pytest.raises(RuntimeError, match=re.escape(
-            "the singing engine's Perl script needs these modules, which the "
-            "perl on PATH cannot load: MIDI, Math::FFT. Install them with: "
-            "cpan MIDI Math::FFT")):
+            "the eCantorix engine's Perl script needs these modules, which "
+            "the perl on PATH cannot load: MIDI, Math::FFT. Install them "
+            "with: cpan MIDI Math::FFT. sing's default backend, psola, "
+            "needs none of these: only espeak-ng and pip install "
+            "'music[singing]'.")):
         paths.require_system_dependencies()
 
 
@@ -529,12 +532,12 @@ def test_a_voice_that_is_not_a_voice_name_is_refused(tmp_path, monkeypatch,
     with pytest.raises(ValueError, match=re.escape(
             "lang must be an espeak voice name, such as 'en' or 'pt-br'; "
             f"got {lang!r}")):
-        perform.sing(lang=lang)
+        perform.sing(lang=lang, backend="ecantorix")
 
 
 @pytest.mark.parametrize("lang", ["en", "pt-br", "en-us", "en+m3", "de"])
 def test_voice_names_espeak_uses_are_accepted(engine, lang):
-    perform.sing(lang=lang)
+    perform.sing(lang=lang, backend="ecantorix")
     conf = (engine / "cache" / "achant.conf").read_text()
     assert conf.startswith(f'$ESPEAK_VOICE = "{lang}";\n')
 
@@ -548,12 +551,12 @@ def test_a_transposition_that_is_not_a_number_is_refused(tmp_path,
     with pytest.raises(ValueError, match=re.escape(
             "transpose must be a finite number of semitones; got "
             f"{transpose!r}")):
-        perform.sing(transpose=transpose)
+        perform.sing(transpose=transpose, backend="ecantorix")
 
 
 @pytest.mark.parametrize("transpose", [0, -12, 7.5, np.int64(-24)])
 def test_any_finite_transposition_reaches_the_conf(engine, transpose):
-    perform.sing(transpose=transpose)
+    perform.sing(transpose=transpose, backend="ecantorix")
     conf = (engine / "cache" / "achant.conf").read_text()
     assert f"$ESPEAK_TRANSPOSE = {transpose};" in conf
 
@@ -577,7 +580,7 @@ def test_the_flite_effect_names_what_it_runs(engine, monkeypatch, missing,
     monkeypatch.setattr(perform.shutil, "which", lambda name: (
         None if name in missing else f"/bin/{name}"))
     with pytest.raises(RuntimeError, match=re.escape(message)):
-        perform.sing(effect="flite", lang="rms")
+        perform.sing(effect="flite", lang="rms", backend="ecantorix")
 
 
 def test_the_flite_effect_needs_one_of_flite_s_voices(engine, monkeypatch):
@@ -597,9 +600,9 @@ def test_the_flite_effect_needs_one_of_flite_s_voices(engine, monkeypatch):
     with pytest.raises(ValueError, match=re.escape(
             "with the flite effect, lang names one of flite's voices, "
             "['kal', 'awb', 'rms', 'slt']; got 'en'")):
-        perform.sing(effect="flite")
+        perform.sing(effect="flite", backend="ecantorix")
     assert asked == [["flite", "-lv"]]
-    perform.sing(effect="flint", lang="slt")
+    perform.sing(effect="flint", lang="slt", backend="ecantorix")
     assert "flite.inc" in (engine / "cache" / "achant.conf").read_text()
 
 
@@ -617,7 +620,7 @@ def test_flite_s_voices_are_read_from_its_captured_output(engine,
         return fake_run(engine / "cache")(command, **kwargs)
 
     monkeypatch.setattr(perform.subprocess, "run", run)
-    perform.sing(effect="flite", lang="rms")
+    perform.sing(effect="flite", lang="rms", backend="ecantorix")
     assert given == [{"capture_output": True, "text": True}]
 
 

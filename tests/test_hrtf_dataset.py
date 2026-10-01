@@ -7,7 +7,7 @@ conventions and the nearest-angle search without a download, and it is
 what runs in CI.
 
 The ones that need the real measurements are marked, and skip when they
-are absent -- the same arrangement `singing_demo.py` has. They are the
+are absent -- the same arrangement as the tests that sing. They are the
 ones that check the claim the whole feature exists for: that a source in
 front and one behind no longer reach the ears identically.
 

@@ -48,12 +48,15 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install the package
-        # The plot extra: PrimaryTables.draw_tables() needs matplotlib,
-        # and an example that reaches for it should fail here for a real
+        # The plot extra: PrimaryTables.draw_tables() needs matplotlib.
+        # The singing extra and espeak-ng: singing_demo.py sings. An
+        # example that reaches for either should fail here for a real
         # reason rather than for a missing optional dependency.
         run: |
+          sudo apt-get update
+          sudo apt-get install -y espeak-ng
           python -m pip install --upgrade pip
-          pip install -e '.[plot]'
+          pip install -e '.[plot,singing]'
       - name: Check ASSESSMENT.md against the package
         # The figures an AST scan can settle, which is most of them and
         # costs nothing. The ones needing pytest and ruff are checked by

@@ -201,7 +201,7 @@ def test_sing_says_the_engine_is_missing_rather_than_failing_obscurely(
     the caller had never heard of."""
     monkeypatch.setenv(paths.ENV_VAR, str(tmp_path / "absent"))
     with pytest.raises(RuntimeError, match="setup_engine"):
-        perform.sing()
+        perform.sing(backend="ecantorix")
 
 
 def test_sing_wraps_a_failed_make(monkeypatch, tmp_path):
@@ -215,7 +215,7 @@ def test_sing_wraps_a_failed_make(monkeypatch, tmp_path):
          patch.object(perform.subprocess, "run",
                       fake_run(engine / "cache", make_fails=failure)):
         with pytest.raises(RuntimeError, match="Failed to build singing"):
-            perform.sing()
+            perform.sing(backend="ecantorix")
 
 
 def test_sing_names_a_directory_that_is_not_an_engine(monkeypatch, tmp_path):
@@ -225,7 +225,7 @@ def test_sing_names_a_directory_that_is_not_an_engine(monkeypatch, tmp_path):
     monkeypatch.setenv(paths.ENV_VAR, str(engine))
 
     with pytest.raises(RuntimeError, match="has no Makefile"):
-        perform.sing()
+        perform.sing(backend="ecantorix")
 
 
 def test_sing_rejects_an_unknown_effect(monkeypatch, tmp_path):
@@ -236,7 +236,7 @@ def test_sing_rejects_an_unknown_effect(monkeypatch, tmp_path):
          patch.object(paths, "missing_perl_modules", return_value=[]), \
          patch.object(perform, "write_abc"):
         with pytest.raises(ValueError, match="effect not understood"):
-            perform.sing(effect="reverse-cathedral")
+            perform.sing(effect="reverse-cathedral", backend="ecantorix")
 
 
 def test_make_test_song_gives_one_note_and_duration_per_syllable():

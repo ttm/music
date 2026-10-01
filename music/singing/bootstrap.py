@@ -117,7 +117,7 @@ def setup_engine(method="http"):
 
 
 def make_test_song():
-    """Render a short sung phrase, to check the engine works.
+    """Sing a short phrase with eCantorix, to check the engine works.
 
     Returns
     -------
@@ -136,4 +136,4 @@ def make_test_song():
     # drop a surplus note.
     notes = 7, 0, 5, 7, 11, 12, 7
     durs = half, half, quarter, quarter, whole, quarter, half
-    return sing(text, notes, durs)
+    return sing(text, notes, durs, backend="ecantorix")

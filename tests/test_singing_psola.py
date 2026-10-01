@@ -539,6 +539,94 @@ def test_at_the_boundaries_the_syllable_is_scaled_whole(parselmouth, times,
         ("duration tier", "Add point", 0, seconds / 0.5)]
 
 
+def test_a_syllable_too_short_to_have_a_pitch_is_sung_as_said(parselmouth):
+    """espeak says French "ques" as a /k/ 41 ms long. Praat looks for a
+    pitch over three periods of the lowest one, 50 ms at 60 Hz, refused
+    to analyse it, and sing stopped with Praat's error."""
+    spoken = _Spoken(0.05, [], [])
+    parselmouth.answers[:] = [types.SimpleNamespace(
+        values=np.array([[0.5, -0.5]]))]
+    samples = psola._sung(spoken, 220.0, 0.5)
+    np.testing.assert_array_equal(samples, [0.5, -0.5])
+    assert parselmouth.calls == [(spoken, "Resample", 44100, 50)]
+    assert spoken.asked == []
+
+
+def test_a_syllable_just_long_enough_is_analysed(parselmouth):
+    spoken = _Spoken(0.0501, [0.02], [0])
+    result = _psola_answers(parselmouth, [1.0])
+    parselmouth.answers += [None, None, "resynthesis", result]
+    psola._sung(spoken, 220.0, 0.5)
+    assert spoken.asked == [(0.01, 60, 600)]
+
+
+class _SpokenSamples(_Spoken):
+    """A spoken syllable with samples, which a long note pads."""
+
+    def __init__(self, samples, rate, times, frequencies):
+        super().__init__(len(samples) / rate, times, frequencies)
+        self.values = np.array([samples], dtype=float)
+        self.sampling_frequency = rate
+
+
+def _manipulated(parselmouth):
+    """The sound _sung made its Manipulation from."""
+    (sound, command, *_), = [call for call in parselmouth.calls
+                             if call[1:2] == ("To Manipulation",)]
+    return sound
+
+
+def test_a_note_longer_than_praat_can_write_is_given_room(parselmouth):
+    """Praat's overlap-add writes into three times the length of the sound
+    it is given, and stops there: a 0.3 s "laa" held for four seconds was
+    sung for one, and the rest left silent."""
+    spoken = _SpokenSamples([0.5, -0.5, 0.25, 0.0], 8.0, [0.1, 0.3],
+                            [120, 120])
+    result = _psola_answers(parselmouth, [1.0])
+    parselmouth.answers += [None] * 5 + ["resynthesis", result]
+    psola._sung(spoken, 220.0, 1.6)
+    padded = _manipulated(parselmouth)
+    np.testing.assert_array_equal(padded.values[0],
+                                  [0.5, -0.5, 0.25, 0.0] + [0.0] * 13)
+    assert padded.sampling_frequency == 8.0
+    # The tiers are the syllable's, as they would be without the room.
+    assert parselmouth.calls[2] == ("pitch tier", "Remove points between",
+                                    0, 0.5)
+    assert [call[2] for call in parselmouth.calls[7:11]] == pytest.approx(
+        [0.099, 0.1, 0.3, 0.301])
+
+
+@pytest.mark.parametrize("seconds", [1.5, 1.4])
+def test_a_note_praat_can_write_is_not_padded(parselmouth, seconds):
+    spoken = _SpokenSamples([0.5, -0.5, 0.25, 0.0], 8.0, [0.1, 0.3],
+                            [120, 120])
+    result = _psola_answers(parselmouth, [1.0])
+    parselmouth.answers += [None] * 5 + ["resynthesis", result]
+    psola._sung(spoken, 220.0, seconds)
+    assert _manipulated(parselmouth) is spoken
+
+
+@pytest.mark.parametrize("times, frequencies", [
+    ([0.1, 0.3], [0, 0]),           # nothing voiced to hold
+    ([0.1, 0.105], [120, 120]),     # a voiced stretch of 0.005 s
+])
+def test_a_syllable_with_nothing_to_hold_is_not_padded(parselmouth, times,
+                                                       frequencies):
+    """Scaled whole, the silence would be scaled too, and make no room."""
+    spoken = _SpokenSamples([0.5, -0.5, 0.25, 0.0], 8.0, times, frequencies)
+    result = _psola_answers(parselmouth, [1.0])
+    parselmouth.answers += [None, None, "resynthesis", result]
+    psola._sung(spoken, 220.0, 1.6)
+    assert _manipulated(parselmouth) is spoken
+
+
+def test_padding_keeps_a_sound_s_rate_and_adds_whole_samples(parselmouth):
+    spoken = _SpokenSamples([1.0, 2.0], 10.0, [], [])
+    padded = psola._padded(spoken, 0.21)
+    np.testing.assert_array_equal(padded.values[0], [1.0, 2.0, 0, 0, 0])
+    assert padded.sampling_frequency == 10.0
+
+
 def test_psola_s_own_defaults_are_sing_s(stand_ins):
     """sing() passes every one of them; a direct call gets the same."""
     psola.sing("la", notes=(0,), durs=(1,))

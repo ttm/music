@@ -42,6 +42,12 @@ RATE = 44100
 #: The range, in Hertz, a spoken syllable's pitch is looked for in.
 PITCH_FLOOR, PITCH_CEILING = 60, 600
 
+#: The longest a syllable can be said in, in seconds, and still be too
+#: short to have a pitch: Praat looks for one over three periods of
+#: :data:`PITCH_FLOOR`. espeak says French "ques" as a /k/ 41 ms long.
+#: A syllable this short has no vowel to hold, and is sung as it was said.
+SHORTEST = 3 / PITCH_FLOOR
+
 #: How long each note fades in and out, in seconds, so notes meet
 #: without a click. A note shorter than four of these fades over a
 #: quarter of itself.
@@ -190,14 +196,28 @@ def _sung(sound, frequency, seconds):
 
     Only the voiced stretch is lengthened, so a consonant keeps the length
     it was said with; a syllable too short for that, or with no voiced
-    stretch, is scaled as a whole.
+    stretch, is scaled as a whole, to at most three times its length. One
+    said in no more than :data:`SHORTEST` is only resampled: Praat cannot
+    analyse it.
     """
     from parselmouth.praat import call
 
     total = sound.get_total_duration()
+    if total <= SHORTEST:
+        return call(sound, "Resample", RATE, 50).values[0]
     pitch = sound.to_pitch(time_step=0.01, pitch_floor=PITCH_FLOOR,
                            pitch_ceiling=PITCH_CEILING)
     voiced = pitch.xs()[pitch.selected_array["frequency"] > 0]
+    start, end = (voiced[0], voiced[-1]) if len(voiced) else (0.0, 0.0)
+    unvoiced = total - (end - start)
+    held = end - start > 0.01 and seconds > unvoiced
+    if held and seconds > 3 * total:
+        # Praat's overlap-add writes into a sound three times as long as
+        # the one it is given, and stops at its end: a 0.3 s "laa" held
+        # for four seconds was sung for one, and _fit made the rest
+        # silence. Silence after the syllable gives it the room, and
+        # _fit cuts the silence off again.
+        sound = _padded(sound, seconds)
     manipulation = call(sound, "To Manipulation", 0.01, PITCH_FLOOR,
                         PITCH_CEILING)
 
@@ -208,9 +228,7 @@ def _sung(sound, frequency, seconds):
     call([tier, manipulation], "Replace pitch tier")
 
     durations = call(manipulation, "Extract duration tier")
-    start, end = (voiced[0], voiced[-1]) if len(voiced) else (0.0, 0.0)
-    unvoiced = total - (end - start)
-    if end - start > 0.01 and seconds > unvoiced:
+    if held:
         factor = (seconds - unvoiced) / (end - start)
         for time, value in ((max(start - 0.001, 0), 1), (start, factor),
                             (end, factor), (min(end + 0.001, total), 1)):
@@ -221,6 +239,16 @@ def _sung(sound, frequency, seconds):
 
     sung = call(manipulation, "Get resynthesis (overlap-add)")
     return call(sung, "Resample", RATE, 50).values[0]
+
+
+def _padded(sound, seconds):
+    """`sound` followed by `seconds` of silence."""
+    import parselmouth
+
+    rate = sound.sampling_frequency
+    silence = np.zeros(int(np.ceil(seconds * rate)))
+    return parselmouth.Sound(np.concatenate([sound.values[0], silence]),
+                             rate)
 
 
 def _fit(samples, count):

@@ -27,7 +27,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `bonds` | `bonds.py` | 2026-09-28 | 106 | 103 | 3 | all |
 | `tables` | `tables.py` | 2026-09-28 | 77 | 77 | 0 | all |
 | `hrtf` | `hrtf.py` | 2026-09-28 | 224 | 217 | 7 | all |
-| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py`, `psola.py` | 2026-09-30 | 1101 | 1090 | 11 | all |
+| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py`, `psola.py` | 2026-10-01 | 1137 | 1126 | 11 | all |
 | `legacy` | `legacy/CanonicalSynth.py`, `IteratorSynth.py`, `classes.py`, `tables.py`, `pieces/testSong2.py` | 2026-09-30 | 1645 | 1154 | 491 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
@@ -1389,13 +1389,22 @@ word. The rest were the keyword arguments the backend hands
 backend's own defaults, which `sing` never leaves it to use. The final
 run detected 1090 of 1101.
 
+Measured again on 2026-10-01, over `19e5e5f` with two fixes to `_sung`
+overlaid, both found by singing longer scores. A syllable said in
+50 ms or less, as espeak says French "ques", stopped the backend with
+Praat's error. And Praat's overlap-add writes into three times the
+length of the sound it is given, so a note longer than that was cut
+short: a four-second "laa" was sung for one second, then silence.
+The fixes' 36 mutations were all detected, 1126 of 1137 in all, and
+the same 11 survive, two of `_sung`'s renumbered.
+
 | Function | IDs | Why accepted |
 |---|---|---|
 | `_require_flite` | 38 | `rpartition(":")` for `partition`: flite's voice line has one colon. |
 | `Notes.make_dict` | 8, 29, 46, 49, 57 | As above: the `XX` the pattern ignores, the octave above 96, and `strict` on equal lengths. |
 | `psola._fit` | 21 | `endpoint=None` is false, as `False` is. |
-| `psola._sung` | 14 | A voiced frame above 1 Hz rather than 0: Praat gives an unvoiced frame 0 and a voiced one at least the 60 Hz floor. |
-| `psola._sung` | 92 | Starting an unvoiced syllable's voiced stretch at 1 s: its end, 0, is before its start, so the stretch is not used either way. |
+| `psola._sung` | 28 | A voiced frame above 1 Hz rather than 0: Praat gives an unvoiced frame 0 and a voiced one at least the 60 Hz floor. |
+| `psola._sung` | 33 | Starting an unvoiced syllable's voiced stretch at 1 s: its end, 0, is before its start, so the stretch is not used either way. |
 | `psola.sing` | 22 | Note edges left as floats: each is taken `int()` before use. |
 | `psola.sing` | 88 | The peak of an empty line taken as 1 rather than 0: nothing divided is nothing. |
 

@@ -87,6 +87,30 @@ def test_every_note_is_in_tune_and_the_line_as_long_as_its_score(
 
 
 @pytest.mark.parametrize("backend", BACKENDS)
+def test_a_long_note_is_sung_to_its_end(backend):
+    """Praat's overlap-add stops at three times the length of the sound it
+    is given, so the psola backend sang a four-second "laa" for one
+    second and left the rest silent."""
+    sound = perform.sing(text="laa", notes=(9,), durs=(8,), backend=backend)
+
+    def level(start, end):
+        part = sound[int(start * 44100):int(end * 44100)]
+        return float(np.sqrt(np.mean(part ** 2)))
+
+    assert level(3.0, 3.5) > 0.1 * level(0.25, 0.75)
+
+
+@pytest.mark.parametrize("backend", BACKENDS)
+def test_a_syllable_said_as_a_consonant_alone_is_sung(backend):
+    """espeak says French "ques" as a /k/ 41 ms long, too short for
+    Praat to find a pitch in; the psola backend stopped there."""
+    sound = perform.sing(text="Jac-ques", notes=(4, 0), durs=(1, 1),
+                         lang="fr", backend=backend)
+    assert abs(len(sound) / 44100 - 1) < 0.01
+    assert np.abs(sound[len(sound) // 2:]).max() > 0
+
+
+@pytest.mark.parametrize("backend", BACKENDS)
 def test_the_language_reaches_the_voice(backend, sung):
     english = perform.sing(backend=backend, **dict(SCORES["german"],
                                                    lang="en"))

@@ -44,7 +44,7 @@ def engine(tmp_path, monkeypatch):
 @pytest.mark.parametrize("midi, name", [
     (12, "=C,,,,"), (24, "=C,,,"), (36, "=C,,"), (48, "=C,"), (60, "=C"),
     (69, "=A"), (72, "=c"), (84, "=c'"), (96, "=c''"), (61, "^C"),
-    (71, "B"), (83, "b"),
+    (71, "=B"), (83, "=b"), (64, "=E"), (76, "=e"),
 ])
 def test_each_midi_note_has_its_abc_name(midi, name):
     """abc2midi reads C as middle C, MIDI 60. This named 60 c, which it
@@ -60,7 +60,7 @@ def test_the_default_sings_where_it_always_did(engine):
     conf = (engine / "cache" / "achant.conf").read_text()
     assert "$ESPEAK_TRANSPOSE = -12;" in conf
     score = (engine / "cache" / "achant.abc").read_text()
-    assert "\nE=D=C=DEEE2\nw: " in score
+    assert "\n=E=D=C=D=E=E=E2\nw: " in score
 
 
 # --------------------------------------------------------------------------
@@ -87,7 +87,7 @@ def test_the_test_song_is_a_score_abc_can_read(engine, monkeypatch):
     """Its halves and quarters were written as 0.5 and 0.25."""
     bootstrap.make_test_song()
     body = (engine / "cache" / "achant.abc").read_text().split("\n")[-2]
-    assert body == "=G/2=C/2=F/4=G/4B=c/4=G/2"
+    assert body == "=G/2=C/2=F/4=G/4=B=c/4=G/2"
     assert "." not in body
 
 
@@ -178,8 +178,8 @@ def test_a_fresh_table_names_every_octave_with_its_marks():
     assert [table[midi] for midi in range(12, 97, 12)] == [
         "=C,,,,", "=C,,,", "=C,,", "=C,", "=C", "=c", "=c'", "=c''"]
     assert [table[midi] for midi in range(60, 72)] == [
-        "=C", "^C", "=D", "^D", "E", "=F", "^F", "=G", "^G", "=A", "^A",
-        "B"]
+        "=C", "^C", "=D", "^D", "=E", "=F", "^F", "=G", "^G", "=A", "^A",
+        "=B"]
     assert len(table) == 85
 
 
@@ -213,7 +213,7 @@ def test_sing_writes_the_score_and_conf_the_engine_reads(engine, recorded):
         "do 'extravoices/melt.inc';")
     assert (cache / "achant.abc").read_text() == (
         "X:1\nT:Some chanting for music python package\nM:4/4\nL:1/4\n"
-        "Q:120\nV:1\nK:C\nE=D=C=DEEE2\nw: Mar-ry had a litt-le lamb")
+        "Q:120\nV:1\nK:C\n=E=D=C=D=E=E=E2\nw: Mar-ry had a litt-le lamb")
     assert recorded["copy"] == [(engine / "Makefile", cache / "Makefile")]
     assert recorded["run"] == [
         (["espeak", "-q", "--ipa", "-v", "en", syllable],
@@ -696,6 +696,16 @@ def test_a_voice_espeak_lacks_edits_nothing(monkeypatch):
                                      ("-x", "ques"): "k"}, returncode=1)
     assert perform.sung_phonemes("espeak", "xx", ["ques"]) == {}
     assert ran == [["espeak", "-q", "--ipa", "-v", "xx", "ques"]]
+
+
+def test_an_espeak_that_cannot_be_run_edits_nothing(monkeypatch):
+    """The singer's own check says what is missing; this only looks."""
+    def run(command, **kwargs):
+        raise FileNotFoundError(2, "No such file or directory", command[0])
+
+    monkeypatch.setattr(perform.subprocess, "run", run)
+    assert perform._transcribe("espeak", "fr", "ques", "--ipa") is None
+    assert perform.sung_phonemes("espeak", "fr", ["ques"]) == {}
 
 
 def test_the_transcription_is_asked_for_as_text():

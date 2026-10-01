@@ -114,6 +114,19 @@ def test_a_syllable_said_as_a_consonant_alone_is_sung(backend):
 
 
 @pytest.mark.parametrize("backend", BACKENDS)
+@pytest.mark.parametrize("key", ["F", "Bb"])
+def test_the_key_changes_no_note(backend, key):
+    """E and B were written without their natural sign, so eCantorix sang
+    them flat in a key with flats: B flat for B in F, and E flat too in
+    B flat."""
+    sound = perform.sing(text="la la la", notes=(4, 11, 5), durs=(2, 2, 2),
+                         K=key, backend=backend)
+    pitches = note_pitches(sound, [1.0, 1.0, 1.0])
+    expected = [164.81, 246.94, 174.61]
+    assert all(abs(cents(p, e)) < 35 for p, e in zip(pitches, expected))
+
+
+@pytest.mark.parametrize("backend", BACKENDS)
 def test_the_language_reaches_the_voice(backend, sung):
     english = perform.sing(backend=backend, **dict(SCORES["german"],
                                                    lang="en"))

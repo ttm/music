@@ -181,6 +181,10 @@ table of any length at its own length.
   same syllables, which flite's shared.
 - **`sing` reads the tempo before anything is sung.** eCantorix handed a
   `Q` of 0 to abc2midi, which called it malformed and stopped the build.
+- **`sing` writes E and B with their natural sign,** as it writes every
+  other note with its accidental. Written bare, they took the key's
+  flats, so eCantorix sang `K="F"`'s B as B flat, and `K="Bb"`'s E as E
+  flat too. The psola backend reads no key, so the two now agree.
 - **A syllable spoken without a vowel is sung.** espeak says a syllable
   as it is spoken, and spoken French leaves the e of "Jacques" silent, so
   the "ques" of "Frè-re Jac-ques" was a bare /k/ with nothing to hold its

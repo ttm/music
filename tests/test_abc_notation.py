@@ -30,7 +30,7 @@ def test_semitones_become_abc_pitch_names():
     in upper case. These said lower case, which is the octave above: the
     table was an octave high and so was every score."""
     assert perform.converter.convert((0, 4, 7, 12), 60) == \
-        ["=C", "E", "=G", "=c"]
+        ["=C", "=E", "=G", "=c"]
 
 
 def test_octaves_change_case_and_add_marks():
@@ -56,7 +56,7 @@ def test_a_duration_of_one_is_left_implicit():
 
 
 def test_other_durations_follow_their_note():
-    assert perform.translate_to_abc((0, 4), (1, 2), 60) == "=CE2"
+    assert perform.translate_to_abc((0, 4), (1, 2), 60) == "=C=E2"
 
 
 def test_a_negative_duration_becomes_a_division():
@@ -81,7 +81,7 @@ def test_write_abc_carries_the_lyric_line(cache):
     perform.write_abc("hey ma bro", (0, 4, 7), (1, 1, 1))
     written = (cache / "achant.abc").read_text()
     assert written.rstrip().endswith("w: hey ma bro")
-    assert "=CE=G" in written
+    assert "=C=E=G" in written
 
 
 # --------------------------------------------------------------------------
@@ -165,7 +165,7 @@ def test_translate_to_abc_rejects_a_length_mismatch():
     line separately, the words then pointed at notes that were gone."""
     from music.singing.perform import translate_to_abc
 
-    assert translate_to_abc([0, 2, 4], [1, 1, 1], reference=60) == "=C=DE"
+    assert translate_to_abc([0, 2, 4], [1, 1, 1], reference=60) == "=C=D=E"
 
     with pytest.raises(ValueError, match="5 notes and 3 durations"):
         translate_to_abc([0, 2, 4, 5, 7], [1, 1, 1], reference=60)

@@ -1404,7 +1404,9 @@ its phonemes and a schwa, to eCantorix through `$EDIT_SYLLABLES` in
 the configuration it runs as Perl, where a test runs the generated
 Perl on hostile syllables. Its 110 mutations were all detected, 1236
 of 1247 in all, with the same 11 survivors; `psola.sing`'s 88 is now
-103.
+103. Over `e007b90`, with the natural signs on E and B and the lookup
+that leaves a lyric alone when espeak cannot be run, the figures and
+the survivors are the same.
 
 | Function | IDs | Why accepted |
 |---|---|---|

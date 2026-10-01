@@ -637,11 +637,13 @@ compared. Done: the fork's fixes and pin, the upstream pull request, the
 3. **Shape each syllable.** PSOLA holds a syllable at one pitch; a sung
    vowel wants a short attack, vibrato and a release, which the
    package's envelopes and vibratos already provide.
-4. **Effects for PSOLA.** eCantorix's tremolo is sox's tremolo and reverb
-   in stereo, its melt a female voice at a fixed 440 Hz resampled to each
-   note, and flite another speaker: the package's own tremolo, reverb and
-   localization, resampling, and flite as a second speaker would give the
-   psola backend all three.
+4. **Effects and accents for PSOLA**, the rest of what `sing` does with
+   eCantorix. Its tremolo is sox's tremolo and reverb in stereo, its melt
+   a female voice at a fixed 440 Hz resampled to each note, and flite
+   another speaker: the package's own tremolo, reverb and localization,
+   resampling, and flite as a second speaker would give the psola backend
+   all three. eCantorix also sings the beats abc2midi accents louder, by
+   up to 2.3 dB, where PSOLA sings every note at one level.
 5. **Own the PSOLA.** praat-parselmouth is a compiled dependency; a
    pitch-synchronous overlap-add in numpy would remove it, and belongs in
    a package about discrete-time synthesis. Worth it only if it sounds as

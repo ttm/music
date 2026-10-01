@@ -62,8 +62,12 @@ def sing(text="Mar-ry had a litt-le lamb",
     M, L, Q, K : str or int
         The ABC meter, unit note length, tempo and key. A number for ``Q``
         is units of ``L`` a minute, as ABC reads a bare ``Q:``; see
-        :func:`unit_seconds`. The psola backend reads ``L`` and ``Q``
-        and has no use for the meter or the key.
+        :func:`unit_seconds`. Every note is written with its accidental,
+        so the key changes none of them; E and B were written bare, and
+        a key with flats sang them a semitone low. abc2midi accents the
+        beats, and eCantorix sings the accented notes louder, by up to
+        2.3 dB. The psola backend reads ``L`` and ``Q``, has no use for
+        the meter or the key, and sings every note at one level.
     reference : int
         The MIDI note that pitch zero refers to, which is the note the
         score is written at.
@@ -332,7 +336,7 @@ def translate_to_abc(notes, durs, reference):
     Examples
     --------
     >>> translate_to_abc([0, 2, 4], [1, 0.5, 1.5], reference=60)
-    '=C=D/2E3/2'
+    '=C=D/2=E3/2'
 
     """
     if len(notes) != len(durs):
@@ -373,7 +377,7 @@ def sung_phonemes(program, voice, syllables):
         Each syllable espeak says without a vowel, mapped to espeak's
         phoneme input for it with a schwa after, such as ``"[[k@]]"``. A
         syllable said with a vowel, or said as nothing, is left out; so is
-        every one if `program` cannot speak in `voice`.
+        every one if `program` cannot be run or speak in `voice`.
     """
     sung = {}
     for syllable in dict.fromkeys(syllables):
@@ -390,10 +394,15 @@ def _transcribe(program, voice, text, notation):
     """`text` as `program` says it in `voice`, written in `notation`.
 
     ``"--ipa"`` for the IPA, ``"-x"`` for espeak's phoneme mnemonics;
-    None where `program` fails, as for a voice it does not have.
+    None where `program` fails, as for a voice it does not have, or
+    cannot be run. The lyric is then sung as written, and the singer
+    says what is missing.
     """
-    result = subprocess.run([program, '-q', notation, '-v', voice, text],
-                            capture_output=True, text=True)
+    try:
+        result = subprocess.run([program, '-q', notation, '-v', voice,
+                                 text], capture_output=True, text=True)
+    except OSError:
+        return None
     if result.returncode:
         return None
     return ''.join(result.stdout.split())
@@ -554,7 +563,9 @@ class Notes:
 
     def make_dict(self):
         """Build the table from MIDI note number to ABC note name."""
-        notes = re.findall(r'[\^=]?[a-g]', '=c^c=d^de=f^f=g^g=a^ab')
+        # Every name has its accidental, the natural sign included: an
+        # unmarked E or B took the key's flat, so K="F" sang B as B flat.
+        notes = re.findall(r'[\^=]?[a-g]', '=c^c=d^d=e=f^f=g^g=a^a=b')
         # notes=re.findall(r'[\^]{0,1}[a-g]{1}','a^abc^cd^def^fg^g')
         notes_ = [note.upper() for note in notes]
         notes__ = [note + "," for note in notes_]

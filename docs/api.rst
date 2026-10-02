@@ -300,7 +300,7 @@ note's pitch and length. It needs ``espeak-ng`` and
 
 ``sing(backend="ecantorix")`` sings the same score with the external
 `eCantorix <https://github.com/ttm/ecantorix>`_ engine, the default until
-PSOLA, kept as the reference and for its effects. Run :func:`setup_engine`
+PSOLA, kept as the reference. Run :func:`setup_engine`
 once to clone it; it also needs ``git``, ``make``, ``perl``, ``espeak``,
 ``abc2midi`` (the ``abcmidi`` package) and ``sox`` on the system, and the
 Perl modules ``MIDI``, ``Math::FFT``, ``URI::Escape`` and ``Digest::SHA``.

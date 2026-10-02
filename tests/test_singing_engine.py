@@ -134,23 +134,63 @@ def test_the_language_reaches_the_voice(backend, sung):
     assert english.shape != german.shape or not np.allclose(english, german)
 
 
-@pytest.mark.skipif(not _ecantorix_ready(),
-                    reason="the eCantorix engine is not installed")
-@pytest.mark.parametrize("effect, lang, shape", [
-    pytest.param("flite", "rms", 1, marks=pytest.mark.skipif(
-        not (psola.shutil.which("flite") and psola.shutil.which("bc")),
-        reason="the flite effect runs flite and bc")),
-    ("tremolo", "en", 2), ("melt", "en", 2)])
-def test_every_effect_renders(effect, lang, shape):
-    """Their files are in the engine's examples, which were not where the
-    configuration loaded them from; melt also needs a copy of espeak's
-    data, which the engine's Makefile made from a Linux path."""
+_FLITE = pytest.mark.skipif(
+    not (psola.shutil.which("flite") and psola.shutil.which("bc")),
+    reason="the flite effect runs flite, and eCantorix bc too")
+
+
+@pytest.mark.parametrize("backend", BACKENDS)
+@pytest.mark.parametrize("effect, lang", [
+    pytest.param("flite", "slt", marks=_FLITE), ("tremolo", "en"),
+    ("melt", "en")])
+def test_every_effect_renders_in_tune(backend, effect, lang):
+    """eCantorix's effects' files are in the engine's examples, which were
+    not where the configuration loaded them from, and melt also needs a
+    copy of espeak's data, which the engine's Makefile made from a Linux
+    path. The psola backend makes them itself. Tremolo and melt ring a
+    second past the line, in stereo."""
     sound = perform.sing(text="laa", notes=(0,), durs=(4,), effect=effect,
-                         lang=lang, backend="ecantorix")
-    assert sound.ndim == shape
-    if shape == 2:
+                         lang=lang, backend=backend)
+    if effect == "flite":
+        assert sound.ndim == 1 and abs(len(sound) / 44100 - 2) < 0.01
+    else:
         assert sound.shape[0] == 2
+        assert abs(sound.shape[1] / 44100 - 3) < 0.01
     assert np.abs(sound).max() == pytest.approx(1)
+    mono = sound.mean(axis=0) if sound.ndim == 2 else sound
+    pitch, = note_pitches(mono[:2 * 44100], [2.0])
+    assert abs(cents(pitch, 130.81)) < 35
+
+
+@pytest.mark.parametrize("backend", BACKENDS)
+@pytest.mark.parametrize("effect", ["tremolo", "melt"])
+def test_the_tremolo_is_nine_hertz(backend, effect):
+    """sox's ``tremolo 9 50``, which eCantorix runs, and the package's
+    tremolo the psola backend runs at its rate and depth."""
+    sound = perform.sing(text="laa", notes=(0,), durs=(8,), effect=effect,
+                         backend=backend).mean(axis=0)
+    held = sound[int(0.6 * 44100):int(3.4 * 44100)]
+    level = np.sqrt(np.convolve(held ** 2, np.ones(441) / 441, "same"))
+    level = level[::100] - level[::100].mean()
+    rates = np.fft.rfftfreq(len(level), 100 / 44100)
+    strength = np.abs(np.fft.rfft(level * np.hanning(len(level))))
+    band = (rates > 2) & (rates < 30)
+    assert rates[band][np.argmax(strength[band])] == pytest.approx(9, abs=0.6)
+
+
+@pytest.mark.skipif(bool(psola.missing_requirements("flite")),
+                    reason="the psola backend's flite effect runs flite")
+def test_psola_s_flite_sings_in_tune_in_every_voice():
+    """eCantorix's flite effect, in flite's rms voice, which its own
+    example sings with, sings every note near 90 Hz, whatever the score
+    asks: 6.5 semitones flat at C3, 18.5 at C4. PSOLA holds each to its
+    note whatever the voice."""
+    for voice in ("rms", "slt", "kal"):
+        sound = perform.sing(text="la la", notes=(0, 12), durs=(2, 2),
+                             effect="flite", lang=voice)
+        for pitch, expected in zip(note_pitches(sound, [1.0, 1.0]),
+                                   [130.81, 261.63]):
+            assert abs(cents(pitch, expected)) < 35
 
 
 @pytest.mark.skipif(not (_ecantorix_ready()

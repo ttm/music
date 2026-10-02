@@ -81,40 +81,46 @@ def sing(text="Mar-ry had a litt-le lamb",
         MIDI ``reference + note + transpose``. The default, -12, sings an
         octave below the score, where every note used to be sung.
     effect : str or None
-        A voice from the eCantorix engine's extras, so only with
-        ``backend="ecantorix"``: ``"flite"`` (also
-        accepted as ``"flint"``, its earlier spelling here), ``"tremolo"``
-        or ``"melt"``. None sings with the plain voice. ``"flite"`` says
-        each syllable with the flite synthesizer instead of espeak, so it
-        needs ``flite`` and ``bc`` installed, and ``lang`` names one of
-        flite's voices, such as ``"rms"`` or ``"slt"``.
+        One of the eCantorix engine's extra voices, which both backends
+        sing: ``"tremolo"``, a tremolo of 9 Hz and a reverberation, in
+        stereo; ``"melt"``, the same with espeak's female voice, its
+        formants raised a quarter, and sinking with the pitch below
+        216 Hz, as tape played slower; and ``"flite"`` (also accepted as
+        ``"flint"``, its earlier
+        spelling here), which says each syllable with the flite
+        synthesizer instead of espeak, so it needs ``flite`` installed,
+        and ``bc`` too for eCantorix, and ``lang`` names one of flite's
+        voices, such as ``"rms"`` or ``"slt"``. None sings with the plain
+        voice. The psola backend makes them with the package's own
+        tremolo, reverberation and resampling, set to what eCantorix's
+        sox gives.
     backend : {'psola', 'ecantorix'}
         Which singer. ``"psola"``, the default, needs espeak-ng and
-        ``pip install 'music[singing]'``, and has no effects yet.
-        ``"ecantorix"`` is the engine this package sang with by default
-        until PSOLA, kept as the reference it is compared with, and for
-        its effects.
+        ``pip install 'music[singing]'``. ``"ecantorix"`` is the engine
+        this package sang with by default until PSOLA, kept as the
+        reference it is compared with.
 
     Returns
     -------
     ndarray
         The sung line, normalized, at 44,100 Hz: mono, or ``(2, nsamples)``
-        for the ``tremolo`` and ``melt`` effects, which render in stereo.
-        They used to come back as ``(nsamples, 2)``, as the file holds
-        them, and be normalized as one channel.
+        for the ``tremolo`` and ``melt`` effects, which render in stereo
+        and ring a second past the line. eCantorix's used to come back as
+        ``(nsamples, 2)``, as the file holds them, and be normalized as
+        one channel.
 
     Raises
     ------
     RuntimeError
-        If espeak-ng or praat-parselmouth is missing; or, with
-        ``backend="ecantorix"``, if the engine is not installed (run
-        :func:`music.singing.setup_engine`), cannot be built in the cache,
-        or renders at a rate other than 44,100 Hz, or the flite effect is
-        asked for without ``flite`` and ``bc``.
+        If espeak-ng or praat-parselmouth is missing, or flite for its
+        effect; or, with ``backend="ecantorix"``, if the engine is not
+        installed (run :func:`music.singing.setup_engine`), cannot be
+        built in the cache, or renders at a rate other than 44,100 Hz, or
+        the flite effect is asked for without ``bc``.
     ValueError
-        If ``backend`` is not one of those above, ``effect`` is not one of
-        those above or is asked of the psola backend, ``lang`` is not a voice
-        name, ``transpose`` is not a finite number, ``L`` or ``Q`` is not
+        If ``backend`` or ``effect`` is not one of those above, ``lang`` is
+        not a voice name, or not one of flite's voices for its effect,
+        ``transpose`` is not a finite number, ``L`` or ``Q`` is not
         a length or tempo ABC can read (see :func:`unit_seconds`), there is
         not exactly
         one duration per note, a duration is zero, or a note falls outside
@@ -146,11 +152,6 @@ def sing(text="Mar-ry had a litt-le lamb",
         raise ValueError(
             f"effect not understood: {effect!r}; expected one of "
             f"{sorted(EFFECTS)}, or None for the plain voice")
-    if effect and backend != 'ecantorix':
-        raise ValueError(
-            f"effect {effect!r} is one of eCantorix's voices; the "
-            f"{backend} backend sings the plain voice only. Pass "
-            f"backend='ecantorix' for it")
     if not (isinstance(lang, str) and _VOICE.fullmatch(lang)):
         raise ValueError(
             f"lang must be an espeak voice name, such as 'en' or 'pt-br'; "
@@ -169,7 +170,8 @@ def sing(text="Mar-ry had a litt-le lamb",
         # so that the two backends refuse the same melodies.
         translate_to_abc(notes, durs, reference)
         return psola.sing(text, notes, durs, L=L, Q=Q, reference=reference,
-                          lang=lang, transpose=transpose)
+                          lang=lang, transpose=transpose,
+                          effect=EFFECTS[effect] if effect else None)
     engine = engine_dir()
     cache = cache_dir()
     if not is_engine(engine):
@@ -249,13 +251,9 @@ def _require_flite(lang):
             f"{'is' if len(missing) == 1 else 'are'} not installed. On "
             f"Debian or Ubuntu: sudo apt install {' '.join(missing)}. On "
             "macOS with Homebrew: brew install flite.")
-    listed = subprocess.run(['flite', '-lv'], capture_output=True,
-                            text=True).stdout
-    voices = listed.partition(':')[2].split()
-    if lang not in voices:
-        raise ValueError(
-            f"with the flite effect, lang names one of flite's voices, "
-            f"{voices}; got {lang!r}")
+    from .psola import _require_flite_voice
+
+    _require_flite_voice(lang)
 
 
 def _prepare_cache(engine, cache):

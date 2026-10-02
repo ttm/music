@@ -623,7 +623,7 @@ compared. Done: the fork's fixes and pin, the upstream pull request, the
 after listening: PSOLA is the default, since it installs with a system
 package and a pip extra, where eCantorix is a cloned Perl engine with
 four Perl modules, abc2midi and sox; eCantorix stays, behind
-`backend="ecantorix"`, as the reference and for its effects. Next, in
+`backend="ecantorix"`, as the reference. Next, in
 order:
 
 1. **Listened, on 2026-10-01**, to ten scores sung by both from the same
@@ -642,13 +642,10 @@ order:
 3. **Shape each syllable.** PSOLA holds a syllable at one pitch; a sung
    vowel wants a short attack, vibrato and a release, which the
    package's envelopes and vibratos already provide.
-4. **Effects and accents for PSOLA**, the rest of what `sing` does with
-   eCantorix. Its tremolo is sox's tremolo and reverb in stereo, its melt
-   a female voice at a fixed 440 Hz resampled to each note, and flite
-   another speaker: the package's own tremolo, reverb and localization,
-   resampling, and flite as a second speaker would give the psola backend
-   all three. eCantorix also sings the beats abc2midi accents louder, by
-   up to 2.3 dB, where PSOLA sings every note at one level.
+4. **Accents for PSOLA**, the rest of what `sing` does with eCantorix,
+   whose effects the psola backend now sings too (done 2026-10-01).
+   eCantorix sings the beats abc2midi accents louder, by up to 2.3 dB,
+   where PSOLA sings every note at one level.
 5. **Own the PSOLA.** praat-parselmouth is a compiled dependency; a
    pitch-synchronous overlap-add in numpy would remove it, and belongs in
    a package about discrete-time synthesis. Worth it only if it sounds as
@@ -677,6 +674,12 @@ the behaviour is, too; this is the list in one place.
   data directory is laid out differently, and the engine's other extra
   voices (`poly`, `rubberband`, `mb-en1`, the last needing mbrola) are not
   offered through `effect`.
+- **eCantorix's flite effect ignores the melody in flite's rms voice,**
+  the one its own flite example sings with: every note comes out near
+  90 Hz, 6.5 semitones flat at C3 and 18.5 at C4, measured 2026-10-01.
+  In kal and slt it sings in tune, and the psola backend's flite effect
+  sings in tune in all three. Not fixed: it is the engine's, in the
+  fork, and would need its own measurement of how rms takes a pitch.
 - **The two backends are compared by pitch, length and time, not by
   ear.** `tools/compare_singing.py` measures what can be measured. On
   2026-09-30 eCantorix sang every note within five cents on macOS and ten

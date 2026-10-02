@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-01**,
-`music` 1.9.0: 48 modules, 13,562 LOC package + 20,484 LOC tests, 127 names
+`music` 1.9.0: 48 modules, 13,722 LOC package + 20,774 LOC tests, 127 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,12 +59,12 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **5303 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (3,175 stmts, 0 missed) |
+| Test suite | `pytest -q` | **5374 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (3,230 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,436 findings |
-| Annotation coverage | AST scan | **110 / 238 functions (46 %)**; 63 / 96 exported (66 %) |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,481 findings |
+| Annotation coverage | AST scan | **109 / 246 functions (44 %)**; 63 / 96 exported (66 %) |
 | Docstring coverage | AST scan | **182 / 188 public defs (97 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
@@ -98,7 +98,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; Linux CI across Python 3.10–3.14 including a job pinned to the declared lower bounds; installed-wheel checks on Linux, macOS and Windows with Python 3.12 |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 46 %; the `legacy/` subpackage |
+| **Needs work** | Annotation coverage at 44 %; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -364,10 +364,11 @@ either documented in the code or tracked in the issue list.
 - **Singing needs external programs.** `music.sing` has two backends.
   The default, `psola`, needs espeak-ng and praat-parselmouth; without
   them `singing_demo.py` cannot run, so the CI job that runs the examples
-  installs both. `backend="ecantorix"`, kept as the reference and for its
-  effects, is a Perl engine `setup_engine()` clones, at a pinned
-  revision, into the user's cache directory; it needs `abc2midi`, `sox`,
-  espeak and four Perl modules, which the requirements check names.
+  installs both. `backend="ecantorix"`, kept as the reference, is a Perl
+  engine `setup_engine()` clones, at a pinned revision, into the user's
+  cache directory; it needs `abc2midi`, `sox`, espeak and four Perl
+  modules, which the requirements check names. Both sing eCantorix's
+  effects, and the `flite` one needs `flite`.
   `test_singing_engine.py` skips each backend that is not set up. Both
   were run and measured on macOS, and a CI job sings with both on
   Ubuntu. Issue #5 tracks synthesis from per-phoneme spectra, which would
@@ -387,7 +388,7 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 46 %**, and 66 % across the exported API. The
+- **Annotation coverage is 44 %**, and 66 % across the exported API. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones
@@ -396,8 +397,8 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,436 findings** on `music/`, almost all
-  stylistic: 722 quote-style, 352 missing argument annotations, 80 missing
+- **The extended lint set reports 2,481 findings** on `music/`, almost all
+  stylistic: 718 quote-style, 368 missing argument annotations, 80 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.

@@ -27,7 +27,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `bonds` | `bonds.py` | 2026-09-28 | 106 | 103 | 3 | all |
 | `tables` | `tables.py` | 2026-09-28 | 77 | 77 | 0 | all |
 | `hrtf` | `hrtf.py` | 2026-09-28 | 224 | 217 | 7 | all |
-| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py`, `psola.py` | 2026-10-01 | 1252 | 1239 | 11 | all |
+| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py`, `psola.py` | 2026-10-01 | 1416 | 1401 | 15 | all |
 | `legacy` | `legacy/CanonicalSynth.py`, `IteratorSynth.py`, `classes.py`, `tables.py`, `pieces/testSong2.py` | 2026-09-30 | 1645 | 1154 | 491 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
@@ -1413,15 +1413,29 @@ one of eCantorix's renders, and passed alone: a mutant that ignores
 the engine directory's override can send the stubbed tests into the
 real engine's cache. Sing for real only when no audit is running.
 
+Over `1bd42da`, with eCantorix's effects in the psola backend overlaid,
+the first run left 20 alive. Five were tests too weak to tell: no
+convolution was cut short of its length or fell on a power of two, so
+a transform too short to hold it went unseen; a resampling ratio of a
+half gave the stand-in Sound's default rate; a stand-in for the
+requirements answered whatever effect it was asked about; and nothing
+checked which sound the melt effect hands to PSOLA. The final run
+detected 1401 of 1416. Of the new survivors, three only lengthen the
+convolution's transform, which leaves a linear convolution as it is,
+one moves `_require_flite`'s colon to `_flite_voices`, and one leaves
+the tremolo at its default rate, which is the backend's.
+
 | Function | IDs | Why accepted |
 |---|---|---|
-| `_require_flite` | 38 | `rpartition(":")` for `partition`: flite's voice line has one colon. |
+| `psola._flite_voices` | 15 | `rpartition(":")` for `partition`: flite's voice line has one colon. |
 | `Notes.make_dict` | 8, 29, 46, 49, 57 | As above: the `XX` the pattern ignores, the octave above 96, and `strict` on equal lengths. |
 | `psola._fit` | 21 | `endpoint=None` is false, as `False` is. |
 | `psola._sung` | 28 | A voiced frame above 1 Hz rather than 0: Praat gives an unvoiced frame 0 and a voiced one at least the 60 Hz floor. |
 | `psola._sung` | 33 | Starting an unvoiced syllable's voiced stretch at 1 s: its end, 0, is before its start, so the stretch is not used either way. |
-| `psola.sing` | 22 | Note edges left as floats: each is taken `int()` before use. |
-| `psola.sing` | 103 | The peak of an empty line taken as 1 rather than 0: nothing divided is nothing. |
+| `psola._convolved` | 6, 11, 12 | A transform longer than the convolution needs: the padding is zeros, and the convolution the same. |
+| `psola._trembling` | 8 | The tremolo's own default rate, 44,100 Hz, which is the backend's. |
+| `psola.sing` | 31 | Note edges left as floats: each is taken `int()` before use. |
+| `psola.sing` | 160 | The peak of an empty line taken as 1 rather than 0: nothing divided is nothing. |
 
 ## `legacy` — the synthesizers, the Being and the demonstration piece
 

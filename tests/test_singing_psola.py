@@ -77,13 +77,15 @@ def test_what_is_missing_is_named(monkeypatch, has_speaker, has_parselmouth,
 ])
 def test_what_is_missing_says_how_to_install_it(monkeypatch, missing,
                                                 message):
-    monkeypatch.setattr(psola, "missing_requirements", lambda: missing)
+    monkeypatch.setattr(psola, "missing_requirements",
+                        lambda effect=None: missing)
     with pytest.raises(RuntimeError, match=_exactly(message)):
         psola.require()
 
 
 def test_nothing_missing_is_quiet(monkeypatch):
-    monkeypatch.setattr(psola, "missing_requirements", lambda: [])
+    monkeypatch.setattr(psola, "missing_requirements",
+                        lambda effect=None: [])
     psola.require()
 
 
@@ -117,8 +119,10 @@ def stand_ins(monkeypatch):
     sung line can be read back note by note. No syllable is said without
     a vowel, unless a test puts one in ``calls["phonemes"]``.
     """
-    calls = {"speak": [], "sung": [], "transcribed": [], "phonemes": {}}
-    monkeypatch.setattr(psola, "require", lambda: None)
+    calls = {"speak": [], "sung": [], "transcribed": [], "phonemes": {},
+             "required": []}
+    monkeypatch.setattr(psola, "require",
+                        lambda effect=None: calls["required"].append(effect))
     monkeypatch.setattr(psola, "speaker", lambda: "/bin/espeak-ng")
 
     def phonemes(program, voice, syllables):
@@ -214,7 +218,7 @@ def test_every_note_needs_a_syllable_and_a_duration(stand_ins, text, notes,
 
 def test_the_backend_says_what_it_lacks_before_anything_else(monkeypatch):
     monkeypatch.setattr(psola, "missing_requirements",
-                        lambda: ["espeak-ng"])
+                        lambda effect=None: ["espeak-ng"])
     with pytest.raises(RuntimeError, match="needs espeak-ng"):
         psola.sing("la", (0,), (1,))
 
@@ -232,7 +236,7 @@ def test_sing_hands_psola_its_score(monkeypatch):
                  transpose=5, backend="psola")
     assert handed == [(("la la", (0, 12), (1, 2)),
                        dict(L="1/8", Q=90, reference=48, lang="de",
-                            transpose=5))]
+                            transpose=5, effect=None))]
 
 
 def test_sing_sings_with_psola_by_default(monkeypatch):
@@ -246,7 +250,7 @@ def test_sing_sings_with_psola_by_default(monkeypatch):
     assert handed == [(("Mar-ry had a litt-le lamb", (4, 2, 0, 2, 4, 4, 4),
                         (1, 1, 1, 1, 1, 1, 2)),
                        dict(L="1/4", Q=120, reference=60, lang="en",
-                            transpose=-12))]
+                            transpose=-12, effect=None))]
 
 
 def test_sing_refuses_an_unknown_backend():
@@ -255,15 +259,16 @@ def test_sing_refuses_an_unknown_backend():
         perform.sing(backend="festival")
 
 
-@pytest.mark.parametrize("chosen", [{}, {"backend": "psola"}],
-                         ids=["by default", "by name"])
-def test_sing_refuses_an_effect_with_psola(chosen):
-    """Only eCantorix has effects, so an effect alone, which the default
-    sang until PSOLA, says which backend to ask."""
-    with pytest.raises(ValueError, match=_exactly(
-            "effect 'melt' is one of eCantorix's voices; the psola backend "
-            "sings the plain voice only. Pass backend='ecantorix' for it")):
-        perform.sing(effect="melt", **chosen)
+@pytest.mark.parametrize("asked, handed", [
+    ("tremolo", "tremolo"), ("melt", "melt"), ("flite", "flite"),
+    ("flint", "flite")])
+def test_sing_hands_psola_its_effect(monkeypatch, asked, handed):
+    """Both backends sing eCantorix's effects, under the same names."""
+    given = []
+    monkeypatch.setattr(psola, "sing", lambda *a, **k: (
+        given.append(k["effect"]) or np.zeros(3)))
+    perform.sing(effect=asked, lang="rms" if handed == "flite" else "en")
+    assert given == [handed]
 
 
 def test_sing_refuses_the_notes_ecantorix_would(monkeypatch):
@@ -670,3 +675,248 @@ def test_psola_s_own_defaults_are_sing_s(stand_ins):
     assert voice == "en"
     assert frequency == pytest.approx(440 * 2 ** ((48 - 69) / 12))
     assert seconds == pytest.approx(0.5)
+
+
+# --------------------------------------------------------------------------
+# Effects, after eCantorix's extra voices
+# --------------------------------------------------------------------------
+
+def test_an_effect_it_does_not_have_is_refused(stand_ins):
+    with pytest.raises(ValueError, match=_exactly(
+            "effect must be one of ('tremolo', 'melt', 'flite'), or None; "
+            "got 'flint'")):
+        psola.sing("la", (0,), (1,), effect="flint")
+    assert stand_ins["required"] == []
+
+
+@pytest.mark.parametrize("effect, has_speaker, has_flite, missing", [
+    ("flite", False, True, []),
+    ("flite", True, False, ["flite"]),
+    (None, False, True, ["espeak-ng"]),
+    ("melt", False, True, ["espeak-ng"]),
+])
+def test_flite_needs_flite_rather_than_espeak(monkeypatch, effect,
+                                               has_speaker, has_flite,
+                                               missing):
+    monkeypatch.setattr(psola, "speaker",
+                        lambda: "/bin/espeak-ng" if has_speaker else None)
+    monkeypatch.setattr(psola.shutil, "which", lambda name: (
+        "/bin/flite" if name == "flite" and has_flite else None))
+    monkeypatch.setattr(psola.importlib.util, "find_spec",
+                        lambda name: object())
+    assert psola.missing_requirements(effect) == missing
+
+
+def test_missing_flite_says_how_to_install_it(monkeypatch):
+    monkeypatch.setattr(psola, "missing_requirements", lambda effect=None: (
+        ["flite", "praat-parselmouth"] if effect == "flite" else []))
+    with pytest.raises(RuntimeError, match=_exactly(
+            "the psola singing backend needs flite and praat-parselmouth, "
+            "which are not installed. flite: sudo apt install flite, or "
+            "brew install flite; praat-parselmouth: pip install "
+            "'music[singing]'.")):
+        psola.require("flite")
+
+
+def _flite_lists(monkeypatch, voices="kal awb_time kal16 awb rms slt"):
+    asked = []
+
+    def run(command, capture_output, text):
+        asked.append(command)
+        return types.SimpleNamespace(
+            returncode=0, stdout=f"Voices available: {voices}\n", stderr="")
+
+    monkeypatch.setattr(psola.subprocess, "run", run)
+    return asked
+
+
+def test_flite_s_voices_are_those_it_lists(monkeypatch):
+    asked = _flite_lists(monkeypatch)
+    assert psola._flite_voices() == ["kal", "awb_time", "kal16", "awb",
+                                     "rms", "slt"]
+    assert asked == [["flite", "-lv"]]
+
+
+def test_a_voice_flite_lacks_is_refused(monkeypatch):
+    """flite says a syllable in a voice it lacks in its default one, and
+    says nothing of it."""
+    _flite_lists(monkeypatch, "kal rms")
+    psola._require_flite_voice("rms")
+    with pytest.raises(ValueError, match=_exactly(
+            "with the flite effect, lang names one of flite's voices, "
+            "['kal', 'rms']; got 'en'")):
+        psola._require_flite_voice("en")
+
+
+@pytest.mark.parametrize("program, command", [
+    ("/usr/bin/flite", ["/usr/bin/flite", "-voice", "rms", "-t", "la",
+                        "-o", "/tmp/0.wav"]),
+    ("C:/flite/flite.exe", ["C:/flite/flite.exe", "-voice", "rms", "-t",
+                            "la", "-o", "/tmp/0.wav"]),
+    ("/usr/bin/espeak-ng", ["/usr/bin/espeak-ng", "-v", "rms", "-w",
+                            "/tmp/0.wav", "la"]),
+])
+def test_flite_is_asked_in_its_own_terms(program, command):
+    from pathlib import Path
+    assert psola._command(program, "la", "rms", Path("/tmp/0.wav")) == \
+        command
+
+
+def test_flite_says_each_syllable_as_written(stand_ins, monkeypatch):
+    """flite reads no espeak phonemes, so no syllable is looked up."""
+    monkeypatch.setattr(psola.shutil, "which",
+                        lambda name: f"/bin/{name}")
+    checked = []
+    monkeypatch.setattr(psola, "_require_flite_voice", checked.append)
+    psola.sing("Jac-ques", (4, 0), (1, 1), lang="rms", effect="flite")
+    assert stand_ins["required"] == ["flite"]
+    assert checked == ["rms"]
+    assert stand_ins["transcribed"] == []
+    assert [call[:3] for call in stand_ins["speak"]] == [
+        ("/bin/flite", "Jac", "rms"), ("/bin/flite", "ques", "rms")]
+
+
+@pytest.mark.parametrize("lang, voice", [
+    ("en", "en+f1"), ("pt-br", "pt-br+f1"), ("en+m3", "en+m3")])
+def test_the_melted_voice_is_espeak_s_female_one(lang, voice):
+    assert psola._melted(lang) == voice
+
+
+def test_melt_moves_the_formants_with_the_pitch_below_its_floor(
+        stand_ins, monkeypatch):
+    """eCantorix's melt voice is espeak's f1 with its formants a quarter
+    higher, which espeak sings down to 216 Hz; below that eCantorix
+    resamples it to each note, and its formants sink with the pitch."""
+    resampled = []
+    monkeypatch.setattr(psola, "_resampled", lambda samples, shift: (
+        resampled.append(shift) or samples[:len(samples)]))
+    monkeypatch.setattr(psola, "_trembling", lambda samples: samples)
+    monkeypatch.setattr(psola, "_reverberated", lambda line: np.array(
+        [line, line]))
+    # MIDI 57 at 220 Hz is above the floor; MIDI 45 at 110 Hz below it.
+    psola.sing("la la", notes=(9, -3), durs=(1, 1), effect="melt")
+    assert [call[2] for call in stand_ins["speak"]] == ["en+f1"] * 2
+    assert stand_ins["transcribed"] == [("/bin/espeak-ng", "en+f1",
+                                         ["la", "la"])]
+    above, below = 1.25, 1.25 * 110 / 216
+    assert resampled == pytest.approx([above, below])
+    assert [call[0] for call in stand_ins["sung"]] == ["la", "la"]
+    (_, high, high_seconds), (_, low, low_seconds) = stand_ins["sung"]
+    assert high == pytest.approx(220 / above)
+    assert low == pytest.approx(110 / below) == pytest.approx(216 / 1.25)
+    assert high_seconds == pytest.approx(0.5 * above)
+    assert low_seconds == pytest.approx(0.5 * below)
+
+
+@pytest.mark.parametrize("effect", ["tremolo", "melt"])
+def test_tremolo_and_melt_tremble_each_note_and_reverberate_the_line(
+        stand_ins, monkeypatch, effect):
+    trembled, reverberated = [], []
+    monkeypatch.setattr(psola, "_resampled", lambda samples, shift: samples)
+    monkeypatch.setattr(psola, "_trembling", lambda samples: (
+        trembled.append(len(samples)) or 2 * samples))
+    monkeypatch.setattr(psola, "_reverberated", lambda line: (
+        reverberated.append(line.copy()) or np.array([line, -4 * line])))
+    sung = psola.sing("la la, !", notes=(0, 7, 0), durs=(1, 1, 1),
+                      effect=effect)
+    assert trembled == [22050, 22050]
+    (line,), notes = reverberated, 2 * 22050
+    assert np.all(line[notes:] == 0) and np.any(line[:notes])
+    assert sung.shape == (2, 3 * 22050)
+    assert np.abs(sung).max() == pytest.approx(1)
+    np.testing.assert_allclose(sung[1], -4 * sung[0])
+
+
+def test_flite_and_the_plain_voice_neither_tremble_nor_reverberate(
+        stand_ins, monkeypatch):
+    def refuse(*args):
+        raise AssertionError("not for this effect")
+
+    monkeypatch.setattr(psola, "_trembling", refuse)
+    monkeypatch.setattr(psola, "_reverberated", refuse)
+    monkeypatch.setattr(psola, "_require_flite_voice", lambda lang: None)
+    monkeypatch.setattr(psola.shutil, "which", lambda name: "/bin/flite")
+    assert psola.sing("la", (0,), (1,)).ndim == 1
+    assert psola.sing("la", (0,), (1,), lang="rms", effect="flite").ndim == 1
+
+
+def test_the_tremolo_is_sox_s_nine_hertz_falling_to_half():
+    """eCantorix's sox ``tremolo 9 50``: the level falls to half and back,
+    nine times a second, from the start of each note."""
+    from music.core.synths.envelopes import tremolo
+
+    steady = np.ones(psola.RATE)
+    trembled = psola._trembling(steady)
+    np.testing.assert_array_equal(trembled, tremolo(
+        sonic_vector=steady, tremolo_freq=9, max_db_dev=10 * np.log10(2),
+        sample_rate=psola.RATE))
+    assert trembled.max() / trembled.min() == pytest.approx(2, rel=1e-3)
+    assert trembled[0] == 1
+    # A second of it: the spectrum's bins are a hertz apart.
+    assert np.argmax(np.abs(np.fft.rfft(trembled - trembled.mean()))) == 9
+
+
+def test_resampling_moves_pitch_and_formants_as_tape(parselmouth):
+    resampled = types.SimpleNamespace(values=np.array([[0.5, 0.25]]))
+    parselmouth.answers[:] = [resampled]
+    out = psola._resampled(np.array([1.0, 2.0, 3.0]), 0.75)
+    np.testing.assert_array_equal(out, [0.5, 0.25])
+    (sound, command, rate, precision), = parselmouth.calls
+    np.testing.assert_array_equal(sound.values[0], [1.0, 2.0, 3.0])
+    assert (sound.sampling_frequency, command, rate, precision) == (
+        33075.0, "Resample", 44100, 50)
+
+
+def test_the_room_rings_a_second_in_stereo_ten_decibels_down():
+    """sox's reverb at its defaults, which eCantorix runs, has its tail
+    10 dB below the direct sound, and a tail of its own in each channel.
+    The package's early reflections are all positive, so its channels are
+    less independent than sox's: 0.43 correlated, against 0.09."""
+    impulse = np.zeros(1000)
+    impulse[0] = 1.0
+    room = psola._reverberated(impulse)
+    assert room.shape == (2, 1000 + 44100)
+    np.testing.assert_allclose(room[:, 0], [1.0, 1.0])
+    wet = np.sum(room[:, 1:] ** 2, axis=1)
+    np.testing.assert_allclose(10 * np.log10(wet), [-10, -10], atol=1e-6)
+    assert not np.allclose(room[0], room[1])
+
+
+def test_the_room_is_the_same_every_time_and_leaves_chance_alone():
+    np.random.seed(7)
+    before = np.random.get_state()[1].copy()
+    first = psola._reverberated(np.ones(10))
+    after = np.random.get_state()[1].copy()
+    np.testing.assert_array_equal(before, after)
+    np.testing.assert_array_equal(first, psola._reverberated(np.ones(10)))
+
+
+def test_each_channel_draws_a_response_of_the_measured_room(monkeypatch):
+    """A second long, decaying 40 dB over it, as sox's rings for 0.87 s."""
+    drawn = []
+    module = sys.modules["music.core.filters.reverb"]
+
+    original = module.reverb
+
+    def counted(**kwargs):
+        drawn.append(kwargs)
+        return original(**kwargs)
+
+    monkeypatch.setattr(module, "reverb", counted)
+    psola._reverberated(np.ones(4))
+    assert drawn == [dict(duration=1.0, decay=-40.0, sample_rate=44100)] * 2
+
+
+@pytest.mark.parametrize("signal, response, length", [
+    ([1.0, 2.0, 3.0], [1.0, 0.5], 4), ([1.0, -1.0], [0.25, 0.5, 2.0], 6),
+    ([0.5], [1.0], 1), ([1.0, 2.0], [3.0], 2),
+    # Cut shorter than the convolution, five long, which a transform of
+    # four, or of two, would fold back onto its start.
+    ([1.0, 2.0, 3.0], [1.0, -1.0, 0.5], 2)])
+def test_the_convolution_is_numpy_s_padded_or_cut(signal, response, length):
+    full = np.convolve(signal, response)
+    expected = np.zeros(length)
+    expected[:min(length, len(full))] = full[:length]
+    np.testing.assert_allclose(
+        psola._convolved(np.array(signal), np.array(response), length),
+        expected, atol=1e-12)

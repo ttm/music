@@ -41,9 +41,8 @@ and `std=0` is refused rather than rendered.
 syllable and Praat's PSOLA holds it at its note's pitch and length. It
 needs espeak-ng and `pip install 'music[singing]'` rather than the
 eCantorix engine, Perl and its modules, abc2midi and sox, and it sounds
-different. Pass `backend="ecantorix"` to sing with the engine as before,
-and for an `effect`, which only eCantorix has: `sing(effect=...)` alone
-is now refused, and says so.
+different, its effects too. Pass `backend="ecantorix"` to sing with the
+engine as before.
 
 `sing`'s `lang`, `transpose` and `effect` now reach the engine. It never
 read them: eCantorix loads its configuration with Perl's `do`, which has
@@ -74,6 +73,17 @@ table of any length at its own length.
   sings the same score at the same pitches as eCantorix, and needs
   espeak-ng and `pip install 'music[singing]'` rather than Perl, abc2midi
   and sox. It is now the default; see Changed.
+- **The psola backend sings eCantorix's effects,** made with the
+  package's own tools and set to what eCantorix's sox gives, as measured.
+  `tremolo` is a 9 Hz tremolo falling to half and back on each note, then
+  the package's reverberation, its tail 10 dB under the direct sound and
+  ringing 0.86 s against sox's 0.87, drawn once a channel for stereo,
+  from a fixed seed so a line sounds the same each time, and leaving the
+  caller's random state alone. `melt` sings that with espeak's female
+  voice, its formants a quarter higher, and resampled below 216 Hz so
+  they sink with the pitch, as eCantorix's melt voice does. `flite` has
+  flite say each syllable and checks its voice first, since flite falls
+  back to another without a word. All three sing in tune.
 - **`music.sing`,** the singing entry point, is exported, as its engine's
   setup already was.
 - **`tools/compare_singing.py` sings the same scores with both
@@ -93,9 +103,9 @@ table of any length at its own length.
 - **`sing` sings with PSOLA by default,** which installs with a system
   package and a pip extra, where eCantorix is a cloned Perl engine
   needing four Perl modules, abc2midi and sox. eCantorix stays, behind
-  `backend="ecantorix"`, as the reference PSOLA is compared with, and
-  for its effects. `examples/singing_demo.py` sings with the default,
-  and CI's examples job now runs it.
+  `backend="ecantorix"`, as the reference PSOLA is compared with.
+  `examples/singing_demo.py` sings with the default, and CI's examples
+  job now runs it.
 
 ### Fixed
 

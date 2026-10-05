@@ -632,13 +632,31 @@ order:
    also found two of the backend's bugs, fixed, and that neither backend
    sang French "ques": espeak says it as a bare /k/, and both now give it
    a schwa, as a singer does.
-2. **Clearer syllables.** eCantorix asks espeak for the speed that fits
-   each note, down to 80 words a minute, so most of a syllable's length
-   comes from espeak's own timing; PSOLA takes the syllable at espeak's
-   speaking speed and stretches its whole voiced part evenly, consonant
-   transitions included. Asking espeak for the note's speed, and
-   stretching only the vowel's steady part, would test whether that is
-   the difference.
+2. **Clearer syllables, done 2026-10-06.** eCantorix asks espeak for the
+   speed that fits each note, down to 80 words a minute; PSOLA took each
+   syllable at espeak's speaking speed and stretched its whole voiced
+   part, consonant transitions included.
+   `python tools/compare_singing_timing.py` (2026-10-04) sings five
+   timings beside eCantorix, matched in level, for listening, and
+   `tools/score_singing_asr.py` (2026-10-05) has Whisper hear them. On the
+   48 one-syllable words of `--words`, sung a word a note at four lengths,
+   Whisper `small` heard the first timing lose its words as the notes
+   lengthen: 16 of 48 at a quarter of a second, 7 at one and at two
+   seconds. Fitting espeak's speed helped long notes and hurt short ones,
+   where espeak made to speak faster than its default 175 words a minute
+   is heard less than PSOLA compressing its usual speech; eCantorix, which
+   does that, was heard least, 2 of 48. Holding an estimated vowel nucleus
+   did more with espeak slowed than alone. `slowed` keeps what helped:
+   espeak only ever slowed, and the nucleus held only on a note longer
+   than the syllable, so a short note is sung exactly as before. Whisper
+   `small` heard 69 of 192 words with it, against 44 with the first timing
+   and 59 with eCantorix, and `large-v3-turbo` 106, against 72 and 90;
+   pitch and length are as before. Heard on 2026-10-06, it was the best of
+   the six in general, though not fantastic, and not always clearly better
+   than all the others, and it is now the psola backend's timing. Where
+   words are still unclear, the nucleus is a place to look: it is found by
+   energy, not by phonemes, so a voiced consonant or a diphthong's glide
+   can be held instead of a vowel.
 3. **Shape each syllable.** PSOLA holds a syllable at one pitch; a sung
    vowel wants a short attack, vibrato and a release, which the
    package's envelopes and vibratos already provide.

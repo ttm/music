@@ -193,6 +193,23 @@ def test_psola_s_flite_sings_in_tune_in_every_voice():
             assert abs(cents(pitch, expected)) < 35
 
 
+@pytest.mark.skipif("praat-parselmouth" in psola.missing_requirements(),
+                    reason="Praat finds the pitch the nucleus reads")
+def test_psola_holds_the_loud_voiced_middle_of_a_real_sound():
+    """A long note holds the strong middle of a syllable's vowel: not a
+    loud noise before it, nor the weak voicing around it."""
+    import parselmouth
+
+    rate = 22050
+    times = np.arange(rate) / rate
+    tone = np.sin(2 * np.pi * 120 * times)
+    signal = tone * np.where((times > 0.3) & (times < 0.7), 1.0, 0.1)
+    signal[:2205] = np.random.default_rng(17).normal(0, 2, 2205)
+    start, end = psola._nucleus(parselmouth.Sound(signal, rate))
+    assert 0.3 < start < 0.4
+    assert 0.6 < end < 0.7
+
+
 @pytest.mark.skipif(not (_ecantorix_ready()
                          and not psola.missing_requirements()),
                     reason="comparing needs both backends")

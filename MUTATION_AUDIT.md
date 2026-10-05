@@ -1373,6 +1373,13 @@ the `make` command, the file it reads back and how.
 
 ## `singing` with the `psola` backend
 
+The figures below precede the syllable timing the backend took on
+2026-10-06: `_said_for`, `_slowed`, `_nucleus` and `_sung`'s `region`,
+which say a syllable slower on a longer note and hold its vowel. They have
+regression and signal tests, against stand-ins and the real engines, but
+the area has not been re-run since, nor were the comparison tools ever in
+it.
+
 Measured 2026-09-30 at `ed193c7`, over 1101 mutations of the four singing
 modules, with `test_singing_psola.py` added to the selection. That file
 runs the backend against stand-ins for espeak-ng and Parselmouth, so it

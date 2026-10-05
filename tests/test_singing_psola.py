@@ -110,17 +110,34 @@ def test_a_syllable_is_said_without_its_punctuation(word, said):
     assert psola._clean(word) == said
 
 
+class _Said(str):
+    """A syllable as the stand-in speaker says it: its text, said in
+    `seconds`."""
+
+    def __new__(cls, text, seconds):
+        said = super().__new__(cls, text)
+        said.seconds = seconds
+        return said
+
+    def get_total_duration(self):
+        return self.seconds
+
+
 @pytest.fixture
 def stand_ins(monkeypatch):
     """psola with its speaker and its PSOLA recorded, not run.
 
-    `_speak` gives back the syllable it was asked for, and `_sung` a
+    `_speak` gives back the syllable it was asked for, said in
+    ``calls["said in"]`` seconds at each speed -- by default longer than
+    any note here, so that none is said slower or held -- and `_sung` a
     constant as long as it was asked for, at the note's frequency, so a
-    sung line can be read back note by note. No syllable is said without
-    a vowel, unless a test puts one in ``calls["phonemes"]``.
+    sung line can be read back note by note. `_nucleus` finds
+    ``calls["nucleus"]``. No syllable is said without a vowel, unless a
+    test puts one in ``calls["phonemes"]``.
     """
     calls = {"speak": [], "sung": [], "transcribed": [], "phonemes": {},
-             "required": []}
+             "required": [], "said in": {None: np.inf},
+             "nucleus": (0.1, 0.2), "nuclei": []}
     monkeypatch.setattr(psola, "require",
                         lambda effect=None: calls["required"].append(effect))
     monkeypatch.setattr(psola, "speaker", lambda: "/bin/espeak-ng")
@@ -131,16 +148,21 @@ def stand_ins(monkeypatch):
 
     monkeypatch.setattr(perform, "sung_phonemes", phonemes)
 
-    def speak(program, syllable, voice, path):
-        calls["speak"].append((program, syllable, voice, path.name))
-        return syllable
+    def speak(program, syllable, voice, path, speed=None):
+        calls["speak"].append((program, syllable, voice, path.name, speed))
+        return _Said(syllable, calls["said in"][speed])
 
-    def sung(sound, frequency, seconds):
-        calls["sung"].append((sound, frequency, seconds))
+    def sung(sound, frequency, seconds, region=None):
+        calls["sung"].append((sound, frequency, seconds, region))
         return np.full(int(round(seconds * psola.RATE)) + 7, frequency)
+
+    def nucleus(sound):
+        calls["nuclei"].append(sound)
+        return calls["nucleus"]
 
     monkeypatch.setattr(psola, "_speak", speak)
     monkeypatch.setattr(psola, "_sung", sung)
+    monkeypatch.setattr(psola, "_nucleus", nucleus)
     return calls
 
 
@@ -345,6 +367,22 @@ def test_a_syllable_is_said_and_trimmed_of_its_silence(tmp_path,
     assert trimmed.calls == [("extract_part", 2 / 22050, 5 / 22050, False)]
 
 
+@pytest.mark.parametrize("program", ["/bin/espeak-ng", "/bin/espeak"])
+def test_espeak_can_say_a_syllable_slower(tmp_path, monkeypatch,
+                                          parselmouth, program):
+    ran = _said(monkeypatch, [0, 0.5, -1.0, 0])
+    path = tmp_path / "0.wav"
+    trimmed = psola._speak(program, "la", "en", path, speed=95)
+    assert ran == [[program, "-v", "en", "-w", str(path), "-s", "95", "la"]]
+    np.testing.assert_array_equal(trimmed.values[0], [0.5, -1.0])
+
+
+def test_flite_is_never_asked_for_a_speed(tmp_path):
+    path = tmp_path / "0.wav"
+    assert psola._command("/bin/flite", "la", "rms", path, speed=95) == [
+        "/bin/flite", "-voice", "rms", "-t", "la", "-o", str(path)]
+
+
 @pytest.mark.parametrize("returncode, stderr, write, said", [
     (1, "Failed to read voice 'xx'\n", False, "Failed to read voice 'xx'"),
     (0, "", False, "it wrote nothing"),
@@ -439,6 +477,260 @@ def test_otherwise_the_syllable_is_scaled_whole(parselmouth, times,
                        if call[0] == "duration tier"]
     assert duration_points == [
         ("duration tier", "Add point", 0, seconds / 0.5)]
+
+
+def _region_points(parselmouth, spoken, seconds, region):
+    """Record the experimental tier without requiring a Praat install."""
+    answers = {
+        "To Manipulation": "manipulation",
+        "Extract pitch tier": "pitch tier",
+        "Extract duration tier": "duration tier",
+        "Get resynthesis (overlap-add)": "resynthesis",
+        "Resample": types.SimpleNamespace(values=np.array([[0.25, -0.5]])),
+    }
+
+    def call(*args):
+        parselmouth.calls.append(args)
+        return answers.get(args[1])
+
+    parselmouth.praat.call = call
+    samples = psola._sung(spoken, 220.0, seconds, region=region)
+    np.testing.assert_array_equal(samples, [0.25, -0.5])
+    assert not spoken.asked  # the supplied region needs no pitch analysis
+    return [call[2:] for call in parselmouth.calls
+            if call[0] == "duration tier"]
+
+
+def _tier_duration(points, start, end):
+    """The time occupied by a source interval under a linear duration tier."""
+    times, values = np.asarray(points).T
+    edges = np.r_[start, times[(times > start) & (times < end)], end]
+    rates = np.interp(edges, times, values)
+    return np.sum(np.diff(edges) * (rates[:-1] + rates[1:]) / 2)
+
+
+@pytest.mark.parametrize("seconds", [0.9, 0.5, 0.45, 0.3995])
+def test_a_selected_hold_region_accounts_for_both_ramps(parselmouth,
+                                                       seconds):
+    spoken = _Spoken(0.5, [0.05, 0.45], [120, 120])
+    points = _region_points(parselmouth, spoken, seconds, (0.2, 0.3))
+    assert [time for time, _ in points] == pytest.approx(
+        [0.199, 0.2, 0.3, 0.301])
+    assert all(value > 0 for _, value in points)
+    assert _tier_duration(points, 0, 0.5) == pytest.approx(seconds)
+    # Only the selected region and its one-millisecond ramps change;
+    # consonant transitions outside them retain their original duration.
+    assert _tier_duration(points, 0, 0.199) == pytest.approx(0.199)
+    assert _tier_duration(points, 0.301, 0.5) == pytest.approx(0.199)
+    assert points[0][1] == points[-1][1] == 1
+
+
+@pytest.mark.parametrize("region, times", [
+    ((0, 0.3), [0, 0.3, 0.301]),
+    ((0.2, 0.5), [0.199, 0.2, 0.5]),
+    ((0, 0.5), [0, 0.5]),
+    ((0.0005, 0.4995), [0, 0.0005, 0.4995, 0.5]),
+])
+def test_hold_ramps_at_sound_boundaries_have_no_duplicate_times(
+        parselmouth, region, times):
+    points = _region_points(parselmouth, _Spoken(0.5, [], []), 0.8, region)
+    assert [time for time, _ in points] == pytest.approx(times)
+    assert np.all(np.diff([time for time, _ in points]) > 0)
+    assert _tier_duration(points, 0, 0.5) == pytest.approx(0.8)
+
+
+@pytest.mark.parametrize("seconds", [0.249, 0.2])
+def test_compression_that_cannot_fit_the_region_scales_the_whole_syllable(
+        parselmouth, seconds):
+    points = _region_points(parselmouth, _Spoken(0.5, [], []), seconds,
+                            (0.125, 0.375))
+    assert points == [(0, seconds / 0.5)]
+
+
+@pytest.mark.parametrize("region", [
+    (-0.1, 0.3), (0.2, 0.6), (0.3, 0.2), (0.2, 0.2),
+    (0, 0.01), (float("nan"), 0.3), (0.2, float("inf")),
+])
+def test_an_unusable_hold_region_scales_the_whole_syllable(parselmouth,
+                                                         region):
+    points = _region_points(parselmouth, _Spoken(0.5, [], []), 0.8, region)
+    assert points == [(0, 0.8 / 0.5)]
+
+
+# --------------------------------------------------------------------------
+# A note longer than its syllable: said slower, and its vowel held
+# --------------------------------------------------------------------------
+
+def test_a_note_shorter_than_its_syllable_is_said_once_and_fitted(stand_ins):
+    stand_ins["said in"] = {None: 0.6}
+    psola.sing("la", notes=(0,), durs=(1,))
+    assert [call[4] for call in stand_ins["speak"]] == [None]
+    assert stand_ins["nuclei"] == []
+    (sound, _, seconds, region), = stand_ins["sung"]
+    assert (sound.seconds, seconds, region) == (0.6, 0.5, None)
+
+
+def test_a_longer_note_has_its_syllable_said_slower_and_its_vowel_held(
+        stand_ins):
+    """eCantorix asks espeak for the speed that fits each note; the
+    syllable said nearest the note's half second is kept, 88 words a
+    minute here, and the middle of its vowel held for the rest."""
+    stand_ins["said in"] = {None: 0.25, 88: 0.45, 80: 0.4}
+    psola.sing("lamb", notes=(0,), durs=(1,))
+    # 175 * 0.25 / 0.5 asks for 88; 88 * 0.45 / 0.5 for 79, which is
+    # slower than SLOWEST; and 80 * 0.4 / 0.5 for 80 again, which ends it.
+    assert [call[4] for call in stand_ins["speak"]] == [None, 88, 80]
+    assert [call[3] for call in stand_ins["speak"]] == ["0.wav"] * 3
+    (held,) = stand_ins["nuclei"]
+    assert held.seconds == 0.45
+    (sound, _, seconds, region), = stand_ins["sung"]
+    assert sound is held and seconds == 0.5 and region == (0.1, 0.2)
+
+
+def test_a_syllable_said_slower_than_its_note_is_fitted_not_held(stand_ins):
+    stand_ins["said in"] = {None: 0.3, 105: 0.52}
+    psola.sing("lamb", notes=(0,), durs=(1,))
+    assert [call[4] for call in stand_ins["speak"]] == [None, 105]
+    assert stand_ins["nuclei"] == []
+    (sound, _, _, region), = stand_ins["sung"]
+    assert sound.seconds == 0.52 and region is None
+
+
+def test_a_vowel_with_no_nucleus_to_hold_leaves_psola_to_choose(stand_ins):
+    stand_ins["said in"] = {None: 0.48}
+    stand_ins["nucleus"] = None
+    psola.sing("lamb", notes=(0,), durs=(1,))
+    assert [call[4] for call in stand_ins["speak"]] == [None]
+    (_, _, _, region), = stand_ins["sung"]
+    assert region is None and len(stand_ins["nuclei"]) == 1
+
+
+def test_flite_is_held_but_never_asked_to_speak_slower(stand_ins,
+                                                      monkeypatch):
+    monkeypatch.setattr(psola.shutil, "which", lambda name: f"/bin/{name}")
+    monkeypatch.setattr(psola, "_require_flite_voice", lambda lang: None)
+    stand_ins["said in"] = {None: 0.25}
+    psola.sing("la", notes=(0,), durs=(1,), lang="slt", effect="flite")
+    assert [call[::4] for call in stand_ins["speak"]] == [("/bin/flite", None)]
+    (_, _, _, region), = stand_ins["sung"]
+    assert region == (0.1, 0.2)
+
+
+def test_the_melted_voice_is_timed_by_the_length_it_is_sung_for(stand_ins,
+                                                               monkeypatch):
+    """Resampled by a quarter at 220 Hz, a half-second note is sung for
+    0.625 s, which a syllable said in 0.55 s is short of."""
+    monkeypatch.setattr(psola, "_resampled", lambda samples, shift: samples)
+    monkeypatch.setattr(psola, "_trembling", lambda samples: samples)
+    monkeypatch.setattr(psola, "_reverberated", lambda line: np.array(
+        [line, line]))
+    stand_ins["said in"] = {None: 0.55, 154: 0.6}
+    psola.sing("la", notes=(9,), durs=(1,), effect="melt")
+    assert [call[4] for call in stand_ins["speak"]] == [None, 154]
+    (sound, _, seconds, region), = stand_ins["sung"]
+    assert seconds == pytest.approx(0.625) and sound.seconds == 0.6
+    assert region == (0.1, 0.2)
+
+
+def _speeds(monkeypatch, durations):
+    """`_speak` saying "lamb" in `durations[speed]` seconds."""
+    asked = []
+
+    def speak(program, syllable, voice, path, speed):
+        asked.append(speed)
+        return _Said(syllable, durations[speed])
+
+    monkeypatch.setattr(psola, "_speak", speak)
+    return asked
+
+
+@pytest.mark.parametrize("seconds, said, durations, chosen, asked", [
+    (0.6, 0.3, {88: 0.6}, 88, [88]),
+    (4.0, 0.3, {80: 0.7}, 80, [80]),
+    # Within 5 percent of the note: nothing more to ask.
+    (0.6, 0.58, {}, None, []),
+    # Three more tries at most, and the nearest kept, not the last.
+    (0.6, 0.3, {88: 0.75, 110: 0.7, 128: 0.8}, 110, [88, 110, 128]),
+    # Never faster than espeak's own speed: 146 words a minute comes out
+    # too long, and would ask for 219.
+    (0.6, 0.5, {146: 0.9}, None, [146]),
+])
+def test_a_syllable_is_slowed_toward_its_note_never_hurried(
+        monkeypatch, seconds, said, durations, chosen, asked):
+    tried = _speeds(monkeypatch, durations)
+    spoken = _Said("lamb", said)
+    best = psola._slowed("/bin/espeak-ng", "lamb", "en", "0.wav", seconds,
+                         spoken)
+    assert tried == asked
+    assert best is spoken if chosen is None else \
+        best.seconds == durations[chosen]
+
+
+def _frames(levels, frequencies=None):
+    levels = np.asarray(levels, dtype=float)
+    times = np.arange(len(levels)) * 0.01 + 0.025
+    if frequencies is None:
+        frequencies = np.full(len(levels), 120.0)
+    return times, np.asarray(frequencies), levels
+
+
+def test_the_nucleus_leaves_a_weak_voiced_onset_and_coda_unheld():
+    frames = _frames([0.2] * 10 + [1.0] * 10 + [0.3] * 10)
+    start, end = psola._nucleus_from_frames(*frames)
+    assert (start, end) == pytest.approx((0.135, 0.205))
+    assert start > frames[0][9] and end < frames[0][20]
+
+
+def test_a_loud_unvoiced_fricative_is_not_taken_for_the_vowel():
+    frames = _frames([8.0] * 10 + [1.0] * 10 + [0.2] * 10,
+                     [0] * 10 + [120] * 20)
+    assert psola._nucleus_from_frames(*frames) == pytest.approx(
+        (0.135, 0.205))
+
+
+def test_a_voiceless_gap_between_vowels_is_not_held():
+    frames = _frames([1.0] * 10 + [0.9] * 20,
+                     [120] * 10 + [0] * 10 + [120] * 10)
+    start, end = psola._nucleus_from_frames(*frames)
+    assert end < frames[0][10]
+    assert start == pytest.approx(0.035)
+
+
+@pytest.mark.parametrize("levels, frequencies", [
+    ([], []),
+    ([1] * 20, [0] * 20),
+    ([0] * 20, [120] * 20),
+    ([1] * 4, [120] * 4),
+    ([0.1] * 10 + [1] + [0.1] * 10, [120] * 21),
+])
+def test_no_hold_without_enough_contiguous_strong_voicing(levels,
+                                                         frequencies):
+    assert psola._nucleus_from_frames(*_frames(levels, frequencies)) is None
+
+
+def test_the_shortest_nucleus_held_is_thirty_milliseconds():
+    start, end = psola._nucleus_from_frames(*_frames([1] * 6))
+    assert end - start == pytest.approx(0.03)
+
+
+def test_a_syllable_too_short_to_have_a_pitch_has_no_nucleus():
+    spoken = _Spoken(psola.SHORTEST, [], [])
+    assert psola._nucleus(spoken) is None
+    assert spoken.asked == []
+
+
+def test_the_nucleus_reads_the_pitch_and_a_40_ms_level_around_each_frame():
+    """Voiced from 0.1 s, and loud from 0.2 s to 0.3 s."""
+    rate = 1000.0
+    samples = np.r_[np.full(200, 0.1), np.ones(100), np.full(100, 0.1)]
+    spoken = _SpokenSamples(samples, rate, np.arange(0.005, 0.4, 0.01),
+                            [0] * 10 + [120] * 30)
+    start, end = psola._nucleus(spoken)
+    assert spoken.asked == [(0.01, 60, 600)]
+    # A frame whose 40 ms are at least half loud is at least 70 percent
+    # as strong as the loudest, sqrt(0.505) of it: those from 0.205 s to
+    # 0.295 s, held less 10 ms at each end.
+    assert (start, end) == pytest.approx((0.215, 0.285))
 
 
 # --------------------------------------------------------------------------
@@ -582,6 +874,13 @@ def test_a_syllable_too_short_to_have_a_pitch_is_sung_as_said(parselmouth):
     assert spoken.asked == []
 
 
+def test_a_selected_region_cannot_make_a_short_syllable_analysable(
+        parselmouth):
+    spoken = _Spoken(0.05, [], [])
+    assert _region_points(parselmouth, spoken, 0.5, (0.01, 0.04)) == []
+    assert parselmouth.calls == [(spoken, "Resample", 44100, 50)]
+
+
 def test_a_syllable_just_long_enough_is_analysed(parselmouth):
     spoken = _Spoken(0.0501, [0.02], [0])
     result = _psola_answers(parselmouth, [1.0])
@@ -624,6 +923,20 @@ def test_a_note_longer_than_praat_can_write_is_given_room(parselmouth):
                                     0, 0.5)
     assert [call[2] for call in parselmouth.calls[7:11]] == pytest.approx(
         [0.099, 0.1, 0.3, 0.301])
+
+
+@pytest.mark.parametrize("region", [(0.1, 0.3), (0.1, 0.5), (0, 0.5)])
+def test_a_long_selected_hold_keeps_the_padding_at_unit_rate(parselmouth,
+                                                            region):
+    spoken = _SpokenSamples([0.5, -0.5, 0.25, 0.0], 8.0, [], [])
+    points = _region_points(parselmouth, spoken, 1.6, region)
+    padded = _manipulated(parselmouth)
+    np.testing.assert_array_equal(padded.values[0],
+                                  [0.5, -0.5, 0.25, 0.0] + [0.0] * 13)
+    assert _tier_duration(points, 0, 0.5) == pytest.approx(1.6)
+    assert points[-1][1] == 1
+    assert np.all(np.diff([time for time, _ in points]) > 0)
+    assert _tier_duration(points, 0.501, 1.6) == pytest.approx(1.099)
 
 
 @pytest.mark.parametrize("seconds", [1.5, 1.4])
@@ -670,8 +983,8 @@ def test_a_syllable_said_without_a_vowel_is_said_with_a_schwa(stand_ins):
 def test_psola_s_own_defaults_are_sing_s(stand_ins):
     """sing() passes every one of them; a direct call gets the same."""
     psola.sing("la", notes=(0,), durs=(1,))
-    (_, _, voice, _), = stand_ins["speak"]
-    (_, frequency, seconds), = stand_ins["sung"]
+    (_, _, voice, _, _), = stand_ins["speak"]
+    (_, frequency, seconds, _), = stand_ins["sung"]
     assert voice == "en"
     assert frequency == pytest.approx(440 * 2 ** ((48 - 69) / 12))
     assert seconds == pytest.approx(0.5)
@@ -801,7 +1114,8 @@ def test_melt_moves_the_formants_with_the_pitch_below_its_floor(
     above, below = 1.25, 1.25 * 110 / 216
     assert resampled == pytest.approx([above, below])
     assert [call[0] for call in stand_ins["sung"]] == ["la", "la"]
-    (_, high, high_seconds), (_, low, low_seconds) = stand_ins["sung"]
+    (_, high, high_seconds, _), (_, low, low_seconds, _) = \
+        stand_ins["sung"]
     assert high == pytest.approx(220 / above)
     assert low == pytest.approx(110 / below) == pytest.approx(216 / 1.25)
     assert high_seconds == pytest.approx(0.5 * above)

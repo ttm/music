@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-01**,
-`music` 1.9.0: 48 modules, 13,722 LOC package + 20,774 LOC tests, 127 names
+`music` 1.9.0: 48 modules, 13,881 LOC package + 21,512 LOC tests, 127 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -64,7 +64,7 @@ figures described above are automatically compared with the checkout.
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
 | Lint, extended rule set | `ruff check --select ALL music` | 2,481 findings |
-| Annotation coverage | AST scan | **109 / 246 functions (44 %)**; 63 / 96 exported (66 %) |
+| Annotation coverage | AST scan | **114 / 251 functions (45 %)**; 63 / 96 exported (66 %) |
 | Docstring coverage | AST scan | **182 / 188 public defs (97 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
@@ -98,7 +98,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; Linux CI across Python 3.10–3.14 including a job pinned to the declared lower bounds; installed-wheel checks on Linux, macOS and Windows with Python 3.12 |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 44 %; the `legacy/` subpackage |
+| **Needs work** | Annotation coverage at 45 %; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -373,6 +373,30 @@ either documented in the code or tracked in the issue list.
   were run and measured on macOS, and a CI job sings with both on
   Ubuntu. Issue #5 tracks synthesis from per-phoneme spectra, which would
   need neither.
+- **PSOLA's syllable timing was chosen by a recognizer and one listener.**
+  Since 2026-10-06 the psola backend says a syllable slower when its note
+  is longer, and holds the strong middle of its vowel for the rest. On the
+  48-word lists of `tools/compare_singing_timing.py --words`, at four note
+  lengths, `tools/score_singing_asr.py` had Whisper `small` hear 69 of 192
+  words with it, 44 with the timing it replaced and 59 with eCantorix, and
+  `large-v3-turbo` 106, 72 and 90; one listener heard it best in general,
+  though not fantastic, and not always clearly better than the others. A
+  recognizer trained on speech, with a language model, stands in for a
+  listener and is not one. Its count is also fragile: eCantorix's sox
+  dithers, so its recordings differ in their last bits from run to run,
+  and that alone moved `small` between 56 and 61 of its words over three
+  runs. The nucleus is found by energy, not by phonemes, so a loud voiced
+  consonant or a diphthong's glide can be held instead of a vowel. Tests
+  check pitch, duration, long-note sustain, that a note shorter than its
+  syllable is sung as before, and that the experiment's `slowed`, found by
+  a search of its own, is the package's singer sample for sample.
+- **With espeak 1.48, PSOLA sings German "Ent" period-doubled.** In "Al-le
+  mei-ne Ent-chen", Praat's pitch tracker finds that note at 98 Hz as well
+  as at its 196 Hz, in every timing the experiment sings, the current one
+  included, so the comparison measures it an octave or a fourth low.
+  eCantorix, from the same espeak, does not, and with espeak-ng, which the
+  package prefers, PSOLA sings it within a cent. Found on 2026-10-05; not
+  yet explained.
 - **Waveform tables are synthetic only.** No SoundFont or WAV-derived
   tables; issue #3.
 - **matplotlib is an extra**, needed only by `PrimaryTables.draw_tables()`.
@@ -388,7 +412,7 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 44 %**, and 66 % across the exported API. The
+- **Annotation coverage is 45 %**, and 66 % across the exported API. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones

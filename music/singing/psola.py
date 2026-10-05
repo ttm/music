@@ -2,10 +2,13 @@
 
 espeak-ng says each syllable of the lyric, and Praat's pitch-synchronous
 overlap-add, through praat-parselmouth, holds it at its note's pitch and
-stretches its voiced part to the note's length. The notes are then joined
-end to end. That is eCantorix's idea -- a speech synthesizer made to sing
-one syllable at a time -- without its toolchain: no Perl and its modules,
-no round trip through ABC and MIDI, no sox.
+makes it the note's length. A syllable said in less time than its note is
+said again slower, as eCantorix has espeak say it, and then only the
+strong middle of its vowel is lengthened, so that its consonants keep the
+length they were said with. The notes are then joined end to end. That is
+eCantorix's idea -- a speech synthesizer made to sing one syllable at a
+time -- without its toolchain: no Perl and its modules, no round trip
+through ABC and MIDI, no sox.
 
 It sings with the effects eCantorix's extra voices give, made with the
 package's own tremolo, reverberation and resampling, and flite: see
@@ -33,9 +36,13 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
-from numpy.typing import NDArray
+from numpy.typing import ArrayLike, NDArray
+
+if TYPE_CHECKING:
+    import parselmouth
 
 #: The programs that can say a syllable, in the order they are preferred.
 SPEAKERS = ("espeak-ng", "espeak")
@@ -51,6 +58,15 @@ PITCH_FLOOR, PITCH_CEILING = 60, 600
 #: :data:`PITCH_FLOOR`. espeak says French "ques" as a /k/ 41 ms long.
 #: A syllable this short has no vowel to hold, and is sung as it was said.
 SHORTEST = 3 / PITCH_FLOOR
+
+#: espeak's speaking speed, in words a minute, and the slowest it is asked
+#: for. A syllable said in less time than its note is said again slower,
+#: as eCantorix has espeak say each syllable at the speed that fits its
+#: note, down to the same 80. Never faster: on a note shorter than its
+#: syllable, espeak hurried was heard less clearly than PSOLA compressing
+#: its usual speech, by Whisper and by ear (2026-10-05 and 06; see
+#: ``tools/score_singing_asr.py``).
+SPEED, SLOWEST = 175, 80
 
 #: How long each note fades in and out, in seconds, so notes meet
 #: without a click. A note shorter than four of these fades over a
@@ -234,24 +250,25 @@ def sing(text, notes, durs, L="1/4", Q=120, reference=60, lang="en",
         # A syllable said without a vowel is sung with a schwa.
         sung = sung_phonemes(program, voice,
                              [said for said in map(_clean, words) if said])
+    assert program is not None  # require() found it
     with tempfile.TemporaryDirectory() as scratch:
         for index, (word, note) in enumerate(zip(words, notes)):
             start, end = int(edges[index]), int(edges[index + 1])
             said = _clean(word)
             if not said or end == start:
                 continue  # a syllable of punctuation alone is a rest
-            spoken = _speak(program, sung.get(said, said), voice,
-                            Path(scratch) / f"{index}.wav")
             frequency = 440 * 2 ** ((reference + note + transpose - 69) / 12)
-            seconds = (end - start) / RATE
+            # The melted voice is held at the pitch that resampling by
+            # `shift` takes to the note, and for the length it takes to
+            # the note's.
+            shift = (MELT_FORMANTS * min(1.0, frequency / MELT_FLOOR)
+                     if effect == "melt" else 1.0)
+            seconds = (end - start) / RATE * shift
+            spoken, held = _said_for(program, sung.get(said, said), voice,
+                                     Path(scratch) / f"{index}.wav", seconds)
+            samples = _sung(spoken, frequency / shift, seconds, region=held)
             if effect == "melt":
-                # Held at the pitch that resampling by `shift` takes to
-                # the note, and for the length it takes to the note's.
-                shift = MELT_FORMANTS * min(1.0, frequency / MELT_FLOOR)
-                samples = _resampled(
-                    _sung(spoken, frequency / shift, seconds * shift), shift)
-            else:
-                samples = _sung(spoken, frequency, seconds)
+                samples = _resampled(samples, shift)
             part = _fit(samples, end - start)
             line[start:end] = _trembling(part) if reverberant else part
     if reverberant:
@@ -271,11 +288,13 @@ def _clean(word: str) -> str:
     return re.sub(r"[^\w']", "", word)
 
 
-def _speak(program, syllable, voice, path):
-    """`syllable` said by `program` in `voice`, trimmed of its silence."""
+def _speak(program, syllable, voice, path, speed=None):
+    """`syllable` said by `program` in `voice`, trimmed of its silence:
+    at `speed` words a minute if one is given, and the program is espeak.
+    """
     import parselmouth
 
-    result = subprocess.run(_command(program, syllable, voice, path),
+    result = subprocess.run(_command(program, syllable, voice, path, speed),
                             capture_output=True, text=True)
     if result.returncode or not path.is_file():
         raise RuntimeError(
@@ -293,34 +312,161 @@ def _speak(program, syllable, voice, path):
                               preserve_times=False)
 
 
-def _command(program, syllable, voice, path):
+def _command(program, syllable, voice, path, speed=None):
     """What has `program` say `syllable` in `voice`, into `path`: flite
-    names its voice, its text and its output otherwise than espeak."""
-    if Path(program).stem == "flite":
+    names its voice, its text and its output otherwise than espeak, and
+    has no `speed` to be asked for."""
+    if _is_flite(program):
         return [program, "-voice", voice, "-t", syllable, "-o", str(path)]
-    return [program, "-v", voice, "-w", str(path), syllable]
+    command = [program, "-v", voice, "-w", str(path)]
+    if speed is not None:
+        command += ["-s", str(speed)]
+    return command + [syllable]
 
 
-def _sung(sound, frequency, seconds):
+def _is_flite(program: str) -> bool:
+    """Whether `program` is flite, which is asked otherwise than espeak."""
+    return Path(program).stem == "flite"
+
+
+def _said_for(program: str, syllable: str, voice: str, path: Path,
+              seconds: float
+              ) -> tuple[parselmouth.Sound, tuple[float, float] | None]:
+    """`syllable` said for a note `seconds` long, and the stretch to hold.
+
+    A syllable said in less time than its note is said again slower, down
+    to :data:`SLOWEST` words a minute, unless flite says it, which cannot
+    be asked to; if it is still shorter than the note, the strong middle
+    of its vowel, as :func:`_nucleus` finds it, is held for the rest, so
+    that its consonants keep the length they were said with. A syllable
+    said in the note's time or more is left as it was said, for
+    :func:`_sung` to fit.
+
+    Returns
+    -------
+    sound, tuple of float or None
+        The syllable as said, and the stretch of it to hold, in seconds,
+        or None to let :func:`_sung` choose.
+    """
+    spoken = _speak(program, syllable, voice, path)
+    if spoken.get_total_duration() < seconds and not _is_flite(program):
+        spoken = _slowed(program, syllable, voice, path, seconds, spoken)
+    if spoken.get_total_duration() < seconds:
+        return spoken, _nucleus(spoken)
+    return spoken, None
+
+
+def _slowed(program: str, syllable: str, voice: str, path: Path,
+            seconds: float, spoken: parselmouth.Sound) -> parselmouth.Sound:
+    """`syllable` said slower, as near `seconds` long as espeak will.
+
+    `spoken` is the syllable said at :data:`SPEED`. As eCantorix does,
+    the speed is scaled by the length said over the length wanted, down
+    to :data:`SLOWEST`, for up to three more tries. espeak's speed is
+    approximate, and a syllable's length not inverse in it, so the try
+    nearest `seconds` is kept; one within 5 percent of it ends the
+    search, and so does a speed tried before.
+    """
+    best, speed, tried = spoken, SPEED, {SPEED}
+    said = spoken.get_total_duration()
+    for _ in range(3):
+        if abs(said - seconds) <= 0.05 * seconds:
+            break
+        speed = min(SPEED, max(SLOWEST, round(speed * said / seconds)))
+        if speed in tried:
+            break
+        tried.add(speed)
+        sound = _speak(program, syllable, voice, path, speed)
+        said = sound.get_total_duration()
+        if abs(said - seconds) < abs(best.get_total_duration() - seconds):
+            best = sound
+    return best
+
+
+def _nucleus(sound: parselmouth.Sound) -> tuple[float, float] | None:
+    """The strong middle of the vowel of `sound`, as (start, end) seconds.
+
+    Its pitch every 10 ms, as :func:`_sung` finds it, and its level over
+    40 ms around each; see :func:`_nucleus_from_frames`. None where the
+    syllable is too short for Praat to find a pitch in.
+    """
+    if sound.get_total_duration() <= SHORTEST:
+        return None
+    pitch = sound.to_pitch(time_step=0.01, pitch_floor=PITCH_FLOOR,
+                           pitch_ceiling=PITCH_CEILING)
+    times = pitch.xs()
+    samples, rate = sound.values[0], sound.sampling_frequency
+    centres = np.round(times * rate).astype(int)
+    half = max(1, round(0.02 * rate))
+    left = np.maximum(0, centres - half)
+    right = np.minimum(len(samples), centres + half)
+    energy = np.concatenate(([0.0], np.cumsum(samples ** 2)))
+    levels = np.sqrt((energy[right] - energy[left]) / (right - left))
+    return _nucleus_from_frames(times, pitch.selected_array["frequency"],
+                                levels)
+
+
+def _nucleus_from_frames(times: ArrayLike, frequencies: ArrayLike,
+                         levels: ArrayLike) -> tuple[float, float] | None:
+    """The loudest voiced stretch of frames, less its edges, or None.
+
+    The voiced frame with the most energy, and the voiced frames either
+    side of it at least 70 percent as strong, never across an unvoiced
+    one; less 10 ms at each end, and None where that leaves less than
+    30 ms. It reads energy, not phonemes: it keeps the onset and coda
+    out of the hold, but a loud voiced consonant, or a diphthong's glide,
+    can be held too.
+    """
+    at, pitch, level = (np.asarray(values, dtype=float)
+                        for values in (times, frequencies, levels))
+    voiced = pitch > 0
+    if not voiced.any():
+        return None
+    peak = int(np.argmax(np.where(voiced, level, -1)))
+    if level[peak] <= 0:
+        return None
+    usable = voiced & (level >= 0.7 * level[peak])
+    left = right = peak
+    while left > 0 and usable[left - 1]:
+        left -= 1
+    while right + 1 < len(at) and usable[right + 1]:
+        right += 1
+    start, end = float(at[left] + 0.01), float(at[right] - 0.01)
+    return (start, end) if end - start >= 0.03 - 1e-12 else None
+
+
+def _sung(sound, frequency, seconds, *, region=None):
     """`sound` held at `frequency` and made `seconds` long, at RATE.
 
     Only the voiced stretch is lengthened, so a consonant keeps the length
     it was said with; a syllable too short for that, or with no voiced
     stretch, is scaled as a whole, to at most three times its length. One
     said in no more than :data:`SHORTEST` is only resampled: Praat cannot
-    analyse it.
+    analyse it. ``region=(start, end)``, such as the nucleus
+    :func:`_nucleus` finds, is the stretch lengthened instead, its short
+    ramps counted in its length; one that cannot be made to fit scales
+    the syllable whole.
     """
     from parselmouth.praat import call
 
     total = sound.get_total_duration()
     if total <= SHORTEST:
         return call(sound, "Resample", RATE, 50).values[0]
-    pitch = sound.to_pitch(time_step=0.01, pitch_floor=PITCH_FLOOR,
-                           pitch_ceiling=PITCH_CEILING)
-    voiced = pitch.xs()[pitch.selected_array["frequency"] > 0]
-    start, end = (voiced[0], voiced[-1]) if len(voiced) else (0.0, 0.0)
-    unvoiced = total - (end - start)
-    held = end - start > 0.01 and seconds > unvoiced
+    if region is None:
+        pitch = sound.to_pitch(time_step=0.01, pitch_floor=PITCH_FLOOR,
+                               pitch_ceiling=PITCH_CEILING)
+        voiced = pitch.xs()[pitch.selected_array["frequency"] > 0]
+        start, end = (voiced[0], voiced[-1]) if len(voiced) else (0.0, 0.0)
+        unvoiced = total - (end - start)
+        held = end - start > 0.01 and seconds > unvoiced
+    else:
+        start, end = region
+        held = 0 <= start < end <= total and end - start > 0.01
+        if held:
+            left, right = min(0.001, start), min(0.001, total - end)
+            factor = 1 + (seconds - total) / (
+                end - start + (left + right) / 2)
+            held = factor > 0
     if held and seconds > 3 * total:
         # Praat's overlap-add writes into a sound three times as long as
         # the one it is given, and stops at its end: a 0.3 s "laa" held
@@ -339,9 +485,22 @@ def _sung(sound, frequency, seconds):
 
     durations = call(manipulation, "Extract duration tier")
     if held:
-        factor = (seconds - unvoiced) / (end - start)
-        for time, value in ((max(start - 0.001, 0), 1), (start, factor),
-                            (end, factor), (min(end + 0.001, total), 1)):
+        if region is None:
+            factor = (seconds - unvoiced) / (end - start)
+            points = [(max(start - 0.001, 0), 1), (start, factor),
+                      (end, factor), (min(end + 0.001, total), 1)]
+        else:
+            points = []
+            if left:
+                points.append((start - left, 1))
+            points.extend(((start, factor), (end, factor)))
+            if right:
+                points.append((end + right, 1))
+            elif seconds > 3 * total:
+                # A region reaching the end has no outgoing ramp. Return
+                # to unit rate in the padding, without duplicate times.
+                points.append((end + 0.001, 1))
+        for time, value in points:
             call(durations, "Add point", time, value)
     else:
         call(durations, "Add point", 0, seconds / total)

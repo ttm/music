@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-01**,
-`music` 1.9.0: 48 modules, 13,881 LOC package + 21,512 LOC tests, 127 names
+`music` 1.9.0: 48 modules, 13,885 LOC package + 21,533 LOC tests, 127 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,

@@ -342,6 +342,27 @@ def test_a_render_that_writes_nothing_says_what_the_engine_said(
     assert not stale.exists()
 
 
+def test_the_score_is_sung_and_not_the_one_before_it(engine, monkeypatch):
+    """make on macOS, GNU Make 3.81, reads a file's time to the second: a
+    score written in the second the last one's MIDI was made in looked no
+    newer than it, so the engine sang the last melody again. Two songs in
+    a row did, in the test suite, and the second came back four seconds
+    long."""
+    cache = engine / "cache"
+    (cache / "achant.mid").write_bytes(b"an earlier melody")
+    found = []
+    stand_in = fake_run(cache)
+
+    def run(command, *args, **kwargs):
+        if command[0] == "make":
+            found.append(sorted(path.name for path in cache.iterdir()))
+        return stand_in(command, *args, **kwargs)
+
+    monkeypatch.setattr(perform.subprocess, "run", run)
+    perform.sing(backend="ecantorix")
+    assert found == [["Makefile", "achant.abc", "achant.conf"]]
+
+
 def test_a_failed_make_says_what_it_printed(engine, monkeypatch):
     import subprocess
 

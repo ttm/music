@@ -204,9 +204,13 @@ def sing(text="Mar-ry had a litt-le lamb",
     except OSError as exc:
         raise RuntimeError(f'Failed to prepare singing cache: {exc}') from exc
     # A render left from an earlier call would otherwise be read back as
-    # this one's when the engine writes nothing.
+    # this one's when the engine writes nothing; and the MIDI made from
+    # the earlier score sung again when this one is written in the same
+    # second, since make reads a file's time no finer than that on macOS,
+    # where it is GNU Make 3.81.
     rendered = cache / 'achant.wav'
-    rendered.unlink(missing_ok=True)
+    for earlier in (rendered, cache / 'achant.mid'):
+        earlier.unlink(missing_ok=True)
     # The script is run with the perl the requirements were checked
     # against, rather than by its #!/usr/bin/perl, which is another Perl
     # on macOS and one without the modules; and with the cache on @INC,

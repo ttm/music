@@ -212,6 +212,12 @@ table of any length at its own length.
   Makefile pipes the script through `tee`, so `make` succeeded when it
   failed, and the missing file was read as libsndfile's "System error";
   a render left from an earlier call was read back as this one's.
+- **`sing(backend="ecantorix")` sings its own score, not the last one.**
+  It removed the last render before running the engine, but not the MIDI
+  made from the last score, and `make` on macOS, GNU Make 3.81, reads a
+  file's time only to the second: a score written in the second the last
+  MIDI was made in looked no newer than it, and the engine sang the last
+  melody again. The MIDI is now made afresh every time.
 - **`sing` prepares the cache the effects read from,** copying their
   files and espeak's data, which the engine's Makefile copies from a
   Linux path.

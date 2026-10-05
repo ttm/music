@@ -90,9 +90,10 @@ table of any length at its own length.
   for the rest, so that its consonants keep the length they were said
   with; espeak is never hurried, since a syllable said faster was heard
   less clearly than one compressed. It sings the same score at the same
-  pitches as eCantorix, and needs espeak-ng and
-  `pip install 'music[singing]'` rather than Perl, abc2midi and sox. It is
-  now the default; see Changed.
+  pitches as eCantorix, and accents the same notes as much, the first and
+  those on the meter's strong beats, up to 2.34 dB louder; it needs
+  espeak-ng and `pip install 'music[singing]'` rather than Perl, abc2midi
+  and sox. It is now the default; see Changed.
 - **The psola backend sings eCantorix's effects,** made with the
   package's own tools and set to what eCantorix's sox gives, as measured.
   `tremolo` is a 9 Hz tremolo falling to half and back on each note, then

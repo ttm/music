@@ -210,6 +210,57 @@ def test_psola_holds_the_loud_voiced_middle_of_a_real_sound():
     assert 0.6 < end < 0.7
 
 
+def _velocities(midi):
+    """The velocity of each note a standard MIDI file starts, in order."""
+    data, found = midi.read_bytes(), []
+    at = 8 + int.from_bytes(data[4:8], "big")
+    while at < len(data):
+        size = int.from_bytes(data[at + 4:at + 8], "big")
+        body, at, i, status = data[at + 8:at + 8 + size], at + 8 + size, 0, 0
+        while i < len(body):
+            while body[i] & 0x80:   # the delta time, a variable length
+                i += 1
+            i += 1
+            if body[i] & 0x80:
+                status, i = body[i], i + 1
+            if status in (0xFF, 0xF0, 0xF7):
+                i += status == 0xFF
+                length = 0
+                while body[i] & 0x80:
+                    length, i = (length << 7) | (body[i] & 0x7F), i + 1
+                i += 1 + ((length << 7) | body[i])
+            else:
+                if status & 0xF0 == 0x90 and body[i + 1]:
+                    found.append(body[i + 1])
+                i += 1 if status & 0xF0 in (0xC0, 0xD0) else 2
+    return found
+
+
+@pytest.mark.skipif(not psola.shutil.which("abc2midi"),
+                    reason="the accents are abc2midi's")
+@pytest.mark.parametrize("M, L, durs", [
+    (M, "1/8", [1, 2, 1, 1, "3/2", 0.5, 1, 3, 1, 1, 2, 1, 1, 1, 4])
+    for M in ("4/4", "3/4", "2/4", "2/2", "6/8", "9/8", "12/8", "3/8",
+              "5/4", "7/8", "C", "C|", "6/4", "3/2", "4/2", "10/8")])
+def test_psola_accents_the_notes_abc2midi_does(tmp_path, M, L, durs):
+    """The velocities abc2midi gives the score sing() writes for
+    eCantorix, read from its MIDI, are the accents psola sings."""
+    import subprocess
+
+    score = tmp_path / "achant.abc"
+    score.write_text(f"X:1\nT:t\nM:{M}\nL:{L}\nQ:120\nV:1\nK:C\n"
+                     + perform.translate_to_abc([0] * len(durs), durs, 60)
+                     + "\nw: " + " ".join(["la"] * len(durs)))
+    subprocess.run(["abc2midi", str(score), "0", "-o",
+                    str(tmp_path / "achant.mid")], capture_output=True,
+                   check=True)
+    velocity = {105: perform.ACCENTS[0], 95: perform.ACCENTS[1],
+                80: perform.ACCENTS[2]}
+    levels = [velocity[v] / perform.ACCENTS[0]
+              for v in _velocities(tmp_path / "achant.mid")]
+    assert perform.accents(durs, M, L) == pytest.approx(levels)
+
+
 @pytest.mark.skipif(not (_ecantorix_ready()
                          and not psola.missing_requirements()),
                     reason="comparing needs both backends")

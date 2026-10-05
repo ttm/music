@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-01**,
-`music` 1.9.0: 48 modules, 13,885 LOC package + 21,533 LOC tests, 127 names
+`music` 1.9.0: 48 modules, 13,961 LOC package + 21,636 LOC tests, 127 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -64,8 +64,8 @@ figures described above are automatically compared with the checkout.
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
 | Lint, extended rule set | `ruff check --select ALL music` | 2,481 findings |
-| Annotation coverage | AST scan | **114 / 251 functions (45 %)**; 63 / 96 exported (66 %) |
-| Docstring coverage | AST scan | **182 / 188 public defs (97 %)** |
+| Annotation coverage | AST scan | **116 / 253 functions (46 %)**; 63 / 96 exported (66 %) |
+| Docstring coverage | AST scan | **183 / 189 public defs (97 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **22 of 35 routines sample-exact**; 9 divergent with a stated reason, 4 where the reference does not run |
@@ -98,7 +98,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; Linux CI across Python 3.10–3.14 including a job pinned to the declared lower bounds; installed-wheel checks on Linux, macOS and Windows with Python 3.12 |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 45 %; the `legacy/` subpackage |
+| **Needs work** | Annotation coverage at 46 %; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -412,7 +412,7 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 45 %**, and 66 % across the exported API. The
+- **Annotation coverage is 46 %**, and 66 % across the exported API. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones

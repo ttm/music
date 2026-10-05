@@ -184,10 +184,13 @@ def test_each_syllable_is_sung_at_its_note_for_its_length(stand_ins):
                                atol=1 / psola.RATE)
     assert len(line) == round(sum(seconds) * psola.RATE)
     edges = np.round(np.cumsum([0] + seconds) * psola.RATE).astype(int)
-    for (start, end), frequency in zip(zip(edges, edges[1:]), frequencies):
+    # In 4/4, abc2midi accents the first note, and none of the others
+    # starts on a half note: an eighth and a sixteenth in.
+    levels = [frequency * accent for frequency, accent in zip(
+        frequencies, [1, 126 / 165, 126 / 165])]
+    for (start, end), level in zip(zip(edges, edges[1:]), levels):
         middle = line[start + 300:end - 300]
-        np.testing.assert_allclose(
-            middle, frequency / max(frequencies), rtol=1e-12)
+        np.testing.assert_allclose(middle, level / max(levels), rtol=1e-12)
 
 
 def test_a_syllable_of_punctuation_alone_is_a_rest(stand_ins):
@@ -257,8 +260,8 @@ def test_sing_hands_psola_its_score(monkeypatch):
                  L="1/8", Q=90, K="G", reference=48, lang="de",
                  transpose=5, backend="psola")
     assert handed == [(("la la", (0, 12), (1, 2)),
-                       dict(L="1/8", Q=90, reference=48, lang="de",
-                            transpose=5, effect=None))]
+                       dict(M="3/4", L="1/8", Q=90, reference=48,
+                            lang="de", transpose=5, effect=None))]
 
 
 def test_sing_sings_with_psola_by_default(monkeypatch):
@@ -271,8 +274,8 @@ def test_sing_sings_with_psola_by_default(monkeypatch):
     perform.sing()
     assert handed == [(("Mar-ry had a litt-le lamb", (4, 2, 0, 2, 4, 4, 4),
                         (1, 1, 1, 1, 1, 1, 2)),
-                       dict(L="1/4", Q=120, reference=60, lang="en",
-                            transpose=-12, effect=None))]
+                       dict(M="4/4", L="1/4", Q=120, reference=60,
+                            lang="en", transpose=-12, effect=None))]
 
 
 def test_sing_refuses_an_unknown_backend():
@@ -800,6 +803,55 @@ def test_a_tempo_abc_cannot_read_is_refused(L, Q, message):
 
 def test_a_bare_unit_is_a_quarter_at_120():
     assert perform.unit_seconds() == Fraction(1, 2)
+
+
+# --------------------------------------------------------------------------
+# Accents, as abc2midi gives them and eCantorix sings them
+# --------------------------------------------------------------------------
+
+FIRST, STRONG, OTHER = 1, 150 / 165, 126 / 165
+
+
+@pytest.mark.parametrize("M, L, durs, levels", [
+    # Every half note in 4/4, and the first note above them all.
+    ("4/4", "1/4", [1] * 5, [FIRST, OTHER, STRONG, OTHER, STRONG]),
+    ("C", "1/4", [1] * 5, [FIRST, OTHER, STRONG, OTHER, STRONG]),
+    ("4/4", "1/4", [0.5] * 5, [FIRST, OTHER, OTHER, OTHER, STRONG]),
+    ("4/4", "1/4", ["3/2", 0.5, "3/2", 0.5, 2, 1],
+     [FIRST, OTHER, STRONG, OTHER, STRONG, STRONG]),
+    ("4/4", "1/8", [2, 2, 1, 1, 2], [FIRST, OTHER, STRONG, OTHER, OTHER]),
+    # Once a bar in 3/4 and 2/2, and every dotted quarter in 6/8.
+    ("3/4", "1/4", [1] * 4, [FIRST, OTHER, OTHER, STRONG]),
+    ("2/2", "1/4", [1] * 5, [FIRST, OTHER, OTHER, OTHER, STRONG]),
+    ("C|", "1/4", [1] * 5, [FIRST, OTHER, OTHER, OTHER, STRONG]),
+    ("6/8", "1/8", [1] * 7, [FIRST, OTHER, OTHER, STRONG, OTHER, OTHER,
+                             STRONG]),
+    ("5/8", "1/8", [1] * 6, [FIRST, OTHER, OTHER, OTHER, OTHER, STRONG]),
+    ("1/4", "1/8", [1] * 3, [FIRST, OTHER, STRONG]),
+    ("4/4", "1/4", [], []),
+])
+def test_the_beats_abc2midi_accents_are_sung_louder(M, L, durs, levels):
+    """abc2midi gives the first note a velocity of 105, a note on a strong
+    beat 95 and any other 80, and eCantorix has espeak say them at
+    amplitudes of 165, 150 and 126."""
+    assert perform.ACCENTS == (165, 150, 126)
+    assert perform.accents(durs, M, L) == pytest.approx(levels)
+
+
+@pytest.mark.parametrize("M", ["x", "4/0", "0/4", "3+2/8", "4/4/4", "",
+                               "/4", "4/", None])
+def test_a_meter_that_is_not_one_is_refused(M):
+    with pytest.raises(ValueError, match=_exactly(
+            f'M must be a meter such as "4/4", "C" or "C|"; got {M!r}')):
+        perform.accents([1], M)
+
+
+def test_psola_sings_each_note_at_its_accent(stand_ins):
+    line = psola.sing("la la la", notes=(0, 0, 0), durs=(2, 1, 1), M="3/4",
+                      reference=60, transpose=0)
+    middles = [line[start + 500:start + 1000] for start in (0, 44100, 66150)]
+    np.testing.assert_allclose([m.mean() for m in middles],
+                               [FIRST, OTHER, STRONG], rtol=1e-12)
 
 
 # --------------------------------------------------------------------------

@@ -660,10 +660,18 @@ order:
 3. **Shape each syllable.** PSOLA holds a syllable at one pitch; a sung
    vowel wants a short attack, vibrato and a release, which the
    package's envelopes and vibratos already provide.
-4. **Accents for PSOLA**, the rest of what `sing` does with eCantorix,
-   whose effects the psola backend now sings too (done 2026-10-01).
-   eCantorix sings the beats abc2midi accents louder, by up to 2.3 dB,
-   where PSOLA sings every note at one level.
+4. **Accents for PSOLA, done 2026-10-06,** the rest of what `sing` does
+   with eCantorix, whose effects the psola backend sings too (done
+   2026-10-01). abc2midi 5.03 gives the first note of the score `sing`
+   writes, which has no bar lines, a velocity of 105, a note on a strong
+   beat 95 and any other 80; a strong beat comes every three of the
+   meter's beats when they divide by three, every two when they divide by
+   two, and once a bar otherwise, rather than on every beat as its
+   documentation's `%%MIDI beat` suggests. eCantorix has espeak say each
+   syllable at amplitude velocity / 127 * 200, which espeak's level
+   follows to a twentieth of a decibel, so the psola backend sings each
+   note at 165, 150 or 126 parts of 165, up to 2.34 dB apart. A test reads
+   abc2midi's own MIDI in sixteen meters and finds the same accents.
 5. **Own the PSOLA.** praat-parselmouth is a compiled dependency; a
    pitch-synchronous overlap-add in numpy would remove it, and belongs in
    a package about discrete-time synthesis. Worth it only if it sounds as

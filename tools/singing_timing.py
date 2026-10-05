@@ -97,6 +97,8 @@ def render(score, variant, speaker=None):
         "transpose", -12)
     perform.translate_to_abc(notes, durs, reference)
     unit = perform.unit_seconds(score.get("L", "1/4"), score.get("Q", 120))
+    levels = perform.accents(durs, score.get("M", "4/4"),
+                             score.get("L", "1/4"))
     lengths = [float(perform._note_length(d) * unit) for d in durs]
     edges = np.round(np.cumsum([0.0] + lengths) * psola.RATE).astype(int)
     line = np.zeros(edges[-1])
@@ -139,7 +141,7 @@ def render(score, variant, speaker=None):
                                   region=region)
             if effect == "melt":
                 samples = psola._resampled(samples, shift)
-            part = psola._fit(samples, end - start)
+            part = psola._fit(samples, end - start) * levels[index]
             line[start:end] = psola._trembling(part) if effect in (
                 "tremolo", "melt") else part
             duration = spoken.get_total_duration()

@@ -7,6 +7,7 @@ import logging
 import math
 import shutil
 import subprocess
+from collections.abc import Sequence
 from fractions import Fraction
 from pathlib import Path
 from numbers import Real
@@ -69,8 +70,9 @@ def sing(text="Mar-ry had a litt-le lamb",
         so the key changes none of them; E and B were written bare, and
         a key with flats sang them a semitone low. abc2midi accents the
         beats, and eCantorix sings the accented notes louder, by up to
-        2.3 dB. The psola backend reads ``L`` and ``Q``, has no use for
-        the meter or the key, and sings every note at one level.
+        2.3 dB; the psola backend accents the same notes as much, by
+        :func:`accents`, and reads ``M`` for nothing else. It has no use
+        for the key.
     reference : int
         The MIDI note that pitch zero refers to, which is the note the
         score is written at.
@@ -169,8 +171,9 @@ def sing(text="Mar-ry had a litt-le lamb",
         # The notes the score could be written with, as eCantorix's are,
         # so that the two backends refuse the same melodies.
         translate_to_abc(notes, durs, reference)
-        return psola.sing(text, notes, durs, L=L, Q=Q, reference=reference,
-                          lang=lang, transpose=transpose,
+        return psola.sing(text, notes, durs, M=M, L=L, Q=Q,
+                          reference=reference, lang=lang,
+                          transpose=transpose,
                           effect=EFFECTS[effect] if effect else None)
     engine = engine_dir()
     cache = cache_dir()
@@ -523,6 +526,76 @@ def unit_seconds(L='1/4', Q=120):
     if per_minute <= 0:
         raise ValueError(f'the tempo must be positive; got Q={Q!r}')
     return Fraction(60) / per_minute * unit / beat
+
+
+#: The meters ABC names rather than writes as a fraction.
+_NAMED_METERS = {'C': (4, 4), 'C|': (2, 2)}
+
+#: How loud eCantorix sings a score's first note, a note on a strong beat,
+#: and any other. abc2midi gives them velocities of 105, 95 and 80, and
+#: eCantorix has espeak say each syllable at amplitude velocity / 127 *
+#: 200, rounded, which espeak's level follows to a twentieth of a decibel:
+#: 2.34 dB from the loudest to the softest.
+ACCENTS = tuple(int(velocity / 127 * 200 + 0.5)
+                for velocity in (105, 95, 80))
+
+
+def accents(durs: Sequence[float | str], M: str = '4/4',
+            L: str = '1/4') -> list[float]:
+    """How loud each note is sung, as eCantorix sings it, from 1 down.
+
+    abc2midi accents the notes of the score :func:`sing` writes, which has
+    no bar lines: the first note most, then each that starts on a strong
+    beat. A strong beat comes every three of the meter's beats when they
+    divide by three, every two when they divide by two, and once a bar
+    otherwise: every half note in 4/4, every dotted quarter in 6/8, once
+    a bar in 3/4, 5/4 and 2/2, as abc2midi 5.03 accents them.
+
+    Parameters
+    ----------
+    durs : sequence
+        Each note's duration, in units of ``L``, as :func:`sing` takes it.
+    M, L : str
+        The meter, ``"x/y"``, ``"C"`` or ``"C|"``, and the unit note length.
+
+    Returns
+    -------
+    list of float
+        Each note's level, relative to the first's, one of
+        :data:`ACCENTS` over its first.
+
+    Raises
+    ------
+    ValueError
+        If ``M`` is not a meter written that way, or a duration or ``L``
+        is not a length.
+
+    Examples
+    --------
+    >>> [round(level, 3) for level in accents([1, 1, 1, 1], M='4/4')]
+    [1.0, 0.764, 0.909, 0.764]
+    """
+    beats, unit = _meter(M)
+    group = 3 if beats % 3 == 0 else 2 if beats % 2 == 0 else beats
+    every, length = Fraction(group, unit), _abc_fraction(L, 'L')
+    levels, at = [], Fraction(0)
+    for index, duration in enumerate(durs):
+        level = ACCENTS[0 if index == 0 else 1 if at % every == 0 else 2]
+        levels.append(level / ACCENTS[0])
+        at += _note_length(duration) * length
+    return levels
+
+
+def _meter(M: str) -> tuple[int, int]:
+    """The beats in a bar of `M`, and the note each is, as integers."""
+    if M in _NAMED_METERS:
+        return _NAMED_METERS[M]
+    beats, slash, unit = str(M).partition('/')
+    if not (slash and beats.isdigit() and unit.isdigit()
+            and int(beats) and int(unit)):
+        raise ValueError(
+            f'M must be a meter such as "4/4", "C" or "C|"; got {M!r}')
+    return int(beats), int(unit)
 
 
 def _abc_fraction(text, name):

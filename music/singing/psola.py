@@ -5,9 +5,10 @@ overlap-add, through praat-parselmouth, holds it at its note's pitch and
 makes it the note's length. A syllable said in less time than its note is
 said again slower, as eCantorix has espeak say it, and then only the
 strong middle of its vowel is lengthened, so that its consonants keep the
-length they were said with. The notes are then joined end to end. That is
-eCantorix's idea -- a speech synthesizer made to sing one syllable at a
-time -- without its toolchain: no Perl and its modules, no round trip
+length they were said with. The notes are then joined end to end, each as
+loud as eCantorix sings it, which is louder on the beats abc2midi accents.
+That is eCantorix's idea -- a speech synthesizer made to sing one syllable
+at a time -- without its toolchain: no Perl and its modules, no round trip
 through ABC and MIDI, no sox.
 
 It sings with the effects eCantorix's extra voices give, made with the
@@ -194,13 +195,14 @@ def syllables(text: str) -> list[str]:
             if part]
 
 
-def sing(text, notes, durs, L="1/4", Q=120, reference=60, lang="en",
-         transpose=-12, effect=None) -> NDArray[np.float64]:
+def sing(text, notes, durs, M="4/4", L="1/4", Q=120, reference=60,
+         lang="en", transpose=-12, effect=None) -> NDArray[np.float64]:
     """Sing a line of text to a melody, one syllable a note.
 
     The parameters are those of :func:`~music.singing.perform.sing`, which
     checks them and calls this for ``backend="psola"``, with ``effect`` one
-    of :data:`EFFECTS` or None.
+    of :data:`EFFECTS` or None. The meter accents the notes as eCantorix
+    does, by :func:`~music.singing.perform.accents`; the key changes none.
 
     Returns
     -------
@@ -219,10 +221,10 @@ def sing(text, notes, durs, L="1/4", Q=120, reference=60, lang="en",
         missing, or the speaker cannot say a syllable in ``lang``.
     ValueError
         If ``effect`` is not one of :data:`EFFECTS`, ``lang`` is not one
-        of flite's voices for its effect, or there is not one syllable of
-        ``text`` and one duration for each note.
+        of flite's voices for its effect, ``M`` is not a meter, or there
+        is not one syllable of ``text`` and one duration for each note.
     """
-    from .perform import _note_length, sung_phonemes, unit_seconds
+    from .perform import _note_length, accents, sung_phonemes, unit_seconds
 
     if effect is not None and effect not in EFFECTS:
         raise ValueError(
@@ -237,6 +239,7 @@ def sing(text, notes, durs, L="1/4", Q=120, reference=60, lang="en",
             f"{len(durs)} durations; there must be one syllable and one "
             f"duration for each note")
     unit = unit_seconds(L, Q)
+    levels = accents(durs, M, L)
     lengths = [float(_note_length(duration) * unit) for duration in durs]
     edges = np.round(np.cumsum([0.0] + lengths) * RATE).astype(np.int64)
     line = np.zeros(int(edges[-1]))
@@ -269,7 +272,7 @@ def sing(text, notes, durs, L="1/4", Q=120, reference=60, lang="en",
             samples = _sung(spoken, frequency / shift, seconds, region=held)
             if effect == "melt":
                 samples = _resampled(samples, shift)
-            part = _fit(samples, end - start)
+            part = _fit(samples, end - start) * levels[index]
             line[start:end] = _trembling(part) if reverberant else part
     if reverberant:
         line = _reverberated(line)

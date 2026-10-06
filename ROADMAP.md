@@ -694,6 +694,16 @@ order:
    weak on consonants, so beside a speech engine rather than instead of
    it.
 
+## Released: 1.10.0, 2026-10-06
+
+The singing work and the corrections since 1.9.0 went out as 1.10.0, a
+minor release because some calls now return something different and
+`sing` sings with the package's own singer; its changelog section opens
+with a note for anyone upgrading. Zenodo archived it as
+10.5281/zenodo.23185652 within seconds of the release event, and the
+record carries the nineteen controlled subjects, the fifty keywords and
+the release notes, verified through its DataCite export.
+
 ## Open after the September 2026 audits
 
 What the audits found and did not fix, and why. Each is recorded where

@@ -68,24 +68,30 @@ keywords = [
     'entrainment',
     'filter',
     'FM',
+    'HRTF',
     'isochronic tones',
     'LUT',
     'MASS',
     'multimedia',
     'music',
+    'music theory',
     'noise',
     'PCM',
     'permutation',
     'physics',
+    'PSOLA',
     'psychophysics',
     'sensory stimulation',
     'signal processing',
     'sing',
+    'singing synthesis',
     'sound',
     'spatialization',
     'speech',
+    'speech synthesis',
     'SSTIM',
-    'synth'
+    'synth',
+    'vibrato'
 ]
 
 [project.urls]

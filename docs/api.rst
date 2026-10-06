@@ -292,21 +292,39 @@ Singing
 -------
 
 :func:`sing` sings a lyric to a melody, one syllable a note, with either of
-two backends that sing the same score at the same pitches.
+two backends that sing the same score at the same pitches for the same
+lengths, so that the two can be compared.
 
-By default espeak-ng says each syllable and Praat's PSOLA holds it at its
-note's pitch and length. It needs ``espeak-ng`` and
-``pip install 'music[singing]'``, and :func:`sing` says which is missing.
+The default, ``backend="psola"``, is the package's own singer. espeak-ng
+says each syllable, and Praat's pitch-synchronous overlap-add, through
+praat-parselmouth, holds it at its note's pitch and makes it the note's
+length. A syllable said in less time than its note is said again, slower,
+down to 80 words a minute, and only the middle of its vowel is lengthened,
+so that its consonants keep the length they were said with. A long note is
+sung with a vibrato, 0.35 semitones each way at 5.5 Hz, setting in a
+quarter of a second into it, and the notes on the meter's strong beats are
+sung up to 2.3 dB louder, as abc2midi accents them for eCantorix. It sings
+eCantorix's effects, ``"tremolo"``, ``"melt"`` and ``"flite"``, with the
+package's own tremolo, reverberation and resampling. It needs
+``espeak-ng`` and ``pip install 'music[singing]'``, and :func:`sing` says
+which is missing.
 
-``sing(backend="ecantorix")`` sings the same score with the external
+``backend="ecantorix"`` sings the same score with the external
 `eCantorix <https://github.com/ttm/ecantorix>`_ engine, the default until
-PSOLA, kept as the reference. Run :func:`setup_engine`
-once to clone it; it also needs ``git``, ``make``, ``perl``, ``espeak``,
-``abc2midi`` (the ``abcmidi`` package) and ``sox`` on the system, and the
-Perl modules ``MIDI``, ``Math::FFT``, ``URI::Escape`` and ``Digest::SHA``.
-:func:`setup_engine` and :func:`sing` say which are missing.
-``tools/compare_singing.py`` sings the same scores with both and measures
-them.
+the package had its own singer, kept as the reference. Run
+:func:`setup_engine` once to clone it; it also needs ``git``, ``make``,
+``perl``, ``espeak``, ``abc2midi`` (the ``abcmidi`` package) and ``sox``
+on the system, and the Perl modules ``MIDI``, ``Math::FFT``,
+``URI::Escape`` and ``Digest::SHA``. :func:`setup_engine` and :func:`sing`
+say which are missing.
+
+The examples ``singing_backends.py`` and ``singing_effects.py`` sing the
+same songs, and the effects, with both. ``tools/compare_singing.py``
+measures both backends' pitch, length and render time against the score;
+``tools/compare_singing_timing.py`` renders timings and syllable shapes for
+a level-matched listening review; and ``tools/score_singing_asr.py`` has
+Whisper, with ``pip install faster-whisper``, count the words it hears in
+each.
 
 .. autosummary::
    :toctree: generated

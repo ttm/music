@@ -2,6 +2,11 @@
 
 ### Note for anyone upgrading
 
+**This one changes what some calls return, and what `sing` sings with.**
+Nothing is removed or renamed and no import breaks. Some calls now refuse
+arguments they used to misread, and `sing` sings with the package's own
+singer unless `backend="ecantorix"` asks for the engine it used to.
+
 `rhythm_to_durations` now reads `bpm` as beats per minute: one beat lasts
 `60 / bpm` seconds. An explicit `total_duration` now takes precedence over
 both `bpm` and `duration`, as the parameter documentation has always said.
@@ -67,6 +72,13 @@ table of any length at its own length.
 
 ### Added
 
+- **Two examples sing the same songs with both singers.**
+  `examples/singing_backends.py` sings four songs, in English, French and
+  German, and one slowly, with the package's singer and with eCantorix, a
+  file each, to be heard side by side; `examples/singing_effects.py` sings
+  eCantorix's tremolo, melted and flite voices with both. Where a backend
+  cannot sing, each says what it lacks and sings with the other. CI's
+  singing job sings them with both and keeps the recordings.
 - **A listening experiment for clearer PSOLA syllables, and a recognizer
   to check the ear against.** `python tools/compare_singing_timing.py`
   sings five timings of the psola backend beside eCantorix: the backend's
@@ -263,6 +275,22 @@ table of any length at its own length.
   rate they have always been heard at.
 - **`Being`'s `rhythm4` fills one second,** as its three siblings do. It
   read `[1/4, 1/4, 1/3]`.
+
+### Documentation
+
+- **The tutorial sings, and has scales and chords, filters and sensory
+  stimulation.** Four sections join it: intervals, scales and chords from
+  `music.theory`; the filter designs; a binaural beat and a session; and
+  singing, in English and in French with an effect, and what each backend
+  needs. Its singing blocks run where espeak-ng and Parselmouth are
+  installed, which CI's singing job is.
+- **The README and the documentation say everything the package does.**
+  Singing is a core feature in the README, with a section of its own on
+  both backends, what each needs and how to compare them, and the package
+  structure names `singing` and `hrtf`. The documentation's front page
+  lists every capability and every module, the API reference describes the
+  singer's timing, vibrato and accents, and `.zenodo.json`, `CITATION.cff`
+  and `pyproject.toml` describe and tag singing.
 
 ## [1.9.0] - 2026-09-24
 

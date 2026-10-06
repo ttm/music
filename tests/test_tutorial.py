@@ -4,7 +4,9 @@ Documentation that is never executed drifts from the code it documents.
 Every ``code-block:: python`` in ``docs/tutorial.rst`` is extracted and run
 here, in order and in one shared namespace, exactly as a reader working
 down the page would run them.  Doctest-style blocks are checked against
-the output they claim.
+the output they claim.  The blocks that sing need espeak-ng and
+Parselmouth, which the test jobs do not install; where they are missing,
+those blocks are left out, and CI's singing job runs them.
 """
 
 import doctest
@@ -33,12 +35,22 @@ def _blocks():
 BLOCKS = _blocks()
 
 
+def _can_sing():
+    from music.singing import psola
+
+    return not psola.missing_requirements()
+
+
+SINGS = _can_sing()
+
+
 def test_the_page_has_the_blocks_this_test_thinks_it_has():
     """Guard the extraction: a change to the directive's formatting must
     not quietly reduce this file to testing nothing."""
     assert len(BLOCKS) >= 14
     assert any("PlainChanges" in block for block in BLOCKS)
     assert any("write_wav_stereo" in block for block in BLOCKS)
+    assert sum("music.sing(" in block for block in BLOCKS) == 2
 
 
 def test_every_tutorial_block_runs(tmp_path, monkeypatch):
@@ -51,6 +63,8 @@ def test_every_tutorial_block_runs(tmp_path, monkeypatch):
     for index, block in enumerate(BLOCKS):
         if block.lstrip().startswith(">>>"):
             continue
+        if "music.sing(" in block and not SINGS:
+            continue
         try:
             exec(compile(block, f"tutorial.rst[block {index}]", "exec"),
                  namespace)
@@ -62,6 +76,9 @@ def test_every_tutorial_block_runs(tmp_path, monkeypatch):
     assert (tmp_path / "piece.wav").exists(), (
         "the closing example did not write its file"
     )
+    if SINGS:
+        assert (tmp_path / "twinkle.wav").exists()
+        assert (tmp_path / "frere.wav").exists()
 
 
 def test_the_doctest_blocks_produce_the_output_they_claim():

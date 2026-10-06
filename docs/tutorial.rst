@@ -208,6 +208,38 @@ seconds after the first, which is enough for an arpeggio or a canon:
 A negative ``duration`` places the second sound that many seconds *before*
 the first one ends.
 
+Scales, chords and intervals
+----------------------------
+
+:mod:`music.theory` counts everything in semitones from a tonic of zero,
+which is what :func:`music.pitch_to_freq` takes, so a scale or a chord
+becomes frequencies, and then sound, in two steps:
+
+.. code-block:: python
+
+   dorian = music.pitch_to_freq(220.0, music.scale("dorian"))
+   ascent = music.horizontal_stack(
+       *[music.adsr(sonic_vector=music.note(f, 0.3)) for f in dorian])
+
+   seventh = music.pitch_to_freq(220.0, music.chord("minor seventh"))
+   chord = music.mix_many([music.note(f, 1.5) for f in seventh])
+
+The seven modes are one step pattern read from seven places, which is how
+:func:`music.mode_by_rotation` reaches them, and intervals are written the
+way a musician writes them:
+
+.. code-block:: python
+
+   >>> music.scale("dorian"), music.chord("minor seventh")
+   ((0, 2, 3, 5, 7, 9, 10), (0, 3, 7, 10))
+   >>> music.interval("M3"), music.interval("P11")
+   (4, 17)
+   >>> music.interval_names(6)
+   ('aug4', 'dim5', 'TT')
+
+:func:`music.harmonic_series` gives the partials over a fundamental, where
+the octaves land on the tempered scale and nothing else does.
+
 The sequencer
 -------------
 
@@ -290,6 +322,24 @@ and applies it:
 
    dull = music.fir(np.linspace(1, 0, 64), music.noise("white", 0.5))
 
+Filters
+-------
+
+:func:`music.iir` applies a filter given its coefficients, and
+:func:`music.low_pass`, :func:`music.high_pass`, :func:`music.band_pass`
+and :func:`music.band_reject` compute them, from the four designs the
+article specifies. A cutoff is a fraction of the sample rate, which
+:func:`music.fraction_of` converts a frequency in Hertz into, so the same
+coefficients make the same filter at any rate:
+
+.. code-block:: python
+
+   a, b = music.low_pass(music.fraction_of(1000))
+   muffled = music.iir(music.noise("white", 2), a, b)
+
+Noise is the thing to hear a filter on, having every frequency there is
+for it to take away.
+
 Structure: change ringing as melody
 -----------------------------------
 
@@ -315,6 +365,86 @@ positions rather than pitches.
 
 :class:`music.InterestingPermutations` gives the other groups — rotations,
 reflections, alternating and dihedral subgroups — with the same interface.
+
+Sensory stimulation
+-------------------
+
+:mod:`music.stimulation` renders the stimuli of sensory-stimulation work,
+each named for the technique it implements in `SSTIM
+<https://w3id.org/sstim>`_, the Sensory Stimulation Vocabulary. A binaural
+beat is two steady tones a few hertz apart, one in each ear: the beat is
+in the listener rather than in the file, and is heard over headphones:
+
+.. code-block:: python
+
+   beat = music.binaural_beats(carrier_freq=220, beat_freq=7, duration=8)
+   music.write_wav_stereo(beat, "binaural.wav")
+
+Such stimuli are delivered as protocols rather than one at a time, and
+:class:`music.StimulationSession` renders one: phases in order, crossfaded
+rather than cut, lasting exactly the sum of their durations:
+
+.. code-block:: python
+
+   session = music.StimulationSession(end_ramp=2.0)
+   session.add(music.binaural_beats, duration=8, ramp=1.0,
+               carrier_freq=220, beat_freq=7)
+   session.add(music.isochronic_tones, duration=8, ramp=2.0,
+               carrier_freq=220, pulse_rate=4.0, ramp_duration=0.005)
+   session.write("session.wav")
+
+Monaural beats, isochronic tones, amplitude and frequency modulation,
+modulated noise and a source circling the head are the others, and the
+``sensory_stimulation`` example writes one of each.
+
+Singing
+-------
+
+:func:`music.sing` sings a lyric to a melody, one syllable a note. The
+syllables of a word are joined by hyphens and the words parted by spaces;
+each note is a pitch, in semitones above ``reference``, middle C, and a
+duration, in units of ``L`` at the tempo ``Q``, as ABC notation writes
+them: a quarter note, at 120 a minute, by default.
+
+.. code-block:: python
+
+   twinkle = music.sing(text="Twin-kle, twin-kle, lit-tle star",
+                        notes=(0, 0, 7, 7, 9, 9, 7),
+                        durs=(1, 1, 1, 1, 1, 1, 2))
+   music.write_wav_mono(twinkle, "twinkle.wav")
+
+The singer is the package's own. espeak-ng says each syllable, and
+Praat's pitch-synchronous overlap-add, PSOLA, holds it at its note's pitch
+and makes it the note's length. A syllable said in less time than its note
+is said again, slower; then only the middle of its vowel is lengthened, so
+that its consonants keep the length they were said with, and a long note
+is sung with a vibrato. The notes on the strong beats of the meter, ``M``,
+are sung a little louder. It needs espeak-ng (``sudo apt install
+espeak-ng``, or ``brew install espeak-ng``) and ``pip install
+'music[singing]'``, and says which is missing.
+
+``lang`` names the espeak voice, and with it the language the lyric is
+sung in, and ``effect`` sings with one of three voices: ``"tremolo"``,
+which trembles and rings in a room, in stereo; ``"melt"``, the same with a
+voice whose formants sink with the pitch; and ``"flite"``, flite's voice
+in espeak's place.
+
+.. code-block:: python
+
+   frere = music.sing(text="Frè-re Jac-ques, dor-mez vous?",
+                      notes=(0, 2, 4, 0, 4, 5, 7),
+                      durs=(1, 1, 1, 1, 1, 1, 2),
+                      lang="fr", effect="tremolo")
+   music.write_wav_stereo(frere, "frere.wav")
+
+``backend="ecantorix"`` sings the same score with `eCantorix
+<https://github.com/ttm/ecantorix>`_, the engine the package sang with
+before it had its own, and keeps as the reference: a Perl program, which
+:func:`music.setup_engine` clones once, and which needs Perl and four of
+its modules, abc2midi and sox. The two sing the same pitches for the same
+lengths, so what differs is the singing, and the examples
+``singing_backends.py`` and ``singing_effects.py`` sing songs in three
+languages, and the effects, with each, side by side.
 
 Putting it together
 -------------------
@@ -350,7 +480,13 @@ Where to go next
 * `The examples folder
   <https://github.com/ttm/music/tree/master/examples>`_, which holds each
   of the above as a runnable script, plus the ``Being`` and
-  ``IteratorSynth`` classes for generating material algorithmically.
+  ``IteratorSynth`` classes for generating material algorithmically, and
+  the two singers singing the same songs side by side.
+* What this page leaves out: :func:`music.setup_hrtf` and
+  :func:`music.hrir`, which place a source with measured ears, above or
+  behind you, where :func:`music.localize` can only place it to a side;
+  and :class:`music.Bonds`, which ties a note's vibrato and tremolo to its
+  pitch, once, for a whole piece.
 * `Musical elements in the discrete-time representation of sound
   <https://arxiv.org/abs/1412.6853>`_, the article the whole package
   implements. If you use this package, please cite it.

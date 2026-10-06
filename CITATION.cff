@@ -24,7 +24,11 @@ abstract: >-
   framework: psychophysical descriptions of musical elements in LPCM
   audio, expressed as equations and corresponding Python routines.
   State is updated at every sample, so a rendered sound is as close as
-  it can be to the mathematical model that describes it.
+  it can be to the mathematical model that describes it. It covers
+  synthesis, filters and their design, spatial audio with measured
+  head-related transfer functions, music theory, permutation groups and
+  change-ringing peals, a sensory-stimulation toolkit, and singing by
+  speech synthesis and pitch-synchronous overlap-add.
 keywords:
   - audio
   - music
@@ -39,6 +43,12 @@ keywords:
   - campanology
   - Python
   - MASS framework
+  - music theory
+  - spatial audio
+  - HRTF
+  - sensory stimulation
+  - singing synthesis
+  - PSOLA
 authors:
   - family-names: Fabbri
     given-names: Renato

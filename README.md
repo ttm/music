@@ -68,6 +68,16 @@ with the equation it implements and the article it comes from.
   crossfaded rather than cut, lasting exactly the sum of the durations you
   wrote down. The sample-accurate synthesis is the point here, because the
   frequency difference *is* the stimulus.
+* **Singing.** `sing` sings a lyric to a melody, one syllable a note, in
+  any language espeak speaks. The package's own singer has espeak-ng say
+  each syllable and Praat's PSOLA hold it at its note's pitch: a syllable
+  shorter than its note is said again more slowly, only the middle of its
+  vowel is lengthened so the consonants keep the length they were said
+  with, a long note gets a vibrato, and the strong beats of the meter are
+  sung louder. The
+  [eCantorix](https://github.com/ttm/ecantorix) engine sings the same score
+  as a second backend, kept as the reference, and both sing its tremolo,
+  melted and flite voices.
 * **`play_audio`** to listen to a result without saving a file.
 
 Music can be used alone or with other packages, and it is well suited to the
@@ -97,8 +107,8 @@ Requires Python 3.10 or newer. Everything needed to synthesise, filter and
 write audio comes with it; the dependencies are declared in
 [pyproject.toml](https://github.com/ttm/music/blob/master/pyproject.toml).
 
-One thing is optional. `PrimaryTables.draw_tables()`, which plots the waveform
-tables so you can look at them, needs matplotlib:
+Two things are optional. `PrimaryTables.draw_tables()`, which plots the
+waveform tables so you can look at them, needs matplotlib:
 
 ```console
 pip install 'music[plot]'
@@ -106,6 +116,17 @@ pip install 'music[plot]'
 
 Nothing else in the package uses it, and leaving it out makes `import music`
 about 40% faster.
+
+`sing` needs espeak-ng, a system program, and Praat, through
+praat-parselmouth:
+
+```console
+sudo apt install espeak-ng        # or: brew install espeak-ng
+pip install 'music[singing]'
+```
+
+Its second backend, eCantorix, is a Perl program the package clones for
+you; see [Singing](#singing) for what it needs.
 
 To hack on it, install from a checkout so your edits take effect immediately:
 
@@ -232,6 +253,66 @@ colours = [music.noise(kind, duration=0.5)
 music.write_wav_mono(music.horizontal_stack(*colours), "colours.wav")
 ```
 
+### Singing
+
+A lyric is sung one syllable a note: syllables joined by hyphens, words
+parted by spaces, each note a pitch in semitones above middle C and a
+duration in quarter notes, at 120 a minute unless `L` and `Q` say otherwise,
+as ABC notation writes them:
+
+```python
+twinkle = music.sing(text="Twin-kle, twin-kle, lit-tle star",
+                     notes=(0, 0, 7, 7, 9, 9, 7), durs=(1, 1, 1, 1, 1, 1, 2))
+music.write_wav_mono(twinkle, "twinkle.wav")
+
+# in French, trembling in a room: stereo, ringing a second past the line
+frere = music.sing(text="Frè-re Jac-ques, dor-mez vous?",
+                   notes=(0, 2, 4, 0, 4, 5, 7), durs=(1, 1, 1, 1, 1, 1, 2),
+                   lang="fr", effect="tremolo")
+music.write_wav_stereo(frere, "frere.wav")
+
+# the same score with eCantorix, the reference: same pitches, same lengths
+reference = music.sing(text="Twin-kle, twin-kle, lit-tle star",
+                       notes=(0, 0, 7, 7, 9, 9, 7),
+                       durs=(1, 1, 1, 1, 1, 1, 2), backend="ecantorix")
+```
+
+The default backend, `psola`, is the package's own. It needs espeak-ng and
+`pip install 'music[singing]'`. espeak-ng says each syllable, and Praat's
+pitch-synchronous overlap-add holds it at its note's pitch and length. A
+syllable said in less time than its note is said again, down to 80 words a
+minute, as eCantorix has espeak say it; then only the middle of its vowel is
+lengthened, so the consonants keep their length. A long note gets a vibrato,
+0.35 semitones each way at 5.5 Hz, setting in a quarter of a second into it.
+The notes on the meter's strong beats are sung up to 2.3 dB louder, the
+accents abc2midi gives eCantorix. With this timing, Whisper, a speech
+recogniser, heard 69 of 192 sung test words, against 44 with the plain
+stretch it replaced and 59 with eCantorix; the vibrato and the accents left
+that where it was. `effect` takes eCantorix's `"tremolo"`, `"melt"`
+and `"flite"`, made with the package's own tremolo, reverberation and
+resampling.
+
+`backend="ecantorix"` sings with the [eCantorix](https://github.com/ttm/ecantorix)
+engine. It was the default until the package had its own singer, and is
+kept as the reference. Run `music.singing.setup_engine()` once to clone it,
+at the revision this package is pinned to, into your user cache directory
+(set `MUSIC_ECANTORIX_DIR` to put it elsewhere). It drives espeak through a
+Makefile, so it also needs `git`, `make`, `perl`, `espeak`, `abc2midi` (the
+`abcmidi` package) and `sox` on the system. It needs the Perl modules
+`MIDI`, `Math::FFT`, `URI::Escape` and `Digest::SHA` too
+(`cpan MIDI Math::FFT URI::Escape`). `setup_engine()` says which of these
+are missing.
+
+To compare the two:
+[singing_backends](https://github.com/ttm/music/tree/master/examples/singing_backends.py)
+and [singing_effects](https://github.com/ttm/music/tree/master/examples/singing_effects.py)
+sing the same songs and effects with each, side by side.
+`python tools/compare_singing.py` measures both against the score: the pitch
+of every note, the length and the render time.
+`tools/compare_singing_timing.py` renders the singer's timings and syllable
+shapes for a level-matched listening review, and
+`tools/score_singing_asr.py` has Whisper count the words it hears in each.
+
 ## Examples
 
 Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) you can find some scripts that use the main features of Music.
@@ -243,12 +324,14 @@ Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) 
 * [campanology](https://github.com/ttm/music/tree/master/examples/campanology.py) and [geometric_music](https://github.com/ttm/music/tree/master/examples/geometric_music.py) both use `Being` as their synth, but this time with permutations.
 * [isynth](https://github.com/ttm/music/tree/master/examples/isynth.py) also uses a synth class, but of a different kind, [`IteratorSynth`](https://github.com/ttm/music/tree/master/music/legacy/classes.py), that iterates through arbitrary lists of variables.
 * [singing_demo](https://github.com/ttm/music/tree/master/examples/singing_demo.py): sings Mary had a little lamb with `music.sing`, and writes it to a WAV file.
+* [singing_backends](https://github.com/ttm/music/tree/master/examples/singing_backends.py): sings four songs, in English, French and German, and one slowly, with both singing backends, a file each, to be heard side by side.
+* [singing_effects](https://github.com/ttm/music/tree/master/examples/singing_effects.py): sings eCantorix's tremolo, melted and flite voices with both backends.
 * [scales_and_chords](https://github.com/ttm/music/tree/master/examples/scales_and_chords.py): renders the seven modes, a I–vi–IV–V7 cadence, and sixteen partials of the harmonic series over their own fundamental, where the octaves land on the tempered scale and nothing else does.
 * [filtered_noise](https://github.com/ttm/music/tree/master/examples/filtered_noise.py): puts each of the four filter designs on white noise — the useful thing to hear a filter on — and sweeps a low pass across five octaves.
 * [bonds](https://github.com/ttm/music/tree/master/examples/bonds.py): plays one line three times, changing only how its characteristics are bound to its pitch.
 * [binaural_beats](https://github.com/ttm/music/tree/master/examples/binaural_beats.py): generates binaural beats using two pure tones with tremolo for relaxation or focus.
 * [sensory_stimulation](https://github.com/ttm/music/tree/master/examples/sensory_stimulation.py): writes one file per SSTIM technique with `music.stimulation`, and one three-phase session, which is the form these stimuli are actually delivered in.
-* `music.sing` sings a lyric to a melody, one syllable a note, with either of two backends that sing the same score at the same pitches. By default espeak-ng says each syllable and Praat's PSOLA holds it at its note's pitch and length: install espeak-ng (`sudo apt install espeak-ng`, or `brew install espeak-ng`) and `pip install 'music[singing]'`. `music.sing(backend="ecantorix")` sings the same score with the [eCantorix](https://github.com/ttm/ecantorix) engine, the default until PSOLA, kept as the reference: run `music.singing.setup_engine()` once to clone it, at the revision this package is pinned to, into your user cache directory (set `MUSIC_ECANTORIX_DIR` to put it elsewhere). Because eCantorix is a Perl program driving espeak through a Makefile, it also needs `git`, `make`, `perl`, `espeak`, `abc2midi` (the `abcmidi` package) and `sox` installed on the system, and the Perl modules `MIDI`, `Math::FFT`, `URI::Escape` and `Digest::SHA` for the `perl` on your PATH (`cpan MIDI Math::FFT URI::Escape`) — `setup_engine()` will tell you which are missing. Both sing eCantorix's effects, `effect="tremolo"`, `"melt"` and `"flite"`, the last needing `flite`. `python tools/compare_singing.py` sings the same scores with both and measures their pitch, length and render time.
+* [Singing](#singing), above, says what each singing backend needs.
 
 ## Package structure
 
@@ -264,6 +347,8 @@ The modules are:
 * **bonds** for tying a note's vibrato and tremolo to its frequency, which is where an arbitrary construction of that kind goes.
 * **legacy** for musical pieces that are rendered with the Music package and might be used as material to make more music.
 * **stimulation** for sensory-stimulation work: the seven stimuli above, each carrying the SSTIM term it implements, and `StimulationSession` for sequencing them into a protocol.
+* **singing** for `sing` and its two backends: `psola`, the package's own singer, and `perform`, which writes the score and runs the eCantorix engine that `bootstrap` clones and `paths` finds.
+* **hrtf** for fetching the KEMAR measurements into your cache and reading a direction's impulse responses out of them.
 * **tables** for the generation of lookup tables for some basic waveform.
 * **utils** for various functions regarding conversions, mix, etc.
 * **sequencer** for scheduling notes into a timeline and exporting audio.

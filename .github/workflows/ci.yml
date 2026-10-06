@@ -97,13 +97,28 @@ jobs:
       - name: Clone the pinned engine
         run: python -c "import music.singing as s; print(s.setup_engine())"
       - name: Sing, and measure it
-        run: pytest -v tests/test_singing_engine.py
+        # The engine tests, the timing experiment's, which hold its
+        # vibrato variant to the package's singer sample for sample, and
+        # the tutorial, whose singing blocks the test jobs leave out.
+        run: >-
+          pytest -v tests/test_singing_engine.py tests/test_singing_timing.py
+          tests/test_tutorial.py
       - name: Compare the backends
         run: python tools/compare_singing.py --out singing-comparison
+      - name: Sing the examples that compare the backends
+        # The examples job has no eCantorix, so there these sing with the
+        # psola backend alone; here both sing, a file each.
+        run: |
+          mkdir singing-examples
+          cd singing-examples
+          python ../examples/singing_backends.py
+          python ../examples/singing_effects.py
       - uses: actions/upload-artifact@v7
         with:
           name: singing-comparison
-          path: singing-comparison
+          path: |
+            singing-comparison
+            singing-examples
 
   wheel:
     name: Installed wheel (${{ matrix.os }})

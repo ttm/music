@@ -22,6 +22,31 @@ different pitches does not introduce a click.
 New here? The :doc:`tutorial` walks from a single note to a short stereo
 piece, and explains what the sample-by-sample model actually buys you.
 
+What it does
+------------
+
+- **Synthesis** of notes and their variation, sample by sample: vibrato,
+  glissando, FM and AM, Doppler, ADSR envelopes, tremolo, and noise of
+  six colours.
+- **Filters**: IIR and FIR, reverberation, loudness transitions, and the
+  four filter designs the MASS article specifies.
+- **Spatial audio**: interaural time and intensity differences computed at
+  every sample, a source moving in a line or around the head, and measured
+  head-related transfer functions.
+- **Music theory**: the diatonic modes, the minor scales, triads and
+  tetrads, intervals and their names, the harmonic series.
+- **Musical structures**: permutation groups, change-ringing peals and
+  plain changes.
+- **Bonds** that tie a note's vibrato and tremolo to its pitch, once, for
+  a whole piece.
+- **Sensory stimulation**: seven auditory stimuli named for the SSTIM
+  techniques they implement, and sessions that sequence them.
+- **Singing**: a lyric sung to a melody by speech synthesis and PSOLA,
+  with a vibrato on long notes and accents on the beats, and the
+  eCantorix engine as a second backend that sings the same score.
+- **Input and output**: reading, writing and playing audio, mono and
+  stereo, and a sequencer that schedules notes into a timeline.
+
 What makes it precise
 ---------------------
 
@@ -67,6 +92,17 @@ waveform tables and is the one thing that needs matplotlib, which is an extra:
 Nothing else in the package uses it, and leaving it out makes ``import music``
 about 40% faster.
 
+:func:`music.sing` sings with espeak-ng, a system program, and Praat,
+through praat-parselmouth, which the singing extra installs:
+
+.. code-block:: console
+
+   sudo apt install espeak-ng        # or: brew install espeak-ng
+   pip install 'music[singing]'
+
+Its second backend, eCantorix, is a Perl program the package clones; the
+:doc:`api` says what it needs.
+
 Where things live
 -----------------
 
@@ -88,6 +124,20 @@ Where things live
      - Scheduling notes into a timeline and rendering them
    * - :doc:`utils <api>`
      - Conversions, mixing, stacking, rhythm
+   * - :doc:`theory <api>`
+     - Scales, modes, chords, intervals and the harmonic series
+   * - :doc:`bonds <api>`
+     - Vibrato and tremolo tied to a note's pitch
+   * - :doc:`hrtf <api>`
+     - The KEMAR measurements, fetched and read by direction
+   * - :doc:`stimulation <api>`
+     - Binaural, monaural and isochronic beats, modulations, sessions
+   * - :doc:`singing <api>`
+     - ``sing``, with the PSOLA singer and the eCantorix engine
+   * - :doc:`tables <api>`
+     - Waveform lookup tables
+   * - :doc:`legacy <api>`
+     - The ``Being`` and ``IteratorSynth`` synthesizer classes
 
 The whole public API is re-exported flat from the top level, so
 ``music.note(...)`` works regardless of which submodule defines it.

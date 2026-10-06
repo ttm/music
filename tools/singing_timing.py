@@ -7,11 +7,14 @@ rate fitting alone, up to 450 WPM; vowel holding alone; both together;
 and ``slowed``: both, but only ever slowing espeak below its default 175
 WPM, and holding the nucleus only on a note longer than the syllable, so
 a short note is sung as by ``baseline``. ``slowed`` was heard clearest,
-by Whisper and by ear, and is what ``music.sing`` now does; it is
-rendered here by a search of its own, which a test holds to the
-package's, sample for sample. The renderer uses the same private
-synthesis and effects as the package, without patching module globals or
-substituting a different speech engine.
+by Whisper and by ear, and is the psola backend's timing; ``vibrato`` is
+that with the backend's vibrato, which is what ``music.sing`` does. Both
+are rendered here by a speed search of their own, which a test holds to
+the package's, sample for sample. ``envelope`` and ``shaped`` add an
+attack and release, which cost the words of short notes their consonants
+and were left out. The renderer uses the same private synthesis and
+effects as the package, without patching module globals or substituting
+a different speech engine.
 
 The nucleus, :func:`music.singing.psola._nucleus`, is an energy
 heuristic, not a phoneme aligner: it holds an interior part of the
@@ -31,8 +34,9 @@ from music.singing import perform, psola
 
 TIMINGS = ("baseline", "speed", "vowel", "combined", "slowed")
 
-#: Syllable shapes, each on ``slowed``, sing's timing: a vibrato, an
-#: attack and release, and both. Neither is sung by ``music.sing`` yet.
+#: Syllable shapes, each on ``slowed``, sing's timing: a vibrato, which
+#: ``music.sing`` sings since 2026-10-06; an attack and release, which it
+#: does not, since Whisper heard fewer words with it; and both.
 SHAPES = ("vibrato", "envelope", "shaped")
 VARIANTS = TIMINGS + SHAPES
 

@@ -137,7 +137,7 @@ def stand_ins(monkeypatch):
     """
     calls = {"speak": [], "sung": [], "transcribed": [], "phonemes": {},
              "required": [], "said in": {None: np.inf},
-             "nucleus": (0.1, 0.2), "nuclei": []}
+             "nucleus": (0.1, 0.2), "nuclei": [], "vibratos": []}
     monkeypatch.setattr(psola, "require",
                         lambda effect=None: calls["required"].append(effect))
     monkeypatch.setattr(psola, "speaker", lambda: "/bin/espeak-ng")
@@ -152,8 +152,9 @@ def stand_ins(monkeypatch):
         calls["speak"].append((program, syllable, voice, path.name, speed))
         return _Said(syllable, calls["said in"][speed])
 
-    def sung(sound, frequency, seconds, region=None):
+    def sung(sound, frequency, seconds, region=None, vibrato=None):
         calls["sung"].append((sound, frequency, seconds, region))
+        calls["vibratos"].append(vibrato)
         return np.full(int(round(seconds * psola.RATE)) + 7, frequency)
 
     def nucleus(sound):
@@ -633,6 +634,26 @@ def test_the_melted_voice_is_timed_by_the_length_it_is_sung_for(stand_ins,
     (sound, _, seconds, region), = stand_ins["sung"]
     assert seconds == pytest.approx(0.625) and sound.seconds == 0.6
     assert region == (0.1, 0.2)
+
+
+def test_every_syllable_is_sung_with_the_vibrato(stand_ins):
+    psola.sing("la la", notes=(0, 7), durs=(1, 4))
+    times = np.linspace(0, 2, 401)
+    for vibrato in stand_ins["vibratos"]:
+        np.testing.assert_array_equal(vibrato(times), psola._vibrato(times))
+
+
+def test_the_melted_voice_s_vibrato_is_drawn_slower_by_its_shift(
+        stand_ins, monkeypatch):
+    """Resampled a quarter faster at 220 Hz, it comes out at its rate."""
+    monkeypatch.setattr(psola, "_resampled", lambda samples, shift: samples)
+    monkeypatch.setattr(psola, "_trembling", lambda samples: samples)
+    monkeypatch.setattr(psola, "_reverberated", lambda line: np.array(
+        [line, line]))
+    psola.sing("la", notes=(9,), durs=(4,), effect="melt")
+    (vibrato,) = stand_ins["vibratos"]
+    times = np.linspace(0, 2.5, 501)
+    np.testing.assert_allclose(vibrato(times), psola._vibrato(times / 1.25))
 
 
 def _speeds(monkeypatch, durations):

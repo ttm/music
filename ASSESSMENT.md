@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-06**,
-`music` 1.9.0: 48 modules, 14,026 LOC package + 21,778 LOC tests, 127 names
+`music` 1.9.0: 48 modules, 14,031 LOC package + 21,804 LOC tests, 127 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -375,7 +375,8 @@ either documented in the code or tracked in the issue list.
   need neither.
 - **PSOLA's syllable timing was chosen by a recognizer and one listener.**
   Since 2026-10-06 the psola backend says a syllable slower when its note
-  is longer, and holds the strong middle of its vowel for the rest. On the
+  is longer, holds the strong middle of its vowel for the rest, and sings
+  a long note with a vibrato, which Whisper heard no less clearly. On the
   48-word lists of `tools/compare_singing_timing.py --words`, at four note
   lengths, `tools/score_singing_asr.py` had Whisper `small` hear 69 of 192
   words with it, 44 with the timing it replaced and 59 with eCantorix, and
@@ -388,8 +389,8 @@ either documented in the code or tracked in the issue list.
   runs. The nucleus is found by energy, not by phonemes, so a loud voiced
   consonant or a diphthong's glide can be held instead of a vowel. Tests
   check pitch, duration, long-note sustain, that a note shorter than its
-  syllable is sung as before, and that the experiment's `slowed`, found by
-  a search of its own, is the package's singer sample for sample.
+  syllable is sung as before, and that the experiment's `vibrato`, found
+  by a search of its own, is the package's singer sample for sample.
 - **With espeak 1.48, PSOLA sings German "Ent" period-doubled.** In "Al-le
   mei-ne Ent-chen", Praat's pitch tracker finds that note at 98 Hz as well
   as at its 196 Hz, in every timing the experiment sings, the current one

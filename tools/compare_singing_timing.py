@@ -7,7 +7,8 @@ limited to slowing espeak on longer notes sing each score; eCantorix also
 sings when installed. ``index.html`` plays the matched WAVs,
 and JSON/Markdown reports retain measurements and synthesis diagnostics.
 ``slowed`` is the psola backend's own timing since 2026-10-06, and
-``baseline`` the one it replaced.
+``baseline`` the one it replaced; ``vibrato``, slowed's timing with a
+vibrato, is how ``music.sing`` sings.
 """
 from __future__ import annotations
 
@@ -69,10 +70,10 @@ LABELS = {
     "speed": "Fit espeak speed",
     "vowel": "Hold the vowel nucleus",
     "combined": "Fit speed and hold the nucleus",
-    "slowed": "Only slow espeak, hold the nucleus on long notes (sing's)",
-    "vibrato": "sing's, with a vibrato on long notes",
-    "envelope": "sing's, with an attack and a release",
-    "shaped": "sing's, with both",
+    "slowed": "Only slow espeak, hold the nucleus on long notes",
+    "vibrato": "That, with a vibrato on long notes (sing's)",
+    "envelope": "Slowed, with an attack and a release",
+    "shaped": "Slowed, with a vibrato, an attack and a release",
     "ecantorix": "eCantorix",
 }
 
@@ -212,7 +213,8 @@ def markdown(report):
         "Open `index.html` to compare the level-matched recordings. "
         "`slowed` is the psola backend's timing since 2026-10-06, heard "
         "clearest in general by Whisper and by ear; `baseline` is the one "
-        "it replaced. Pitch and duration measurements do not establish "
+        "it replaced, and `vibrato`, slowed with a vibrato, is how `sing` "
+        "sings. Pitch and duration measurements do not establish "
         "syllable clarity.\n\n"
         "Each score uses a shared sample RMS, lowered equally across its "
         "variants if needed to prevent clipping. RMS matching is not "
@@ -275,7 +277,8 @@ padding:.6rem 1rem;background:#edf6f8}footer{font-size:.9rem}
 <h1>PSOLA timing listening review</h1>
 <p class="note">Since 2026-10-06, slowed is the psola backend's own timing:
 heard clearest in general, by Whisper and by ear, if not always clearly
-better than the others. Baseline is the timing it replaced.</p>
+better than the others. Baseline is the timing it replaced. Vibrato, slowed
+with a vibrato, is how <code>sing</code> sings.</p>
 <p>Compare the consonant attack, vowel transition, sustained vowel and final
 consonants. Check that words stay recognizable on quick notes and that long
 notes sound through their endings. Pitch and duration measurements alone do
@@ -322,7 +325,7 @@ def compare(out, scores, speaker, include_ecantorix=False, variants=None):
     other_speaker = shutil.which("espeak") if include_ecantorix else None
     report = {
         "experiment": "PSOLA timing: rate fitting and vowel-nucleus holding",
-        "package_timing": "slowed",
+        "package": "vibrato",
         "sample_rate": RATE,
         "scores": scores,
         "environment": {

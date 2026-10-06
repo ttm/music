@@ -1,10 +1,10 @@
 """The timing experiment: preserved transitions, bounded fitting, pitch.
 
 These checks establish signal properties, not improved intelligibility.
-The optional real-engine cases also ensure the comparison's ``slowed`` is
-the package's actual singer, including its effects and silent syllables,
-and that it sings a note shorter than its syllable as ``baseline``, the
-timing it replaced, did.
+The optional real-engine cases also ensure the comparison's ``vibrato``
+is the package's actual singer, including its effects and silent
+syllables, and that it sings a note shorter than its syllable as
+``baseline``, the timing it replaced, did.
 """
 from types import SimpleNamespace
 
@@ -80,7 +80,7 @@ FLITE = pytest.mark.skipif(bool(psola.missing_requirements("flite")),
     (None, "en"), (None, "fr"), ("tremolo", "en"), ("melt", "en"),
     pytest.param("flite", "slt", marks=FLITE),
 ])
-def test_experiment_slowed_is_sample_exact_with_the_package(effect, lang):
+def test_experiment_vibrato_is_sample_exact_with_the_package(effect, lang):
     from parselmouth.praat import run
 
     # Short notes and long ones, so that some syllables are slowed and
@@ -92,7 +92,7 @@ def test_experiment_slowed_is_sample_exact_with_the_package(effect, lang):
     # give equal samples when its generator starts at the same place.
     try:
         run("random_initializeWithSeedUnsafelyButPredictably (42)")
-        actual, notes = timing.render(score, "slowed")
+        actual, notes = timing.render(score, "vibrato")
         run("random_initializeWithSeedUnsafelyButPredictably (42)")
         np.testing.assert_array_equal(actual, psola.sing(**score))
     finally:
@@ -111,20 +111,25 @@ def test_slowed_sings_notes_shorter_than_their_syllables_as_the_baseline(
     from parselmouth.praat import run
 
     # Each of these is said in more than 0.125 s at espeak's default
-    # speed, so nothing is slowed and nothing held.
+    # speed, so nothing is slowed and nothing held; and the vibrato sets
+    # in later than that.
     score = dict(text="bright blue Jac-ques", notes=(0, 4, 7, 2),
                  durs=(0.25,) * 4, lang=lang)
+    sung = {}
     try:
-        run("random_initializeWithSeedUnsafelyButPredictably (42)")
-        slowed, notes = timing.render(score, "slowed")
-        run("random_initializeWithSeedUnsafelyButPredictably (42)")
-        baseline, _ = timing.render(score, "baseline")
+        for variant in ("slowed", "vibrato", "baseline"):
+            run("random_initializeWithSeedUnsafelyButPredictably (42)")
+            sung[variant], notes = timing.render(score, variant)
+            if variant == "slowed":
+                slowed_notes = notes
     finally:
         run("random_initializeSafelyAndUnpredictably ()")
-    assert all(note["source_seconds"] > note["seconds"] for note in notes)
-    assert [note["wpm"] for note in notes] == [175] * 4
-    assert [note["nucleus"] for note in notes] == [None] * 4
-    np.testing.assert_array_equal(slowed, baseline)
+    assert all(note["source_seconds"] > note["seconds"]
+               for note in slowed_notes)
+    assert [note["wpm"] for note in slowed_notes] == [175] * 4
+    assert [note["nucleus"] for note in slowed_notes] == [None] * 4
+    np.testing.assert_array_equal(sung["slowed"], sung["baseline"])
+    np.testing.assert_array_equal(sung["vibrato"], sung["baseline"])
 
 
 @REAL

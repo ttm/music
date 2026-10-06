@@ -5,11 +5,12 @@ overlap-add, through praat-parselmouth, holds it at its note's pitch and
 makes it the note's length. A syllable said in less time than its note is
 said again slower, as eCantorix has espeak say it, and then only the
 strong middle of its vowel is lengthened, so that its consonants keep the
-length they were said with. The notes are then joined end to end, each as
-loud as eCantorix sings it, which is louder on the beats abc2midi accents.
-That is eCantorix's idea -- a speech synthesizer made to sing one syllable
-at a time -- without its toolchain: no Perl and its modules, no round trip
-through ABC and MIDI, no sox.
+length they were said with, and a long note is sung with a vibrato. The
+notes are then joined end to end, each as loud as eCantorix sings it,
+which is louder on the beats abc2midi accents. That is eCantorix's idea --
+a speech synthesizer made to sing one syllable at a time -- without its
+toolchain: no Perl and its modules, no round trip through ABC and MIDI, no
+sox.
 
 It sings with the effects eCantorix's extra voices give, made with the
 package's own tremolo, reverberation and resampling, and flite: see
@@ -61,11 +62,11 @@ PITCH_FLOOR, PITCH_CEILING = 60, 600
 #: A syllable this short has no vowel to hold, and is sung as it was said.
 SHORTEST = 3 / PITCH_FLOOR
 
-#: The vibrato a sung syllable can be given: VIBRATO_DEV semitones each
-#: way at VIBRATO_FREQ Hz, setting in VIBRATO_DELAY seconds into the note
-#: and growing to full over VIBRATO_ONSET, so that a short note has none,
-#: as a singer's does. Not yet sung by :func:`sing`;
-#: ``tools/compare_singing_timing.py`` sings it, to be listened to.
+#: The vibrato each syllable is sung with: VIBRATO_DEV semitones each way
+#: at VIBRATO_FREQ Hz, setting in VIBRATO_DELAY seconds into the note and
+#: growing to full over VIBRATO_ONSET, so that a short note has none, as a
+#: singer's does. Whisper heard the words no less clearly with it, and a
+#: listener kept it (2026-10-06; see ``tools/compare_singing_timing.py``).
 VIBRATO_FREQ, VIBRATO_DEV, VIBRATO_DELAY, VIBRATO_ONSET = 5.5, 0.35, 0.25, 0.3
 
 #: espeak's speaking speed, in words a minute, and the slowest it is asked
@@ -277,7 +278,11 @@ def sing(text, notes, durs, M="4/4", L="1/4", Q=120, reference=60,
             seconds = (end - start) / RATE * shift
             spoken, held = _said_for(program, sung.get(said, said), voice,
                                      Path(scratch) / f"{index}.wav", seconds)
-            samples = _sung(spoken, frequency / shift, seconds, region=held)
+            # Resampling by `shift` sings the vibrato `shift` times as
+            # fast: drawn that much slower, it comes out at its rate.
+            samples = _sung(spoken, frequency / shift, seconds, region=held,
+                            vibrato=lambda times, shift=shift: _vibrato(
+                                times / shift))
             if effect == "melt":
                 samples = _resampled(samples, shift)
             part = _fit(samples, end - start) * levels[index]

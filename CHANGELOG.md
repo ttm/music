@@ -82,21 +82,25 @@ table of any length at its own length.
   score the lyric itself. Whisper `small` heard 69 of the 192 words with
   `slowed`, 44 with the first timing and 59 with eCantorix, and a listener
   heard it best in general, so it is the backend's timing. `--variants`
-  also sings syllable shapes on that timing, to be heard: a vibrato, an
-  attack and release, and both; `--against` names the variant
-  `score_singing_asr.py` compares the others with.
+  also sings syllable shapes on that timing: a vibrato, which the backend
+  now sings, and an attack and release, which cost short notes their
+  consonants, Whisper heard 5 of 48 words against 16, and was left out;
+  `--against` names the variant `score_singing_asr.py` compares the others
+  with.
 - **A second singing backend, `sing(backend="psola")`.** espeak-ng says
   each syllable, and Praat's PSOLA, through praat-parselmouth, holds it at
   its note's pitch for its note's length. A syllable said in less time
   than its note is said again slower, down to 80 words a minute, as
   eCantorix has espeak say it, and the strong middle of its vowel is held
   for the rest, so that its consonants keep the length they were said
-  with; espeak is never hurried, since a syllable said faster was heard
-  less clearly than one compressed. It sings the same score at the same
-  pitches as eCantorix, and accents the same notes as much, the first and
-  those on the meter's strong beats, up to 2.34 dB louder; it needs
-  espeak-ng and `pip install 'music[singing]'` rather than Perl, abc2midi
-  and sox. It is now the default; see Changed.
+  with, and a long note is sung with a vibrato, 0.35 semitones each way at
+  5.5 Hz, setting in a quarter of a second into it; espeak is never
+  hurried, since a syllable said faster was heard less clearly than one
+  compressed. It sings the same score at the same pitches as eCantorix,
+  and accents the same notes as much, the first and those on the meter's
+  strong beats, up to 2.34 dB louder; it needs espeak-ng and
+  `pip install 'music[singing]'` rather than Perl, abc2midi and sox. It is
+  now the default; see Changed.
 - **The psola backend sings eCantorix's effects,** made with the
   package's own tools and set to what eCantorix's sox gives, as measured.
   `tremolo` is a 9 Hz tremolo falling to half and back on each note, then

@@ -117,7 +117,7 @@ def test_comparison_writes_each_render_once_and_preserves_level_matching(
                      ("combined", "/bin/espeak"), ("ecantorix", None)]
     assert seeded == [42, 42]
     saved = json.loads((tmp_path / "report.json").read_text())
-    assert saved["package_timing"] == "slowed"
+    assert saved["package"] == "vibrato"
     assert saved["environment"]["git_head"] == "test-revision"
     levels = []
     for row in report["results"]:

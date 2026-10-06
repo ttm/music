@@ -158,19 +158,25 @@ def score(directory, model_name="small"):
     return {"model": model_name, "rows": rows}
 
 
-def summary(scored):
-    """Words heard and forced scores by group and variant, as Markdown."""
+def summary(scored, against=None):
+    """Words heard and forced scores by group and variant, as Markdown.
+
+    Each variant is compared with `against`: by default ``baseline``,
+    or, in a comparison without one, the first variant sung.
+    """
     rows = scored["rows"]
     groups = list(dict.fromkeys(group(row["score"]) for row in rows))
     variants = list(dict.fromkeys(row["variant"] for row in rows))
+    if against is None:
+        against = "baseline" if "baseline" in variants else variants[0]
     lines = [f"Heard by Whisper `{scored['model']}`.\n",
              "| Scores | Variant | Words heard | Forced score | "
-             "Words scored above the baseline | Sign test |",
+             f"Words scored above `{against}` | Sign test |",
              "|---|---|---:|---:|---:|---:|"]
     for name in groups:
         mine = [row for row in rows if group(row["score"]) == name]
         base = {row["score"]: row for row in mine
-                if row["variant"] == "baseline"}
+                if row["variant"] == against}
         for variant in variants:
             taken = [row for row in mine if row["variant"] == variant]
             if not taken:
@@ -185,7 +191,7 @@ def summary(scored):
                 and base[row["score"]]["forced"] is not None
                 for (_, lp), (_, base_lp) in zip(
                     row["forced"], base[row["score"]]["forced"])]
-            if variant == "baseline" or not differences:
+            if variant == against or not differences:
                 above, p = "-", "-"
             else:
                 up = sum(difference > 0 for difference in differences)
@@ -203,13 +209,16 @@ def main(argv=None):
                         help="a directory compare_singing_timing.py wrote")
     parser.add_argument("--model", default="small",
                         help="the Whisper model, as faster-whisper names it")
+    parser.add_argument("--against", metavar="VARIANT",
+                        help="the variant the others are compared with; "
+                             "baseline, or the first sung, if not given")
     args = parser.parse_args(argv)
     directory = Path(args.directory)
     scored = score(directory, args.model)
     stem = f"asr.{Path(args.model).name}"
     (directory / f"{stem}.json").write_text(
         json.dumps(scored, indent=1) + "\n")
-    table = summary(scored)
+    table = summary(scored, args.against)
     (directory / f"{stem}.md").write_text(table)
     print(table, end="")
 

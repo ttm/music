@@ -657,9 +657,23 @@ order:
    words are still unclear, the nucleus is a place to look: it is found by
    energy, not by phonemes, so a voiced consonant or a diphthong's glide
    can be held instead of a vowel.
-3. **Shape each syllable.** PSOLA holds a syllable at one pitch; a sung
-   vowel wants a short attack, vibrato and a release, which the
-   package's envelopes and vibratos already provide.
+3. **Shape each syllable: candidates, to be heard.** PSOLA holds a
+   syllable at one pitch; a sung vowel wants a vibrato, and perhaps an
+   attack and a release, which the package's vibratos and envelopes
+   provide. Since 2026-10-06 `tools/compare_singing_timing.py`, with
+   `--variants slowed vibrato envelope shaped`, sings them on the psola
+   backend's timing: a vibrato as `note_with_vibrato` makes one, 0.35
+   semitones each way at 5.5 Hz, setting in a quarter of a second into a
+   note and growing to full over 0.3 s, so a short note has none; `adsr`'s
+   attack, decay to 3 dB down and release, of 20, 150 and 60 ms; and both.
+   Praat reads a pitch tier in the syllable as said, before the stretch,
+   so the vibrato is drawn through the stretch's inverse, and keeps its
+   rate on a vowel held twenty times its length: measured, 5.6 Hz and 36
+   cents each way, centred on the note to a cent. Whisper heard no
+   difference with the vibrato, which leaves it to the ear, and fewer
+   words with the envelope, 5 of 48 on quarter-second notes against 16,
+   its attack covering the consonants. Next: listen to
+   `singing-timing-comparison/shaping/index.html`.
 4. **Accents for PSOLA, done 2026-10-06,** the rest of what `sing` does
    with eCantorix, whose effects the psola backend sings too (done
    2026-10-01). abc2midi 5.03 gives the first note of the score `sing`

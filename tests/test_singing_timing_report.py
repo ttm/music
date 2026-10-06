@@ -98,7 +98,7 @@ def test_comparison_writes_each_render_once_and_preserves_level_matching(
         return signal * (0.01 if variant == "baseline" else 0.8), [
             {"syllable": "la", "variant": variant}]
 
-    fake = types.SimpleNamespace(VARIANTS=("baseline", "combined"),
+    fake = types.SimpleNamespace(TIMINGS=("baseline", "combined"),
                                  render=render)
     monkeypatch.setitem(sys.modules, "tools.singing_timing", fake)
     monkeypatch.setattr(comparison, "_version", lambda command: "version")

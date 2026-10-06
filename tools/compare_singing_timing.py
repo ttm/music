@@ -70,6 +70,9 @@ LABELS = {
     "vowel": "Hold the vowel nucleus",
     "combined": "Fit speed and hold the nucleus",
     "slowed": "Only slow espeak, hold the nucleus on long notes (sing's)",
+    "vibrato": "sing's, with a vibrato on long notes",
+    "envelope": "sing's, with an attack and a release",
+    "shaped": "sing's, with both",
     "ecantorix": "eCantorix",
 }
 
@@ -284,7 +287,9 @@ next. Baseline says each syllable at espeak's speed and stretches its whole
 voiced part; speed fits espeak's speaking rate to each note; nucleus holds
 an energy-based estimate of its strong voiced middle; slowed does both, but
 never speeds espeak up and holds the nucleus only on a note longer than the
-syllable, so short notes are sung as by the baseline.</p>
+syllable, so short notes are sung as by the baseline. Vibrato, envelope
+and shaped sing slowed's timing with a vibrato that sets in a quarter of a
+second into a note, an attack and release, and both.</p>
 <p>All PSOLA variants use the selected speaker below. The comparison defaults
 to eCantorix's espeak when that backend is available; the package normally
 prefers espeak-ng. Thus each PSOLA row is its timing with the selected
@@ -301,11 +306,15 @@ report. Browser playback requires no server or network connection.</footer>
 """
 
 
-def compare(out, scores, speaker, include_ecantorix=False):
-    """Render each score/variant serially once and write review artifacts."""
+def compare(out, scores, speaker, include_ecantorix=False, variants=None):
+    """Render each score/variant serially once and write review artifacts.
+
+    `variants` are names from ``tools.singing_timing.VARIANTS``, by
+    default its timings.
+    """
     import soundfile
     from music.singing.perform import sing
-    from tools.singing_timing import VARIANTS, render
+    from tools.singing_timing import TIMINGS, render
 
     out = Path(out)
     for directory in (out / "raw", out / "matched"):
@@ -329,7 +338,8 @@ def compare(out, scores, speaker, include_ecantorix=False):
         },
         "results": [],
     }
-    variants = list(VARIANTS) + (["ecantorix"] if include_ecantorix else [])
+    variants = list(variants or TIMINGS) + (
+        ["ecantorix"] if include_ecantorix else [])
     for index, (name, score) in enumerate(scores.items()):
         sounds, rows = [], []
         slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "score"
@@ -366,6 +376,7 @@ def compare(out, scores, speaker, include_ecantorix=False):
 
 def main(argv=None):
     from music.singing import psola
+    from tools.singing_timing import VARIANTS
 
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--out", default="singing-timing-comparison",
@@ -373,6 +384,10 @@ def main(argv=None):
     parser.add_argument("--speaker", help="espeak or espeak-ng executable")
     parser.add_argument("--skip-ecantorix", action="store_true",
                         help="render only the PSOLA variants")
+    parser.add_argument("--variants", nargs="+", metavar="NAME",
+                        choices=VARIANTS,
+                        help="the variants to sing, from "
+                             f"{', '.join(VARIANTS)}; the timings if none")
     parser.add_argument("--words", action="store_true",
                         help="sing the word lists, for "
                              "tools/score_singing_asr.py, not the scores")
@@ -399,7 +414,8 @@ def main(argv=None):
     sung = WORDS if args.words else SCORES
     scores = {name: {**SCORES, **WORDS}[name]
               for name in (args.score or sung)}
-    report = compare(args.out, scores, speaker, include_ecantorix)
+    report = compare(args.out, scores, speaker, include_ecantorix,
+                     args.variants)
     print(measurement_table(report["results"]))
     print(f"Listening review: {Path(args.out).resolve() / 'index.html'}")
 

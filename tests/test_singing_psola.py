@@ -806,6 +806,85 @@ def test_a_bare_unit_is_a_quarter_at_120():
 
 
 # --------------------------------------------------------------------------
+# A vibrato, drawn where Praat reads it
+# --------------------------------------------------------------------------
+
+def test_the_vibrato_sets_in_late_and_grows_to_its_depth():
+    times = np.array([0.0, 0.2, 0.25, 0.4, 0.55, 0.55 + 1 / 22, 2.0])
+    semitones = psola._vibrato(times)
+    np.testing.assert_allclose(semitones[:3], 0, atol=1e-12)
+    # Half grown, 0.15 s in, at the sine's 0.825th turn.
+    assert semitones[3] == pytest.approx(
+        0.35 * 0.5 * np.sin(2 * np.pi * 5.5 * 0.15))
+    # Full grown: a quarter turn later, a quarter period later.
+    assert semitones[5] - semitones[4] == pytest.approx(
+        0.35 * (np.sin(2 * np.pi * 5.5 * (0.3 + 1 / 22))
+                - np.sin(2 * np.pi * 5.5 * 0.3)))
+    assert np.abs(psola._vibrato(np.linspace(0.6, 4, 9999))).max() == \
+        pytest.approx(0.35, abs=1e-4)
+
+
+@pytest.mark.parametrize("points, total, ends", [
+    ([(0, 2.0)], 0.5, 1.0),
+    # Each millisecond's ramp, between 1 and 9, is sung in 5 ms.
+    ([(0.199, 1), (0.2, 9.0), (0.3, 9.0), (0.301, 1)], 0.5, 1.308),
+])
+def test_the_warp_is_when_each_moment_of_the_syllable_is_sung(points, total,
+                                                             ends):
+    said, sung = psola._warp(points, total)
+    assert said[0] == 0 and said[-1] == total and sung[0] == 0
+    assert sung[-1] == pytest.approx(ends)
+    assert np.all(np.diff(sung) > 0)
+    for time, _ in points:
+        assert time in said
+
+
+def test_the_held_stretch_is_sung_at_its_rate():
+    said, sung = psola._warp([(0.199, 1), (0.2, 9.0), (0.3, 9.0),
+                              (0.301, 1)], 0.5)
+    at = np.interp([0.1, 0.2, 0.25, 0.3, 0.4], said, sung)
+    # The ramp from 1 to 9 over a millisecond is sung in 5 ms.
+    np.testing.assert_allclose(at, [0.1, 0.204, 0.654, 1.104, 1.208])
+
+
+def test_a_vibrato_is_drawn_every_5_ms_of_the_sung_syllable(parselmouth):
+    spoken = _Spoken(0.5, [], [])
+    vibrato = []
+
+    def semitones(times):
+        vibrato.append(times)
+        return np.where(times < 0.5, 0.0, 1.0)
+
+    answers = {"To Manipulation": "manipulation",
+               "Extract pitch tier": "pitch tier",
+               "Extract duration tier": "duration tier",
+               "Get resynthesis (overlap-add)": "resynthesis",
+               "Resample": types.SimpleNamespace(values=np.array([[0.0]]))}
+
+    def call(*args):
+        parselmouth.calls.append(args)
+        return answers.get(args[1])
+
+    parselmouth.praat.call = call
+    psola._sung(spoken, 220.0, 1.3, region=(0.2, 0.3), vibrato=semitones)
+    (times,) = vibrato
+    np.testing.assert_allclose(times, np.append(np.arange(0, 1.3, 0.005),
+                                                1.3))
+    points = [args[2:] for args in parselmouth.calls
+              if args[:2] == ("pitch tier", "Add point")]
+    places, hertz = np.array(points).T
+    # The held stretch's rate, its ramps counted, sings it in 1.3 s.
+    factor = 1 + 0.8 / 0.101
+    said, sung = psola._warp([(0.199, 1), (0.2, factor), (0.3, factor),
+                              (0.301, 1)], 0.5)
+    assert sung[-1] == pytest.approx(1.3)
+    np.testing.assert_allclose(places, np.interp(times, sung, said))
+    assert places[0] == 0 and places[-1] == pytest.approx(0.5)
+    np.testing.assert_allclose(hertz, np.where(times < 0.5, 220.0,
+                                               220.0 * 2 ** (1 / 12)))
+
+
+# --------------------------------------------------------------------------
 # Accents, as abc2midi gives them and eCantorix sings them
 # --------------------------------------------------------------------------
 

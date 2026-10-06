@@ -36,6 +36,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -59,6 +60,13 @@ PITCH_FLOOR, PITCH_CEILING = 60, 600
 #: :data:`PITCH_FLOOR`. espeak says French "ques" as a /k/ 41 ms long.
 #: A syllable this short has no vowel to hold, and is sung as it was said.
 SHORTEST = 3 / PITCH_FLOOR
+
+#: The vibrato a sung syllable can be given: VIBRATO_DEV semitones each
+#: way at VIBRATO_FREQ Hz, setting in VIBRATO_DELAY seconds into the note
+#: and growing to full over VIBRATO_ONSET, so that a short note has none,
+#: as a singer's does. Not yet sung by :func:`sing`;
+#: ``tools/compare_singing_timing.py`` sings it, to be listened to.
+VIBRATO_FREQ, VIBRATO_DEV, VIBRATO_DELAY, VIBRATO_ONSET = 5.5, 0.35, 0.25, 0.3
 
 #: espeak's speaking speed, in words a minute, and the slowest it is asked
 #: for. A syllable said in less time than its note is said again slower,
@@ -438,7 +446,7 @@ def _nucleus_from_frames(times: ArrayLike, frequencies: ArrayLike,
     return (start, end) if end - start >= 0.03 - 1e-12 else None
 
 
-def _sung(sound, frequency, seconds, *, region=None):
+def _sung(sound, frequency, seconds, *, region=None, vibrato=None):
     """`sound` held at `frequency` and made `seconds` long, at RATE.
 
     Only the voiced stretch is lengthened, so a consonant keeps the length
@@ -448,7 +456,9 @@ def _sung(sound, frequency, seconds, *, region=None):
     analyse it. ``region=(start, end)``, such as the nucleus
     :func:`_nucleus` finds, is the stretch lengthened instead, its short
     ramps counted in its length; one that cannot be made to fit scales
-    the syllable whole.
+    the syllable whole. `vibrato`, given the times of the sung syllable,
+    says how many semitones off `frequency` to sing at each, as
+    :func:`_vibrato` does; without it, the pitch is held still.
     """
     from parselmouth.praat import call
 
@@ -470,23 +480,6 @@ def _sung(sound, frequency, seconds, *, region=None):
             factor = 1 + (seconds - total) / (
                 end - start + (left + right) / 2)
             held = factor > 0
-    if held and seconds > 3 * total:
-        # Praat's overlap-add writes into a sound three times as long as
-        # the one it is given, and stops at its end: a 0.3 s "laa" held
-        # for four seconds was sung for one, and _fit made the rest
-        # silence. Silence after the syllable gives it the room, and
-        # _fit cuts the silence off again.
-        sound = _padded(sound, seconds)
-    manipulation = call(sound, "To Manipulation", 0.01, PITCH_FLOOR,
-                        PITCH_CEILING)
-
-    tier = call(manipulation, "Extract pitch tier")
-    call(tier, "Remove points between", 0, total)
-    call(tier, "Add point", 0, frequency)
-    call(tier, "Add point", total, frequency)
-    call([tier, manipulation], "Replace pitch tier")
-
-    durations = call(manipulation, "Extract duration tier")
     if held:
         if region is None:
             factor = (seconds - unvoiced) / (end - start)
@@ -503,14 +496,86 @@ def _sung(sound, frequency, seconds, *, region=None):
                 # A region reaching the end has no outgoing ramp. Return
                 # to unit rate in the padding, without duplicate times.
                 points.append((end + 0.001, 1))
-        for time, value in points:
-            call(durations, "Add point", time, value)
     else:
-        call(durations, "Add point", 0, seconds / total)
+        points = [(0, seconds / total)]
+    if held and seconds > 3 * total:
+        # Praat's overlap-add writes into a sound three times as long as
+        # the one it is given, and stops at its end: a 0.3 s "laa" held
+        # for four seconds was sung for one, and _fit made the rest
+        # silence. Silence after the syllable gives it the room, and
+        # _fit cuts the silence off again.
+        sound = _padded(sound, seconds)
+    manipulation = call(sound, "To Manipulation", 0.01, PITCH_FLOOR,
+                        PITCH_CEILING)
+
+    tier = call(manipulation, "Extract pitch tier")
+    call(tier, "Remove points between", 0, total)
+    if vibrato is None:
+        pitches = [(0, frequency), (total, frequency)]
+    else:
+        pitches = _vibrated(frequency, seconds, total, points, vibrato)
+    for time, hertz in pitches:
+        call(tier, "Add point", time, hertz)
+    call([tier, manipulation], "Replace pitch tier")
+
+    durations = call(manipulation, "Extract duration tier")
+    for time, value in points:
+        call(durations, "Add point", time, value)
     call([durations, manipulation], "Replace duration tier")
 
     sung = call(manipulation, "Get resynthesis (overlap-add)")
     return call(sung, "Resample", RATE, 50).values[0]
+
+
+def _vibrato(times: ArrayLike, freq: float = VIBRATO_FREQ,
+             dev: float = VIBRATO_DEV, delay: float = VIBRATO_DELAY,
+             onset: float = VIBRATO_ONSET) -> NDArray[np.float64]:
+    """How many semitones off its note a sung syllable is at `times`.
+
+    A sine of `freq` Hz, `dev` semitones at its peak, as the package's
+    :func:`~music.core.synths.notes.note_with_vibrato` sings one; it sets
+    in `delay` seconds into the note and grows to full over `onset`.
+    """
+    times = np.asarray(times, dtype=float)
+    grown = np.clip((times - delay) / onset, 0, 1)
+    return dev * grown * np.sin(2 * np.pi * freq * (times - delay))
+
+
+def _vibrated(frequency: float, seconds: float, total: float,
+              points: list,
+              vibrato: Callable[[NDArray[np.float64]], NDArray[np.float64]]
+              ) -> list[tuple[float, float]]:
+    """The pitch tier that sings `vibrato` in the syllable as it is sung.
+
+    Praat reads a pitch tier at the times of the syllable as it was said,
+    and the duration tier, `points`, stretches them: a vibrato drawn
+    there would slow with the stretch, to a fraction of a hertz on a
+    held vowel. So each point is drawn every 5 ms of the sung syllable,
+    `seconds` long, and placed at the time it was said, `total` long.
+    """
+    said, sung = _warp(points, total)
+    times = np.append(np.arange(0, seconds, 0.005), seconds)
+    places = np.interp(times, sung, said)
+    hertz = frequency * 2 ** (vibrato(times) / 12)
+    return [(float(place), float(f)) for place, f in zip(places, hertz)]
+
+
+def _warp(points: list, total: float
+          ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Times in a syllable `total` long, and when each is sung.
+
+    `points` is a duration tier, (time, rate), which Praat reads as
+    linear between its points and level beyond them; the time each moment
+    is sung at is the rate's integral, exact over a grid that holds every
+    point.
+    """
+    times, rates = np.asarray(points, dtype=float).T
+    said = np.unique(np.concatenate([
+        np.linspace(0, total, 2001), times[(times > 0) & (times < total)]]))
+    rate = np.interp(said, times, rates)
+    sung = np.concatenate(
+        [[0.0], np.cumsum(np.diff(said) * (rate[:-1] + rate[1:]) / 2)])
+    return said, sung
 
 
 def _padded(sound, seconds):

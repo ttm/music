@@ -26,9 +26,22 @@ from pathlib import Path
 
 import numpy as np
 
+from music.core.filters.adsr import adsr
 from music.singing import perform, psola
 
-VARIANTS = ("baseline", "speed", "vowel", "combined", "slowed")
+TIMINGS = ("baseline", "speed", "vowel", "combined", "slowed")
+
+#: Syllable shapes, each on ``slowed``, sing's timing: a vibrato, an
+#: attack and release, and both. Neither is sung by ``music.sing`` yet.
+SHAPES = ("vibrato", "envelope", "shaped")
+VARIANTS = TIMINGS + SHAPES
+
+#: The envelope the ``envelope`` and ``shaped`` variants give each note,
+#: as the package's :func:`~music.core.filters.adsr.adsr` makes one: a
+#: 20 ms attack, a fall of 3 dB over 150 ms, and a 60 ms release, in
+#: exponential steps.
+ENVELOPE = dict(attack_duration=20, decay_duration=150, sustain_level=-3,
+                release_duration=60, transition="exp")
 SPEED_MIN, SPEED_START, SPEED_MAX = psola.SLOWEST, psola.SPEED, 450
 ATTEMPTS = 4
 
@@ -125,23 +138,31 @@ def render(score, variant, speaker=None):
             target = seconds * shift
             path = Path(scratch) / f"{index}.wav"
             syllable = phonemes.get(said, said)
+            timing = "slowed" if variant in SHAPES else variant
             fitting = {"wpm": None, "attempts": []}
-            if variant in ("speed", "combined", "slowed") \
+            if timing in ("speed", "combined", "slowed") \
                     and effect != "flite":
-                fastest = SPEED_START if variant == "slowed" else SPEED_MAX
+                fastest = SPEED_START if timing == "slowed" else SPEED_MAX
                 spoken, fitting = fit_speech(program, syllable, voice,
                                              path, target, fastest)
             else:
                 spoken = psola._speak(program, syllable, voice, path)
-            hold = variant in ("vowel", "combined") or (
-                variant == "slowed"
+            hold = timing in ("vowel", "combined") or (
+                timing == "slowed"
                 and target > spoken.get_total_duration())
             region = psola._nucleus(spoken) if hold else None
+            # Resampling by `shift` sings the melted voice's vibrato
+            # `shift` times as fast: drawn that much slower, it comes out
+            # at its rate.
+            vibrato = (lambda times, shift=shift: psola._vibrato(
+                times / shift)) if variant in ("vibrato", "shaped") else None
             samples = psola._sung(spoken, frequency / shift, target,
-                                  region=region)
+                                  region=region, vibrato=vibrato)
             if effect == "melt":
                 samples = psola._resampled(samples, shift)
             part = psola._fit(samples, end - start) * levels[index]
+            if variant in ("envelope", "shaped"):
+                part = adsr(sonic_vector=part, **ENVELOPE)
             line[start:end] = psola._trembling(part) if effect in (
                 "tremolo", "melt") else part
             duration = spoken.get_total_duration()

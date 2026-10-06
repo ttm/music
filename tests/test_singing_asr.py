@@ -84,10 +84,24 @@ def test_the_summary_compares_each_variant_word_by_word_with_baseline():
         _row("mary", "slowed", 2, None),
     ]}
     table = asr.summary(scored)
+    assert "Words scored above `baseline`" in table
     assert "| 1 s words | baseline | 1/4 | -15.0 | - | - |" in table
     assert "| 1 s words | slowed | 3/4 | -14.0 | 3/4 | 0.62 |" in table
     # Beyond Whisper's window there is no forced score to compare.
     assert "| mary | slowed | 2/2 | 0.0 | - | - |" in table
+
+
+def test_without_a_baseline_the_first_variant_is_compared_with():
+    scored = {"model": "small", "rows": [
+        _row("1 s words 1", "slowed", 1, [["a", -2.0], ["b", -2.0]]),
+        _row("1 s words 1", "vibrato", 1, [["a", -1.0], ["b", -3.0]]),
+    ]}
+    table = asr.summary(scored)
+    assert "Words scored above `slowed`" in table
+    assert "| 1 s words | slowed | 1/2 | -4.0 | - | - |" in table
+    assert "| 1 s words | vibrato | 1/2 | -4.0 | 1/2 | 1 |" in table
+    assert "| 1 s words | slowed | 1/2 | -4.0 | 1/2 | 1 |" in asr.summary(
+        scored, against="vibrato")
 
 
 def test_the_word_lists_are_distinct_one_syllable_words_on_every_note():

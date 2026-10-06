@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-01**,
-`music` 1.9.0: 48 modules, 13,961 LOC package + 21,636 LOC tests, 127 names
+`music` 1.9.0: 48 modules, 14,026 LOC package + 21,778 LOC tests, 127 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -64,7 +64,7 @@ figures described above are automatically compared with the checkout.
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
 | Lint, extended rule set | `ruff check --select ALL music` | 2,481 findings |
-| Annotation coverage | AST scan | **116 / 253 functions (46 %)**; 63 / 96 exported (66 %) |
+| Annotation coverage | AST scan | **119 / 256 functions (46 %)**; 63 / 96 exported (66 %) |
 | Docstring coverage | AST scan | **183 / 189 public defs (97 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |

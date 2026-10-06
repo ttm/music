@@ -81,7 +81,10 @@ table of any length at its own length.
   faster-whisper, count the lyric's words it hears in each recording and
   score the lyric itself. Whisper `small` heard 69 of the 192 words with
   `slowed`, 44 with the first timing and 59 with eCantorix, and a listener
-  heard it best in general, so it is the backend's timing.
+  heard it best in general, so it is the backend's timing. `--variants`
+  also sings syllable shapes on that timing, to be heard: a vibrato, an
+  attack and release, and both; `--against` names the variant
+  `score_singing_asr.py` compares the others with.
 - **A second singing backend, `sing(backend="psola")`.** espeak-ng says
   each syllable, and Praat's PSOLA, through praat-parselmouth, holds it at
   its note's pitch for its note's length. A syllable said in less time

@@ -128,7 +128,8 @@ def test_slowed_sings_notes_shorter_than_their_syllables_as_the_baseline(
 
 
 @REAL
-@pytest.mark.parametrize("variant", ["speed", "vowel", "combined", "slowed"])
+@pytest.mark.parametrize("variant", ["speed", "vowel", "combined", "slowed",
+                                     "vibrato", "envelope", "shaped"])
 @pytest.mark.parametrize("score", [
     SCORES["mary"], SCORES["quick"], SCORES["test song"], SCORES["german"],
     dict(text="Jac-ques", notes=(4, 0), durs=(1, 1), lang="fr"),
@@ -170,3 +171,51 @@ def test_flite_bypasses_espeak_speed_search():
                                   effect="flite", lang="slt"), "combined")
     assert notes[0]["attempts"] == []
     assert notes[0]["wpm"] is None
+
+
+@REAL
+@pytest.mark.parametrize("effect", [None, "melt"])
+def test_the_vibrato_is_sung_at_its_rate_and_depth_on_a_held_vowel(effect):
+    """Drawn where Praat reads the pitch, through the stretch, the vibrato
+    keeps its 5.5 Hz on a vowel held many times as long as it was said,
+    and through melt's resampling."""
+    import parselmouth
+
+    sound, notes = timing.render(dict(text="laa", notes=(9,), durs=(4,),
+                                      effect=effect), "vibrato")
+    assert notes[0]["held_nucleus"] is not None
+    mono = sound.mean(axis=0) if sound.ndim == 2 else sound
+    pitch = parselmouth.Sound(mono[:2 * psola.RATE], psola.RATE).to_pitch_ac(
+        time_step=0.005, pitch_floor=100, pitch_ceiling=400)
+    times, hertz = pitch.xs(), pitch.selected_array["frequency"]
+    grown = (times > 0.6) & (times < 1.85) & (hertz > 0)
+    off = 1200 * np.log2(hertz[grown] / 220)
+    assert abs(off.mean()) < 3
+    assert 30 < np.percentile(np.abs(off - off.mean()), 95) < 42
+    turns = np.sum(np.diff(np.sign(off - off.mean())) > 0)
+    assert turns / (times[grown][-1] - times[grown][0]) == pytest.approx(
+        5.5, abs=0.3)
+
+
+@REAL
+def test_the_envelope_is_the_package_s_adsr_on_each_note():
+    from parselmouth.praat import run
+
+    score = SCORES["mary"]
+    try:
+        run("random_initializeWithSeedUnsafelyButPredictably (42)")
+        plain, _ = timing.render(score, "slowed")
+        run("random_initializeWithSeedUnsafelyButPredictably (42)")
+        shaped, _ = timing.render(score, "envelope")
+    finally:
+        run("random_initializeSafelyAndUnpredictably ()")
+    from music.core.filters.adsr import adsr
+
+    edges = np.round(np.cumsum([0.0] + expected_seconds(score))
+                     * psola.RATE).astype(int)
+    envelope = np.concatenate([
+        adsr(sonic_vector=np.ones(end - start), **timing.ENVELOPE)
+        for start, end in zip(edges, edges[1:])])
+    expected = plain * envelope
+    np.testing.assert_allclose(shaped, expected / np.abs(expected).max(),
+                               atol=1e-12)

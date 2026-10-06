@@ -1,4 +1,4 @@
-## Unreleased
+## [1.10.0] - 2026-10-06
 
 ### Note for anyone upgrading
 

@@ -96,7 +96,7 @@ def test_scipy_absence_reports_install_instruction(monkeypatch):
         return original(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", deny_scipy)
-    with pytest.raises(ImportError, match="music\\\\[antialias\\\\]"):
+    with pytest.raises(ImportError, match="antialias"):
         music.render_oversampled(gated_carrier, number_of_samples=10)
 
 

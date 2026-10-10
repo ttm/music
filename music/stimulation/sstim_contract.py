@@ -188,14 +188,24 @@ def resolve_sstim_contract(
         raise ValueError("MUSIC hints require the strict MUSIC importer")
     if generator not in _ALLOWED:
         raise ValueError("unsupported sidecar generator")
+    # Refuse implicit defaults before comparing the standard projection.
+    # A foreign RDF description cannot select MUSIC's current defaults.
     if generator in _ADVANCED:
+        from .sstim_advanced import _parameters
+        keys = set(_parameters(generator, parameters, duration,
+                               sample_rate))
         expected = to_sstim_advanced_graph(
             generator, parameters=parameters, duration=duration,
             sample_rate=sample_rate)
     else:
+        from .sstim_io import _input
+        keys = set(_input(generator, parameters, duration,
+                          sample_rate).parameters)
         expected = to_sstim_graph(
             generator, parameters=parameters, duration=duration,
             sample_rate=sample_rate)
+    if set(parameters) != keys:
+        raise ValueError("sidecar must explicitly pin every engine control")
     if _projection(graph) != _projection(expected):
         raise ValueError("SSTIM assertions contradict explicit sidecar")
     # Use the existing strict validator to pin scalar defaults and
@@ -209,11 +219,6 @@ def resolve_sstim_contract(
         name, params, seconds, rate = (
             checked.generator, checked.parameters, checked.duration,
             checked.sample_rate)
-    # For an independently authored graph, omitted engine controls are
-    # not a portable instruction to inherit MUSIC's current defaults.
-    # Require every supported control to be pinned by the sidecar.
-    if set(parameters) != set(params):
-        raise ValueError("sidecar must explicitly pin every engine control")
     return PortableResolution(name, params, seconds, rate)
 
 

@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 import soundfile as sf
 
-from tools.prepare_singing_listening import prepare
+from tools.prepare_singing_listening import _equal_level, prepare
 
 
 def test_blind_trial_reproducible_and_backend_key_separate(tmp_path):
@@ -66,3 +66,13 @@ def test_recordings_must_be_mono_and_share_rate(tmp_path):
     sf.write(source / "duet.psola.wav", np.ones(100) * .1, 44100)
     with pytest.raises(ValueError, match="sample rates"):
         prepare(source, tmp_path / "out")
+
+
+@pytest.mark.parametrize("bad", [
+    np.array([], dtype=float),
+    np.array([float("nan"), 0.2]),
+    np.array([float("inf"), 0.2]),
+])
+def test_blind_trial_rejects_nonfinite_or_empty_renderings(bad):
+    with pytest.raises(ValueError, match="nonempty and finite"):
+        _equal_level(bad, np.array([0.2, -0.2]))

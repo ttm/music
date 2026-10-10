@@ -22,7 +22,7 @@ from .sstim_advanced import (
     _ADVANCED, from_sstim_advanced_graph, to_sstim_advanced_graph,
 )
 from .sstim_io import (
-    MUSIC, SSTIM, _GENERATORS, _decimal, _graph,
+    MUSIC, _GENERATORS, _decimal, _graph,
     from_sstim_graph, to_sstim_graph,
 )
 
@@ -39,7 +39,7 @@ def _one(graph: Graph, subject: URIRef, predicate: URIRef):
 def to_sstim_program_graph(
         session: StimulationSession, *,
         base: str = "https://example.org/music/program/") -> Graph:
-    """Export a MUSIC session as ordered, validated SSTIM stimulus descriptions.
+    """Export a MUSIC session as ordered SSTIM stimulus descriptions.
 
     Only supported generator callables (not pre-rendered arrays, external
     closures or custom waveform tables) can be encoded. Engine-owned terms

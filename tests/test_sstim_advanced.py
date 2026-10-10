@@ -135,7 +135,7 @@ def test_advanced_rejects_bad_metadata_and_graph_shape():
     g = noise_graph()
     root = next(g.subjects(RDF.type, SSTIM.StimulusSpecification))
     g.remove((root, MUSIC.parametersJson, None))
-    with pytest.raises(ValueError, match="engine hint"):
+    with pytest.raises(ValueError, match="invalid engine parameters"):
         from_sstim_advanced_graph(g)
     with pytest.raises(ValueError, match="one advanced"):
         from_sstim_advanced_graph(Graph())

@@ -21,13 +21,13 @@ def authored_graph(stereo=True):
     """Author standard SSTIM Turtle without calling MUSIC's exporter."""
     def chan(name, placement, hz, mechanism, presence):
         return f"""
-<urn:portable:{name}> a sstim-ex:StimulusChannel ;
+<urn:portable:{name}> a sstim-ex:StimulusChannel ;\n    rdfs:label "{name} audio channel" ;
     sstim-ex:perceivedModality sstim-ex:modalityAuditory ;
     sstim-ex:deliveryMedium sstim-ex:mediumAirConductedSound ;
     sstim-ex:hasBodyPlacement sstim-ex:{placement} ;
     sstim:channelDurationSeconds 1.0 ;
     sstim:hasSignalRendering <urn:portable:r-{name}> .
-<urn:portable:r-{name}> a sstim:SignalRendering ;
+<urn:portable:r-{name}> a sstim:SignalRendering ;\n    rdfs:label "{name} beat rendering" ;
     sstim:rendersSignal <urn:portable:signal> ;
     sstim:rendersOntoParameter sstim-v:paramAmplitude ;
     sstim:hasRenderingMechanism sstim-v:{mechanism} ;
@@ -47,12 +47,12 @@ def authored_graph(stereo=True):
     return Graph().parse(data=f"""
 @prefix sstim: <https://w3id.org/sstim#> .
 @prefix sstim-v: <https://w3id.org/sstim/vocab#> .
-@prefix sstim-ex: <https://w3id.org/sstim/exposure#> .
-<urn:portable:spec> a sstim:StimulusSpecification ;
+@prefix sstim-ex: <https://w3id.org/sstim/exposure#> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+<urn:portable:spec> a sstim:StimulusSpecification ;\n    rdfs:label "independent beat spec" ;
     sstim:stimulusRegime "determinate" ;
     sstim:hasSignal <urn:portable:signal> ;
     sstim:hasStimulusChannel {channels} .
-<urn:portable:signal> a sstim:StimulationSignal ;
+<urn:portable:signal> a sstim:StimulationSignal ;\n    rdfs:label "10 Hz sine beat" ;
     sstim:hasSignalShape sstim-v:shapeSine ;
     sstim:hzMin 10.0 ; sstim:hzMax 10.0 .
 {body}

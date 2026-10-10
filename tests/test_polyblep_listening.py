@@ -14,6 +14,7 @@ def test_prepared_pairs_have_matching_rms_without_exposing_key(tmp_path):
     second = prepare(tmp_path / "second", seed=42, rates=(48000,))
     assert first == second
     assert len(first) == 2
+    assert sorted(x["A"] for x in first) == ["naive", "polyblep"]
     review = tmp_path / "first" / "reviewer"
     assert not list(review.glob("*key*"))
     for trial in first:
@@ -46,3 +47,10 @@ def test_match_refuses_silence_or_invalid_samples(bad):
 def test_preparation_rejects_invalid_metadata(tmp_path, kwargs):
     with pytest.raises(ValueError, match="invalid seed"):
         prepare(tmp_path / "bad", **kwargs)
+
+
+def test_full_six_trial_list_has_balanced_method_order(tmp_path):
+    cases = prepare(tmp_path / "all", seed=17)
+    assert len(cases) == 6
+    assert [x["A"] for x in cases].count("polyblep") == 3
+    assert [x["A"] for x in cases].count("naive") == 3

@@ -313,9 +313,11 @@ def render_sstim(value: Graph | str | Path, *,
         return generator(duration=spec.duration,
                          sample_rate=spec.sample_rate, **spec.parameters)
     from ..core.synths.oversampling import render_oversampled
+    # Keyword values are dynamically selected after generator allowlisting.
+    kwargs: dict[str, Any] = dict(spec.parameters)
     return render_oversampled(
         generator, duration=spec.duration, sample_rate=spec.sample_rate,
-        factor=oversampling_factor, **spec.parameters)
+        factor=oversampling_factor, **kwargs)
 
 
 def validate_sstim(value: Graph | str | Path, *,

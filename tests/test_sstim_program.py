@@ -75,7 +75,7 @@ def test_program_semantic_graph_tampering_rejected():
     graph = to_sstim_program_graph(mixed_program())
     root = next(graph.subjects(RDF.type, MUSIC.StimulationProgram))
     graph.add((root, MUSIC.rampShape, Literal("unknown")))
-    with pytest.raises(ValueError, match="expected one"):
+    with pytest.raises(ValueError, match="invalid program metadata"):
         from_sstim_program_graph(graph)
 
 

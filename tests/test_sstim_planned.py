@@ -62,6 +62,14 @@ def test_real_session_specification_roundtrips_with_pinned_preset():
             SSTIM_V.reproEquivalentPresentation) in g
     assert (None, SSTIM.durationSeconds,
             Literal(60, datatype=XSD.integer)) in g
+    root = next(g.subjects(RDF.type, SSTIM.SessionSpecification))
+    digest = str(next(g.objects(root, SSTIM.configurationDigest)))
+    assert len(digest) == 64
+    assert (root, SSTIM.digestAlgorithm,
+            Literal("sha256-sorted-ntriples-utf8-v1",
+                    datatype=XSD.string)) in g
+    assert str(next(g.objects(root, SSTIM.configurationDigest))) == (
+        str(next(graph().objects(root, SSTIM.configurationDigest))))
     text = g.serialize(format="turtle")
     assert from_sstim_planned_session_graph(text).preset_iri == PRESET
 
@@ -106,6 +114,8 @@ def test_nonconformant_planned_sessions_are_refused(override, match):
     ("wrong-reproducibility", "unsupported reproducibility"),
     ("changed-duration", "planned duration contradicts"),
     ("extra-assertion", "contradicts MUSIC plan"),
+    ("digest-tampered", "contradicts MUSIC plan"),
+    ("digest-algorithm-missing", "contradicts MUSIC plan"),
 ])
 def test_planned_session_rejects_conflicts(mutation, match):
     g = graph()
@@ -148,6 +158,12 @@ def test_planned_session_rejects_conflicts(mutation, match):
         g.remove((root, SSTIM.durationSeconds, None))
         g.add((root, SSTIM.durationSeconds,
                Literal(61, datatype=XSD.integer)))
+    elif mutation == "digest-tampered":
+        g.remove((root, SSTIM.configurationDigest, None))
+        g.add((root, SSTIM.configurationDigest,
+               Literal("0" * 64, datatype=XSD.string)))
+    elif mutation == "digest-algorithm-missing":
+        g.remove((root, SSTIM.digestAlgorithm, None))
     else:
         g.add((root, MUSIC.unrecognizedControl, Literal(17)))
     with pytest.raises(ValueError, match=match):

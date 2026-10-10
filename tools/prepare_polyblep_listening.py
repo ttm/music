@@ -43,6 +43,10 @@ def prepare(out, *, seed=0, rates=RATES):
     reviewer.mkdir(parents=True, exist_ok=True)
     organizer.mkdir(parents=True, exist_ok=True)
     rng = random.Random(seed)
+    # Keep A/B identities balanced over the small evaluation set, while
+    # randomizing which condition appears first on each individual trial.
+    swaps = [False, True] * len(rates)
+    rng.shuffle(swaps)
     pairs = []
     form = []
     for rate in rates:
@@ -56,7 +60,7 @@ def prepare(out, *, seed=0, rates=RATES):
                 waveform=waveform)
             a, b = _match(naive, blep)
             identities = ("naive", "polyblep")
-            if rng.randrange(2):
+            if swaps[len(pairs)]:
                 a, b = b, a
                 identities = ("polyblep", "naive")
             trial = f"trial-{len(pairs) + 1:02d}"

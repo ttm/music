@@ -140,7 +140,7 @@ def to_sstim_advanced_graph(
                        _decimal(params["modulation_freq"])))
             signals.append((mod, "paramAmplitude",
                             "mechanismAmplitudeModulation"))
-        placements = ("placementEars",)
+        placements: tuple[str, ...] = ("placementEars",)
     else:
         tone = URIRef(base + "signal-tone")
         motion = URIRef(base + "signal-motion")
@@ -220,8 +220,8 @@ def from_sstim_advanced_graph(value: Graph | str | Path):
     channels = list(graph.objects(root, SSTIM.hasStimulusChannel))
     if not channels:
         raise ValueError("missing stimulus channel")
-    duration = float(next(graph.objects(
-        channels[0], SSTIM.channelDurationSeconds)))
+    duration = float(str(next(graph.objects(
+        channels[0], SSTIM.channelDurationSeconds))))
     expected = to_sstim_advanced_graph(
         name, parameters=params, duration=duration,
         sample_rate=sample_rate, base=base)

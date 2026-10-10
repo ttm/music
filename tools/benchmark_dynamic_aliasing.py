@@ -22,7 +22,7 @@ RATES = (44100, 48000, 96000)
 
 
 def _parameters(case, rate):
-    """Frequency choices are fractions of target rate; never oversample them."""
+    """Physical frequencies remain fixed as the internal rate changes."""
     if case == "fm_wide":
         return rate * .32, rate * .15, rate * .032, 0.0
     if case == "fm_extreme":
@@ -116,7 +116,8 @@ def evaluate(case, rate=48000, count=4096, *,
                     sample_rate=rate, number_of_samples=count,
                     factor=factor)
             samples = np.asarray(synth(), dtype=float)
-            if samples.shape != reference.shape or not np.isfinite(samples).all():
+            if (samples.shape != reference.shape or
+                    not np.isfinite(samples).all()):
                 raise ValueError("benchmark renderer produced invalid audio")
             timings = []
             for _ in range(repeats):

@@ -201,21 +201,19 @@ def to_sstim_graph(
 
 
 def _graph(value: Graph | str | Path) -> Graph:
-    """Read only local, size-bounded Turtle without URL dereferencing.
+    """Parse bounded local Turtle only, never graph-specified URLs.
 
-    A graph given by the caller is checked for excessive triples. String
-    payloads and local files are byte-bounded before parser allocation;
-    the resulting RDF graph is also triple-bounded. A small Turtle source
-    may expand into many triples, so the post-parse check is necessary.
-    These limits do not guarantee constant-time processing of malicious
-    syntax: do not treat rdflib as a sandbox for hostile remote payloads.
+    The 2 MiB serialized-byte and 15k triple checks are safety limits,
+    not a parser sandbox; hostile Turtle can still consume CPU while
+    its triples are being materialized. Isolate public upload processing.
     """
     if isinstance(value, Graph):
         graph = value
     else:
+        path: Path | None = None
+        text_data = ""
         if isinstance(value, Path):
             path = value
-            source = None
         elif isinstance(value, str):
             trimmed = value.lstrip()
             if trimmed.startswith(("http://", "https://", "file://",
@@ -223,9 +221,9 @@ def _graph(value: Graph | str | Path) -> Graph:
                 raise ValueError("remote or URI RDF input is not allowed")
             if ("\n" in value or trimmed.startswith(
                     ("@prefix", "@base", "PREFIX", "BASE", "<"))):
-                source, path = value, None
+                text_data = value
             else:
-                source, path = None, Path(value)
+                path = Path(value)
         else:
             raise TypeError("expected RDF Graph, local Turtle or local path")
         if path is not None:
@@ -234,16 +232,13 @@ def _graph(value: Graph | str | Path) -> Graph:
                     raise ValueError("expected an existing local Turtle file")
                 if path.stat().st_size > _MAX_TURTLE_BYTES:
                     raise ValueError("Turtle input exceeds byte budget")
-                source = path.read_bytes()
-            except OSError as exc:
+                text_data = path.read_text(encoding="utf-8")
+            except (OSError, UnicodeError) as exc:
                 raise ValueError("cannot read local Turtle file") from exc
-        if source is None:
-            raise ValueError("expected Turtle input")
-        if (len(source if isinstance(source, bytes)
-                else source.encode("utf-8")) > _MAX_TURTLE_BYTES):
+        if len(text_data.encode("utf-8")) > _MAX_TURTLE_BYTES:
             raise ValueError("Turtle input exceeds byte budget")
         graph = Graph()
-        graph.parse(data=source, format="turtle")
+        graph.parse(data=text_data, format="turtle")
     if len(graph) > _MAX_RDF_TRIPLES:
         raise ValueError("RDF graph exceeds triple budget")
     return graph

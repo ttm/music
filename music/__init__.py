@@ -38,6 +38,7 @@ from .utils import (
 )
 from .core import (
     band_pass,
+    bandlimited_note,
     band_reject,
     fraction_of,
     high_pass,
@@ -207,6 +208,7 @@ __all__ = [
     'mode_by_rotation',
     'scale',
     'band_pass',
+    'bandlimited_note',
     'band_reject',
     'fraction_of',
     'high_pass',

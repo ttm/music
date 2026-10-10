@@ -46,6 +46,7 @@ from .io import (read_audio, read_wav, write_audio, write_wav_mono,
                  write_wav_stereo, play_audio)
 from .synths import (
     am,
+    bandlimited_note,
     gaussian_noise,
     note,
     note_with_doppler,
@@ -68,6 +69,7 @@ from .synths import (
 __all__ = [
     'localize_hrtf',
     'band_pass',
+    'bandlimited_note',
     'band_reject',
     'fraction_of',
     'high_pass',

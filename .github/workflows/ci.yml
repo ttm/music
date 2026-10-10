@@ -30,6 +30,10 @@ jobs:
       - name: Lint
         run: ruff check music tests examples tools conftest.py
 
+      - name: Extended lint inventory (informational, Python 3.12)
+        if: matrix.python-version == '3.12'
+        run: ruff check --select ALL --statistics music || true
+
       - name: Type check
         run: mypy music
 

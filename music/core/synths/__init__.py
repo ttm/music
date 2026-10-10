@@ -1,5 +1,6 @@
 """Synthesis primitives for envelopes, notes, and noises."""
 
+from .bandlimited import bandlimited_note
 from .envelopes import am, tremolo, tremolos
 from .notes import (
     note, note_with_doppler, note_with_fm, note_with_glissando,
@@ -11,6 +12,7 @@ from .noises import gaussian_noise, noise, silence
 
 __all__ = [
     'am',
+    'bandlimited_note',
     'gaussian_noise',
     'note',
     'note_with_doppler',

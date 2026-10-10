@@ -100,8 +100,7 @@ def _input(generator: str, params: Mapping[str, Any], duration: float,
     for k, arg in fields.items():
         if k in prohibited or k in numbers:
             continue
-        if isinstance(arg.default, (int, float)):
-            numbers[k] = float(arg.default)
+        numbers[k] = float(arg.default)
     carrier = numbers["carrier_freq"]
     modulation = numbers[_GENERATORS[generator][3]]
     if not 0 < carrier < sample_rate / 2 or modulation <= 0:

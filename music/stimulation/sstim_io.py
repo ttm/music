@@ -202,6 +202,8 @@ def _graph(value: Graph | str | Path) -> Graph:
     elif isinstance(value, str) and (
             "\n" in value or value.lstrip().startswith("@prefix")):
         g.parse(data=value, format="turtle")
+    elif isinstance(value, str) and value.startswith(("http://", "https://")):
+        raise ValueError("provide local Turtle data or a local file, not a URL")
     else:
         g.parse(str(value), format="turtle")
     return g
@@ -255,6 +257,7 @@ def from_sstim_graph(value: Graph | str | Path) -> RenderableStimulus:
         raise ValueError("signal assertions contradict engine parameters")
     if str(one(root, SSTIM.stimulusRegime)) != "determinate":
         raise ValueError("only determinate stimuli are executable")
+    seen_placements = set()
     for index, channel in enumerate(channels):
         if float(one(channel, SSTIM.channelDurationSeconds)) != duration:
             raise ValueError("channel duration mismatch")
@@ -275,6 +278,12 @@ def from_sstim_graph(value: Graph | str | Path) -> RenderableStimulus:
         if generator == "binaural_beats":
             # Ordered by placement, not RDF triple iteration order.
             placement = one(channel, SSTIM_EX.hasBodyPlacement)
+            if placement not in (SSTIM_EX.placementEarLeft,
+                                 SSTIM_EX.placementEarRight):
+                raise ValueError("invalid binaural channel placement")
+            if placement in seen_placements:
+                raise ValueError("duplicate binaural channel placement")
+            seen_placements.add(placement)
             index = 0 if placement == SSTIM_EX.placementEarLeft else 1
             expected = carrier + (-0.5 if index == 0 else 0.5) * mod_rate
         else:

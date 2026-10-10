@@ -218,7 +218,7 @@ def _graph(value: Graph | str | Path) -> Graph:
             trimmed = value.lstrip()
             if trimmed.startswith(("http://", "https://", "file://",
                                    "ftp://")):
-                raise ValueError("remote or URI RDF input is not allowed")
+                raise ValueError("only local Turtle allowed; URI RDF input denied")
             if ("\n" in value or trimmed.startswith(
                     ("@prefix", "@base", "PREFIX", "BASE", "<"))):
                 text_data = value

@@ -10,7 +10,7 @@ import os
 import pytest
 
 pytest.importorskip("rdflib")
-from rdflib import Graph, Literal, URIRef  # noqa: E402
+from rdflib import Literal, URIRef  # noqa: E402
 from rdflib.namespace import DCTERMS, RDF, XSD  # noqa: E402
 
 import music  # noqa: E402

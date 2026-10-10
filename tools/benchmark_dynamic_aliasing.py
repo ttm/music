@@ -135,7 +135,8 @@ def evaluate(case, rate=48000, count=4096, *,
                 "max_window_error_rms": max(map(_rms, chunks)),
                 "peak_absolute": float(np.max(np.abs(samples))),
                 "render_median_ms": float(np.median(timings)),
-                "nominal_intermediate_frames": count * factor,\n                "nominal_audio_buffer_bytes": count * factor * 8,
+                "nominal_intermediate_frames": count * factor,
+                "nominal_audio_buffer_bytes": count * factor * 8,
             })
     return rows
 

@@ -34,6 +34,31 @@ note to a short stereo piece.
 📖 **[API reference](https://ttm.github.io/music/)** — every routine documented
 with the equation it implements and the article it comes from.
 
+## Choose a synthesis path
+
+For a stable, static-pitch waveform where higher harmonics would fold below
+Nyquist, use the opt-in band-limited oscillator:
+
+```python
+import music
+
+# Compare a 10 kHz sawtooth with the MASS-reference wavetable lookup.
+reference = music.note(10000, duration=1,
+                       waveform_table=music.waveform_table("sawtooth"))
+cleaner = music.bandlimited_note(10000, duration=1, waveform="sawtooth")
+```
+
+`music.note` retains its MASS-compatible behavior and exact samples.
+`bandlimited_note` removes harmonics at or above Nyquist and interpolates
+wavetable positions, but does **not** band-limit glissandi, FM, gated pulse
+edges or later nonlinear effects. Truncated waves may exceed full scale near
+corners due to Gibbs overshoot: manage gain at export. For a measured A/B,
+run `python tools/benchmark_spectral_aliasing.py`; for listening WAVs, run
+`python examples/aliasing_demo.py`.
+
+**[Start with the smallest API](https://ttm.github.io/music/choosing_an_api.html)**
+for practical choices and scientific limitations.
+
 ## Core features
 
 * **Sample-based synthesis.** State is updated at every sample. A note with a

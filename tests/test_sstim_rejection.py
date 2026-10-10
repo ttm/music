@@ -234,5 +234,5 @@ def test_irrelevant_rdf_annotation_remains_acceptable():
     """Unknown descriptive RDF is compatible with the original importer."""
     graph = basic()
     root = root_of(graph)
-    graph.add((root, SSTIM_EX.auditNote, Literal("reviewed")))
+    graph.add((root, MUSIC.auditNote, Literal("reviewed")))
     assert from_sstim_graph(graph).generator == "binaural_beats"

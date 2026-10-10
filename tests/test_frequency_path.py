@@ -6,11 +6,13 @@ import pytest
 from music.core.synths.frequency_path import bandlimited_frequency_path
 
 
-def test_sine_phase_is_integrated_at_the_requested_rate():
-    f = 1000 + 100 * np.sin(2 * np.pi * np.arange(4800) / 4800)
+@pytest.mark.parametrize("sample_rate", [44100, 48000, 96000])
+def test_sine_phase_is_integrated_at_the_requested_rate(sample_rate):
+    count = sample_rate // 10
+    f = 1000 + 100 * np.sin(2 * np.pi * np.arange(count) / count)
     result = bandlimited_frequency_path(
-        f, sample_rate=48000, waveform="sine")
-    phase = np.cumsum(np.r_[0., f[:-1]]) * 2 * np.pi / 48000
+        f, sample_rate=sample_rate, waveform="sine")
+    phase = np.cumsum(np.r_[0., f[:-1]]) * 2 * np.pi / sample_rate
     np.testing.assert_allclose(result, np.sin(phase), atol=1e-12)
 
 

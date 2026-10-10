@@ -1,0 +1,13 @@
+{
+  "generator": "modulated_noise",
+  "parameters": {
+    "noise_type": "pink",
+    "modulation_freq": 9.0,
+    "modulation_depth": 0.6,
+    "min_freq": 70.0,
+    "max_freq": 9000.0,
+    "seed": 27
+  },
+  "duration": 0.04,
+  "sample_rate": 48000
+}

@@ -76,3 +76,26 @@ def test_cli_writes_machine_readable_and_markdown(tmp_path, capsys):
     assert len(result) == 6
     assert target.is_file()
     assert "RMS error" in capsys.readouterr().out
+
+
+def test_fixed_physical_frequency_matrix_changes_sampling_stress():
+    """At 96 kHz the 48-kHz-basis FM has more Nyquist headroom."""
+    fixed = evaluate("fm_extreme", rate=96000, count=512,
+                     fixed_reference_rate=48000,
+                     reference_factor=16, factors=(4,), repeats=1)
+    scaled = evaluate("fm_extreme", rate=96000, count=512,
+                      reference_factor=16, factors=(4,), repeats=1)
+    assert all(x["frequency_basis_hz"] == 48000 for x in fixed)
+    assert all(x["frequency_basis_hz"] == 96000 for x in scaled)
+    direct_fixed = next(x for x in fixed if
+                        x["engine"] == "analytic" and
+                        x["oversampling_factor"] == 1)
+    direct_scaled = next(x for x in scaled if
+                         x["engine"] == "analytic" and
+                         x["oversampling_factor"] == 1)
+    assert direct_fixed["error_rms"] < direct_scaled["error_rms"]
+
+
+def test_refuse_unknown_fixed_frequency_basis():
+    with pytest.raises(ValueError, match="fixed_reference_rate"):
+        evaluate("fm_wide", count=32, repeats=1, fixed_reference_rate=200)

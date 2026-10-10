@@ -213,15 +213,26 @@ def from_sstim_advanced_graph(value: Graph | str | Path):
 
     name = str(one(MUSIC.generator))
     try:
-        params = json.loads(str(one(MUSIC.parametersJson)))
+        raw_params = str(one(MUSIC.parametersJson))
+        if len(raw_params) > 2048:
+            raise ValueError("excessively long parametersJson")
+        params = json.loads(raw_params)
+        if not isinstance(params, dict):
+            raise ValueError("parametersJson must be an object")
         sample_rate = int(one(MUSIC.sampleRateHz))
     except (ValueError, TypeError, json.JSONDecodeError) as exc:
         raise ValueError("invalid engine parameters") from exc
     channels = list(graph.objects(root, SSTIM.hasStimulusChannel))
     if not channels:
         raise ValueError("missing stimulus channel")
-    duration = float(str(next(graph.objects(
-        channels[0], SSTIM.channelDurationSeconds))))
+    channel_durations = list(graph.objects(
+        channels[0], SSTIM.channelDurationSeconds))
+    if len(channel_durations) != 1:
+        raise ValueError("missing or ambiguous channel duration")
+    try:
+        duration = float(str(channel_durations[0]))
+    except (ValueError, TypeError) as exc:
+        raise ValueError("invalid channel duration") from exc
     expected = to_sstim_advanced_graph(
         name, parameters=params, duration=duration,
         sample_rate=sample_rate, base=base)

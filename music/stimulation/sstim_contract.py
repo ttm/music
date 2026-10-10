@@ -209,6 +209,11 @@ def resolve_sstim_contract(
         name, params, seconds, rate = (
             checked.generator, checked.parameters, checked.duration,
             checked.sample_rate)
+    # For an independently authored graph, omitted engine controls are
+    # not a portable instruction to inherit MUSIC's current defaults.
+    # Require every supported control to be pinned by the sidecar.
+    if set(parameters) != set(params):
+        raise ValueError("sidecar must explicitly pin every engine control")
     return PortableResolution(name, params, seconds, rate)
 
 

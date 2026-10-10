@@ -173,3 +173,32 @@ def test_refuse_advanced_graph_structure(problem, match):
 def test_raw_noise_seed_rejects_invalid_value():
     with pytest.raises(ValueError, match="seed must"):
         music.noise(seed=-1, duration=.02)
+
+
+@pytest.mark.parametrize("case,match", [
+    ("nonobject-parameters", "invalid engine parameters"),
+    ("oversized-parameters", "invalid engine parameters"),
+    ("missing-duration", "missing or ambiguous channel duration"),
+    ("ambiguous-duration", "missing or ambiguous channel duration"),
+    ("invalid-duration", "invalid channel duration"),
+])
+def test_advanced_reader_handles_malformed_turtle_as_value_error(
+        case, match):
+    graph = noise_graph()
+    root = next(graph.subjects(RDF.type, SSTIM.StimulusSpecification))
+    if case in ("nonobject-parameters", "oversized-parameters"):
+        graph.remove((root, MUSIC.parametersJson, None))
+        value = ("[]" if case == "nonobject-parameters" else "x" * 2049)
+        graph.add((root, MUSIC.parametersJson, Literal(value)))
+    else:
+        channel = next(graph.objects(root, SSTIM.hasStimulusChannel))
+        if case == "missing-duration":
+            graph.remove((channel, SSTIM.channelDurationSeconds, None))
+        elif case == "ambiguous-duration":
+            graph.add((channel, SSTIM.channelDurationSeconds, Literal(1)))
+        else:
+            graph.remove((channel, SSTIM.channelDurationSeconds, None))
+            graph.add((channel, SSTIM.channelDurationSeconds,
+                       Literal("not-a-number")))
+    with pytest.raises(ValueError, match=match):
+        from_sstim_advanced_graph(graph)

@@ -94,6 +94,27 @@ jobs:
             dynamic-alias-fixed-hz.json
             dynamic-alias-fixed-hz.md
 
+      - name: Benchmark discontinuity alias suppression
+        run: |
+          python tools/benchmark_polyblep.py --repeats 2 \
+            --json polyblep-spectrum.json > polyblep-spectrum.md
+          python tools/prepare_polyblep_listening.py \
+            --out polyblep-listening --seed 17
+      - uses: actions/upload-artifact@v7
+        with:
+          name: polyblep-spectral-benchmark
+          path: |
+            polyblep-spectrum.json
+            polyblep-spectrum.md
+      - uses: actions/upload-artifact@v7
+        with:
+          name: polyblep-blinded-reviewer
+          path: polyblep-listening/reviewer/
+      - uses: actions/upload-artifact@v7
+        with:
+          name: polyblep-organizer-key
+          path: polyblep-listening/organizer/
+
   singing:
     name: Singing, with both backends
     runs-on: ubuntu-latest

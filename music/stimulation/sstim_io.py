@@ -107,7 +107,8 @@ def _input(generator: str, params: Mapping[str, Any], duration: float,
     if not 0 < carrier < sample_rate / 2 or modulation <= 0:
         raise ValueError("carrier must be inside Nyquist and rate positive")
     if generator in ("binaural_beats", "monaural_beats"):
-        if carrier - modulation / 2 <= 0 or carrier + modulation / 2 >= sample_rate / 2:
+        if (carrier - modulation / 2 <= 0
+                or carrier + modulation / 2 >= sample_rate / 2):
             raise ValueError("beat carriers must be between 0 and Nyquist")
     if generator == "isochronic_tones":
         if not 0 < numbers["duty_cycle"] <= 1 or numbers["ramp_duration"] < 0:
@@ -138,7 +139,8 @@ def to_sstim_graph(
     if (not isinstance(base, str) or not base.startswith(("http://", "https://"))
             or not base.endswith(("/", "#")) or
             base.startswith("https://w3id.org/sstim")):
-        raise ValueError("base must be your own http(s) namespace ending / or #")
+        raise ValueError(
+            "base must be your own http(s) namespace ending / or #")
     spec = _input(generator, parameters, duration, sample_rate)
     method, shape, parameter, rate_key = _GENERATORS[generator]
     mod_rate = spec.parameters[rate_key]
@@ -165,7 +167,8 @@ def to_sstim_graph(
     g.add((root, MUSIC.generator, Literal(spec.generator)))
     g.add((root, MUSIC.parametersJson, Literal(
         json.dumps(spec.parameters, sort_keys=True, separators=(",", ":")))))
-    g.add((root, MUSIC.sampleRateHz, Literal(sample_rate, datatype=XSD.integer)))
+    g.add((root, MUSIC.sampleRateHz,
+           Literal(sample_rate, datatype=XSD.integer)))
     for index in range(channels):
         chan = URIRef(base + f"channel-{index+1}")
         rendering = URIRef(base + f"rendering-{index+1}")
@@ -176,7 +179,8 @@ def to_sstim_graph(
         g.add((chan, RDFS.label, Literal(placement)))
         g.add((chan, SSTIM.channelDurationSeconds, _decimal(spec.duration)))
         g.add((chan, SSTIM_EX.perceivedModality, SSTIM_EX.modalityAuditory))
-        g.add((chan, SSTIM_EX.deliveryMedium, SSTIM_EX.mediumAirConductedSound))
+        g.add((chan, SSTIM_EX.deliveryMedium,
+               SSTIM_EX.mediumAirConductedSound))
         g.add((chan, SSTIM_EX.hasBodyPlacement, SSTIM_EX[placement]))
         g.add((chan, SSTIM.hasSignalRendering, rendering))
         g.add((rendering, RDF.type, SSTIM.SignalRendering))
@@ -203,7 +207,8 @@ def _graph(value: Graph | str | Path) -> Graph:
             "\n" in value or value.lstrip().startswith("@prefix")):
         g.parse(data=value, format="turtle")
     elif isinstance(value, str) and value.startswith(("http://", "https://")):
-        raise ValueError("provide local Turtle data or a local file, not a URL")
+        raise ValueError(
+            "provide local Turtle data or a local file, not a URL")
     else:
         g.parse(str(value), format="turtle")
     return g

@@ -29,7 +29,7 @@ from .sstim_io import (
 _ALLOWED = set(_GENERATORS) | _ADVANCED
 
 
-def _one(graph: Graph, subject: URIRef, predicate: URIRef):
+def _one(graph: Graph, subject, predicate: URIRef):
     values = list(graph.objects(subject, predicate))
     if len(values) != 1:
         raise ValueError(f"expected one {predicate}")

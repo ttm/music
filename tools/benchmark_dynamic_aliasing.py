@@ -102,7 +102,8 @@ def evaluate(case, rate=48000, count=4096, *,
         raise ValueError("unknown case or sample rate")
     if fixed_reference_rate is not None and fixed_reference_rate not in RATES:
         raise ValueError("fixed_reference_rate must be 44100, 48000 or 96000")
-    source_rate = rate if fixed_reference_rate is None else fixed_reference_rate
+    source_rate = (rate if fixed_reference_rate is None
+                   else fixed_reference_rate)
     if (not isinstance(count, int) or count < 8
             or not isinstance(reference_factor, int)
             or reference_factor < 4 or reference_factor > 64

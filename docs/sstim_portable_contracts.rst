@@ -105,11 +105,14 @@ Interoperability levels and safety
   60 and 7,200 seconds. It declares only the conservative
   ``reproEquivalentPresentation`` level. It also records the
   published ``sstim:configurationDigest`` and
-  ``sstim:digestAlgorithm`` metadata. The digest is SHA-256 over
-  lexicographically sorted N-Triples lines of the **MUSIC program
-  subgraph**, joined with one LF between lines and one trailing LF,
-  identified as ``sha256-sorted-ntriples-utf8-v1``. It detects
-  changes to the intended configuration, but does not pin every
+  ``sstim:digestAlgorithm`` metadata. The digest is SHA-256
+  of UTF-8 JSON using sorted keys, compact separators and unescaped
+  Unicode, with fields ``program_ntriples`` (sorted N-Triples lines
+  of the MUSIC program), ``preset_iri``,
+  ``master_volume`` (normalized decimal string), and
+  ``duration_seconds`` (integer). The declared identifier is
+  ``sha256-music-plan-json-v1``. This captures both the planned
+  synthesis and its preset/volume overrides, but does not pin every
   downstream DSP implementation or guarantee identical PCM. The
   underlying phase ordering remains MUSIC-owned, not a general
   SSTIM execution protocol.

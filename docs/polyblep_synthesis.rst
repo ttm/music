@@ -1,5 +1,5 @@
 PolyBLEP oscillators and chunked synthesis
-=========================================
+==========================================
 
 ``music.core.synths.polyblep`` adds an **opt-in** discontinuity
 correction for sawtooth and square oscillators with sample-by-sample

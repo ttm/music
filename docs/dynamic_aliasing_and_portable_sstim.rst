@@ -27,8 +27,10 @@ It is not sound science to paste the analytic engine's improvements onto
 the MUSIC renderer without measuring it.
 
 The report includes global RMS difference, worst eighth-of-record RMS
-difference, rendering median milliseconds, peak magnitude, and an upper
-bound for intermediate sample frames. The short-window metric prevents
+difference, windowed FFT-magnitude difference (less sensitive to phase),
+rendering median milliseconds, peak magnitude, and the nominal
+intermediate float64 audio-buffer size. The latter excludes filter and
+renderer scratch allocations and is not peak resident-memory usage. The short-window metrics help prevent
 short bursts of folded energy from disappearing inside a long-record
 global average. All comparisons use the same target sample count and
 rate; requested physical carrier and modulation frequencies remain
@@ -37,7 +39,7 @@ unchanged as the internal render rate increases.
 A 16x finite-rate signal is a **convergence approximation**, not an
 infinite-bandwidth ground truth. For more demanding modulation, compare
 against 32x/64x using short records; consider time-domain delays,
-filter-end transients, and sideband power, not RMS alone. The matrix is
+filter-end transients, and sideband power, not RMS alone. The magnitude metric is not a\npure folding-power estimate. The matrix is
 a reproducible developer diagnostic, **not** a blanket promise of
 alias-free rendering, superior human preference or neural efficacy.
 

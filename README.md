@@ -82,6 +82,12 @@ and the optional
 [pitch-path anti-aliasing](https://ttm.github.io/music/advanced_sstim_dsp.html)
 for executable examples and explicit limitations.
 
+An opt-in [PolyBLEP saw/square oscillator](https://ttm.github.io/music/polyblep_synthesis.html)
+adds discontinuity corrections and phase-continuous chunked frequency
+paths, with coherent 44.1/48/96 kHz spectral-alias measurements and
+RMS-matched blinded listening stimuli. This does not change legacy MASS
+samples or make arbitrary FM/nonlinear output alias-free.
+
 A separate `music.stimulation.sstim_semantic` consumer can inspect
 binaural and monaural SSTIM beat descriptions **without MUSIC hints**,
 and render a declared zero-phase/equal-gain analytic reference, not an

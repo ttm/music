@@ -375,6 +375,9 @@ def amplitude_modulation(
     modulation_waveform_table : array_like
         The table the modulator is looked up in, so the modulation need
         not be sinusoidal.
+    seed : integer or None
+        Optional local random seed. If omitted, preserve the legacy
+        global-NumPy random generator behavior.
     number_of_samples : integer
         The number of samples of the sound, taken instead of
         ``duration`` when it is given.
@@ -550,7 +553,8 @@ def modulated_noise(noise_type: str | float = 'pink',
                     min_freq: float = 15.0, max_freq: float = 15000.0,
                     modulation_waveform_table: ArrayLike = WAVEFORM_SINE,
                     number_of_samples: int = 0,
-                    sample_rate: int = 44100) -> NDArray[np.float64]:
+                    sample_rate: int = 44100,
+                    seed: int | None = None) -> NDArray[np.float64]:
     """Modulate a band of noise: ``sstim-v:techBroadbandNoise``.
 
     Broadband noise of a chosen colour, optionally amplitude-modulated at
@@ -661,7 +665,7 @@ def modulated_noise(noise_type: str | float = 'pink',
         return _nothing(1)
     bed = noise(noise_type=noise_type, min_freq=min_freq,
                 max_freq=max_freq, number_of_samples=count,
-                sample_rate=sample_rate)
+                sample_rate=sample_rate, seed=seed)
     if not modulation_freq:
         return bed
     modulator = _oscillator(modulation_waveform_table, modulation_freq,

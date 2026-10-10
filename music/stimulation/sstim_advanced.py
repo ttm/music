@@ -95,9 +95,7 @@ def to_sstim_advanced_graph(
     ValueError
         For invalid generators, parameters, or record namespaces.
     """
-    from .sstim_io import to_sstim_graph
-
-    # Reuse the canonical namespace guard rather than inventing another.
+    # Use the same SSTIM namespace discipline as the basic adapter.
     if (not isinstance(base, str) or
             not base.startswith(("https://", "http://")) or
             not base.endswith(("/", "#")) or

@@ -103,8 +103,16 @@ Interoperability levels and safety
   the caller supplies a versioned preset, a timezone-aware immutable
   creation timestamp, a master volume, and an integral duration between
   60 and 7,200 seconds. It declares only the conservative
-  ``reproEquivalentPresentation`` level. The underlying phase ordering
-  remains MUSIC-owned, not a general SSTIM execution protocol.
+  ``reproEquivalentPresentation`` level. It also records the
+  published ``sstim:configurationDigest`` and
+  ``sstim:digestAlgorithm`` metadata. The digest is SHA-256 over
+  lexicographically sorted N-Triples lines of the **MUSIC program
+  subgraph**, joined with one LF between lines and one trailing LF,
+  identified as ``sha256-sorted-ntriples-utf8-v1``. It detects
+  changes to the intended configuration, but does not pin every
+  downstream DSP implementation or guarantee identical PCM. The
+  underlying phase ordering remains MUSIC-owned, not a general
+  SSTIM execution protocol.
   No ``SessionInstance`` or actual exposure is asserted.
 
 .. code-block:: python

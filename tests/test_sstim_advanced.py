@@ -202,3 +202,28 @@ def test_advanced_reader_handles_malformed_turtle_as_value_error(
                        Literal("not-a-number")))
     with pytest.raises(ValueError, match=match):
         from_sstim_advanced_graph(graph)
+
+
+def test_seeded_noise_does_not_advance_global_numpy_random_state():
+    """A local seeded generator must not perturb other library callers."""
+    state_before_test = np.random.get_state()
+    try:
+        np.random.seed(12345)
+        baseline = np.random.get_state()
+        a = music.modulated_noise(
+            noise_type="pink", modulation_freq=10, duration=.02,
+            seed=17)
+        state_after = np.random.get_state()
+        assert baseline[0] == state_after[0]
+        np.testing.assert_array_equal(baseline[1], state_after[1])
+        assert baseline[2:] == state_after[2:]
+        b = music.modulated_noise(
+            noise_type="pink", modulation_freq=10, duration=.02,
+            seed=18)
+        assert not np.array_equal(a, b)
+        assert np.array_equal(
+            a, music.modulated_noise(
+                noise_type="pink", modulation_freq=10, duration=.02,
+                seed=17))
+    finally:
+        np.random.set_state(state_before_test)

@@ -1,5 +1,6 @@
 """Check opt-in oversampling against an independent high-rate reference."""
 
+import builtins
 import numpy as np
 import pytest
 
@@ -58,13 +59,17 @@ def test_zero_output_skips_generator():
 
 @pytest.mark.parametrize("kwargs,match", [
     ({"sample_rate": 0}, "sample_rate"),
+    ({"sample_rate": True}, "sample_rate"),
     ({"factor": 1}, "factor"),
     ({"factor": 17}, "factor"),
     ({"factor": 2.5}, "factor"),
+    ({"factor": True}, "factor"),
     ({"number_of_samples": -1}, "number_of_samples"),
+    ({"number_of_samples": True}, "number_of_samples"),
     ({"number_of_samples": 50_000_001}, "50 million"),
     ({"duration": -1}, "duration"),
     ({"duration": float("nan")}, "duration"),
+    ({"duration": float("inf")}, "duration"),
 ])
 def test_reject_invalid_parameters(kwargs, match):
     with pytest.raises(ValueError, match=match):
@@ -80,3 +85,23 @@ def test_reject_wrong_shapes_and_nans():
             lambda number_of_samples, **kw: np.full(
                 number_of_samples, np.nan),
             number_of_samples=10)
+
+
+def test_scipy_absence_reports_install_instruction(monkeypatch):
+    original = builtins.__import__
+
+    def deny_scipy(name, *args, **kwargs):
+        if name == "scipy.signal":
+            raise ImportError("SciPy intentionally unavailable")
+        return original(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", deny_scipy)
+    with pytest.raises(ImportError, match="music\\\\[antialias\\\\]"):
+        music.render_oversampled(gated_carrier, number_of_samples=10)
+
+
+def test_reject_three_dimensional_audio():
+    with pytest.raises(ValueError, match="renderer must return"):
+        music.render_oversampled(
+            lambda number_of_samples, **kw:
+            np.ones((1, 1, number_of_samples)), number_of_samples=10)

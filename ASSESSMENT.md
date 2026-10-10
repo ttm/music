@@ -174,12 +174,15 @@ either documented in the code or tracked in the issue list.
   Any additional unresolved subject or mismatched label fails the release
   gate, including a lookup lost to a network outage. The two exceptions
   remain a limit on the claim, not evidence that their terms are wrong.
-- **Speaking SSTIM is currently a matter of docstrings.** Each stimulus
-  names the SSTIM technique it implements and links its IRI, and
-  `StimulationSession` borrows that model's vocabulary, but the package
-  cannot yet read an `sstim:StimulusSpecification` or emit one. Until it
-  can, the correspondence is documented rather than machine-checkable.
-  Issue #75.
+- **SSTIM interoperability covers five deterministic auditory generators.**
+  The optional `music.stimulation.sstim_io` module emits and consumes
+  `sstim:StimulusSpecification` graphs with real signal, channel and
+  rendering relations, and uses SSTIM 0.19.0 Full-profile validation.
+  Exact MUSIC parameters not standardized by SSTIM are stored in a
+  deliberately separate extension namespace. Arbitrary SSTIM graphs,
+  stochastic noise, spatial motion and multi-phase protocols are
+  **not** executable by this adapter. This is a bounded first
+  implementation of the larger interoperability goal in issue #75.
 
 - **Notes concatenated raw click at the join, and whether they do
   depends on arithmetic rather than on anything musical.** A note ends
@@ -279,9 +282,16 @@ either documented in the code or tracked in the issue list.
   Tests compare its harmonic energy against the MASS-compatible
   `music.note`, which deliberately remains unchanged. The added
   oscillator does not solve aliasing in FM, glissandi, hard-gated
-  pulses, nonlinear effects or post-processing. It may overshoot
-  full scale at Gibbs ringing near a discontinuity, so export needs
-  explicit headroom. See `docs/choosing_an_api.rst` and
+  pulses, nonlinear effects or post-processing. Those have a separate
+  **opt-in offline path**: `music.render_oversampled` executes a
+  generator at 2x to 16x sample rate, anti-alias filters, and decimates
+  to the requested rate. A gated 15 kHz carrier is tested against an
+  independent 16x reference. It is not a complete alias-free engine:
+  sharp gates become rounded, cost rises with oversampling, and
+  frequencies above the oversampled Nyquist still fold. The static
+  oscillator may overshoot full scale at Gibbs ringing near a
+  discontinuity, so export needs explicit headroom. See
+  `docs/sstim_interop.rst` and
   `tools/benchmark_spectral_aliasing.py`.
 
   Worth knowing about the measurement too: it is blind whenever the
@@ -433,7 +443,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,542 findings** on `music/`, almost all
+- **The extended lint set reports 2,667 findings** on `music/`, almost all
   stylistic: 731 quote-style, 375 missing argument annotations, 82 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their

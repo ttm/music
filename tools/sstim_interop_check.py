@@ -79,7 +79,8 @@ def check(turtle, sidecar, *, official=False, wav=None):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("turtle", help="Local standard SSTIM 0.19.0 Turtle")
-    parser.add_argument("sidecar", help="Complete MUSIC engine parameters JSON")
+    parser.add_argument("sidecar",
+                        help="Complete MUSIC engine parameters JSON")
     parser.add_argument("--official", action="store_true",
                         help="Run the pinned official SHACL validation")
     parser.add_argument("--wav", help="Optional output PCM24 WAV")

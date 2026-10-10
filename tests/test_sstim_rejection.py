@@ -6,8 +6,10 @@ from types import SimpleNamespace
 
 import numpy as np
 import pytest
-from rdflib import Literal, URIRef
-from rdflib.namespace import RDF, XSD
+
+pytest.importorskip("rdflib")
+from rdflib import Literal, URIRef  # noqa: E402
+from rdflib.namespace import RDF, XSD  # noqa: E402
 
 from music.stimulation.sstim_io import (
     MUSIC, SSTIM, SSTIM_V, SSTIM_EX, from_sstim_graph,

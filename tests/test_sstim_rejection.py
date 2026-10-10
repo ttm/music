@@ -1,9 +1,7 @@
 """Negative contracts: an RDF input must not execute contradictory stimuli."""
 
 import builtins
-import json
 import sys
-from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np

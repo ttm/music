@@ -82,6 +82,9 @@ and the optional
 [pitch-path anti-aliasing](https://ttm.github.io/music/advanced_sstim_dsp.html)
 for executable examples and explicit limitations.
 
+For an evidence-bounded review of the recent synthesis and SSTIM work,
+see [the engineering audit](AUDIT_2026-10-10.md).
+
 ## Core features
 
 * **Sample-based synthesis.** State is updated at every sample. A note with a
@@ -450,7 +453,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 5,925 tests, 100% line and branch coverage
+pytest                                       # 5,942 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

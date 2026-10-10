@@ -173,3 +173,57 @@ def test_refuse_advanced_graph_structure(problem, match):
 def test_raw_noise_seed_rejects_invalid_value():
     with pytest.raises(ValueError, match="seed must"):
         music.noise(seed=-1, duration=.02)
+
+
+@pytest.mark.parametrize("case,match", [
+    ("nonobject-parameters", "invalid engine parameters"),
+    ("oversized-parameters", "invalid engine parameters"),
+    ("missing-duration", "missing or ambiguous channel duration"),
+    ("ambiguous-duration", "missing or ambiguous channel duration"),
+    ("invalid-duration", "invalid channel duration"),
+])
+def test_advanced_reader_handles_malformed_turtle_as_value_error(
+        case, match):
+    graph = noise_graph()
+    root = next(graph.subjects(RDF.type, SSTIM.StimulusSpecification))
+    if case in ("nonobject-parameters", "oversized-parameters"):
+        graph.remove((root, MUSIC.parametersJson, None))
+        value = ("[]" if case == "nonobject-parameters" else "x" * 2049)
+        graph.add((root, MUSIC.parametersJson, Literal(value)))
+    else:
+        channel = next(graph.objects(root, SSTIM.hasStimulusChannel))
+        if case == "missing-duration":
+            graph.remove((channel, SSTIM.channelDurationSeconds, None))
+        elif case == "ambiguous-duration":
+            graph.add((channel, SSTIM.channelDurationSeconds, Literal(1)))
+        else:
+            graph.remove((channel, SSTIM.channelDurationSeconds, None))
+            graph.add((channel, SSTIM.channelDurationSeconds,
+                       Literal("not-a-number")))
+    with pytest.raises(ValueError, match=match):
+        from_sstim_advanced_graph(graph)
+
+
+def test_seeded_noise_does_not_advance_global_numpy_random_state():
+    """A local seeded generator must not perturb other library callers."""
+    state_before_test = np.random.get_state()
+    try:
+        np.random.seed(12345)
+        baseline = np.random.get_state()
+        a = music.modulated_noise(
+            noise_type="pink", modulation_freq=10, duration=.02,
+            seed=17)
+        state_after = np.random.get_state()
+        assert baseline[0] == state_after[0]
+        np.testing.assert_array_equal(baseline[1], state_after[1])
+        assert baseline[2:] == state_after[2:]
+        b = music.modulated_noise(
+            noise_type="pink", modulation_freq=10, duration=.02,
+            seed=18)
+        assert not np.array_equal(a, b)
+        assert np.array_equal(
+            a, music.modulated_noise(
+                noise_type="pink", modulation_freq=10, duration=.02,
+                seed=17))
+    finally:
+        np.random.set_state(state_before_test)

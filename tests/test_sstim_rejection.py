@@ -189,3 +189,50 @@ def test_validation_adapter_requires_optional_package(monkeypatch):
     monkeypatch.setattr(builtins, "__import__", fail_import)
     with pytest.raises(ImportError, match="music\\[sstim\\]"):
         validate_sstim(basic())
+
+
+@pytest.mark.parametrize("tamper,match", [
+    ("signal-class", "signal must be"),
+    ("channel-class", "channel must be"),
+    ("rendering-class", "rendering must be"),
+    ("modality", "perceived modality mismatch"),
+    ("medium", "delivery medium mismatch"),
+    ("mono-placement", "body placement mismatch"),
+])
+def test_rdf_channel_presentation_contradictions_are_refused(tamper, match):
+    """The rendered sound must agree with asserted delivery metadata."""
+    if tamper == "mono-placement":
+        graph = to_sstim_graph(
+            "monaural_beats", duration=.1,
+            parameters={"carrier_freq": 200, "beat_freq": 10},
+            base="https://example.org/music/mono/")
+    else:
+        graph = basic()
+    signal = signal_of(graph)
+    channel = channel_of(graph)
+    rendering = rendering_of(graph)
+    if tamper == "signal-class":
+        graph.remove((signal, RDF.type, SSTIM.StimulationSignal))
+    elif tamper == "channel-class":
+        graph.remove((channel, RDF.type, SSTIM_EX.StimulusChannel))
+    elif tamper == "rendering-class":
+        graph.remove((rendering, RDF.type, SSTIM.SignalRendering))
+    elif tamper == "modality":
+        change(graph, channel, SSTIM_EX.perceivedModality,
+               SSTIM_EX.modalityVisual)
+    elif tamper == "medium":
+        change(graph, channel, SSTIM_EX.deliveryMedium,
+               SSTIM_EX.mediumLight)
+    else:
+        change(graph, channel, SSTIM_EX.hasBodyPlacement,
+               SSTIM_EX.placementEarLeft)
+    with pytest.raises(ValueError, match=match):
+        from_sstim_graph(graph)
+
+
+def test_irrelevant_rdf_annotation_remains_acceptable():
+    """Unknown descriptive RDF is compatible with the original importer."""
+    graph = basic()
+    root = root_of(graph)
+    graph.add((root, MUSIC.auditNote, Literal("reviewed")))
+    assert from_sstim_graph(graph).generator == "binaural_beats"

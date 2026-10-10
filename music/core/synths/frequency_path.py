@@ -48,7 +48,8 @@ def bandlimited_frequency_path(
 
     Notes
     -----
-    The algorithm integrates phase on the output time grid and changes
+    Phase is trapezoidally integrated, assuming linear interpolation
+    of frequency between samples. The algorithm changes
     harmonic gains continuously near Nyquist, reducing high-pitch
     wavetable folding. Fast FM still produces spectral sidebands that
     are not bounded by instantaneous harmonic frequencies. For steep
@@ -83,8 +84,12 @@ def bandlimited_frequency_path(
     if len(f) * highest > 50_000_000:
         raise ValueError("pitch path exceeds 50 million harmonic-samples")
 
-    phase = (2 * np.pi / fs) * np.cumsum(
-        np.r_[0.0, f[:-1]], dtype=np.float64)
+    # Frequencies are instantaneous samples of a continuous trajectory.
+    # Trapezoidal integration is exact for a linear chirp between samples;
+    # a left-endpoint sum accumulates a phase bias during pitch sweeps.
+    intervals = 0.5 * (f[:-1] + f[1:])
+    phase = (2 * np.pi / fs) * np.r_[
+        0.0, np.cumsum(intervals, dtype=np.float64)]
     output = np.zeros_like(f)
     nyquist = fs / 2
     floor = nyquist * (1 - transition)

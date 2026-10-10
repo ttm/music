@@ -246,6 +246,8 @@ def from_sstim_graph(value: Graph | str | Path) -> RenderableStimulus:
     if rate.datatype != XSD.integer:
         raise ValueError("sampleRateHz must be xsd:integer")
     signal = one(root, SSTIM.hasSignal)
+    if (signal, RDF.type, SSTIM.StimulationSignal) not in g:
+        raise ValueError("signal must be an SSTIM StimulationSignal")
     mod_rate = float(one(signal, SSTIM.hzMin))
     if float(one(signal, SSTIM.hzMax)) != mod_rate:
         raise ValueError("variable-rate signals are not supported")
@@ -266,9 +268,19 @@ def from_sstim_graph(value: Graph | str | Path) -> RenderableStimulus:
         raise ValueError("only determinate stimuli are executable")
     seen_placements = set()
     for index, channel in enumerate(channels):
+        if (channel, RDF.type, SSTIM_EX.StimulusChannel) not in g:
+            raise ValueError("channel must be an SSTIM StimulusChannel")
+        if one(channel, SSTIM_EX.perceivedModality) != (
+                SSTIM_EX.modalityAuditory):
+            raise ValueError("channel perceived modality mismatch")
+        if one(channel, SSTIM_EX.deliveryMedium) != (
+                SSTIM_EX.mediumAirConductedSound):
+            raise ValueError("channel delivery medium mismatch")
         if float(one(channel, SSTIM.channelDurationSeconds)) != duration:
             raise ValueError("channel duration mismatch")
         rendering = one(channel, SSTIM.hasSignalRendering)
+        if (rendering, RDF.type, SSTIM.SignalRendering) not in g:
+            raise ValueError("rendering must be an SSTIM SignalRendering")
         if one(rendering, SSTIM.rendersSignal) != signal:
             raise ValueError("signal rendering mismatch")
         if one(rendering, SSTIM.hasRenderingMechanism) != (
@@ -294,6 +306,9 @@ def from_sstim_graph(value: Graph | str | Path) -> RenderableStimulus:
             index = 0 if placement == SSTIM_EX.placementEarLeft else 1
             expected = carrier + (-0.5 if index == 0 else 0.5) * mod_rate
         else:
+            if one(channel, SSTIM_EX.hasBodyPlacement) != (
+                    SSTIM_EX.placementEars):
+                raise ValueError("single-channel body placement mismatch")
             expected = carrier
         if float(one(rendering, SSTIM.renderingCarrierHz)) != expected:
             raise ValueError("carrier frequency mismatch")

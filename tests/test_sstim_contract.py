@@ -255,3 +255,59 @@ def test_manual_resolution_revalidates_parameters_and_bounds():
         "modulated_noise", {"noise_type": "no-such-color"}, .04, 48000)
     with pytest.raises(ValueError, match="noise_type"):
         render_sstim_contract(noise)
+
+
+@pytest.mark.parametrize("mutation,match", [
+    ("no-regime", "expected exactly one"),
+    ("second-regime", "expected exactly one"),
+    ("literal-signal-shape", "must be an IRI"),
+    ("extra-class", "contradictory SSTIM RDF type"),
+    ("second-carrier", "ambiguous rendering carrier"),
+    ("no-renderings", "invalid rendering count"),
+    ("too-many-renderings", "invalid rendering count"),
+    ("no-root", "one SSTIM StimulusSpecification"),
+    ("second-root", "one SSTIM StimulusSpecification"),
+    ("no-signals", "invalid stimulus signal/channel cardinality"),
+    ("literal-signal-identity", "nodes must have IRIs"),
+    ("boolean-rate", "numeric SSTIM value must be a literal"),
+])
+def test_portable_projection_rejects_structural_ambiguity(mutation, match):
+    g = handwritten_am()
+    root = URIRef("urn:outside:spec")
+    signal = URIRef("urn:outside:signal")
+    channel = URIRef("urn:outside:channel")
+    rendering = URIRef("urn:outside:r")
+    if mutation == "no-regime":
+        g.remove((root, SSTIM.stimulusRegime, None))
+    elif mutation == "second-regime":
+        g.add((root, SSTIM.stimulusRegime, Literal("stochastic")))
+    elif mutation == "literal-signal-shape":
+        g.remove((signal, SSTIM.hasSignalShape, None))
+        g.add((signal, SSTIM.hasSignalShape, Literal("shapeSine")))
+    elif mutation == "extra-class":
+        g.add((signal, RDF.type, SSTIM.SignalRendering))
+    elif mutation == "second-carrier":
+        g.add((rendering, SSTIM.renderingCarrierHz, Literal(221)))
+    elif mutation == "no-renderings":
+        g.remove((channel, SSTIM.hasSignalRendering, None))
+    elif mutation == "too-many-renderings":
+        for n in range(9):
+            g.add((channel, SSTIM.hasSignalRendering,
+                   URIRef(f"urn:outside:other-r-{n}")))
+    elif mutation == "no-root":
+        g.remove((root, RDF.type, SSTIM.StimulusSpecification))
+    elif mutation == "second-root":
+        g.add((URIRef("urn:outside:extra-root"), RDF.type,
+               SSTIM.StimulusSpecification))
+    elif mutation == "no-signals":
+        g.remove((root, SSTIM.hasSignal, None))
+    elif mutation == "literal-signal-identity":
+        g.remove((root, SSTIM.hasSignal, None))
+        g.add((root, SSTIM.hasSignal, Literal("signal")))
+    else:
+        g.remove((signal, SSTIM.hzMin, None))
+        g.add((signal, SSTIM.hzMin, Literal(True)))
+    with pytest.raises(ValueError, match=match):
+        resolve_sstim_contract(
+            g, generator="amplitude_modulation",
+            parameters=CASES[3][1], duration=.04, sample_rate=48000)

@@ -85,7 +85,7 @@ def evaluate(case, rate=48000, count=4096, *,
     """
     if case not in CASES or rate not in RATES:
         raise ValueError("unknown case or sample rate")
-    if (not isinstance(count, int) or count <= 0
+    if (not isinstance(count, int) or count < 8
             or not isinstance(reference_factor, int)
             or reference_factor < 4 or reference_factor > 64
             or count * reference_factor > 4_000_000):
@@ -135,7 +135,7 @@ def evaluate(case, rate=48000, count=4096, *,
                 "max_window_error_rms": max(map(_rms, chunks)),
                 "peak_absolute": float(np.max(np.abs(samples))),
                 "render_median_ms": float(np.median(timings)),
-                "peak_intermediate_frames_upper_bound": count * factor,
+                "nominal_intermediate_frames": count * factor,\n                "nominal_audio_buffer_bytes": count * factor * 8,
             })
     return rows
 

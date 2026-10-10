@@ -95,7 +95,7 @@ def test_nonconformant_planned_sessions_are_refused(override, match):
     ("wrong-program", "reference its MUSIC program"),
     ("missing-preset-type", "typed sstim:Preset"),
     ("missing-label", "expected exactly one"),
-    ("missing-created", "timestamp must be"),
+    ("missing-created", "expected exactly one"),
     ("bad-created", "timestamp must be"),
     ("malformed-created", "invalid planned-session metadata"),
     ("bad-volume", "invalid planned-session metadata"),

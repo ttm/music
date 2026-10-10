@@ -129,7 +129,8 @@ def from_sstim_planned_session_graph(
     if not isinstance(created, Literal) or created.datatype != XSD.dateTime:
         raise ValueError("created timestamp must be xsd:dateTime")
     try:
-        created_at = datetime.fromisoformat(str(created).replace("Z", "+00:00"))
+        created_at = datetime.fromisoformat(
+            str(created).replace("Z", "+00:00"))
         volume = float(_one(g, root, SSTIM.masterVolume))
         duration = int(_one(g, root, SSTIM.durationSeconds))
     except (ValueError, TypeError) as exc:

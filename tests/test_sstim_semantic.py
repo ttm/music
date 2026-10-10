@@ -1,12 +1,14 @@
 """Independent RDF producer and analytic beat consumer interoperability."""
 
+import os
+
 import numpy as np
 import pytest
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import RDF
 
 from music.stimulation.sstim_io import (
-    MUSIC, SSTIM, SSTIM_EX, SSTIM_V, to_sstim_graph,
+    MUSIC, SSTIM, SSTIM_EX, SSTIM_V, to_sstim_graph, validate_sstim,
 )
 from music.stimulation.sstim_semantic import (
     SemanticBeat, inspect_sstim_beat, render_semantic_beat,
@@ -107,6 +109,7 @@ def test_unsupported_explicit_rendering_profile_and_technique():
 @pytest.mark.parametrize("stereo,change,match", [
     (True, "no-root", "one SSTIM"),
     (True, "regime", "determinate"),
+    (True, "missing-regime", "exactly one"),
     (True, "no-signal-type", "signal class"),
     (True, "shape", "sine"),
     (True, "beat-zero", "fixed positive"),
@@ -144,6 +147,8 @@ def test_semantic_profile_rejects_contradictions(stereo, change, match):
         g.remove((root, RDF.type, SSTIM.StimulusSpecification))
     elif change == "regime":
         swap(g, root, SSTIM.stimulusRegime, Literal("stochastic"))
+    elif change == "missing-regime":
+        swap(g, root, SSTIM.stimulusRegime, None)
     elif change == "no-signal-type":
         g.remove((signal, RDF.type, SSTIM.StimulationSignal))
     elif change == "shape":
@@ -206,3 +211,12 @@ def test_invalid_inspection_arguments_and_numeric_literals():
     swap(g, signal, SSTIM.hzMin, Literal("nan"))
     with pytest.raises(ValueError, match="nonfinite"):
         inspect_sstim_beat(g)
+
+
+@pytest.mark.network
+@pytest.mark.skipif(os.environ.get("SSTIM_LIVE") != "1",
+                    reason="pinned official validator runs on Python 3.12")
+@pytest.mark.parametrize("stereo", [True, False])
+def test_independently_authored_sstim_conforms_to_frozen_profile(stereo):
+    result = validate_sstim(authored_graph(stereo), version="0.19.0")
+    assert result.ok, str(result)

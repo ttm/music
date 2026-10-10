@@ -6,7 +6,7 @@ import pytest
 import music
 
 rdflib = pytest.importorskip("rdflib")
-from rdflib import Literal, URIRef  # noqa: E402
+from rdflib import Literal  # noqa: E402
 
 from music.stimulation.sstim_io import (  # noqa: E402
     MUSIC, SSTIM, SSTIM_V, from_sstim_graph, render_sstim,

@@ -48,7 +48,8 @@ def bandlimited_frequency_path(
 
     Notes
     -----
-    Phase is trapezoidally integrated, assuming linear interpolation\n    of frequency between samples. The algorithm changes
+    Phase is trapezoidally integrated, assuming linear interpolation
+    of frequency between samples. The algorithm changes
     harmonic gains continuously near Nyquist, reducing high-pitch
     wavetable folding. Fast FM still produces spectral sidebands that
     are not bounded by instantaneous harmonic frequencies. For steep

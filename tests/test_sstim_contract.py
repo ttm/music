@@ -168,7 +168,7 @@ def test_hand_authored_am_conforms_to_official_full_profile():
     ("wrong-modulation", "contradict"),
     ("wrong-mechanism", "contradict"),
     ("wrong-placement", "contradict"),
-    ("extra-channel", "contradict"),
+    ("extra-channel", "RDF type"),
     ("extra-sstim-assertion", "unsupported SSTIM"),
     ("bad-signal-numeric", "invalid numeric"),
     ("nonfinite-numeric", "nonfinite"),

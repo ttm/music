@@ -375,9 +375,6 @@ def amplitude_modulation(
     modulation_waveform_table : array_like
         The table the modulator is looked up in, so the modulation need
         not be sinusoidal.
-    seed : integer or None
-        Optional local random seed. If omitted, preserve the legacy
-        global-NumPy random generator behavior.
     number_of_samples : integer
         The number of samples of the sound, taken instead of
         ``duration`` when it is given.
@@ -595,6 +592,9 @@ def modulated_noise(noise_type: str | float = 'pink',
         ``duration`` when it is given.
     sample_rate : integer
         The sampling frequency in Hertz.
+    seed : integer or None
+        Optional deterministic local random seed. With None, the
+        historical NumPy-global random behavior is preserved.
 
     Returns
     -------

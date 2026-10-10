@@ -119,8 +119,6 @@ def to_sstim_planned_session_graph(
         "sha256-music-plan-json-v1", datatype=XSD.string)))
     g.add((root, SSTIM.hasReproducibilityLevel,
            SSTIM_V.reproEquivalentPresentation))
-    g.add((SSTIM_V.reproEquivalentPresentation, RDF.type,
-           SSTIM.ReproducibilityLevel))
     g.add((root, MUSIC.hasProgram, URIRef(base + "program")))
     return g
 

@@ -49,7 +49,7 @@ def test_bound_execution_and_invalid_cases():
     with pytest.raises(ValueError, match="unsupported"):
         analytic("missing", target_rate=48000, sample_rate=48000,
                  number_of_samples=100)
-    for kw in (
+    for kwargs in (
             {"case": "x"},
             {"rate": 47000},
             {"count": 0},
@@ -60,9 +60,11 @@ def test_bound_execution_and_invalid_cases():
             {"factors": (16,)},
             {"factors": (2.1,)},
             {"reference_factor": 65}):
+        arguments = dict(case="fm_wide", rate=48000, count=100,
+                         repeats=1)
+        arguments.update(kwargs)
         with pytest.raises(ValueError):
-            evaluate("fm_wide", 48000, 100, repeats=1, **{
-                **kw, **({"case": kw["case"]} if "case" in kw else {})})
+            evaluate(**arguments)
 
 
 def test_cli_writes_machine_readable_and_markdown(tmp_path, capsys):

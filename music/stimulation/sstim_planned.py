@@ -14,7 +14,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
 from hashlib import sha256
+import json
 import math
 from pathlib import Path
 
@@ -101,11 +103,20 @@ def to_sstim_planned_session_graph(
     lines = sorted(line.strip() for line in
                    program.serialize(format="nt").splitlines()
                    if line.strip())
-    digest = sha256(("\\n".join(lines) + "\\n").encode("utf-8")).hexdigest()
+    # A plan's playback level and selected preset are configuration too.
+    # An acoustic-configuration digest must include those overrides.
+    canonical = json.dumps({
+        "program_ntriples": lines,
+        "preset_iri": preset_iri,
+        "master_volume": format(
+            Decimal(str(float(master_volume))).normalize(), "f"),
+        "duration_seconds": int(round(duration)),
+    }, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    digest = sha256(canonical.encode("utf-8")).hexdigest()
     g.add((root, SSTIM.configurationDigest,
            Literal(digest, datatype=XSD.string)))
     g.add((root, SSTIM.digestAlgorithm, Literal(
-        "sha256-sorted-ntriples-utf8-v1", datatype=XSD.string)))
+        "sha256-music-plan-json-v1", datatype=XSD.string)))
     g.add((root, SSTIM.hasReproducibilityLevel,
            SSTIM_V.reproEquivalentPresentation))
     g.add((SSTIM_V.reproEquivalentPresentation, RDF.type,

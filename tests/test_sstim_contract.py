@@ -311,3 +311,11 @@ def test_portable_projection_rejects_structural_ambiguity(mutation, match):
         resolve_sstim_contract(
             g, generator="amplitude_modulation",
             parameters=CASES[3][1], duration=.04, sample_rate=48000)
+
+
+def test_manually_constructed_resolution_cannot_inherit_defaults():
+    resolution = PortableResolution(
+        "amplitude_modulation",
+        {"carrier_freq": 200., "modulation_freq": 10.}, .04, 48000)
+    with pytest.raises(ValueError, match="pin every engine control"):
+        render_sstim_contract(resolution)

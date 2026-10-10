@@ -152,6 +152,7 @@ The whole public API is re-exported flat from the top level, so
    advanced_sstim_dsp
    dynamic_aliasing_and_portable_sstim
    sstim_import_security
+   sstim_portable_contracts
    polyblep_synthesis
    api
 

@@ -1,0 +1,46 @@
+@prefix s: <https://w3id.org/sstim#> .
+@prefix v: <https://w3id.org/sstim/vocab#> .
+@prefix e: <https://w3id.org/sstim/exposure#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<urn:interop:noise:spec> a s:StimulusSpecification ;
+  rdfs:label "Externally described stochastic noise, not a realization" ;
+  s:stimulusRegime "stochastic" ;
+  s:hasSignal <urn:interop:noise:band>, <urn:interop:noise:mod> ;
+  s:hasStimulusChannel <urn:interop:noise:ears> .
+
+<urn:interop:noise:band> a s:StimulationSignal ;
+  rdfs:label "70 to 9000 Hz noise band" ;
+  s:hasSignalShape v:shapeNoise ;
+  s:hzMin 70.0 ;
+  s:hzMax 9000.0 .
+
+<urn:interop:noise:mod> a s:StimulationSignal ;
+  rdfs:label "9 Hz sinusoidal envelope" ;
+  s:hasSignalShape v:shapeSine ;
+  s:hzMin 9.0 ;
+  s:hzMax 9.0 .
+
+<urn:interop:noise:ears> a e:StimulusChannel ;
+  rdfs:label "Air-conducted binaural-ear placement of mono mix" ;
+  e:perceivedModality e:modalityAuditory ;
+  e:deliveryMedium e:mediumAirConductedSound ;
+  e:hasBodyPlacement e:placementEars ;
+  s:channelDurationSeconds 0.04 ;
+  s:hasSignalRendering
+    <urn:interop:noise:source-rendering>,
+    <urn:interop:noise:envelope-rendering> .
+
+<urn:interop:noise:source-rendering> a s:SignalRendering ;
+  rdfs:label "Noise source" ;
+  s:rendersSignal <urn:interop:noise:band> ;
+  s:rendersOntoParameter v:paramAmplitude ;
+  s:hasRenderingMechanism v:mechanismDirectPresentation ;
+  s:hasRenderingPresence v:presencePhysical .
+
+<urn:interop:noise:envelope-rendering> a s:SignalRendering ;
+  rdfs:label "Amplitude envelope modulation" ;
+  s:rendersSignal <urn:interop:noise:mod> ;
+  s:rendersOntoParameter v:paramAmplitude ;
+  s:hasRenderingMechanism v:mechanismAmplitudeModulation ;
+  s:hasRenderingPresence v:presencePhysical .

@@ -1,0 +1,14 @@
+{
+  "generator": "spatial_motion",
+  "parameters": {
+    "carrier_freq": 220.0,
+    "motion_rate": 0.5,
+    "theta1": 180.0,
+    "theta2": 0.0,
+    "dist": 0.1,
+    "zeta": 0.215,
+    "air_temp": 20.0
+  },
+  "duration": 0.04,
+  "sample_rate": 48000
+}

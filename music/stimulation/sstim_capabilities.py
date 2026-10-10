@@ -40,6 +40,19 @@ def inspect_sstim_capabilities(
     from .sstim_semantic import inspect_sstim_beat
 
     graph = _graph(value)
+    planned = list(graph.subjects(RDF.type, SSTIM.SessionSpecification))
+    if planned:
+        try:
+            from .sstim_planned import from_sstim_planned_session_graph
+            from_sstim_planned_session_graph(graph)
+        except (ValueError, TypeError, KeyError, AttributeError):
+            return InteroperabilityCapability(
+                "unsupported", "planned-session", False, False,
+                ("invalid, incomplete or non-MUSIC session plan",))
+        return InteroperabilityCapability(
+            "sstim-planned-music-program", "planned-session", True, False,
+            ("MUSIC phase and renderer contract",
+             "observed delivery and timing are not present",))
     programs = list(graph.subjects(RDF.type, MUSIC.StimulationProgram))
     if programs:
         try:
@@ -59,18 +72,17 @@ def inspect_sstim_capabilities(
             "unsupported", "unknown", False, False,
             ("exactly one SSTIM StimulusSpecification",))
 
-    try:
-        beat = inspect_sstim_beat(graph)
-    except (ValueError, TypeError):
-        pass
-    else:
-        return InteroperabilityCapability(
-            "portable-beat-reference", beat.technique, True, False,
-            ("explicit carrier phase and gain convention",
-             "physical output calibration"))
-
+    # A graph that claims MUSIC executability must pass the MUSIC
+    # validator first, even if its SSTIM-only beat projection is usable.
+    # Otherwise contradictory numeric hints could be silently ignored.
+    owned = [(sub, pred, obj) for sub, pred, obj in graph
+             if str(pred).startswith(str(MUSIC))]
     engines = list(graph.objects(roots[0], MUSIC.generator))
-    if len(engines) == 1:
+    if owned:
+        if len(engines) != 1:
+            return InteroperabilityCapability(
+                "unsupported", "unknown", False, False,
+                ("incomplete or ambiguous MUSIC extension",))
         name = str(engines[0])
         try:
             if name in ("modulated_noise", "spatial_motion"):
@@ -86,6 +98,16 @@ def inspect_sstim_capabilities(
         return InteroperabilityCapability(
             "music-extension", name, True, False,
             ("MUSIC implementation and DSP algorithm identity",))
+
+    try:
+        beat = inspect_sstim_beat(graph)
+    except (ValueError, TypeError):
+        pass
+    else:
+        return InteroperabilityCapability(
+            "portable-beat-reference", beat.technique, True, False,
+            ("explicit carrier phase and gain convention",
+             "physical output calibration"))
 
     # Read only *published* SSTIM mechanisms and signal shapes, not labels
     # that may contain arbitrary user-authored language or generator hints.

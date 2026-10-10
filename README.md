@@ -89,7 +89,8 @@ engine-independent guarantee of identical PCM output. The
 [dynamic aliasing and portable SSTIM guide](https://ttm.github.io/music/dynamic_aliasing_and_portable_sstim.html)
 also documents the reproducible high-rate benchmark comparing actual MUSIC
 FM, nonlinear and gated synthesis with analytic 16x-filtered references
-at 44.1/48/96 kHz in both normalized-Nyquist and fixed-physical-Hz\nscenarios. CI publishes both JSON and Markdown benchmark summaries.
+at 44.1/48/96 kHz in both normalized-Nyquist and fixed-physical-Hz
+scenarios. CI publishes both JSON and Markdown benchmark summaries.
 No perceptual improvement is inferred from error metrics.
 
 For an evidence-bounded review of the recent synthesis and SSTIM work,

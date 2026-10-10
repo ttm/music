@@ -87,7 +87,8 @@ def _short_time_spectral_error(samples, reference):
 
 
 def evaluate(case, rate=48000, count=4096, *,
-             reference_factor=16, factors=(4, 8), repeats=3):
+             reference_factor=16, factors=(4, 8), repeats=3,
+             fixed_reference_rate=None):
     """Compare direct and oversampled sources against a high-rate reference.
 
     Reference is independent of MUSIC. Output contains absolute RMS error
@@ -99,6 +100,9 @@ def evaluate(case, rate=48000, count=4096, *,
     """
     if case not in CASES or rate not in RATES:
         raise ValueError("unknown case or sample rate")
+    if fixed_reference_rate is not None and fixed_reference_rate not in RATES:
+        raise ValueError("fixed_reference_rate must be 44100, 48000 or 96000")
+    source_rate = rate if fixed_reference_rate is None else fixed_reference_rate
     if (not isinstance(count, int) or count < 8
             or not isinstance(reference_factor, int)
             or reference_factor < 4 or reference_factor > 64
@@ -109,7 +113,7 @@ def evaluate(case, rate=48000, count=4096, *,
                    or f >= reference_factor for f in factors)):
         raise ValueError("invalid oversampling factors or repeats")
     raw_ref = analytic(
-        case, target_rate=rate, sample_rate=rate * reference_factor,
+        case, target_rate=source_rate, sample_rate=rate * reference_factor,
         number_of_samples=count * reference_factor)
     reference = resample_poly(
         raw_ref, 1, reference_factor, window=("kaiser", 8.6))
@@ -121,11 +125,11 @@ def evaluate(case, rate=48000, count=4096, *,
             def synth():
                 if factor == 1:
                     return producer(
-                        case, target_rate=rate, sample_rate=rate,
+                        case, target_rate=source_rate, sample_rate=rate,
                         number_of_samples=count)
                 return music.render_oversampled(
                     lambda *, sample_rate, number_of_samples: producer(
-                        case, target_rate=rate, sample_rate=sample_rate,
+                        case, target_rate=source_rate, sample_rate=sample_rate,
                         number_of_samples=number_of_samples),
                     sample_rate=rate, number_of_samples=count,
                     factor=factor)
@@ -142,6 +146,7 @@ def evaluate(case, rate=48000, count=4096, *,
             chunks = np.array_split(errors, 8)
             rows.append({
                 "case": case, "sample_rate_hz": rate,
+                "frequency_basis_hz": source_rate,
                 "engine": engine, "oversampling_factor": factor,
                 "reference_factor": reference_factor,
                 "reference_rms": _rms(reference),
@@ -164,12 +169,17 @@ def main(argv=None):
     parser.add_argument("--count", type=int, default=4096)
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--reference-factor", type=int, default=16)
+    parser.add_argument("--fixed-reference-rate", type=int, default=None,
+                        help="Use fixed physical frequencies derived from "
+                             "44100, 48000 or 96000 Hz instead of scaling "
+                             "frequencies with the target sample rate")
     parser.add_argument("--rates", type=int, nargs="+", default=list(RATES))
     parser.add_argument("--cases", nargs="+", default=list(CASES))
     args = parser.parse_args(argv)
     rows = [row for rate in args.rates for case in args.cases
             for row in evaluate(case, rate, args.count,
                                 reference_factor=args.reference_factor,
+                                fixed_reference_rate=args.fixed_reference_rate,
                                 repeats=args.repeats)]
     print("| case | rate | engine | x | RMS error | "
           "worst window RMS | spectral mag. | ms |")

@@ -76,6 +76,12 @@ the MUSIC namespace, separate from SSTIM terms; they do not assert
 clinical efficacy or recorded delivery. Requires
 `pip install 'music[sstim]'`.
 
+The [portable SSTIM sidecar guide](https://ttm.github.io/music/sstim_portable_contracts.html)
+adds RDF-IRI-independent conformance checks for all seven supported
+auditory generators, using a complete explicitly supplied MUSIC
+rendering contract. No engine settings are inferred from third-party
+SSTIM RDF and no bit-identical cross-vendor claim is made.
+
 The [SSTIM import-safety and capability guide](https://ttm.github.io/music/sstim_import_security.html)
 explains local-only bounded Turtle processing and the explicit distinction
 between standard beat references, MUSIC-owned replay, descriptive-only

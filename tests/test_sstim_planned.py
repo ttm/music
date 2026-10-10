@@ -66,7 +66,7 @@ def test_real_session_specification_roundtrips_with_pinned_preset():
     digest = str(next(g.objects(root, SSTIM.configurationDigest)))
     assert len(digest) == 64
     assert (root, SSTIM.digestAlgorithm,
-            Literal("sha256-sorted-ntriples-utf8-v1",
+            Literal("sha256-music-plan-json-v1",
                     datatype=XSD.string)) in g
     assert str(next(g.objects(root, SSTIM.configurationDigest))) == (
         str(next(graph().objects(root, SSTIM.configurationDigest))))
@@ -197,3 +197,13 @@ def test_planned_sstim_capability_is_distinct_from_actual_execution():
     root = next(good.subjects(RDF.type, SSTIM.SessionSpecification))
     good.remove((root, SSTIM.durationSeconds, None))
     assert inspect_sstim_capabilities(good).mode == "unsupported"
+
+
+def test_configuration_digest_changes_with_preset_and_master_volume():
+    def digest(g):
+        root = next(g.subjects(RDF.type, SSTIM.SessionSpecification))
+        return str(next(g.objects(root, SSTIM.configurationDigest)))
+    original = digest(graph(master_volume=.2))
+    assert digest(graph(master_volume=.3)) != original
+    assert digest(graph(preset_iri=PRESET + "-different")) != original
+    assert digest(graph(master_volume=.20)) == original

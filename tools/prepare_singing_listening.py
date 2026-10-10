@@ -19,7 +19,13 @@ import soundfile as sf
 
 
 def _equal_level(a, b):
-    """RMS-match, then apply joint headroom for any waveform overshoot."""
+    """RMS-match, then apply joint headroom for any waveform overshoot.
+
+    Reject empty and non-finite recordings rather than writing invalid
+    material for the subsequent human listening comparison.
+    """
+    if any(not len(x) or not np.isfinite(x).all() for x in (a, b)):
+        raise ValueError("listening recordings must be nonempty and finite")
     rms = [float(np.sqrt(np.mean(x ** 2))) for x in (a, b)]
     if min(rms) == 0:
         raise ValueError("cannot blind-compare a silent recording")

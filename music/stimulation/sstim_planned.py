@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from hashlib import sha256
 import math
 from pathlib import Path
 
@@ -94,6 +95,17 @@ def to_sstim_planned_session_graph(
     g.add((root, SSTIM.durationSeconds,
            Literal(round(duration), datatype=XSD.integer)))
     g.add((root, SSTIM.masterVolume, _decimal(master_volume)))
+    # Recompute from the *serialized MUSIC configuration*, not from the
+    # caller's sparse phase kwargs: default controls are materialized by
+    # the exporter and must contribute to the configuration identity.
+    lines = sorted(line.strip() for line in
+                   program.serialize(format="nt").splitlines()
+                   if line.strip())
+    digest = sha256(("\\n".join(lines) + "\\n").encode("utf-8")).hexdigest()
+    g.add((root, SSTIM.configurationDigest,
+           Literal(digest, datatype=XSD.string)))
+    g.add((root, SSTIM.digestAlgorithm, Literal(
+        "sha256-sorted-ntriples-utf8-v1", datatype=XSD.string)))
     g.add((root, SSTIM.hasReproducibilityLevel,
            SSTIM_V.reproEquivalentPresentation))
     g.add((SSTIM_V.reproEquivalentPresentation, RDF.type,

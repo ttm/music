@@ -88,3 +88,31 @@ def test_invalid_output_from_engine_is_rejected(monkeypatch):
                         lambda *args: [float("nan")])
     with pytest.raises(ValueError, match="invalid samples"):
         harness.check(TURTLE, SIDECAR)
+
+
+@pytest.mark.parametrize("stem,shape", [
+    ("sstim_third_party_am", [1920]),
+    ("sstim_third_party_noise", [1920]),
+    ("sstim_third_party_spatial", [2, 1920]),
+])
+def test_three_independently_authored_external_profiles(stem, shape):
+    turtle = FIXTURES / (stem + ".ttl")
+    contract = FIXTURES / (stem + ".contract.json")
+    result = harness.check(turtle, contract)
+    assert result["shape"] == shape
+    assert result["exact_pcm_cross_vendor"] is False
+    assert harness.check(turtle, contract)["render_sha256"] == (
+        result["render_sha256"])
+
+
+@pytest.mark.network
+@pytest.mark.skipif(__import__("os").environ.get("SSTIM_LIVE") != "1",
+                    reason="pinned Full profile on Python 3.12 only")
+def test_three_independently_authored_external_profiles_pass_official():
+    for stem in ("sstim_third_party_am", "sstim_third_party_noise",
+                 "sstim_third_party_spatial"):
+        result = harness.check(
+            FIXTURES / (stem + ".ttl"),
+            FIXTURES / (stem + ".contract.json"),
+            official=True)
+        assert result["sstim_full_profile_conforms"] is True

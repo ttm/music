@@ -1,4 +1,4 @@
-"""Opt-in oversampling must improve known folded artifacts without API drift."""
+"""Check opt-in oversampling against an independent high-rate reference."""
 
 import numpy as np
 import pytest

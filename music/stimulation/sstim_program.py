@@ -10,7 +10,6 @@ reusing valid SSTIM specifications for each constituent stimulus.
 
 from __future__ import annotations
 
-import json
 import math
 from pathlib import Path
 
@@ -63,6 +62,9 @@ def to_sstim_program_graph(
         raise ValueError("end_ramp must be finite and nonnegative")
     if not session.phases or len(session.phases) > 50:
         raise ValueError("program must have 1 to 50 phases")
+    if any(not math.isfinite(p.duration) or p.duration < 0
+           for p in session.phases):
+        raise ValueError("invalid duration, ramp, or gain")
     if session.duration * session.sample_rate > 5_000_000:
         raise ValueError("program exceeds 5 million output samples")
     g = Graph()

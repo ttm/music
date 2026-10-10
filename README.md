@@ -76,6 +76,12 @@ the MUSIC namespace, separate from SSTIM terms; they do not assert
 clinical efficacy or recorded delivery. Requires
 `pip install 'music[sstim]'`.
 
+The [SSTIM import-safety and capability guide](https://ttm.github.io/music/sstim_import_security.html)
+explains local-only bounded Turtle processing and the explicit distinction
+between standard beat references, MUSIC-owned replay, descriptive-only
+mechanisms and unsupported RDF. The capability report never promises
+sample-exact cross-vendor execution.
+
 See [SSTIM and DSP](https://ttm.github.io/music/sstim_interop.html),
 [advanced SSTIM exchange](https://ttm.github.io/music/advanced_sstim_dsp.html)
 and the optional
@@ -464,7 +470,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 6,003 tests, 100% line and branch coverage
+pytest                                       # 6,039 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

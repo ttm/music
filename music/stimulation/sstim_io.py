@@ -48,6 +48,10 @@ _MECHANISMS = {
 _PARAMETERS = {"amplitude": "paramAmplitude", "frequency": "paramFrequency"}
 _SHAPES = {"sine": "shapeSine", "square": "shapeSquare"}
 _MAX_SAMPLES = 5_000_000
+# Applies to both in-memory and serialized input. This is an import budget,
+# not a defense against all parser CPU or memory denial-of-service inputs.
+_MAX_TURTLE_BYTES = 2 * 1024 * 1024
+_MAX_RDF_TRIPLES = 15_000
 
 
 @dataclass(frozen=True)
@@ -197,21 +201,47 @@ def to_sstim_graph(
 
 
 def _graph(value: Graph | str | Path) -> Graph:
-    if isinstance(value, Graph):
-        return value
-    g = Graph()
-    if isinstance(value, Path):
-        g.parse(value, format="turtle")
-    elif isinstance(value, str) and (
-            "\n" in value or value.lstrip().startswith("@prefix")):
-        g.parse(data=value, format="turtle")
-    elif isinstance(value, str) and value.startswith(("http://", "https://")):
-        raise ValueError(
-            "provide local Turtle data or a local file, not a URL")
-    else:
-        g.parse(str(value), format="turtle")
-    return g
+    """Parse bounded local Turtle only, never graph-specified URLs.
 
+    The 2 MiB serialized-byte and 15k triple checks are safety limits,
+    not a parser sandbox; hostile Turtle can still consume CPU while
+    its triples are being materialized. Isolate public upload processing.
+    """
+    if isinstance(value, Graph):
+        graph = value
+    else:
+        path: Path | None = None
+        text_data = ""
+        if isinstance(value, Path):
+            path = value
+        elif isinstance(value, str):
+            trimmed = value.lstrip()
+            if trimmed.startswith(("http://", "https://", "file://",
+                                   "ftp://")):
+                raise ValueError("only local Turtle; URI RDF input denied")
+            if ("\n" in value or trimmed.startswith(
+                    ("@prefix", "@base", "PREFIX", "BASE", "<"))):
+                text_data = value
+            else:
+                path = Path(value)
+        else:
+            raise TypeError("expected RDF Graph, local Turtle or local path")
+        if path is not None:
+            try:
+                if not path.is_file():
+                    raise ValueError("expected an existing local Turtle file")
+                if path.stat().st_size > _MAX_TURTLE_BYTES:
+                    raise ValueError("Turtle input exceeds byte budget")
+                text_data = path.read_text(encoding="utf-8")
+            except (OSError, UnicodeError) as exc:
+                raise ValueError("cannot read local Turtle file") from exc
+        if len(text_data.encode("utf-8")) > _MAX_TURTLE_BYTES:
+            raise ValueError("Turtle input exceeds byte budget")
+        graph = Graph()
+        graph.parse(data=text_data, format="turtle")
+    if len(graph) > _MAX_RDF_TRIPLES:
+        raise ValueError("RDF graph exceeds triple budget")
+    return graph
 
 def from_sstim_graph(value: Graph | str | Path) -> RenderableStimulus:
     """Decode only the explicitly supported MUSIC subset of an SSTIM graph.

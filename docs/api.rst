@@ -13,7 +13,7 @@ Notes
 ~~~~~
 
 Each returns a numpy array of PCM samples. ``note`` is the plain wavetable
-lookup; the rest layer vibrato, pitch transitions, frequency modulation and
+lookup (MASS-compatible); ``bandlimited_note`` prefilters\nstatic-pitch harmonics above Nyquist; the rest layer vibrato, pitch transitions, frequency modulation and
 movement onto it.
 
 .. autosummary::
@@ -21,6 +21,7 @@ movement onto it.
    :nosignatures:
 
    note
+   bandlimited_note
    note_with_phase
    note_with_vibrato
    note_with_two_vibratos

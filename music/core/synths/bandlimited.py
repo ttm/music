@@ -39,7 +39,7 @@ def _filtered_table(kind: str, freq: float, sample_rate: int,
 
 def bandlimited_note(
         freq: float = 220.0, duration: float = 2.0,
-        waveform: str = "sawtooth", number_of_samples: int = 0,
+        waveform: str = "sine", number_of_samples: int = 0,
         sample_rate: int = 44100, table_size: int = 16384,
         rolloff_hz: float = 0.0) -> NDArray[np.float64]:
     """Render a static-pitch periodic note with prefiltered harmonics.
@@ -71,7 +71,11 @@ def bandlimited_note(
         periodic waveform's fundamental, not its original peak level;
         truncated discontinuous waves may exhibit Gibbs overshoot.
 
-    Notes
+    Raises
+    ------
+    ValueError
+        For invalid sampling parameters, frequency, duration, table size,
+        or waveform name.\n\n    Notes
     -----
     This is **opt-in**: `music.note` remains sample-identical to MASS.
     Band-limiting is frequency-dependent. Do not reuse one filtered

@@ -77,10 +77,42 @@ Interoperability levels and safety
   Sidecar import deliberately refuses graphs with MUSIC predicates
   instead of overriding potentially contradictory instructions.
 * **MUSIC phase programs:** ``sstim_program`` describes ordered
-  planned phases as a MUSIC-owned extension containing SSTIM stimulus
-  graphs. It does not assert a delivered
-  ``sstim:SessionInstance`` or invent a universal
-  ``sstim:SessionSpecification`` mapping.
+  phases as a MUSIC-owned extension containing SSTIM stimulus graphs.
+* **Eligible planned sessions:** ``sstim_planned`` adds an *actual*
+  SSTIM ``SessionSpecification`` around a MUSIC program **only when**
+  the caller supplies a versioned preset, a timezone-aware immutable
+  creation timestamp, a master volume, and an integral duration between
+  60 and 7,200 seconds. It declares only the conservative
+  ``reproEquivalentPresentation`` level. The underlying phase ordering
+  remains MUSIC-owned, not a general SSTIM execution protocol.
+  No ``SessionInstance`` or actual exposure is asserted.
+
+.. code-block:: python
+
+   from datetime import datetime, timezone
+   from music import StimulationSession, binaural_beats
+   from music.stimulation.sstim_planned import (
+       to_sstim_planned_session_graph,
+       from_sstim_planned_session_graph,
+   )
+
+   program = StimulationSession(sample_rate=8000)
+   program.add(binaural_beats, duration=60, beat_freq=10)
+   planned = to_sstim_planned_session_graph(
+       program,
+       preset_iri="https://example.org/presets/declared-version-1",
+       preset_label="Named versioned auditory preset",
+       created_at=datetime.now(timezone.utc),
+       master_volume=0.2,
+       base="https://example.org/studies/plan-1/")
+   checked = from_sstim_planned_session_graph(planned)
+
+This example constructs an **intended plan**, not a report of a
+participant session. A 20-second waveform demo cannot be renamed
+``SessionSpecification`` under SSTIM's frozen Full profile because
+that shape requires an integer duration from 60 to 7,200 seconds.
+Preset/version identity is supplied explicitly, never invented by the
+MUSIC renderer.
 
 To check ontology/profile conformance, use the official pinned
 ``sstim.validate(..., profile="full", version="0.19.0")``

@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-10**,
-`music` 1.10.0: 55 modules, 15,408 LOC package + 23,314 LOC tests, 129 names
+`music` 1.10.0: 55 modules, 15,408 LOC package + 23,337 LOC tests, 129 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,7 +59,7 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **6001 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
+| Test suite | `pytest -q` | **6003 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
 | Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,071 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 55 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |

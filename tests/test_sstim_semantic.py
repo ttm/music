@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 from rdflib import Graph, Literal, URIRef
-from rdflib.namespace import RDF, XSD
+from rdflib.namespace import RDF
 
 from music.stimulation.sstim_io import (
     MUSIC, SSTIM, SSTIM_EX, SSTIM_V, to_sstim_graph,

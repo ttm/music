@@ -60,6 +60,8 @@ def test_real_session_specification_roundtrips_with_pinned_preset():
     assert len(spec.session.phases) == 1
     assert (None, SSTIM.hasReproducibilityLevel,
             SSTIM_V.reproEquivalentPresentation) in g
+    assert not any(str(subject).startswith("https://w3id.org/sstim")
+                   for subject, _, _ in g)
     assert (None, SSTIM.durationSeconds,
             Literal(60, datatype=XSD.integer)) in g
     root = next(g.subjects(RDF.type, SSTIM.SessionSpecification))

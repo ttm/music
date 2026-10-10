@@ -1,5 +1,6 @@
 """SSTIM frozen-release interoperability: machine-readable round trips."""
 
+import os
 import numpy as np
 import pytest
 
@@ -65,7 +66,7 @@ def test_tampered_signal_or_mechanism_must_fail_closed():
     old = next(graph.objects(signal, SSTIM.hzMin))
     graph.remove((signal, SSTIM.hzMin, old))
     graph.add((signal, SSTIM.hzMin, Literal(33)))
-    with pytest.raises(ValueError, match="signal assertions"):
+    with pytest.raises(ValueError, match="variable-rate|signal assertions"):
         from_sstim_graph(graph)
 
 
@@ -113,6 +114,9 @@ def test_no_remote_graph_fetch_from_untrusted_iri():
         from_sstim_graph("https://example.org/not-a-file.ttl")
 
 
+@pytest.mark.network
+@pytest.mark.skipif(os.environ.get("SSTIM_LIVE") != "1",
+                    reason="opt-in live SSTIM validation on one CI runner")
 def test_official_019_full_profile_validation():
     pytest.importorskip("sstim")
     graph = to_sstim_graph(

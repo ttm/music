@@ -88,6 +88,12 @@ and the optional
 [pitch-path anti-aliasing](https://ttm.github.io/music/advanced_sstim_dsp.html)
 for executable examples and explicit limitations.
 
+An opt-in [PolyBLEP saw/square oscillator](https://ttm.github.io/music/polyblep_synthesis.html)
+adds discontinuity corrections and phase-continuous chunked frequency
+paths, with coherent 44.1/48/96 kHz spectral-alias measurements and
+RMS-matched, balanced-order blinded listening stimuli. This does not
+change legacy MASS samples or make arbitrary FM/nonlinear output alias-free.
+
 A separate `music.stimulation.sstim_semantic` consumer can inspect
 binaural and monaural SSTIM beat descriptions **without MUSIC hints**,
 and render a declared zero-phase/equal-gain analytic reference, not an
@@ -470,7 +476,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 6,039 tests, 100% line and branch coverage
+pytest                                       # 6,094 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

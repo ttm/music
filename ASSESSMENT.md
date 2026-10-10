@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-10**,
-`music` 1.10.0: 54 modules, 15,220 LOC package + 23,009 LOC tests, 129 names
+`music` 1.10.0: 55 modules, 15,408 LOC package + 23,337 LOC tests, 129 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,13 +59,13 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **5942 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (3,960 stmts, 0 missed) |
-| Type check | `mypy music` | **clean**, 54 files |
+| Test suite | `pytest -q` | **6003 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,071 stmts, 0 missed) |
+| Type check | `mypy music` | **clean**, 55 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,819 findings |
-| Annotation coverage | AST scan | **133 / 277 functions (48 %)**; 65 / 98 exported (66 %) |
-| Docstring coverage | AST scan | **197 / 205 public defs (96 %)** |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,889 findings |
+| Annotation coverage | AST scan | **135 / 281 functions (48 %)**; 65 / 98 exported (66 %) |
+| Docstring coverage | AST scan | **200 / 208 public defs (96 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **22 of 35 routines sample-exact**; 9 divergent with a stated reason, 4 where the reference does not run |
@@ -108,6 +108,15 @@ either documented in the code or tracked in the issue list.
 The independent review of PRs #114, #116 and #118, including fixes for
 chirp phase integration, strict SSTIM channel semantics and malformed RDF
 imports, is in [AUDIT_2026-10-10.md](AUDIT_2026-10-10.md).
+
+The opt-in cross-engine evidence added subsequently compares MUSIC and
+continuous analytic FM/nonlinear/gated sources against a 16x FIR-filtered
+reference at 44.1/48/96 kHz. It reports short-time magnitude and RMS
+errors, not perception or guaranteed alias-free rendering. The
+`sstim_semantic` beat profile consumes standard SSTIM 0.19.0 RDF without
+MUSIC execution hints, but explicitly requires an analytic zero-phase
+convention to synthesize representative samples. See
+`docs/dynamic_aliasing_and_portable_sstim.rst`.
 A 100% exercised line/branch score does not prove untested DSP regimes,
 perceptual validity or third-party interoperability.
 
@@ -455,8 +464,8 @@ perceptual validity or third-party interoperability.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,819 findings** on `music/`, almost all
-  stylistic: 731 quote-style, 377 missing argument annotations, 84 missing
+- **The extended lint set reports 2,889 findings** on `music/`, almost all
+  stylistic: 731 quote-style, 381 missing argument annotations, 84 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.

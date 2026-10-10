@@ -90,3 +90,10 @@ def test_local_nonexistent_file_then_existing_file(tmp_path):
     g = _graph(path)
     assert len(g) == 1
     assert not list(g.subjects(RDF.type, SSTIM.StimulusSpecification))
+
+
+def test_invalid_utf8_turtle_file_fails_before_rdf_parser(tmp_path):
+    path = tmp_path / "invalid.ttl"
+    path.write_bytes(b"\\xff\\xfe")
+    with pytest.raises(ValueError, match="cannot read local Turtle"):
+        _graph(path)

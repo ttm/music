@@ -67,14 +67,14 @@ reducing fold-over from rapid modulation and hard gating without changing
 MASS-compatible defaults. Requires `pip install 'music[antialias]'`.
 
 `music.stimulation.sstim_io` reads, writes and renders a **restricted,
-validated subset** of SSTIM 0.19.0 stimulus descriptions (five auditory
+validated subset** of SSTIM 0.19.0 stimulus descriptions (seven auditory
 generators). Interoperable SSTIM signal/channel/rendering triples remain
 distinct from MUSIC-specific numeric rendering instructions. Requires
 `pip install 'music[sstim]'`. This is not a complete SSTIM execution
 engine, and these graphs make no efficacy claims.
 
 See [SSTIM and DSP guide](https://ttm.github.io/music/sstim_interop.html)
-for executable examples and limitations.
+for executable examples and limitations. More advanced descriptions\ninclude seeded stochastic noise and spatial trajectories, plus\nMUSIC-owned ordered phase programs; see\n[advanced exchange](https://ttm.github.io/music/advanced_sstim_dsp.html).
 
 ## Core features
 

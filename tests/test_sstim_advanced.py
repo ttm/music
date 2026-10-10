@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 pytest.importorskip("rdflib")
-from rdflib import Graph, Literal  # noqa: E402
+from rdflib import Graph, Literal, URIRef  # noqa: E402
 from rdflib.namespace import RDF  # noqa: E402
 
 import music  # noqa: E402
@@ -148,3 +148,23 @@ def test_advanced_rejects_bad_metadata_and_graph_shape():
 def test_official_full_profile_conformance(make):
     result = validate_sstim(make(), version="0.19.0")
     assert result.ok, str(result)
+
+
+@pytest.mark.parametrize("problem,match", [
+    ("empty", "expected one advanced"),
+    ("unexpected-iri", "unexpected stimulus IRI"),
+    ("missing-channel", "missing stimulus channel"),
+])
+def test_refuse_advanced_graph_structure(problem, match):
+    g = noise_graph()
+    root = next(g.subjects(RDF.type, SSTIM.StimulusSpecification))
+    if problem == "empty":
+        g = Graph()
+    elif problem == "unexpected-iri":
+        g.remove((root, RDF.type, SSTIM.StimulusSpecification))
+        g.add((URIRef("https://example.org/alien-node"),
+               RDF.type, SSTIM.StimulusSpecification))
+    else:
+        g.remove((root, SSTIM.hasStimulusChannel, None))
+    with pytest.raises(ValueError, match=match):
+        from_sstim_advanced_graph(g)

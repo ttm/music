@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-10**,
-`music` 1.10.0: 54 modules, 15,189 LOC package + 22,881 LOC tests, 129 names
+`music` 1.10.0: 54 modules, 15,220 LOC package + 23,009 LOC tests, 129 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,11 +59,11 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **5925 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (3,936 stmts, 0 missed) |
+| Test suite | `pytest -q` | **5942 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (3,960 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 54 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,795 findings |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,819 findings |
 | Annotation coverage | AST scan | **133 / 277 functions (48 %)**; 65 / 98 exported (66 %) |
 | Docstring coverage | AST scan | **197 / 205 public defs (96 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
@@ -104,6 +104,12 @@ produced.
 
 The point of this file. Nothing here is a surprise defect; all of it is
 either documented in the code or tracked in the issue list.
+
+The independent review of PRs #114, #116 and #118, including fixes for
+chirp phase integration, strict SSTIM channel semantics and malformed RDF
+imports, is in [AUDIT_2026-10-10.md](AUDIT_2026-10-10.md).
+A 100% exercised line/branch score does not prove untested DSP regimes,
+perceptual validity or third-party interoperability.
 
 ### Gaps the code names about itself
 
@@ -449,7 +455,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,795 findings** on `music/`, almost all
+- **The extended lint set reports 2,819 findings** on `music/`, almost all
   stylistic: 731 quote-style, 377 missing argument annotations, 84 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their

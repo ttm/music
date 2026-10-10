@@ -62,7 +62,7 @@ def _number(g: Graph, node, predicate) -> float:
 def inspect_sstim_beat(
         value: Graph | str | Path, *,
         sample_rate: int = 44100) -> SemanticBeat:
-    """Inspect SSTIM alone for a supported mono/monaural or stereo/binaural beat.
+    """Inspect a supported mono/monaural or stereo/binaural SSTIM beat.
 
     The accepted profile requires one determinate sine signal, a fixed
     beat rate, exactly one rendering per channel, air-conducted auditory

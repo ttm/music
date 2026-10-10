@@ -7,7 +7,7 @@ semantic layer uses ``StimulusSpecification``, ``StimulationSignal``,
 ``StimulusChannel`` and ``SignalRendering``, with declared mechanism,
 carrier, duration, frequency extent, and physical/perceptual presence.
 
-Five generators are currently supported: ``binaural_beats``,
+The original five deterministic generators are supported here: ``binaural_beats``,
 ``monaural_beats``, ``isochronic_tones``,
 ``amplitude_modulation`` and ``frequency_modulation``. The
 library's exact numeric arguments, including duty cycle and depth, are
@@ -107,3 +107,6 @@ a better-looking spectrogram or an unqualified perceptual claim.
 These capabilities are independent. ``render_sstim(...,
 oversampling_factor=4)`` combines them, but the SSTIM graph itself
 does **not** claim that its carrier was rendered alias-free.
+
+For stochastic noise, geometric motion and multi-phase programs, see
+:doc:`advanced_sstim_dsp`.

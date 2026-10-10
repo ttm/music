@@ -9,7 +9,8 @@ import music
 def noise(noise_type: str | float = "brown", duration: float = 2,
           min_freq: float = 15, max_freq: float = 15000,
           number_of_samples: int = 0,
-          sample_rate: int = 44100) -> NDArray[np.float64]:
+          sample_rate: int = 44100,
+          seed: int | None = None) -> NDArray[np.float64]:
     """
     Return a colored or user-refined noise.
 
@@ -37,6 +38,9 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
         The number of samples of the resulting sonic vector.
     sample_rate : integer
         The sample rate to use, by default 44100.
+    seed : integer or None
+        Optional deterministic seed for local random phases. Default None
+        preserves legacy use of NumPy's global random state.
 
     Returns
     -------
@@ -119,6 +123,10 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
         raise ValueError(
             f"min_freq ({min_freq} Hz) is above the Nyquist frequency "
             f"({sample_rate / 2} Hz), so the band holds nothing")
+    if seed is not None and (
+            not isinstance(seed, (int, np.integer)) or isinstance(seed, bool)
+            or not 0 <= seed < 2**64):
+        raise ValueError("seed must be a nonnegative uint64 integer")
     if number_of_samples:
         length = number_of_samples
     else:
@@ -139,7 +147,9 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
     # always silent; an even length draws as many as it did.
     positive = (length + 1) // 2
     coeffs = np.zeros(length, dtype=complex)
-    coeffs[:positive] = np.exp(1j * np.random.uniform(0, 2 * np.pi, positive))
+    uniform = (np.random.uniform if seed is None
+               else np.random.default_rng(seed).uniform)
+    coeffs[:positive] = np.exp(1j * uniform(0, 2 * np.pi, positive))
     if length % 2 == 0:
         coeffs[length // 2] = 1.
 

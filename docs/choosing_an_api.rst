@@ -54,7 +54,7 @@ Machine-readable stimulus exchange
 ----------------------------------
 
 The optional ``music.stimulation.sstim_io`` module exports and imports
-a safe, bounded MUSIC-renderable subset of SSTIM 0.19.0 RDF. This is a
+a safe, bounded MUSIC-renderable subset of SSTIM 0.19.0 RDF.\nAdditional noise, spatial and multi-phase adapters are in\n:doc:`advanced_sstim_dsp`. This is a
 separate module, rather than adding five new names to the flat API.
 See :doc:`sstim_interop` for the full example and validation.
 

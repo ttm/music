@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-10**,
-`music` 1.10.0: 51 modules, 14,617 LOC package + 22,434 LOC tests, 129 names
+`music` 1.10.0: 54 modules, 15,189 LOC package + 22,881 LOC tests, 129 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,13 +59,13 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **5793 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (3,632 stmts, 0 missed) |
-| Type check | `mypy music` | **clean**, 51 files |
+| Test suite | `pytest -q` | **5925 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (3,936 stmts, 0 missed) |
+| Type check | `mypy music` | **clean**, 54 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,667 findings |
-| Annotation coverage | AST scan | **127 / 267 functions (48 %)**; 65 / 98 exported (66 %) |
-| Docstring coverage | AST scan | **190 / 197 public defs (96 %)** |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,795 findings |
+| Annotation coverage | AST scan | **133 / 277 functions (48 %)**; 65 / 98 exported (66 %) |
+| Docstring coverage | AST scan | **197 / 205 public defs (96 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **22 of 35 routines sample-exact**; 9 divergent with a stated reason, 4 where the reference does not run |
@@ -174,15 +174,19 @@ either documented in the code or tracked in the issue list.
   Any additional unresolved subject or mismatched label fails the release
   gate, including a lookup lost to a network outage. The two exceptions
   remain a limit on the claim, not evidence that their terms are wrong.
-- **SSTIM interoperability covers five deterministic auditory generators.**
-  The optional `music.stimulation.sstim_io` module emits and consumes
-  `sstim:StimulusSpecification` graphs with real signal, channel and
-  rendering relations, and uses SSTIM 0.19.0 Full-profile validation.
-  Exact MUSIC parameters not standardized by SSTIM are stored in a
-  deliberately separate extension namespace. Arbitrary SSTIM graphs,
-  stochastic noise, spatial motion and multi-phase protocols are
-  **not** executable by this adapter. This is a bounded first
-  implementation of the larger interoperability goal in issue #75.
+- **SSTIM interoperability now covers seven built-in auditory generators
+  and ordered phases via MUSIC extensions.** The deterministic five remain
+  in `sstim_io`; `sstim_advanced` models stochastic noise (frequency
+  band and separate modulation signal) and geometric stereo motion
+  (tone and position signals). `sstim_program` stores ordered phases,
+  gains and crossfades for a reproducible `StimulationSession`.
+  Each constituent stimulus uses SSTIM 0.19.0 terms, validated by the
+  frozen Full-profile contract; MUSIC-specific parameters remain in a
+  separate extension namespace. The program is an intended arrangement,
+  **not** an `sstim:SessionInstance` or evidence of delivered exposure.
+  Engine-independent exact playback cannot be inferred without
+  MUSIC-specific seed, geometry and timing rules. Arbitrary third-party
+  SSTIM graphs remain deliberately non-executable.
 
 - **Notes concatenated raw click at the join, and whether they do
   depends on arithmetic rather than on anything musical.** A note ends
@@ -288,7 +292,9 @@ either documented in the code or tracked in the issue list.
   to the requested rate. A gated 15 kHz carrier is tested against an
   independent 16x reference. It is not a complete alias-free engine:
   sharp gates become rounded, cost rises with oversampling, and
-  frequencies above the oversampled Nyquist still fold. The static
+  frequencies above the oversampled Nyquist still fold. Changing-pitch rich waveforms can additionally use the
+  phase-continuous, harmonic-faded `bandlimited_frequency_path` renderer.
+  It does not eliminate arbitrary fast FM sidebands. The static
   oscillator may overshoot full scale at Gibbs ringing near a
   discontinuity, so export needs explicit headroom. See
   `docs/sstim_interop.rst` and
@@ -443,8 +449,8 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,667 findings** on `music/`, almost all
-  stylistic: 731 quote-style, 375 missing argument annotations, 82 missing
+- **The extended lint set reports 2,795 findings** on `music/`, almost all
+  stylistic: 731 quote-style, 377 missing argument annotations, 84 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.

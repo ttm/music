@@ -35,6 +35,26 @@ also supplies an explicit, complete MUSIC engine contract**.
    assert resolution.exact_pcm_portable is False
    samples = render_sstim_contract(resolution)
 
+The same check is usable without writing Python integration code.
+The repository includes independently authored Turtle and matching
+JSON controls under ``tests/fixtures``:
+
+.. code-block:: console
+
+   python tools/sstim_interop_check.py \\
+       tests/fixtures/sstim_third_party_am.ttl \\
+       tests/fixtures/sstim_third_party_am.contract.json \\
+       --json interop-report.json
+
+Optionally pass ``--official`` to validate against the frozen
+0.19.0 Full profile, or ``--wav local-output.wav`` to write a PCM24
+reference. The JSON records generator and MUSIC package version,
+sample rate, shape, peak, RMS, SHA-256 of the emitted
+little-endian float64 samples, and SHA-256 of the complete sidecar.
+The waveform digest demonstrates reproducibility **in the tested
+installation**, not equivalence with another synthesizer or calibrated
+physical exposure.
+
 The sidecar is a rendering choice made by the consumer, **not**
 information encoded by SSTIM. The package insists that the sidecar
 explicitly pin all the selected generator's supported controls rather

@@ -66,15 +66,21 @@ sample rate and applies polyphase low-pass filtering before decimation,
 reducing fold-over from rapid modulation and hard gating without changing
 MASS-compatible defaults. Requires `pip install 'music[antialias]'`.
 
-`music.stimulation.sstim_io` reads, writes and renders a **restricted,
-validated subset** of SSTIM 0.19.0 stimulus descriptions (seven auditory
-generators). Interoperable SSTIM signal/channel/rendering triples remain
-distinct from MUSIC-specific numeric rendering instructions. Requires
-`pip install 'music[sstim]'`. This is not a complete SSTIM execution
-engine, and these graphs make no efficacy claims.
+`music.stimulation.sstim_io` reads, writes and renders **five
+deterministic auditory techniques** under the SSTIM 0.19.0 vocabulary.
+`music.stimulation.sstim_advanced` additionally models seeded stochastic
+noise and stereo geometric motion. `music.stimulation.sstim_program`
+serializes and reconstructs ordered, faded MUSIC programs containing these
+SSTIM stimulus specifications. Exact engine rendering hints are kept in
+the MUSIC namespace, separate from SSTIM terms; they do not assert
+clinical efficacy or recorded delivery. Requires
+`pip install 'music[sstim]'`.
 
-See [SSTIM and DSP guide](https://ttm.github.io/music/sstim_interop.html)
-for executable examples and limitations. More advanced descriptions\ninclude seeded stochastic noise and spatial trajectories, plus\nMUSIC-owned ordered phase programs; see\n[advanced exchange](https://ttm.github.io/music/advanced_sstim_dsp.html).
+See [SSTIM and DSP](https://ttm.github.io/music/sstim_interop.html),
+[advanced SSTIM exchange](https://ttm.github.io/music/advanced_sstim_dsp.html)
+and the optional
+[pitch-path anti-aliasing](https://ttm.github.io/music/advanced_sstim_dsp.html)
+for executable examples and explicit limitations.
 
 ## Core features
 
@@ -444,7 +450,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 5,793 tests, 100% line and branch coverage
+pytest                                       # 5,923 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

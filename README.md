@@ -59,6 +59,23 @@ run `python tools/benchmark_spectral_aliasing.py`; for listening WAVs, run
 **[Start with the smallest API](https://ttm.github.io/music/choosing_an_api.html)**
 for practical choices and scientific limitations.
 
+## SSTIM and time-varying anti-aliasing
+
+Optional `music.render_oversampled` calls existing generators at a higher
+sample rate and applies polyphase low-pass filtering before decimation,
+reducing fold-over from rapid modulation and hard gating without changing
+MASS-compatible defaults. Requires `pip install 'music[antialias]'`.
+
+`music.stimulation.sstim_io` reads, writes and renders a **restricted,
+validated subset** of SSTIM 0.19.0 stimulus descriptions (five auditory
+generators). Interoperable SSTIM signal/channel/rendering triples remain
+distinct from MUSIC-specific numeric rendering instructions. Requires
+`pip install 'music[sstim]'`. This is not a complete SSTIM execution
+engine, and these graphs make no efficacy claims.
+
+See [SSTIM and DSP guide](https://ttm.github.io/music/sstim_interop.html)
+for executable examples and limitations.
+
 ## Core features
 
 * **Sample-based synthesis.** State is updated at every sample. A note with a
@@ -427,7 +444,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 5,674 tests, 100% line and branch coverage
+pytest                                       # 5,793 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

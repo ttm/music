@@ -19,7 +19,7 @@ musical elements expressed as equations and corresponding Python routines.
 The envelope brings each note to silence at its ends so that joining
 different pitches does not introduce a click.
 
-Not sure which routine to start with? :doc:`choosing_an_api` maps common\ntasks onto a small supported entry-point set, including band-limited\nstatic-pitch notes.\n\nNew here? The :doc:`tutorial` walks from a single note to a short stereo
+For executable SSTIM descriptions and oversampled DSP, see\n:doc:`sstim_interop`.\n\nNot sure which routine to start with? :doc:`choosing_an_api` maps common\ntasks onto a small supported entry-point set, including band-limited\nstatic-pitch notes.\n\nNew here? The :doc:`tutorial` walks from a single note to a short stereo
 piece, and explains what the sample-by-sample model actually buys you.
 
 What it does
@@ -148,6 +148,7 @@ The whole public API is re-exported flat from the top level, so
 
    tutorial
    choosing_an_api
+   sstim_interop
    api
 
 .. toctree::

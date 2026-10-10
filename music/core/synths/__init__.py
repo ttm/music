@@ -9,6 +9,7 @@ from .notes import (
     note_with_vibrato_seq_localization, note_with_vibratos_glissandos, trill
 )
 from .noises import gaussian_noise, noise, silence
+from .oversampling import render_oversampled
 
 __all__ = [
     'am',
@@ -26,6 +27,7 @@ __all__ = [
     'note_with_vibratos_glissandos',
     'note_with_vibrato_seq_localization',
     'noise',
+    'render_oversampled',
     'silence',
     'tremolo',
     'tremolos',

@@ -25,7 +25,7 @@ jobs:
       - name: Install the package and its dev extras
         run: |
           python -m pip install --upgrade pip
-          pip install -e '.[dev]'
+          pip install -e '.[dev,antialias,sstim]'
 
       - name: Lint
         run: ruff check music tests examples tools conftest.py
@@ -41,6 +41,8 @@ jobs:
         # --cov-branch, because 100% of lines is not 100% of branches:
         # the gate read 100 while twelve conditions had only ever gone
         # one way, and three defects were sitting in them.
+        env:
+          SSTIM_LIVE: ${{ matrix.python-version == '3.12' && '1' || '0' }}
         run: pytest -q --cov=music --cov-branch --cov-report=term-missing --cov-fail-under=100
 
   examples:
@@ -60,7 +62,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y espeak-ng
           python -m pip install --upgrade pip
-          pip install -e '.[plot,singing]'
+          pip install -e '.[plot,singing,antialias,sstim]'
       - name: Check ASSESSMENT.md against the package
         # The figures an AST scan can settle, which is most of them and
         # costs nothing. The ones needing pytest and ruff are checked by
@@ -168,7 +170,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install 'colorama==0.4.6' 'numpy==1.26.4' 'soundfile==0.12.1' \
                       'sympy==1.12' 'termcolor==2.4.0' 'matplotlib==3.7.1'
-          pip install pytest pytest-cov
+          pip install pytest pytest-cov scipy sstim
           pip install --no-deps -e .
       - name: Test
         run: pytest -q

@@ -12,7 +12,8 @@ def test_sine_phase_is_integrated_at_the_requested_rate(sample_rate):
     f = 1000 + 100 * np.sin(2 * np.pi * np.arange(count) / count)
     result = bandlimited_frequency_path(
         f, sample_rate=sample_rate, waveform="sine")
-    phase = np.cumsum(np.r_[0., f[:-1]]) * 2 * np.pi / sample_rate
+    phase = (np.r_[0., np.cumsum((f[:-1] + f[1:]) / 2)]
+             * 2 * np.pi / sample_rate)
     np.testing.assert_allclose(result, np.sin(phase), atol=1e-12)
 
 
@@ -81,3 +82,19 @@ def test_frequency_path_excludes_rich_waveform_even_harmonics():
     for x in (square, triangle):
         power = np.abs(np.fft.rfft(x))
         assert power[2000] < power[1000] * 1e-7
+
+
+def test_linear_chirp_phase_matches_independent_closed_form():
+    """Regression: left-endpoint integration accumulates a large bias."""
+    sample_rate = 48000
+    seconds = 0.1
+    count = round(sample_rate * seconds)
+    t = np.arange(count) / sample_rate
+    slope = (12000.0 - 1000.0) / seconds
+    frequencies = 1000.0 + slope * t
+    reference = np.sin(
+        2 * np.pi * (1000.0 * t + 0.5 * slope * t**2))
+    actual = bandlimited_frequency_path(
+        frequencies, sample_rate=sample_rate, waveform="sine")
+    rmse = np.sqrt(np.mean((actual - reference)**2))
+    assert rmse < 1e-9

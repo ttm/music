@@ -20,6 +20,9 @@ from music.stimulation.sstim_io import (  # noqa: E402
 from music.stimulation.sstim_planned import (  # noqa: E402
     from_sstim_planned_session_graph, to_sstim_planned_session_graph,
 )
+from music.stimulation.sstim_capabilities import (  # noqa: E402
+    inspect_sstim_capabilities,
+)
 
 
 CREATED = datetime(2026, 10, 11, 0, 0, tzinfo=timezone.utc)
@@ -167,3 +170,14 @@ def test_refuse_multiple_planned_roots():
     g.add((URIRef("urn:other"), RDF.type, SSTIM.SessionSpecification))
     with pytest.raises(ValueError, match="one planned"):
         from_sstim_planned_session_graph(g)
+
+
+def test_planned_sstim_capability_is_distinct_from_actual_execution():
+    good = graph()
+    capability = inspect_sstim_capabilities(good)
+    assert capability.mode == "sstim-planned-music-program"
+    assert capability.can_render
+    assert not capability.exact_pcm_portable
+    root = next(good.subjects(RDF.type, SSTIM.SessionSpecification))
+    good.remove((root, SSTIM.durationSeconds, None))
+    assert inspect_sstim_capabilities(good).mode == "unsupported"

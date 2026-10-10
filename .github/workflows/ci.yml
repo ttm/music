@@ -79,15 +79,20 @@ jobs:
 
       - name: Publish diagnostic high-rate DSP comparison
         # Not a perceptual outcome or a timing gate: timings vary by runner.
-        run: >-
-          python tools/benchmark_dynamic_aliasing.py --repeats 2
-          --json dynamic-alias-report.json > dynamic-alias-report.md
+        run: |
+          python tools/benchmark_dynamic_aliasing.py --repeats 2 \
+            --json dynamic-alias-report.json > dynamic-alias-report.md
+          python tools/benchmark_dynamic_aliasing.py --repeats 2 \
+            --fixed-reference-rate 48000 \
+            --json dynamic-alias-fixed-hz.json > dynamic-alias-fixed-hz.md
       - uses: actions/upload-artifact@v7
         with:
           name: dynamic-alias-report
           path: |
             dynamic-alias-report.json
             dynamic-alias-report.md
+            dynamic-alias-fixed-hz.json
+            dynamic-alias-fixed-hz.md
 
   singing:
     name: Singing, with both backends

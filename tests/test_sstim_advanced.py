@@ -168,3 +168,8 @@ def test_refuse_advanced_graph_structure(problem, match):
         g.remove((root, SSTIM.hasStimulusChannel, None))
     with pytest.raises(ValueError, match=match):
         from_sstim_advanced_graph(g)
+
+
+def test_raw_noise_seed_rejects_invalid_value():
+    with pytest.raises(ValueError, match="seed must"):
+        music.noise(seed=-1, duration=.02)

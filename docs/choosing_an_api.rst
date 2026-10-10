@@ -41,6 +41,23 @@ specialized routines when an experiment requires them.
      - Writers normalize levels; preserve mix relationships by writing
        once rather than normalizing every phrase separately.
 
+Changing pitch, nonlinear effects and hard gates
+------------------------------------------------
+
+Use :func:`music.render_oversampled` with existing generators when
+sample-rate conversion is part of the synthesis itself. It is opt-in and
+requires ``pip install 'music[antialias]'``. This protects more general
+modulated output than a static harmonic table, with increased memory and
+rendering cost. :doc:`sstim_interop` explains measurement and limits.
+
+Machine-readable stimulus exchange
+----------------------------------
+
+The optional ``music.stimulation.sstim_io`` module exports and imports
+a safe, bounded MUSIC-renderable subset of SSTIM 0.19.0 RDF. This is a
+separate module, rather than adding five new names to the flat API.
+See :doc:`sstim_interop` for the full example and validation.
+
 Legacy classes
 --------------
 

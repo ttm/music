@@ -68,7 +68,8 @@ def main():
         for frequency in (1000, 10000)
         for row in measure(frequency, waveform, repeats=options.repeats)
     ]
-    print("| waveform | Hz | renderer | off-harmonic energy | median ms | peak |")
+    print("| waveform | Hz | renderer | off-harmonic energy | "
+          "median ms | peak |")
     print("|---|---:|---|---:|---:|---:|")
     for row in report:
         print("| {waveform} | {frequency_hz} | {method} | "

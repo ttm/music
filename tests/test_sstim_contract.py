@@ -125,7 +125,7 @@ INDEPENDENT_AM_TURTLE = """
 <urn:outside:signal> a s:StimulationSignal ;
   rdfs:label "9 Hz modulator" ;
   s:hasSignalShape v:shapeSine ;
-  s:hzMin 9 ; s:hzMax 9.0 .
+  s:hzMin 9.0 ; s:hzMax 9.00 .
 <urn:outside:channel> a e:StimulusChannel ;
   rdfs:label "air-conducted mono" ;
   e:perceivedModality e:modalityAuditory ;

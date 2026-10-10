@@ -98,7 +98,7 @@ def test_nonconformant_planned_sessions_are_refused(override, match):
     ("missing-created", "expected exactly one"),
     ("bad-created", "timestamp must be"),
     ("malformed-created", "invalid planned-session metadata"),
-    ("bad-volume", "invalid planned-session metadata"),
+    ("bad-volume", "master_volume"),
     ("bad-duration", "invalid planned-session metadata"),
     ("wrong-reproducibility", "unsupported reproducibility"),
     ("changed-duration", "planned duration contradicts"),

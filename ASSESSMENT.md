@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-06**,
-`music` 1.10.0: 48 modules, 14,031 LOC package + 21,821 LOC tests, 127 names
+`music` 1.10.0: 49 modules, 14,153 LOC package + 22,009 LOC tests, 128 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,13 +59,13 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **5611 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (3,349 stmts, 0 missed) |
+| Test suite | `pytest -q` | **5674 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (3,388 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
 | Lint, extended rule set | `ruff check --select ALL music` | 2,520 findings |
-| Annotation coverage | AST scan | **119 / 256 functions (46 %)**; 63 / 96 exported (66 %) |
-| Docstring coverage | AST scan | **183 / 189 public defs (97 %)** |
+| Annotation coverage | AST scan | **121 / 258 functions (47 %)**; 64 / 97 exported (66 %) |
+| Docstring coverage | AST scan | **184 / 190 public defs (97 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **22 of 35 routines sample-exact**; 9 divergent with a stated reason, 4 where the reference does not run |
@@ -77,7 +77,7 @@ figures described above are automatically compared with the checkout.
 | Aliasing | `tests/test_artifacts.py` | a sine strays **1.2e-08** of its energy off the harmonics at any frequency; a sawtooth strays **24 %** at 10 kHz |
 | Round-trip noise | `tests/test_artifacts.py` | **48 dB** at 8-bit, **121** at 16, **145** at 24, against what was written |
 | Filter stability | `tests/test_artifacts.py` | every design's poles inside the unit circle across its whole parameter range |
-| Degenerate parameters | `tests/test_degenerate.py` | **145** (routine, parameter) pairs set to zero: each works or is refused with a `ValueError` |
+| Degenerate parameters | `tests/test_degenerate.py` | **148** (routine, parameter) pairs set to zero: each works or is refused with a `ValueError` |
 | Zero durations | `tests/test_degenerate.py` | every routine that takes a duration renders nothing for a zero one, in the shape it would otherwise have |
 | Length, rate and pitch | `tests/test_properties.py` | **24 of 26** timed routines render exactly `duration * sample_rate` at four rates; the other two are registered |
 | Composition | `tests/test_properties.py` | shapers commute, mixing associates, designed filters are linear; pieces survive a write and a read |
@@ -98,7 +98,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; Linux CI across Python 3.10–3.14 including a job pinned to the declared lower bounds; installed-wheel checks on Linux, macOS and Windows with Python 3.12 |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 46 %; the `legacy/` subpackage |
+| **Needs work** | Annotation coverage at 47 %; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -273,6 +273,17 @@ either documented in the code or tracked in the issue list.
   change unnoticed, and so that anyone rendering high notes from a rich
   table knows what they are getting.
 
+  **An opt-in static-pitch alternative now exists.** Starting with the
+  next development version, `music.bandlimited_note` removes table
+  harmonics at or above Nyquist and interpolates sample positions.
+  Tests compare its harmonic energy against the MASS-compatible
+  `music.note`, which deliberately remains unchanged. The added
+  oscillator does not solve aliasing in FM, glissandi, hard-gated
+  pulses, nonlinear effects or post-processing. It may overshoot
+  full scale at Gibbs ringing near a discontinuity, so export needs
+  explicit headroom. See `docs/choosing_an_api.rst` and
+  `tools/benchmark_spectral_aliasing.py`.
+
   Worth knowing about the measurement too: it is blind whenever the
   sample rate is a whole multiple of the frequency, since then the folded
   partials land on multiples of the fundamental and cannot be told from
@@ -413,7 +424,7 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 46 %**, and 66 % across the exported API. The
+- **Annotation coverage is 47 %**, and 66 % across the exported API. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones

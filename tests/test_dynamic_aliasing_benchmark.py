@@ -22,7 +22,8 @@ def test_oversampling_reduces_analytic_reference_error(case):
     assert four < direct / 2
     assert eight < four
     assert all(x["reference_rms"] > 0 and
-               x["max_window_error_rms"] >= x["error_rms"] - 1e-12
+               x["max_window_error_rms"] >= x["error_rms"] - 1e-12 and
+               np.isfinite(x["short_time_magnitude_error"])
                for x in data)
 
 

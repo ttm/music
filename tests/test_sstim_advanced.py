@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 pytest.importorskip("rdflib")
-from rdflib import Literal  # noqa: E402
+from rdflib import Graph, Literal  # noqa: E402
 from rdflib.namespace import RDF  # noqa: E402
 
 import music  # noqa: E402
@@ -138,7 +138,7 @@ def test_advanced_rejects_bad_metadata_and_graph_shape():
     with pytest.raises(ValueError, match="engine hint"):
         from_sstim_advanced_graph(g)
     with pytest.raises(ValueError, match="one advanced"):
-        from_sstim_advanced_graph(None)
+        from_sstim_advanced_graph(Graph())
 
 
 @pytest.mark.network

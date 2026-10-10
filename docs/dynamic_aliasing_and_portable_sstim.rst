@@ -12,12 +12,19 @@ instead:
 
    python tools/benchmark_dynamic_aliasing.py --json dynamic-alias.json
    python tools/benchmark_dynamic_aliasing.py --rates 48000 --repeats 3
+   python tools/benchmark_dynamic_aliasing.py --fixed-reference-rate 48000
 
 The full default matrix evaluates 44.1, 48 and 96 kHz, four sources
 (wide-deviation FM, extreme FM periodically exceeding output Nyquist,
 tanh-shaped nonlinear tone and an abrupt carrier gate), and direct/4x/8x
 synthesis against a 16x analytic reference low-pass filtered and
-decimated using the same specified FIR family.
+decimated using the same specified FIR family. By default the
+carrier and modulation frequencies are fractions of the target rate
+(consistent normalized Nyquist stress). With
+``--fixed-reference-rate 48000``, all target rates instead use the
+**same physical frequencies** defined for 48 kHz; this measures the
+different Nyquist headroom at 44.1, 48 and 96 kHz. CI publishes both
+matrices.
 
 Each record states both **engine = analytic** and **engine = MUSIC**
 separately. The former establishes what oversampling can do to the

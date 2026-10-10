@@ -138,3 +138,52 @@ def test_full_profile_accepts_program_constituent_stimuli():
     g = to_sstim_program_graph(mixed_program())
     result = validate_sstim(g, version="0.19.0")
     assert result.ok, str(result)
+
+
+@pytest.mark.parametrize("problem,match", [
+    ("unexpected-iri", "unexpected program IRI"),
+    ("no-phases", "1 to 50"),
+    ("too-many", "1 to 50"),
+    ("wrong-stimulus-iri", "stimulus IRI mismatch"),
+    ("missing-subgraph", "missing stimulus subgraph"),
+    ("missing-generator", "missing executable generator"),
+    ("unknown-generator", "unknown generator"),
+    ("inconsistent-duration", "rate or duration mismatch"),
+    ("extra-statement", "triples contradict"),
+])
+def test_reject_program_ambiguity(problem, match):
+    graph = to_sstim_program_graph(mixed_program())
+    root = next(graph.subjects(RDF.type, MUSIC.StimulationProgram))
+    phase = next(graph.objects(root, MUSIC.hasPhase))
+    stimulus = next(graph.objects(phase, MUSIC.phaseStimulus))
+    if problem == "unexpected-iri":
+        graph.remove((root, RDF.type, MUSIC.StimulationProgram))
+        graph.add((URIRef("https://example.org/broken"),
+                   RDF.type, MUSIC.StimulationProgram))
+    elif problem == "no-phases":
+        graph.remove((root, MUSIC.hasPhase, None))
+    elif problem == "too-many":
+        for index in range(51):
+            graph.add((root, MUSIC.hasPhase,
+                       URIRef(f"https://example.org/extra-{index}")))
+    elif problem == "wrong-stimulus-iri":
+        graph.remove((phase, MUSIC.phaseStimulus, stimulus))
+        graph.add((phase, MUSIC.phaseStimulus,
+                   URIRef("https://example.org/not-this-phase")))
+    elif problem == "missing-subgraph":
+        stem = str(stimulus)[:-len("specification")]
+        for triple in list(graph):
+            if str(triple[0]).startswith(stem):
+                graph.remove(triple)
+    elif problem in ("missing-generator", "unknown-generator"):
+        graph.remove((stimulus, MUSIC.generator, None))
+        if problem == "unknown-generator":
+            graph.add((stimulus, MUSIC.generator, Literal("arbitrary")))
+    elif problem == "inconsistent-duration":
+        graph.remove((phase, MUSIC.phaseDurationSeconds, None))
+        graph.add((phase, MUSIC.phaseDurationSeconds,
+                   Literal(".7", datatype=XSD.decimal)))
+    else:
+        graph.add((root, MUSIC.unexpectedNote, Literal("not allowed")))
+    with pytest.raises(ValueError, match=match):
+        from_sstim_program_graph(graph)

@@ -72,6 +72,20 @@ def _rms(samples):
     return float(np.sqrt(np.mean(samples * samples)))
 
 
+def _short_time_spectral_error(samples, reference):
+    """Windowed magnitude-distance; phase insensitive, not pure alias power."""
+    numerator = 0.0
+    denominator = 0.0
+    for x, y in zip(np.array_split(samples, 8),
+                    np.array_split(reference, 8)):
+        window = np.hanning(len(x))
+        a = np.abs(np.fft.rfft(x * window))
+        b = np.abs(np.fft.rfft(y * window))
+        numerator += float(np.sum((a - b) ** 2))
+        denominator += float(np.sum(b ** 2))
+    return float(np.sqrt(numerator / denominator))
+
+
 def evaluate(case, rate=48000, count=4096, *,
              reference_factor=16, factors=(4, 8), repeats=3):
     """Compare direct and oversampled sources against a high-rate reference.
@@ -133,6 +147,8 @@ def evaluate(case, rate=48000, count=4096, *,
                 "reference_rms": _rms(reference),
                 "error_rms": _rms(errors),
                 "max_window_error_rms": max(map(_rms, chunks)),
+                "short_time_magnitude_error": (
+                    _short_time_spectral_error(samples, reference)),
                 "peak_absolute": float(np.max(np.abs(samples))),
                 "render_median_ms": float(np.median(timings)),
                 "nominal_intermediate_frames": count * factor,
@@ -155,12 +171,14 @@ def main(argv=None):
             for row in evaluate(case, rate, args.count,
                                 reference_factor=args.reference_factor,
                                 repeats=args.repeats)]
-    print("| case | rate | engine | x | RMS error | worst window RMS | ms |")
-    print("|---|---:|---|---:|---:|---:|---:|")
+    print("| case | rate | engine | x | RMS error | "
+          "worst window RMS | spectral mag. | ms |")
+    print("|---|---:|---|---:|---:|---:|---:|---:|")
     for row in rows:
         print("| {case} | {sample_rate_hz} | {engine} | "
               "{oversampling_factor} | {error_rms:.5g} | "
               "{max_window_error_rms:.5g} | "
+              "{short_time_magnitude_error:.5g} | "
               "{render_median_ms:.2f} |".format(**row))
     if args.json:
         from pathlib import Path

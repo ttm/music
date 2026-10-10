@@ -1,6 +1,6 @@
 # Quality assessment and known limitations
 
-*A living record, not a point-in-time audit. Last measured **2026-10-06**,
+*A living record, not a point-in-time audit. Last measured **2026-10-10**,
 `music` 1.10.0: 49 modules, 14,153 LOC package + 22,009 LOC tests, 128 names
 in the public API.*
 
@@ -63,7 +63,7 @@ figures described above are automatically compared with the checkout.
 | Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (3,388 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 47 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,520 findings |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,542 findings |
 | Annotation coverage | AST scan | **121 / 258 functions (47 %)**; 64 / 97 exported (66 %) |
 | Docstring coverage | AST scan | **184 / 190 public defs (97 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
@@ -433,8 +433,8 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,520 findings** on `music/`, almost all
-  stylistic: 725 quote-style, 373 missing argument annotations, 80 missing
+- **The extended lint set reports 2,542 findings** on `music/`, almost all
+  stylistic: 728 quote-style, 373 missing argument annotations, 80 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.

@@ -151,6 +151,7 @@ The whole public API is re-exported flat from the top level, so
    sstim_interop
    advanced_sstim_dsp
    dynamic_aliasing_and_portable_sstim
+   sstim_import_security
    api
 
 .. toctree::

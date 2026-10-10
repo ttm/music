@@ -82,8 +82,6 @@ def test_opt_in_full_profile_validation_can_gate_rendering(monkeypatch):
 
 
 def test_invalid_output_from_engine_is_rejected(monkeypatch):
-    class Dummy:
-        pass
     monkeypatch.setattr(harness, "render_sstim_contract",
                         lambda *args: [float("nan")])
     with pytest.raises(ValueError, match="invalid samples"):

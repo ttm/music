@@ -251,11 +251,14 @@ def from_sstim_graph(value: Graph | str | Path) -> RenderableStimulus:
     if float(one(signal, SSTIM.hzMax)) != mod_rate:
         raise ValueError("variable-rate signals are not supported")
     channels = list(g.objects(root, SSTIM.hasStimulusChannel))
+    if not channels:
+        raise ValueError("stimulus must have a channel")
+    duration = float(one(channels[0], SSTIM.channelDurationSeconds))
+    # Check the executable name before deriving its channel cardinality.
+    spec = _input(generator, params, duration, int(rate))
     expected_count = 2 if generator == "binaural_beats" else 1
     if len(channels) != expected_count:
         raise ValueError("wrong channel count for the generator")
-    duration = float(one(channels[0], SSTIM.channelDurationSeconds))
-    spec = _input(generator, params, duration, int(rate))
     method, shape, param, rate_key = _GENERATORS[generator]
     if mod_rate != spec.parameters[rate_key] or (
             one(signal, SSTIM.hasSignalShape) != SSTIM_V[_SHAPES[shape]]):

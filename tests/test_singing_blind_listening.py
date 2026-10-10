@@ -30,7 +30,8 @@ def test_blind_trial_reproducible_and_backend_key_separate(tmp_path):
         b, _ = sf.read(reviewer / f"trial-{i:02d}-B.wav")
         assert np.max(np.abs(a)) <= .951
         assert np.max(np.abs(b)) <= .951
-        rms = lambda x: np.sqrt(np.mean(x*x))
+        def rms(x):
+            return np.sqrt(np.mean(x*x))
         assert rms(a) / rms(b) == pytest.approx(1, abs=.01)
     with (reviewer / "ratings.csv").open(newline="") as f:
         ratings = list(csv.DictReader(f))

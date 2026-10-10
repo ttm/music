@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-10**,
-`music` 1.10.0: 55 modules, 15,408 LOC package + 23,337 LOC tests, 129 names
+`music` 1.10.0: 56 modules, 15,552 LOC package + 23,551 LOC tests, 129 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,13 +59,13 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **6003 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,071 stmts, 0 missed) |
-| Type check | `mypy music` | **clean**, 55 files |
+| Test suite | `pytest -q` | **6039 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,148 stmts, 0 missed) |
+| Type check | `mypy music` | **clean**, 56 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,889 findings |
-| Annotation coverage | AST scan | **135 / 281 functions (48 %)**; 65 / 98 exported (66 %) |
-| Docstring coverage | AST scan | **200 / 208 public defs (96 %)** |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,936 findings |
+| Annotation coverage | AST scan | **136 / 282 functions (48 %)**; 65 / 98 exported (66 %) |
+| Docstring coverage | AST scan | **202 / 210 public defs (96 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **22 of 35 routines sample-exact**; 9 divergent with a stated reason, 4 where the reference does not run |
@@ -464,7 +464,7 @@ perceptual validity or third-party interoperability.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,889 findings** on `music/`, almost all
+- **The extended lint set reports 2,936 findings** on `music/`, almost all
   stylistic: 731 quote-style, 381 missing argument annotations, 84 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their

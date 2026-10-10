@@ -241,6 +241,8 @@ def render_sstim_contract(resolution: PortableResolution):
             resolution.generator, resolution.parameters,
             resolution.duration, resolution.sample_rate)
         params = spec.parameters
+    if set(resolution.parameters) != set(params):
+        raise ValueError("resolution must pin every engine control")
     return getattr(stimuli, resolution.generator)(
         duration=resolution.duration,
         sample_rate=resolution.sample_rate, **params)

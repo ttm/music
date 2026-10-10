@@ -37,8 +37,8 @@ def test_sine_matches_an_independent_analytic_oscillator():
 
 
 def test_rolloff_reduces_harmonics_near_nyquist():
-    sharp = music.bandlimited_note(10000, duration=1, rolloff_hz=0)
-    soft = music.bandlimited_note(10000, duration=1, rolloff_hz=5000)
+    sharp = music.bandlimited_note(10000, duration=1, waveform="sawtooth", rolloff_hz=0)
+    soft = music.bandlimited_note(10000, duration=1, waveform="sawtooth", rolloff_hz=5000)
     a = np.abs(np.fft.rfft(sharp))
     b = np.abs(np.fft.rfft(soft))
     assert b[10000] / a[10000] == pytest.approx(1.0, abs=.002)

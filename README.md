@@ -31,82 +31,10 @@ joins joins rather than clicks.
 
 📖 **[Tutorial](https://ttm.github.io/music/tutorial.html)** — from a single
 note to a short stereo piece.
+📖 **[Where to start](https://ttm.github.io/music/choosing_an_api.html)** — the
+few routines a common task needs.
 📖 **[API reference](https://ttm.github.io/music/)** — every routine documented
 with the equation it implements and the article it comes from.
-
-## Choose a synthesis path
-
-For a stable, static-pitch waveform where higher harmonics would fold below
-Nyquist, use the opt-in band-limited oscillator:
-
-```python
-import music
-
-# Compare a 10 kHz sawtooth with the MASS-reference wavetable lookup.
-reference = music.note(10000, duration=1,
-                       waveform_table=music.waveform_table("sawtooth"))
-cleaner = music.bandlimited_note(10000, duration=1, waveform="sawtooth")
-```
-
-`music.note` retains its MASS-compatible behavior and exact samples.
-`bandlimited_note` removes harmonics at or above Nyquist and interpolates
-wavetable positions, but does **not** band-limit glissandi, FM, gated pulse
-edges or later nonlinear effects. Truncated waves may exceed full scale near
-corners due to Gibbs overshoot: manage gain at export. For a measured A/B,
-run `python tools/benchmark_spectral_aliasing.py`; for listening WAVs, run
-`python examples/aliasing_demo.py`.
-
-**[Start with the smallest API](https://ttm.github.io/music/choosing_an_api.html)**
-for practical choices and scientific limitations.
-
-## SSTIM and time-varying anti-aliasing
-
-Optional `music.render_oversampled` calls existing generators at a higher
-sample rate and applies polyphase low-pass filtering before decimation,
-reducing fold-over from rapid modulation and hard gating without changing
-MASS-compatible defaults. Requires `pip install 'music[antialias]'`.
-
-`music.stimulation.sstim_io` reads, writes and renders **five
-deterministic auditory techniques** under the SSTIM 0.19.0 vocabulary.
-`music.stimulation.sstim_advanced` additionally models seeded stochastic
-noise and stereo geometric motion. `music.stimulation.sstim_program`
-serializes and reconstructs ordered, faded MUSIC programs containing these
-SSTIM stimulus specifications. Exact engine rendering hints are kept in
-the MUSIC namespace, separate from SSTIM terms; they do not assert
-clinical efficacy or recorded delivery. Requires
-`pip install 'music[sstim]'`.
-
-The [SSTIM import-safety and capability guide](https://ttm.github.io/music/sstim_import_security.html)
-explains local-only bounded Turtle processing and the explicit distinction
-between standard beat references, MUSIC-owned replay, descriptive-only
-mechanisms and unsupported RDF. The capability report never promises
-sample-exact cross-vendor execution.
-
-See [SSTIM and DSP](https://ttm.github.io/music/sstim_interop.html),
-[advanced SSTIM exchange](https://ttm.github.io/music/advanced_sstim_dsp.html)
-and the optional
-[pitch-path anti-aliasing](https://ttm.github.io/music/advanced_sstim_dsp.html)
-for executable examples and explicit limitations.
-
-An opt-in [PolyBLEP saw/square oscillator](https://ttm.github.io/music/polyblep_synthesis.html)
-adds discontinuity corrections and phase-continuous chunked frequency
-paths, with coherent 44.1/48/96 kHz spectral-alias measurements and
-RMS-matched, balanced-order blinded listening stimuli. This does not
-change legacy MASS samples or make arbitrary FM/nonlinear output alias-free.
-
-A separate `music.stimulation.sstim_semantic` consumer can inspect
-binaural and monaural SSTIM beat descriptions **without MUSIC hints**,
-and render a declared zero-phase/equal-gain analytic reference, not an
-engine-independent guarantee of identical PCM output. The
-[dynamic aliasing and portable SSTIM guide](https://ttm.github.io/music/dynamic_aliasing_and_portable_sstim.html)
-also documents the reproducible high-rate benchmark comparing actual MUSIC
-FM, nonlinear and gated synthesis with analytic 16x-filtered references
-at 44.1/48/96 kHz in both normalized-Nyquist and fixed-physical-Hz
-scenarios. CI publishes both JSON and Markdown benchmark summaries.
-No perceptual improvement is inferred from error metrics.
-
-For an evidence-bounded review of the recent synthesis and SSTIM work,
-see [the engineering audit](AUDIT_2026-10-10.md).
 
 ## Core features
 
@@ -115,6 +43,14 @@ see [the engineering audit](AUDIT_2026-10-10.md).
   the vibrato pattern is folded into the wavetable lookup rather than applied
   afterwards, so the rendered sound is as close as it can be to the
   mathematical model that describes it.
+* **Band-limited synthesis, when you ask for it.** A wavetable read at
+  every sample folds the partials above the Nyquist frequency back into
+  the band -- a 10 kHz sawtooth puts 24 % of its energy between its own
+  harmonics -- and `note` keeps that, as MASS specifies.
+  `bandlimited_note` renders a fixed pitch without them,
+  `render_oversampled` renders any generator at several times the rate and
+  filters it, for FM, glissandi and hard gates, and `music.core.synths`
+  has oscillators for a pitch that moves.
 * **Musical structures** with an emphasis on symmetry and discourse:
   permutation groups, change-ringing peals and plain changes.
 * **Music theory** as the MASS companion paper states it: the seven diatonic
@@ -141,7 +77,8 @@ see [the engineering audit](AUDIT_2026-10-10.md).
   `StimulationSession` that renders a protocol of them: phases in order,
   crossfaded rather than cut, lasting exactly the sum of the durations you
   wrote down. The sample-accurate synthesis is the point here, because the
-  frequency difference *is* the stimulus.
+  frequency difference *is* the stimulus. Each stimulus, and a session,
+  can be written as an SSTIM description and rendered back from one.
 * **Singing.** `sing` sings a lyric to a melody, one syllable a note, in
   any language espeak speaks. The package's own singer has espeak-ng say
   each syllable and Praat's PSOLA hold it at its note's pitch: a syllable
@@ -202,6 +139,14 @@ pip install 'music[singing]'
 Its second backend, eCantorix, is a Perl program the package clones for
 you; see [Singing](#singing) for what it needs.
 
+`render_oversampled` needs SciPy, and writing stimuli as SSTIM
+descriptions needs RDFLib and SSTIM's own validator:
+
+```console
+pip install 'music[antialias]'
+pip install 'music[sstim]'
+```
+
 To hack on it, install from a checkout so your edits take effect immediately:
 
 ```console
@@ -226,6 +171,27 @@ shaped = music.adsr(sonic_vector=note, attack_duration=80,
 Durations are in seconds, envelope stages in milliseconds, levels in decibels
 and pitch deviations in semitones — each parameter in the unit it is usually
 thought about in.
+
+### Band-limited synthesis
+
+`note` reads its table as MASS does, so a rich waveform's partials above
+the Nyquist frequency fold back into the band. `bandlimited_note` drops
+them for the note's pitch, and `render_oversampled` renders a whole
+generator at a multiple of the rate, for what one pitch's table cannot
+help:
+
+```python
+folded = music.note(10000, duration=1,
+                    waveform_table=music.waveform_table("sawtooth"))
+clean = music.bandlimited_note(10000, duration=1, waveform="sawtooth")
+swept = music.render_oversampled(music.note_with_fm, duration=1,
+                                 freq=6000, fm=300, max_fm_deviation=4000)
+```
+
+The sawtooth that kept 24 % of its energy off its harmonics keeps about
+1e-16. [Band-limited synthesis](https://ttm.github.io/music/bandlimited_synthesis.html)
+has the oscillators for a pitch that moves, by partials or with PolyBLEP,
+and what each is measured to do.
 
 ### Scales, chords and intervals
 
@@ -327,6 +293,42 @@ colours = [music.noise(kind, duration=0.5)
 music.write_wav_mono(music.horizontal_stack(*colours), "colours.wav")
 ```
 
+A `seed` draws the same noise again, and leaves NumPy's global random
+state alone.
+
+### Sensory stimulation
+
+Each stimulus is named for the SSTIM technique it implements, and a
+session plays them in order, crossfaded:
+
+```python
+session = music.StimulationSession(end_ramp=0.5)
+session.add(music.binaural_beats, duration=30, carrier_freq=200,
+            beat_freq=10)
+session.add(music.modulated_noise, duration=30, ramp=2,
+            noise_type="pink", seed=1)
+music.write_wav_stereo(session.render(), "session.wav")
+```
+
+With `pip install 'music[sstim]'`, the session can be written as SSTIM
+descriptions of its stimuli, in the order the session plays them, and
+rendered back from them sample for sample:
+
+```python
+from music.stimulation.sstim_program import (
+    render_sstim_program, to_sstim_program_graph)
+
+graph = to_sstim_program_graph(
+    session, base="https://your-lab.example/plans/1/")
+graph.serialize("session.ttl", format="turtle")
+again = render_sstim_program("session.ttl")
+```
+
+A description says what a stimulus is, not that anyone heard it or that it
+does anything. [Stimuli in SSTIM](https://ttm.github.io/music/sstim.html)
+has the rest: reading a beat another tool described, and what can and
+cannot be rendered from a graph.
+
 ### Singing
 
 A lyric is sung one syllable a note: syllables joined by hyphens, words
@@ -405,6 +407,7 @@ Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) 
 * [bonds](https://github.com/ttm/music/tree/master/examples/bonds.py): plays one line three times, changing only how its characteristics are bound to its pitch.
 * [binaural_beats](https://github.com/ttm/music/tree/master/examples/binaural_beats.py): generates binaural beats using two pure tones with tremolo for relaxation or focus.
 * [sensory_stimulation](https://github.com/ttm/music/tree/master/examples/sensory_stimulation.py): writes one file per SSTIM technique with `music.stimulation`, and one three-phase session, which is the form these stimuli are actually delivered in.
+* [aliasing_demo](https://github.com/ttm/music/tree/master/examples/aliasing_demo.py): writes a 10 kHz sawtooth twice, read from the table as MASS does and band-limited, at one gain, so the folding can be heard.
 * [Singing](#singing), above, says what each singing backend needs.
 
 ## Package structure
@@ -412,7 +415,7 @@ Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) 
 The modules are:
 
 * **core**:
-  * **synths** for synthesization of notes (including vibratos, glissandos, etc.), noises and envelopes.
+  * **synths** for synthesization of notes (including vibratos, glissandos, etc.), noises and envelopes, and the band-limited notes and oscillators.
   * **filters** for the application of filters such as ADSR envelopes, fades, IIR and FIR, reverb, loudness, and localization, and for designing the coefficients the IIR ones take.
   * **io** for reading, writing and playing audio, both mono and stereo.
   * **functions** for normalization.
@@ -420,7 +423,7 @@ The modules are:
 * **theory** for scales, chords and the harmonic series. Counterpoint, harmonic expansion and modulation are described in the companion paper and are [not there yet](https://github.com/ttm/music/issues/1).
 * **bonds** for tying a note's vibrato and tremolo to its frequency, which is where an arbitrary construction of that kind goes.
 * **legacy** for musical pieces that are rendered with the Music package and might be used as material to make more music.
-* **stimulation** for sensory-stimulation work: the seven stimuli above, each carrying the SSTIM term it implements, and `StimulationSession` for sequencing them into a protocol.
+* **stimulation** for sensory-stimulation work: the seven stimuli above, each carrying the SSTIM term it implements, `StimulationSession` for sequencing them into a protocol, and the `sstim_` modules that write them as SSTIM descriptions and read them back.
 * **singing** for `sing` and its two backends: `psola`, the package's own singer, and `perform`, which writes the score and runs the eCantorix engine that `bootstrap` clones and `paths` finds.
 * **hrtf** for fetching the KEMAR measurements into your cache and reading a direction's impulse responses out of them.
 * **tables** for the generation of lookup tables for some basic waveform.
@@ -430,8 +433,9 @@ The modules are:
 ## Plans
 
 See [the findings and prioritized roadmap](ROADMAP.md) for the September
-2026 review, the correctness patches since 1.8.1, and the
-[targeted mutation audits](MUTATION_AUDIT.md) of six areas of the package.
+2026 review, the correctness patches since 1.8.1, the
+[mutation audits](MUTATION_AUDIT.md) of all sixteen areas of the package as
+it stood at 1.10.0, and the band-limited synthesis and SSTIM work since.
 
 Concrete things the code itself is waiting for, rather than a wish list:
 
@@ -476,7 +480,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 6,094 tests, 100% line and branch coverage
+pytest                                       # 6,102 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

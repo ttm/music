@@ -333,3 +333,62 @@ The bounds stop a large file being read by accident. They do not make a
 hostile one safe, since the parser has run before the triples can be
 counted: do not read untrusted Turtle without isolating the process and
 limiting what it may use.
+
+Reference
+---------
+
+None of these is exported at the top level; each is imported from its
+module, with ``pip install 'music[sstim]'``.
+
+Writing descriptions, and rendering them back
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: music.stimulation.sstim_io.to_sstim_graph
+
+.. autofunction:: music.stimulation.sstim_io.from_sstim_graph
+
+.. autofunction:: music.stimulation.sstim_io.render_sstim
+
+.. autofunction:: music.stimulation.sstim_io.validate_sstim
+
+.. autofunction:: music.stimulation.sstim_advanced.to_sstim_advanced_graph
+
+.. autofunction:: music.stimulation.sstim_advanced.from_sstim_advanced_graph
+
+.. autofunction:: music.stimulation.sstim_advanced.render_sstim_advanced
+
+.. autofunction:: music.stimulation.sstim_program.to_sstim_program_graph
+
+.. autofunction:: music.stimulation.sstim_program.from_sstim_program_graph
+
+.. autofunction:: music.stimulation.sstim_program.render_sstim_program
+
+.. autofunction:: music.stimulation.sstim_planned.to_sstim_planned_session_graph
+
+.. autofunction:: music.stimulation.sstim_planned.from_sstim_planned_session_graph
+
+Reading another tool's descriptions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: music.stimulation.sstim_semantic.inspect_sstim_beat
+
+.. autofunction:: music.stimulation.sstim_semantic.render_semantic_beat
+
+.. autofunction:: music.stimulation.sstim_contract.resolve_sstim_contract
+
+.. autofunction:: music.stimulation.sstim_contract.render_sstim_contract
+
+.. autofunction:: music.stimulation.sstim_capabilities.inspect_sstim_capabilities
+
+What they return
+~~~~~~~~~~~~~~~~
+
+.. autoclass:: music.stimulation.sstim_io.RenderableStimulus
+
+.. autoclass:: music.stimulation.sstim_semantic.SemanticBeat
+
+.. autoclass:: music.stimulation.sstim_contract.PortableResolution
+
+.. autoclass:: music.stimulation.sstim_capabilities.InteroperabilityCapability
+
+.. autoclass:: music.stimulation.sstim_planned.PlannedSession

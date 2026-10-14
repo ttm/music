@@ -256,3 +256,17 @@ form. Give a listener only the ``reviewer`` folder; the ``organizer``
 folder holds the key. Start at a low volume, since a rich wave near the
 Nyquist frequency can be harsh. No test has been run with them, so no
 claim about what a listener hears rests on them.
+
+Reference
+---------
+
+:func:`music.bandlimited_note` and :func:`music.render_oversampled` are in
+the :doc:`api`. The oscillators for a pitch that moves are not exported
+at the top level, and are imported from their modules:
+
+.. autofunction:: music.core.synths.frequency_path.bandlimited_frequency_path
+
+.. autofunction:: music.core.synths.polyblep.polyblep_frequency_path
+
+.. autoclass:: music.core.synths.polyblep.PolyBLEPOscillator
+   :members: render

@@ -29,13 +29,23 @@ class InteroperabilityCapability:
 
 def inspect_sstim_capabilities(
         value: Graph | str | Path) -> InteroperabilityCapability:
-    """Negotiate renderer support without requiring the optional SSTIM client.
+    """Say what can be done with a graph, before anything renders.
 
-    Portable binaural and monaural beats can render only under MUSIC's
-    explicitly selected analytic convention. Other stimuli are inspected
-    for a known MUSIC-owned executable profile; if absent or contradictory,
-    report the missing cross-engine contract rather than guessing values.
-    Even exact MUSIC replay is not portable *across arbitrary engines*.
+    A planned SessionSpecification or a MUSIC program is checked whole. A
+    graph carrying any of the package's terms is checked against them
+    first, so one whose package and SSTIM terms disagree is refused
+    rather than read by its SSTIM terms. Only a graph in SSTIM's terms
+    alone can be a portable beat reference, rendered under an explicitly
+    named analytic convention; other known SSTIM mechanisms are reported
+    as descriptive only, with the controls they lack. Nothing is guessed,
+    and even exact replay by this package is not portable across engines.
+    It needs RDFLib, not SSTIM's validator.
+
+    Returns
+    -------
+    InteroperabilityCapability
+        The mode, the technique, whether this package can render it, and
+        what a render would still need.
     """
     from .sstim_semantic import inspect_sstim_beat
 

@@ -129,7 +129,8 @@ state unless given a `seed`. `render_oversampled` needs
 - **CI installs the two new extras,** validates SSTIM against its 0.19.0
   Full profile on Python 3.12, and publishes the aliasing benchmarks and
   the PolyBLEP listening pairs as artifacts. It prints the extended lint
-  count too, for information.
+  count too, for information, and the documentation is built with the
+  SSTIM extra, whose modules the reference imports.
 - **The extras' lower bounds are tested,** as the core dependencies'
   are: the job that installs the lowest versions pyproject declares
   installs SciPy 1.11.1, RDFLib 7.0.0 and SSTIM 0.2.0 with them. SciPy's
@@ -152,7 +153,9 @@ state unless given a `seed`. `render_oversampled` needs
   whatever the rendering does, with the benchmarks' figures and what they
   do not show. The second writes a stimulus and a session, reads a beat
   another tool described, and says what can be rendered from a graph and
-  how safely a graph is read.
+  how safely a graph is read. Each ends with a reference to the functions
+  it describes, which are not exported at the top level and which no page
+  showed.
 - **A page on where to start,** *Choosing the smallest API*, maps common
   tasks onto a few routines.
 - **The README describes both among the core features,** with a closer

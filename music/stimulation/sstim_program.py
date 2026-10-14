@@ -6,6 +6,8 @@ module does NOT mint sstim:SessionSpecification or sstim:SessionInstance:
 neither an execution clock nor delivered-exposure observations exist here.
 It uses MUSIC-owned terms for ordering, ramps and rendering choices while
 reusing valid SSTIM specifications for each constituent stimulus.
+``sstim_planned`` wraps such a program in a SessionSpecification, for a
+session that qualifies; nothing mints a SessionInstance.
 """
 
 from __future__ import annotations

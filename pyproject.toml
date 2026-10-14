@@ -22,8 +22,9 @@ optional-dependencies = { plot = [
 ], singing = [
     'praat-parselmouth >= 0.4.3',
 ], antialias = [
-    'scipy >= 1.11',
+    'scipy >= 1.11.1',
 ], sstim = [
+    'rdflib >= 7.0',
     'sstim >= 0.2.0, < 0.3',
 ], dev = [
     'pytest >= 8.2',

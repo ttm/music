@@ -208,7 +208,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install 'colorama==0.4.6' 'numpy==1.26.4' 'soundfile==0.12.1' \
                       'sympy==1.12' 'termcolor==2.4.0' 'matplotlib==3.7.1'
-          pip install pytest pytest-cov scipy sstim
+          # The extras' floors too. They were installed at their newest,
+          # which said nothing about the versions pyproject names.
+          pip install pytest pytest-cov 'scipy==1.11.1' 'rdflib==7.0.0' \
+                      'sstim==0.2.0'
           pip install --no-deps -e .
       - name: Test
         run: pytest -q

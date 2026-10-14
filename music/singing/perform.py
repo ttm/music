@@ -5,9 +5,11 @@ configuration it writes for the eCantorix backend."""
 import re
 import logging
 import math
+import os
 import shutil
 import subprocess
 from collections.abc import Sequence
+from contextlib import contextmanager
 from fractions import Fraction
 from pathlib import Path
 from numbers import Real
@@ -101,8 +103,8 @@ def sing(text="Mar-ry had a litt-le lamb",
         ``pip install 'music[singing]'``. ``"ecantorix"`` is the engine
         this package sang with by default until PSOLA, kept as the
         reference it is compared with. It renders into fixed files in
-        one folder, the engine's cache, so two processes singing with it
-        at once overwrite each other's, and one of them fails.
+        one folder, the engine's cache, which one render holds at a
+        time: a second process singing with it waits for the first.
 
     Returns
     -------
@@ -192,51 +194,55 @@ def sing(text="Mar-ry had a litt-le lamb",
     # Inside the engine, which is there: is_engine said so.
     cache.mkdir(exist_ok=True)
 
-    write_abc(text, notes, durs, M=M, L=L, Q=Q, K=K, reference=reference)
-    conf_text = '$ESPEAK_VOICE = "{}";\n'.format(lang)
-    conf_text += '$ESPEAK_TRANSPOSE = {};'.format(transpose)
-    if effect:
-        conf_text += f"\ndo 'extravoices/{EFFECTS[effect]}.inc';"
-    if not (effect and EFFECTS[effect] == 'flite'):
-        # flite reads no espeak phonemes, and lang names a flite voice.
-        sung = sung_phonemes('espeak', lang, syllables(text))
-        if sung:
-            conf_text += '\n' + _edit_syllables(sung)
-    with open(cache / 'achant.conf', 'w') as f:
-        f.write(conf_text)
-    try:
-        _prepare_cache(engine, cache)
-    except OSError as exc:
-        raise RuntimeError(f'Failed to prepare singing cache: {exc}') from exc
-    # A render left from an earlier call would otherwise be read back as
-    # this one's when the engine writes nothing; and the MIDI made from
-    # the earlier score sung again when this one is written in the same
-    # second, since make reads a file's time no finer than that on macOS,
-    # where it is GNU Make 3.81.
-    rendered = cache / 'achant.wav'
-    for earlier in (rendered, cache / 'achant.mid'):
-        earlier.unlink(missing_ok=True)
-    # The script is run with the perl the requirements were checked
-    # against, rather than by its #!/usr/bin/perl, which is another Perl
-    # on macOS and one without the modules; and with the cache on @INC,
-    # where its `do "achant.conf"` looks since Perl 5.26 took the current
-    # directory off it.
-    try:
-        result = subprocess.run(
-            ['make', '-C', str(cache), 'ECANTORIX=perl -I. ../ecantorix.pl'],
-            check=True, capture_output=True, text=True)
-    except subprocess.CalledProcessError as exc:
-        raise RuntimeError(
-            f'Failed to build singing cache: {exc}\n'
-            f'{_tail(exc.stdout, exc.stderr)}') from exc
-    if not rendered.is_file():
-        # The Makefile pipes the script through tee, so make succeeds
-        # when the script fails.
-        raise RuntimeError(
-            'the singing engine ran but wrote no achant.wav; what it '
-            f'said:\n{_tail(result.stdout, result.stderr)}')
+    # One render at a time: the files below are the same for everyone.
+    with _one_render_at_a_time(cache):
+        write_abc(text, notes, durs, M=M, L=L, Q=Q, K=K, reference=reference)
+        conf_text = '$ESPEAK_VOICE = "{}";\n'.format(lang)
+        conf_text += '$ESPEAK_TRANSPOSE = {};'.format(transpose)
+        if effect:
+            conf_text += f"\ndo 'extravoices/{EFFECTS[effect]}.inc';"
+        if not (effect and EFFECTS[effect] == 'flite'):
+            # flite reads no espeak phonemes, and lang names a flite voice.
+            sung = sung_phonemes('espeak', lang, syllables(text))
+            if sung:
+                conf_text += '\n' + _edit_syllables(sung)
+        with open(cache / 'achant.conf', 'w') as f:
+            f.write(conf_text)
+        try:
+            _prepare_cache(engine, cache)
+        except OSError as exc:
+            raise RuntimeError(
+                f'Failed to prepare singing cache: {exc}') from exc
+        # A render left from an earlier call would otherwise be read back as
+        # this one's when the engine writes nothing; and the MIDI made from
+        # the earlier score sung again when this one is written in the same
+        # second, since make reads a file's time no finer than that on macOS,
+        # where it is GNU Make 3.81.
+        rendered = cache / 'achant.wav'
+        for earlier in (rendered, cache / 'achant.mid'):
+            earlier.unlink(missing_ok=True)
+        # The script is run with the perl the requirements were checked
+        # against, rather than by its #!/usr/bin/perl, which is another Perl
+        # on macOS and one without the modules; and with the cache on @INC,
+        # where its `do "achant.conf"` looks since Perl 5.26 took the current
+        # directory off it.
+        try:
+            result = subprocess.run(
+                ['make', '-C', str(cache),
+                 'ECANTORIX=perl -I. ../ecantorix.pl'],
+                check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as exc:
+            raise RuntimeError(
+                f'Failed to build singing cache: {exc}\n'
+                f'{_tail(exc.stdout, exc.stderr)}') from exc
+        if not rendered.is_file():
+            # The Makefile pipes the script through tee, so make succeeds
+            # when the script fails.
+            raise RuntimeError(
+                'the singing engine ran but wrote no achant.wav; what it '
+                f'said:\n{_tail(result.stdout, result.stderr)}')
 
-    samples, sample_rate = sf.read(str(rendered), dtype='float64')
+        samples, sample_rate = sf.read(str(rendered), dtype='float64')
     if sample_rate != 44100:
         raise RuntimeError(
             f'expected the engine to render at 44100 Hz, got {sample_rate}'
@@ -263,6 +269,30 @@ def _require_flite(lang):
     from .psola import _require_flite_voice
 
     _require_flite_voice(lang)
+
+
+@contextmanager
+def _one_render_at_a_time(cache):
+    """Hold the cache while one render reads and writes its fixed files.
+
+    The engine renders into ``achant.abc``, ``achant.mid`` and
+    ``achant.wav``, one set in one folder for every caller, so two
+    processes singing at once overwrote each other's files: one failed,
+    or sang the other's melody. The lock is on the folder itself, so it
+    adds nothing to it, and closing the folder releases it. Where Python
+    has no ``fcntl``, as on Windows, it holds nothing.
+    """
+    try:
+        import fcntl
+    except ImportError:  # pragma: no cover - Windows has no fcntl
+        yield
+        return
+    handle = os.open(cache, os.O_RDONLY)
+    try:
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        yield
+    finally:
+        os.close(handle)
 
 
 def _prepare_cache(engine, cache):

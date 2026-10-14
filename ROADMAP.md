@@ -798,6 +798,15 @@ for all of it, declared the license as an SPDX expression ahead of
 setuptools' 2027-02-18 deadline, and made the source distribution carry
 every fixture, which #124's Turtle and JSON files need.
 
+Running two test suites at once on 2026-10-13 found one more, older
+than all of this: eCantorix renders into the same files in one folder for
+every caller, so two processes singing with it at once overwrote each
+other's. The suites lost a MIDI file between `abc2midi` writing it and
+the engine reading it; two singers racing, measured, came back with each
+other's melody in 15 of 30 renders, without an error. A render now holds
+the folder, by a lock on the folder itself, from writing its score to
+reading its samples back, and the same race gives 0 of 30.
+
 What none of this establishes -- how anything sounds, or that another
 engine renders the same samples from an SSTIM description -- is in
 `ASSESSMENT.md`'s known limitations.
@@ -822,10 +831,6 @@ engine renders the same samples from an SSTIM description -- is in
   ([#113](https://github.com/ttm/music/issues/113)). The eleven new modules
   are in no area, and the `seed` in `noises` and `stimuli` came after
   theirs.
-- **eCantorix cannot sing for two processes at once.** It renders into
-  fixed files in one folder, the engine's cache, so two processes singing
-  with `backend="ecantorix"` at the same moment overwrite each other's,
-  and one fails. Found on 2026-10-13, when two test suites ran at once.
 
 ## Open after the September 2026 audits
 

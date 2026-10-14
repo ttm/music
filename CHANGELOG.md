@@ -114,6 +114,16 @@ state unless given a `seed`. `render_oversampled` needs
   in random order, with a folder and a blank form for the listener and a
   key kept apart for whoever runs the test.
 
+### Fixed
+
+- **Two processes can sing with eCantorix at once.** The engine renders
+  into the same files in one folder for every caller, so two processes
+  singing with `backend="ecantorix"` together overwrote each other's:
+  one failed, or sang the other's melody, as 15 of 30 racing renders did,
+  without an error. A render now holds the folder from writing its score
+  to reading its samples back, and a second one waits for it. Where
+  Python has no `fcntl`, as on Windows, nothing is held.
+
 ### Maintenance
 
 - **CI installs the two new extras,** validates SSTIM against its 0.19.0

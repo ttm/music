@@ -202,6 +202,29 @@ def recorded(engine, monkeypatch):
     return calls
 
 
+def test_a_render_waits_while_another_holds_the_cache(engine, recorded):
+    """The engine renders into the same files for every caller, so two
+    processes singing with it at once overwrote each other's: two test
+    suites run side by side lost a MIDI file between abc2midi writing it
+    and the engine reading it, and two singers racing came back with each
+    other's melody in 15 of 30 renders. A render now holds the cache
+    folder from writing its score to reading its samples back."""
+    import threading
+
+    cache = engine / "cache"
+    with perform._one_render_at_a_time(cache):
+        singer = threading.Thread(target=perform.sing,
+                                  kwargs={"backend": "ecantorix"})
+        singer.start()
+        singer.join(0.3)
+        assert singer.is_alive()
+        assert not (cache / "achant.abc").exists()
+        assert not [c for c, _ in recorded["run"] if c[0] == "make"]
+    singer.join()
+    assert (cache / "achant.abc").exists()
+    assert [c for c, _ in recorded["run"] if c[0] == "make"]
+
+
 def test_sing_writes_the_score_and_conf_the_engine_reads(engine, recorded):
     import os
 

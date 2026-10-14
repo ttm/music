@@ -441,13 +441,6 @@ either documented in the code or tracked in the issue list.
   eCantorix, from the same espeak, does not, and with espeak-ng, which the
   package prefers, PSOLA sings it within a cent. Found on 2026-10-05; not
   yet explained.
-- **eCantorix sings for one process at a time.** `sing(backend="ecantorix")`
-  writes its score and renders into fixed files, `achant.abc`,
-  `achant.mid` and `achant.wav`, in the engine's cache, one folder for
-  every caller. Two processes singing with it at once overwrite each
-  other's files, and one of them fails: two test suites run side by side
-  on 2026-10-13 lost a MIDI file between `abc2midi` writing it and the
-  engine reading it. One process at a time sings as it should.
 - **Waveform tables are synthetic only.** No SoundFont or WAV-derived
   tables; issue #3.
 - **matplotlib is an extra**, needed only by `PrimaryTables.draw_tables()`.

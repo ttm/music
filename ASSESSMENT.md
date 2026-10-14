@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-14**,
-`music` 1.10.0: 59 modules, 16,119 LOC package + 24,471 LOC tests, 129 names
+`music` 1.10.0: 59 modules, 16,161 LOC package + 24,494 LOC tests, 129 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,12 +59,12 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **6223 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,435 stmts, 0 missed) |
+| Test suite | `pytest -q` | **6228 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,447 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 57 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 3,088 findings |
-| Annotation coverage | AST scan | **142 / 300 functions (47 %)**; 65 / 98 exported (66 %) |
+| Lint, extended rule set | `ruff check --select ALL music` | 3,092 findings |
+| Annotation coverage | AST scan | **142 / 301 functions (47 %)**; 65 / 98 exported (66 %) |
 | Docstring coverage | AST scan | **211 / 219 public defs (96 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
@@ -465,8 +465,8 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 3,088 findings** on `music/`, almost all
-  stylistic: 731 quote-style, 398 missing argument annotations, 85 missing
+- **The extended lint set reports 3,092 findings** on `music/`, almost all
+  stylistic: 731 quote-style, 399 missing argument annotations, 85 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.

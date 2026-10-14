@@ -98,7 +98,7 @@ def test_unknown_and_invalid_music_hints_fail_closed():
         duration=.1)
     root = next(g.subjects(None, SSTIM.StimulusSpecification))
     g.add((root, MUSIC.generator, Literal("arbitrary-code")))
-    assert inspect_sstim_capabilities(g).mode == "descriptive-only"
+    assert inspect_sstim_capabilities(g).mode == "unsupported"
     g.remove((root, MUSIC.generator, None))
     g.add((root, MUSIC.generator, Literal("arbitrary-code")))
     bad = inspect_sstim_capabilities(g)
@@ -113,3 +113,25 @@ def test_unknown_standard_rendering_is_not_pretended_executable():
     report = inspect_sstim_capabilities(g)
     assert report.mode == "unsupported"
     assert not report.can_render
+
+
+def test_contradictory_music_beat_hints_cannot_be_downgraded():
+    """Valid beat RDF with bad MUSIC params is not a portable reference."""
+    graph = to_sstim_graph(
+        "binaural_beats",
+        parameters={"carrier_freq": 240, "beat_freq": 8},
+        duration=.1)
+    root = next(graph.subjects(None, SSTIM.StimulusSpecification))
+    graph.remove((root, MUSIC.parametersJson, None))
+    graph.add((root, MUSIC.parametersJson,
+               Literal('{"carrier_freq": 600, "beat_freq": 8}')))
+    assert inspect_sstim_capabilities(graph).mode == "unsupported"
+
+
+def test_partial_music_annotations_cannot_be_ignored():
+    graph = to_sstim_graph(
+        "monaural_beats",
+        parameters={"carrier_freq": 240, "beat_freq": 8},
+        duration=.1)
+    graph.remove((None, MUSIC.generator, None))
+    assert inspect_sstim_capabilities(graph).mode == "unsupported"

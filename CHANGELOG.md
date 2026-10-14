@@ -1,3 +1,138 @@
+## [Unreleased]
+
+### Note for anyone upgrading
+
+**Nothing an existing call returns changes.** Everything below is new and
+has to be asked for. `note` still reads its table as MASS does, sample for
+sample, and `noise` and `modulated_noise` draw from NumPy's global random
+state unless given a `seed`. `render_oversampled` needs
+`pip install 'music[antialias]'` and the SSTIM modules need
+`pip install 'music[sstim]'`; `import music` needs neither.
+
+### Added
+
+- **`bandlimited_note` renders a note without the harmonics that fold.**
+  `note` reads a rich waveform's table as MASS does, so the harmonics above
+  the Nyquist frequency fold back into the band: a 10 kHz sawtooth puts
+  24 % of its energy between its own harmonics. `bandlimited_note` drops
+  them from the table for the note's pitch, which leaves about 1e-16, and
+  reads it with linear interpolation; `rolloff_hz` fades the last
+  harmonics out rather than cutting them. The pitch has to hold still: a
+  glissando, FM, a hard gate or a nonlinearity applied afterwards makes
+  harmonics that a table for one pitch could not have dropped.
+  `examples/aliasing_demo.py` writes both 10 kHz sawtooths, at one gain,
+  to be heard side by side.
+- **`render_oversampled` renders a generator at a multiple of the rate,
+  then filters and decimates,** for the folding a table cannot prevent:
+  FM, glissandi, isochronic gates and waveshaping, whose components are
+  made as the sound is rendered. It calls any generator that takes
+  `number_of_samples` and `sample_rate` once, at 2 to 16 times the rate
+  and 4 by default, low-passes and decimates with SciPy's `resample_poly`,
+  and returns exactly the samples asked for, mono or channels first, at
+  the level they were rendered. At 48 kHz, against a reference rendered at
+  16 times the rate, 4x brings the spectral difference from 0.119 to
+  0.0026 for wide FM, from 0.335 to 0.016 for a tanh waveshaper and from
+  0.162 to 0.023 for an abrupt gate, in five to twelve times the time. It
+  rounds the gate's edges along with the folding.
+- **Oscillators for a pitch that moves, in `music.core.synths`.**
+  `frequency_path.bandlimited_frequency_path` takes one frequency per
+  sample and sums a sine, sawtooth, square or triangle partial by partial,
+  fading each one out as it nears the Nyquist frequency, from a phase
+  integrated trapezoidally, so that a linear sweep ends where its closed
+  form does. `polyblep` corrects only a sawtooth's or a square's edges,
+  with PolyBLEP, at a cost that does not grow with the number of
+  harmonics: at 48 kHz and 10,001 Hz it leaves 0.68 % of a sawtooth's
+  energy off its harmonics, where a naive one leaves 24 %, and 0.73 % of
+  a square's against 19 %. Its `PolyBLEPOscillator` renders in chunks
+  that join to within 1e-8 of one render. Neither module is exported at
+  the top level.
+- **A stimulus can be written in SSTIM and rendered back from it.**
+  `music.stimulation.sstim_io` describes binaural, monaural and
+  isochronic beats, AM and FM as SSTIM 0.19.0 stimulus specifications:
+  signals, channels and renderings in SSTIM's own terms, and the
+  arguments SSTIM has no term for, a duty cycle or a depth, in the
+  package's namespace rather than minted as SSTIM's. `render_sstim`
+  renders a description as the call it records would, optionally
+  oversampled, and `validate_sstim` checks one with SSTIM's own
+  Full-profile validator. Only the stimuli the package names are
+  rendered, and nothing in a graph is run.
+- **Modulated noise, spatial motion and whole sessions are written too.**
+  `sstim_advanced` describes a noise as a stochastic band with its seed,
+  and spatial motion as a tone with a position signal; `sstim_program`
+  writes a `StimulationSession`'s phases in order, with their ramps and
+  gains, and renders it back as the session would. A session is written
+  in the package's terms, as a plan, and never as an
+  `sstim:SessionInstance`: nothing was delivered.
+- **`sstim_semantic` reads a binaural or monaural beat from SSTIM's terms
+  alone,** needing nothing of the package's in the graph, and renders it
+  under a convention it names, `zero-phase-equal-gain-beats-v1`, because
+  SSTIM fixes neither the carriers' phases nor their gains.
+- **`inspect_sstim_capabilities` says what can be done with a graph
+  before anything renders:** a beat SSTIM's own terms suffice for, a
+  stimulus or a program in the package's terms, an SSTIM description the
+  package cannot render, with what it would need, or nothing. A graph
+  carrying the package's terms is judged by them, and one whose two sets
+  of terms disagree is refused. It never promises that another engine
+  renders the same samples.
+- **SSTIM is read locally, and within bounds:** a graph, a local file or
+  Turtle text, never a URL, of at most 2 MiB and 15,000 triples. The
+  bounds stop a large file being read by accident. They do not make a
+  hostile one safe, since the parser has run before the triples are
+  counted.
+- **`noise` and `modulated_noise` take a `seed`,** and draw from a
+  generator of their own, so the same seed gives the same noise and
+  NumPy's global state is left alone. Without one they draw as they always
+  have.
+- **Tools that measure aliasing.** `tools/benchmark_spectral_aliasing.py`
+  measures the energy off a static pitch's harmonics, and the render time,
+  and `tools/benchmark_polyblep.py` the same for PolyBLEP's edges.
+  `tools/benchmark_dynamic_aliasing.py` renders FM, a waveshaper and a
+  gate directly and at 4x and 8x, against a reference at 16x, at 44.1, 48
+  and 96 kHz, and `tools/compare_stimulation_renderers.py` checks four
+  stimuli against sinusoids written out in NumPy. All of them measure a
+  signal, not what a listener hears.
+- **Tools that prepare listening tests, and run none.**
+  `tools/prepare_polyblep_listening.py` and
+  `tools/prepare_singing_listening.py` write pairs matched in RMS level,
+  in random order, with a folder and a blank form for the listener and a
+  key kept apart for whoever runs the test.
+
+### Maintenance
+
+- **CI installs the two new extras,** validates SSTIM against its 0.19.0
+  Full profile on Python 3.12, and publishes the aliasing benchmarks and
+  the PolyBLEP listening pairs as artifacts. It prints the extended lint
+  count too, for information.
+- **The extras' lower bounds are tested,** as the core dependencies'
+  are: the job that installs the lowest versions pyproject declares
+  installs SciPy 1.11.1, RDFLib 7.0.0 and SSTIM 0.2.0 with them. SciPy's
+  floor is 1.11.1, since 1.11.0 is yanked, and RDFLib, which the SSTIM
+  modules import, is declared rather than left to SSTIM's own
+  requirements.
+- **The license is declared as the SPDX expression `MIT`.** setuptools has
+  deprecated the `{ file = "LICENSE" }` table and the license classifier,
+  and stops building them after 2027-02-18, so building the package now
+  needs setuptools 77 or later.
+- **The source distribution carries every test fixture,** whatever its
+  extension. `MANIFEST.in` listed only `.npz`, so the first fixture in
+  another format would have been left out, and the release gate's sdist
+  check would have failed on it.
+
+### Documentation
+
+- **A page on band-limited synthesis, and one on stimuli in SSTIM.** The
+  first follows the folding from a fixed pitch to a moving one and to
+  whatever the rendering does, with the benchmarks' figures and what they
+  do not show. The second writes a stimulus and a session, reads a beat
+  another tool described, and says what can be rendered from a graph and
+  how safely a graph is read.
+- **A page on where to start,** *Choosing the smallest API*, maps common
+  tasks onto a few routines.
+- **The README describes both among the core features,** with a closer
+  look at each and at sensory stimulation, the two extras under
+  installation, and the example among the others. Its plans count the
+  mutation audits' sixteen areas, where they said six.
+
 ## [1.10.0] - 2026-10-06
 
 ### Note for anyone upgrading

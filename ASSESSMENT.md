@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
-*A living record, not a point-in-time audit. Last measured **2026-10-10**,
-`music` 1.10.0: 57 modules, 15,664 LOC package + 23,746 LOC tests, 129 names
+*A living record, not a point-in-time audit. Last measured **2026-10-14**,
+`music` 1.10.0: 57 modules, 15,680 LOC package + 23,823 LOC tests, 129 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,11 +59,11 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **6094 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,202 stmts, 0 missed) |
+| Test suite | `pytest -q` | **6102 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,205 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 57 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,957 findings |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,958 findings |
 | Annotation coverage | AST scan | **139 / 286 functions (49 %)**; 65 / 98 exported (66 %) |
 | Docstring coverage | AST scan | **205 / 213 public defs (96 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
@@ -75,6 +75,8 @@ figures described above are automatically compared with the checkout.
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
 | Rendering artifacts | `tests/test_artifacts.py` | every render swept for clicks and DC offset; the steps that remain are registered with a reason, and the measures' blind spots are measured |
 | Aliasing | `tests/test_artifacts.py` | a sine strays **1.2e-08** of its energy off the harmonics at any frequency; a sawtooth strays **24 %** at 10 kHz |
+| Band-limited oscillators | `tools/benchmark_spectral_aliasing.py`, `tools/benchmark_polyblep.py` | `bandlimited_note`'s sawtooth strays **1.2e-16** at 10 kHz; PolyBLEP's sawtooth **0.68 %** and square **0.73 %** at 10,001 Hz and 48 kHz |
+| Oversampling | `tools/benchmark_dynamic_aliasing.py` | at 48 kHz, 4x brings the spectral difference from a 16x reference from **0.119 to 0.0026** for wide FM, **0.335 to 0.016** for a tanh waveshaper and **0.162 to 0.023** for an abrupt gate |
 | Round-trip noise | `tests/test_artifacts.py` | **48 dB** at 8-bit, **121** at 16, **145** at 24, against what was written |
 | Filter stability | `tests/test_artifacts.py` | every design's poles inside the unit circle across its whole parameter range |
 | Degenerate parameters | `tests/test_degenerate.py` | **148** (routine, parameter) pairs set to zero: each works or is refused with a `ValueError` |
@@ -104,21 +106,6 @@ produced.
 
 The point of this file. Nothing here is a surprise defect; all of it is
 either documented in the code or tracked in the issue list.
-
-The independent review of PRs #114, #116 and #118, including fixes for
-chirp phase integration, strict SSTIM channel semantics and malformed RDF
-imports, is in [AUDIT_2026-10-10.md](AUDIT_2026-10-10.md).
-
-The opt-in cross-engine evidence added subsequently compares MUSIC and
-continuous analytic FM/nonlinear/gated sources against a 16x FIR-filtered
-reference at 44.1/48/96 kHz. It reports short-time magnitude and RMS
-errors, not perception or guaranteed alias-free rendering. The
-`sstim_semantic` beat profile consumes standard SSTIM 0.19.0 RDF without
-MUSIC execution hints, but explicitly requires an analytic zero-phase
-convention to synthesize representative samples. See
-`docs/dynamic_aliasing_and_portable_sstim.rst`.
-A 100% exercised line/branch score does not prove untested DSP regimes,
-perceptual validity or third-party interoperability.
 
 ### Gaps the code names about itself
 
@@ -189,19 +176,25 @@ perceptual validity or third-party interoperability.
   Any additional unresolved subject or mismatched label fails the release
   gate, including a lookup lost to a network outage. The two exceptions
   remain a limit on the claim, not evidence that their terms are wrong.
-- **SSTIM interoperability now covers seven built-in auditory generators
-  and ordered phases via MUSIC extensions.** The deterministic five remain
-  in `sstim_io`; `sstim_advanced` models stochastic noise (frequency
-  band and separate modulation signal) and geometric stereo motion
-  (tone and position signals). `sstim_program` stores ordered phases,
-  gains and crossfades for a reproducible `StimulationSession`.
-  Each constituent stimulus uses SSTIM 0.19.0 terms, validated by the
-  frozen Full-profile contract; MUSIC-specific parameters remain in a
-  separate extension namespace. The program is an intended arrangement,
-  **not** an `sstim:SessionInstance` or evidence of delivered exposure.
-  Engine-independent exact playback cannot be inferred without
-  MUSIC-specific seed, geometry and timing rules. Arbitrary third-party
-  SSTIM graphs remain deliberately non-executable.
+- **An SSTIM description says what a stimulus is, not how to render it
+  sample for sample elsewhere.** All seven stimuli, and a session of them,
+  are written in SSTIM 0.19.0's terms and checked against its Full
+  profile, and that checks the description: SSTIM fixes no oscillator,
+  phase, gain, fade or random generator, so another engine can render a
+  valid description differently and be right. Rendering one back sample
+  for sample takes the package's own terms beside SSTIM's -- the
+  generator, its arguments, the seed -- and the package's algorithms; a
+  seed reproduces a noise in this implementation, with no contract
+  across libraries. Only a binaural or monaural beat is read from SSTIM's
+  terms alone, and then under a convention the reader names, zero phase
+  and equal gains. A session is written as a plan in the package's terms
+  and never as an `sstim:SessionInstance`, which would claim a delivery.
+  The readers also differ in what else they let through: the first
+  ignores annotations it does not know, where the noise, spatial and
+  session readers refuse anything they would not have written. And the
+  bounds on reading Turtle, 2 MiB and 15,000 triples, are no sandbox: a
+  small hostile file can exhaust the parser before its triples are
+  counted. Issue #117 tracks what remains.
 
 - **Notes concatenated raw click at the join, and whether they do
   depends on arithmetic rather than on anything musical.** A note ends
@@ -240,13 +233,17 @@ perceptual validity or third-party interoperability.
   degenerate parameters now checks the mean as well, with these seven
   registered, so the class has somewhere to be recorded.
 
-- **Mutation testing covers every module, in sixteen areas.** The
-  September 2026 audits change each of the package's 36 modules with
-  code to mutate, one operation at a time: everything but
-  `structures/symmetry.py`, which only re-exports. All sixteen areas are
-  complete, with their surviving mutants individually reviewed. These tests exposed timing, gain,
+- **Mutation testing covered every module at 1.10.0, in sixteen areas,
+  and the work since is in none of them.** The September 2026 audits
+  change each of the 36 modules 1.10.0 had with code to mutate, one
+  operation at a time: everything but `structures/symmetry.py`, which
+  only re-exports. All sixteen areas are complete, with their surviving
+  mutants individually reviewed. These tests exposed timing, gain,
   modulation, envelope-rate, phase, padding, naming, permutation and
-  refusal defects that line and branch coverage had not revealed.
+  refusal defects that line and branch coverage had not revealed. The
+  nine modules added on 2026-10-10, the band-limited oscillators and the
+  SSTIM modules, are in no area yet, and the `seed` that `noises` and
+  `stimuli` gained came after their areas were measured.
 
   [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records the scope, assertions,
   survivor IDs and reproduction command. The tool skips decorated classes,
@@ -295,25 +292,25 @@ perceptual validity or third-party interoperability.
   change unnoticed, and so that anyone rendering high notes from a rich
   table knows what they are getting.
 
-  **An opt-in static-pitch alternative now exists.** Starting with the
-  next development version, `music.bandlimited_note` removes table
-  harmonics at or above Nyquist and interpolates sample positions.
-  Tests compare its harmonic energy against the MASS-compatible
-  `music.note`, which deliberately remains unchanged. The added
-  oscillator does not solve aliasing in FM, glissandi, hard-gated
-  pulses, nonlinear effects or post-processing. Those have a separate
-  **opt-in offline path**: `music.render_oversampled` executes a
-  generator at 2x to 16x sample rate, anti-alias filters, and decimates
-  to the requested rate. A gated 15 kHz carrier is tested against an
-  independent 16x reference. It is not a complete alias-free engine:
-  sharp gates become rounded, cost rises with oversampling, and
-  frequencies above the oversampled Nyquist still fold. Changing-pitch rich waveforms can additionally use the
-  phase-continuous, harmonic-faded `bandlimited_frequency_path` renderer.
-  It does not eliminate arbitrary fast FM sidebands. The static
-  oscillator may overshoot full scale at Gibbs ringing near a
-  discontinuity, so export needs explicit headroom. See
-  `docs/sstim_interop.rst` and
-  `tools/benchmark_spectral_aliasing.py`.
+  **The band-limited routines remove most of it, when asked.**
+  `bandlimited_note` drops a table's partials above the Nyquist frequency
+  for the note's pitch, which leaves a 10 kHz sawtooth 1.2e-16 of its
+  energy off its harmonics, and holds only while the pitch does.
+  `bandlimited_frequency_path` fades each partial out near Nyquist for a
+  pitch that moves, and PolyBLEP corrects a sawtooth's or a square's
+  edges, leaving 0.68 % and 0.73 % at 10,001 Hz and 48 kHz. None of them
+  bounds the sidebands fast modulation makes, which no count of
+  instantaneous harmonics can. `render_oversampled` renders a whole
+  generator at up to sixteen times the rate and filters before
+  decimating: at four times, wide FM's spectral difference from a
+  reference at sixteen falls from 0.119 to 0.0026. It costs five to
+  twelve times the render, rounds a hard gate's edges, and leaves what
+  folds past the higher rate's own Nyquist, and the reference is finite
+  too. A truncated harmonic series overshoots full scale near its edges,
+  so a band-limited note needs headroom when written. Every figure here
+  measures the signal: the listening pairs the tools prepare have not been
+  listened to. `note` and the rest are unchanged, so everything above
+  still holds for them.
 
   Worth knowing about the measurement too: it is blind whenever the
   sample rate is a whole multiple of the frequency, since then the folded
@@ -440,6 +437,13 @@ perceptual validity or third-party interoperability.
   eCantorix, from the same espeak, does not, and with espeak-ng, which the
   package prefers, PSOLA sings it within a cent. Found on 2026-10-05; not
   yet explained.
+- **eCantorix sings for one process at a time.** `sing(backend="ecantorix")`
+  writes its score and renders into fixed files, `achant.abc`,
+  `achant.mid` and `achant.wav`, in the engine's cache, one folder for
+  every caller. Two processes singing with it at once overwrite each
+  other's files, and one of them fails: two test suites run side by side
+  on 2026-10-13 lost a MIDI file between `abc2midi` writing it and the
+  engine reading it. One process at a time sings as it should.
 - **Waveform tables are synthetic only.** No SoundFont or WAV-derived
   tables; issue #3.
 - **matplotlib is an extra**, needed only by `PrimaryTables.draw_tables()`.
@@ -464,7 +468,7 @@ perceptual validity or third-party interoperability.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,957 findings** on `music/`, almost all
+- **The extended lint set reports 2,958 findings** on `music/`, almost all
   stylistic: 731 quote-style, 381 missing argument annotations, 84 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their

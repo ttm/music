@@ -34,6 +34,12 @@ Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
 mutmut reports mutants no test reaches. All areas report none.
 
+The table describes the package as each area was measured. The `seed`
+that `synths/noises.py` and `stimulation/stimuli.py` gained on 2026-10-10
+came after their areas, and the nine modules added that day -- the
+band-limited oscillators in `core/synths/` and the SSTIM modules in
+`stimulation/` -- are in no area yet.
+
 ## `export` — normalization, export and session envelopes
 
 Measured 2026-09-16 on Python 3.12.7, macOS, with `mutmut` 3.7.0.

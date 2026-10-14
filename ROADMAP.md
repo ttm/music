@@ -704,6 +704,118 @@ with a note for anyone upgrading. Zenodo archived it as
 record carries the nineteen controlled subjects, the fifty keywords and
 the release notes, verified through its DataCite export.
 
+## Completed: band-limited synthesis and SSTIM, 2026-10-10
+
+Two things this file listed as waiting were taken up together, in seven
+pull requests merged on 2026-10-10: the aliasing of `note`'s wavetables,
+which it keeps as MASS has them, and the first of the feature choices
+below, describing stimuli in SSTIM
+([#75](https://github.com/ttm/music/issues/75)). Nothing that existed
+changes what it returns; everything added has to be asked for, and the
+changelog's unreleased section lists it.
+
+- [#114](https://github.com/ttm/music/pull/114): `bandlimited_note`, and
+  the static-pitch spectral benchmark.
+- [#116](https://github.com/ttm/music/pull/116): `render_oversampled`, and
+  `sstim_io` for the five deterministic stimuli.
+- [#118](https://github.com/ttm/music/pull/118): the band-limited
+  frequency path; `sstim_advanced` for noise and spatial motion, and
+  `sstim_program` for sessions.
+- [#119](https://github.com/ttm/music/pull/119): the corrections below.
+- [#120](https://github.com/ttm/music/pull/120): the dynamic benchmark
+  against a reference at 16 times the rate, and `sstim_semantic`.
+- [#121](https://github.com/ttm/music/pull/121): reading SSTIM locally and
+  within bounds, and `inspect_sstim_capabilities`.
+- [#123](https://github.com/ttm/music/pull/123): PolyBLEP, and the blinded
+  listening pairs.
+
+### Corrected before release
+
+A review of the first three, merged as #119 and first recorded in a file
+of its own, `AUDIT_2026-10-10.md`, corrected five things:
+
+1. **The frequency path's phase.** It summed each sample's frequency at
+   the sample's start, which left a linear sweep from 1 to 12 kHz over
+   0.1 s at 48 kHz 0.72 radians behind its closed form at the end, an RMS
+   error of 0.29 on a sine. Integrating trapezoidally matches the closed
+   form to rounding, and the test compares with the closed form rather
+   than with a second implementation of the same sum.
+2. **What the first SSTIM reader checked.** It accepted a graph whose
+   channel modality, delivery medium, ear placement, or signal, channel
+   and rendering classes contradicted the stimulus. They are required now,
+   and a test tampers with each.
+3. **The noise and spatial reader's input.** It read a parameter string
+   of any length, and a missing channel duration escaped as an iterator's
+   error. Both are refused with `ValueError`.
+4. **The listening pairs' levels** were equalised before the audio was
+   checked to be finite and not empty.
+5. **A seeded noise** is checked to leave NumPy's global generator where
+   it was.
+
+A second review, on 2026-10-13, ran every example in the new pages, and
+one failed: a noise or a spatial motion exported with a whole number of
+seconds could not be read back, nor could a session holding one. The
+readers rebuild the graph from what they read and refuse it if it
+differs; they read a duration as a float, so `duration=15`, written
+"15", was rebuilt "15.0". The tests used fractions of a second, and the
+documentation's session example went through a Turtle file, whose
+serializer writes "15.0" either way. `_decimal` now writes a number as
+the float it will be read back as, and tests read whole seconds back
+for a noise, a spatial motion and a session.
+
+It also took one fix from draft
+[#124](https://github.com/ttm/music/pull/124) ahead of the rest.
+`inspect_sstim_capabilities` recognized a beat by its SSTIM terms before
+looking at the package's, so a description whose two sets of terms
+disagreed, 40 Hz in one and 10 Hz in the other, was reported as a
+portable beat by the SSTIM ones, where `from_sstim_graph` refuses it. The
+package's terms are now checked first, and a disagreement is refused;
+the hunk and its tests are #124's own, so that it still applies.
+
+The same review found the documentation's front page printing
+"pitch-awarensynthesis", from newline escapes written into the source of
+three pages, and folded five of the pages the work had added, written
+one per pull request and each about both subjects, into two, one for each
+subject. It moved the README's new sections from ahead of its core
+features to among them. It folded the two dated files the work had left
+at the repository's root into this section and `ASSESSMENT.md`: the audit
+above, and the benchmark's first matrix,
+`BENCHMARK_DYNAMIC_ALIASING_2026-10-10.md`, from
+[CI run 38067785797](https://github.com/ttm/music/actions/runs/38067785797),
+whose 48 kHz figures a local run reproduces exactly; the timings aside,
+which are the machine's. And it wrote the changelog entries
+for all of it, declared the license as an SPDX expression ahead of
+setuptools' 2027-02-18 deadline, and made the source distribution carry
+every fixture, which draft
+[#124](https://github.com/ttm/music/pull/124)'s Turtle and JSON files need.
+
+What none of this establishes -- how anything sounds, or that another
+engine renders the same samples from an SSTIM description -- is in
+`ASSESSMENT.md`'s known limitations.
+
+### Still open
+
+- **Band-limiting beyond a static pitch**
+  ([#115](https://github.com/ttm/music/issues/115)): the sidebands of
+  fast FM and of nonlinear processing, attributed analytically rather
+  than through a spectral difference; PolyBLEP against mipmapped tables;
+  the cost of rendering in a stream; and whether to change any default.
+- **SSTIM beyond the package's own terms**
+  ([#117](https://github.com/ttm/music/issues/117)): rendering more than
+  beats from SSTIM's terms alone, sessions in SSTIM's own terms, and
+  isolation for reading untrusted Turtle. Draft #124 continues it.
+- **The listening tests have not been run.** The tools prepare blinded
+  pairs and a blank form; no claim about what a listener hears rests on
+  them yet.
+- **Mutation audits of the new code**
+  ([#113](https://github.com/ttm/music/issues/113)). The nine new modules
+  are in no area, and the `seed` in `noises` and `stimuli` came after
+  theirs.
+- **eCantorix cannot sing for two processes at once.** It renders into
+  fixed files in one folder, the engine's cache, so two processes singing
+  with `backend="ecantorix"` at the same moment overwrite each other's,
+  and one fails. Found on 2026-10-13, when two test suites ran at once.
+
 ## Open after the September 2026 audits
 
 What the audits found and did not fix, and why. Each is recorded where
@@ -787,10 +899,12 @@ the behaviour is, too; this is the list in one place.
 
 Choose according to the next real use case:
 
-1. **Stimulation interoperability:** consume and emit SSTIM stimulus and
-   session specifications, with RDF tooling in an optional extra
-   ([#75](https://github.com/ttm/music/issues/75)). Registering the tool in
-   SSTIM itself is separate work in that repository
+1. **Stimulation interoperability: done for stimuli, 2026-10-10,** with
+   RDF tooling in an optional extra
+   ([#75](https://github.com/ttm/music/issues/75)); see above. Sessions in
+   SSTIM's own terms remain, in
+   [#117](https://github.com/ttm/music/issues/117). Registering the tool
+   in SSTIM itself is separate work in that repository
    ([#73](https://github.com/ttm/music/issues/73)).
 2. **Musical timbres:** extract waveform tables from WAV recordings before
    adding SoundFont parsing ([#3](https://github.com/ttm/music/issues/3)).
@@ -799,6 +913,7 @@ Choose according to the next real use case:
    engine while preserving control of pitch and duration
    ([#5](https://github.com/ttm/music/issues/5)).
 
-Partial typing, legacy classes, wavetable aliasing, and externally fetched
+Partial typing, legacy classes, the aliasing `note` keeps from MASS where
+the band-limited routines are not asked for, and externally fetched
 HRTF/singing resources remain documented limitations. Broad lint or typing
 rewrites come after the demonstrated correctness issues.

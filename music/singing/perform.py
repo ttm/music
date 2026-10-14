@@ -100,7 +100,9 @@ def sing(text="Mar-ry had a litt-le lamb",
         Which singer. ``"psola"``, the default, needs espeak-ng and
         ``pip install 'music[singing]'``. ``"ecantorix"`` is the engine
         this package sang with by default until PSOLA, kept as the
-        reference it is compared with.
+        reference it is compared with. It renders into fixed files in
+        one folder, the engine's cache, so two processes singing with it
+        at once overwrite each other's, and one of them fails.
 
     Returns
     -------

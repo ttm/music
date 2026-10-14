@@ -553,7 +553,7 @@ def test_compression_that_cannot_fit_the_region_scales_the_whole_syllable(
 
 @pytest.mark.parametrize("region", [
     (-0.1, 0.3), (0.2, 0.6), (0.3, 0.2), (0.2, 0.2),
-    (0, 0.01), (float("nan"), 0.3), (0.2, float("inf")),
+    (0, 0.01), (0.1, 0.105), (float("nan"), 0.3), (0.2, float("inf")),
 ])
 def test_an_unusable_hold_region_scales_the_whole_syllable(parselmouth,
                                                          region):
@@ -589,6 +589,27 @@ def test_a_longer_note_has_its_syllable_said_slower_and_its_vowel_held(
     assert held.seconds == 0.45
     (sound, _, seconds, region), = stand_ins["sung"]
     assert sound is held and seconds == 0.5 and region == (0.1, 0.2)
+
+
+def test_a_syllable_said_again_is_asked_of_the_same_speaker_and_voice(
+        stand_ins):
+    """Only the speed changes between sayings: the program, the syllable
+    and the voice are the first saying's."""
+    stand_ins["said in"] = {None: 0.25, 88: 0.45, 80: 0.4}
+    psola.sing("lamb", notes=(0,), durs=(1,), lang="pt-br")
+    assert [call[:3] for call in stand_ins["speak"]] == [
+        ("/bin/espeak-ng", "lamb", "pt-br")] * 3
+
+
+def test_a_syllable_said_in_exactly_its_note_s_time_is_sung_as_said(
+        stand_ins):
+    """A syllable said in the note's time or more is left as it was said;
+    only one said in less has the middle of its vowel held."""
+    stand_ins["said in"] = {None: 0.5}
+    psola.sing("la", notes=(0,), durs=(1,))
+    assert stand_ins["nuclei"] == []
+    (sound, _, seconds, region), = stand_ins["sung"]
+    assert (sound.seconds, seconds, region) == (0.5, 0.5, None)
 
 
 def test_a_syllable_said_slower_than_its_note_is_fitted_not_held(stand_ins):
@@ -690,6 +711,26 @@ def test_a_syllable_is_slowed_toward_its_note_never_hurried(
         best.seconds == durations[chosen]
 
 
+def test_slowing_stops_at_exactly_five_percent_of_the_note(monkeypatch):
+    """Within 5 percent of the note, its edge included, nothing more is
+    asked: 19 seconds of a 20 second note."""
+    tried = _speeds(monkeypatch, {166: 20.0})
+    spoken = _Said("lamb", 19.0)
+    assert psola._slowed("/bin/espeak-ng", "lamb", "en", "0.wav", 20.0,
+                         spoken) is spoken
+    assert tried == []
+
+
+def test_on_a_tie_the_saying_nearer_espeak_s_own_speed_is_kept(monkeypatch):
+    """Two sayings a quarter of a second either side of the note: the
+    first, said nearer espeak's own speed, is kept."""
+    tried = _speeds(monkeypatch, {117: 1.0, 156: 1.0})
+    spoken = _Said("lamb", 0.5)
+    assert psola._slowed("/bin/espeak-ng", "lamb", "en", "0.wav", 0.75,
+                         spoken) is spoken
+    assert tried == [117, 156]
+
+
 def _frames(levels, frequencies=None):
     levels = np.asarray(levels, dtype=float)
     times = np.arange(len(levels)) * 0.01 + 0.025
@@ -737,6 +778,25 @@ def test_the_shortest_nucleus_held_is_thirty_milliseconds():
     assert end - start == pytest.approx(0.03)
 
 
+def test_the_threshold_is_70_percent_of_the_peak_however_loud():
+    """At twice the level, frames at exactly 70 percent of the peak are
+    held, and those below it are not."""
+    frames = _frames([0.4] * 10 + [1.4] * 3 + [2.0] * 7 + [0.6] * 10)
+    assert psola._nucleus_from_frames(*frames) == pytest.approx(
+        (0.135, 0.205))
+
+
+@pytest.mark.parametrize("levels, held", [
+    # Back to the syllable's first frame...
+    ([1.8] * 4 + [2.0] + [1.8] * 5 + [0.2] * 5, (0.035, 0.105)),
+    # ...and frame by frame, stopping at the first that is too weak.
+    ([0.2] * 2 + [1.8] * 3 + [2.0] + [1.8] * 4 + [0.2] * 5, (0.055, 0.105)),
+])
+def test_the_nucleus_reaches_back_one_frame_at_a_time(levels, held):
+    assert psola._nucleus_from_frames(*_frames(levels)) == pytest.approx(
+        held)
+
+
 def test_a_syllable_too_short_to_have_a_pitch_has_no_nucleus():
     spoken = _Spoken(psola.SHORTEST, [], [])
     assert psola._nucleus(spoken) is None
@@ -755,6 +815,33 @@ def test_the_nucleus_reads_the_pitch_and_a_40_ms_level_around_each_frame():
     # as strong as the loudest, sqrt(0.505) of it: those from 0.205 s to
     # 0.295 s, held less 10 ms at each end.
     assert (start, end) == pytest.approx((0.215, 0.285))
+
+
+def test_the_nucleus_reads_a_sound_that_swings_by_its_energy():
+    """The same loud middle, as a 220 Hz tone rather than a level: each
+    frame's level is the root of its mean square over 40 ms. Read from
+    the samples themselves, which a tone swings either side of zero, or
+    from two of them, it finds nothing steady to hold."""
+    rate = 8000.0
+    t = np.arange(3200) / rate
+    envelope = np.r_[np.full(1600, 0.1), np.ones(800), np.full(800, 0.1)]
+    spoken = _SpokenSamples(envelope * np.sin(2 * np.pi * 220 * t), rate,
+                            np.arange(0.005, 0.4, 0.01),
+                            [0] * 10 + [120] * 30)
+    assert psola._nucleus(spoken) == pytest.approx((0.215, 0.285))
+
+
+def test_a_quiet_voiced_onset_is_read_from_no_energy_before_it():
+    """Voiced from its first frame, and quiet until the vowel: the energy
+    under the first frames is counted from nothing, so they read as
+    quiet. Counted from anything more, they read as less than no energy,
+    no level at all, and the loudest frame is lost."""
+    rate = 8000.0
+    t = np.arange(3200) / rate
+    envelope = np.r_[np.full(1600, 0.01), np.ones(800), np.full(800, 0.01)]
+    spoken = _SpokenSamples(envelope * np.sin(2 * np.pi * 220 * t), rate,
+                            np.arange(0.005, 0.4, 0.01), [120] * 40)
+    assert psola._nucleus(spoken) == pytest.approx((0.215, 0.285))
 
 
 # --------------------------------------------------------------------------
@@ -952,6 +1039,33 @@ def test_psola_sings_each_note_at_its_accent(stand_ins):
     middles = [line[start + 500:start + 1000] for start in (0, 44100, 66150)]
     np.testing.assert_allclose([m.mean() for m in middles],
                                [FIRST, OTHER, STRONG], rtol=1e-12)
+
+
+def test_psola_accents_by_the_unit_the_score_is_written_in(stand_ins):
+    """In 2/4 a strong beat comes every half note: the fifth eighth, not
+    the third, so the unit length has to reach the accents too."""
+    line = psola.sing("la la la la la", notes=(0,) * 5, durs=(1,) * 5,
+                      M="2/4", L="1/8", Q="1/4=120", reference=60,
+                      transpose=0)
+    middles = [line[start + 500:start + 1000]
+               for start in range(0, 5 * 11025, 11025)]
+    np.testing.assert_allclose([m.mean() for m in middles],
+                               [FIRST, OTHER, OTHER, OTHER, STRONG],
+                               rtol=1e-12)
+
+
+def test_accents_default_to_quarters_in_common_time():
+    durs = [1, 0.5, 0.5, 2, 1]
+    assert perform.accents(durs) == perform.accents(durs, "4/4", "1/4")
+
+
+@pytest.mark.parametrize("L, message", [
+    ("x", "L must be a fraction such as \"1/4\"; got 'x'"),
+    ("0", "L must be positive; got '0'"),
+])
+def test_a_unit_that_is_no_length_is_refused_by_its_name(L, message):
+    with pytest.raises(ValueError, match=_exactly(message)):
+        perform.accents([1], "4/4", L)
 
 
 # --------------------------------------------------------------------------

@@ -225,6 +225,21 @@ def test_a_render_waits_while_another_holds_the_cache(engine, recorded):
     assert [c for c, _ in recorded["run"] if c[0] == "make"]
 
 
+def test_the_render_and_its_midi_are_removed_by_their_own_names(
+        engine, recorded, monkeypatch):
+    """By the names the engine writes them under. macOS's filesystem
+    ignores case, so a name with its case changed would remove the same
+    files there, and miss them on Linux."""
+    import pathlib
+
+    removed = []
+    unlink = pathlib.Path.unlink
+    monkeypatch.setattr(pathlib.Path, "unlink", lambda self, **kw: (
+        removed.append(self.name) or unlink(self, **kw)))
+    perform.sing(backend="ecantorix")
+    assert removed == ["achant.wav", "achant.mid"]
+
+
 def test_sing_writes_the_score_and_conf_the_engine_reads(engine, recorded):
     import os
 

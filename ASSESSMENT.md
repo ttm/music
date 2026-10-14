@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-14**,
-`music` 1.10.0: 59 modules, 16,315 LOC package + 24,549 LOC tests, 129 names
+`music` 1.10.0: 59 modules, 16,315 LOC package + 24,678 LOC tests, 129 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,7 +59,7 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **6228 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
+| Test suite | `pytest -q` | **6255 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
 | Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,447 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 57 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
@@ -237,17 +237,20 @@ either documented in the code or tracked in the issue list.
   degenerate parameters now checks the mean as well, with these seven
   registered, so the class has somewhere to be recorded.
 
-- **Mutation testing covered every module at 1.10.0, in sixteen areas,
-  and the work since is in none of them.** The September 2026 audits
-  change each of the 36 modules 1.10.0 had with code to mutate, one
-  operation at a time: everything but `structures/symmetry.py`, which
-  only re-exports. All sixteen areas are complete, with their surviving
-  mutants individually reviewed. These tests exposed timing, gain,
-  modulation, envelope-rate, phase, padding, naming, permutation and
-  refusal defects that line and branch coverage had not revealed. The
-  eleven modules added since, the band-limited oscillators and the SSTIM
-  modules, are in no area yet, and the `seed` that `noises` and
-  `stimuli` gained came after their areas were measured.
+- **Mutation testing covers every module 1.10.0 had, in sixteen areas,
+  and none added since.** The audits change each of the 36 modules
+  1.10.0 had with code to mutate, one operation at a time: everything
+  but `structures/symmetry.py`, which only re-exports. All sixteen areas
+  are complete, with their surviving mutants individually reviewed.
+  These tests exposed timing, gain, modulation, envelope-rate, phase,
+  padding, naming, permutation and refusal defects that line and branch
+  coverage had not revealed. `noises`, `stimuli` and `singing` were
+  measured again on 2026-10-14: for the `seed` the first two took, and
+  for the singing that went into 1.10.0 after its area was first
+  measured -- the slower syllables, the held vowels, the vibrato and the
+  accents -- whose tests could not tell 25 mutants from the code until
+  tests were added for them. The eleven modules added since 1.10.0, the
+  band-limited oscillators and the SSTIM modules, are in no area yet.
 
   [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records the scope, assertions,
   survivor IDs and reproduction command. The tool skips decorated classes,

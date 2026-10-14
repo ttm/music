@@ -124,6 +124,21 @@ state unless given a `seed`. `render_oversampled` needs
   to reading its samples back, and a second one waits for it. Where
   Python has no `fcntl`, as on Windows, nothing is held.
 
+### Tests
+
+- **The singing that went into 1.10.0 after its mutation audit is audited
+  too.** Measured again over the slower syllables, the held vowels, the
+  vibrato, the accents and the eCantorix lock, its tests could not tell
+  25 mutants from the code: nothing would have noticed the psola backend
+  accenting by quarters whatever the unit, reading a vowel's energy from
+  its samples rather than their squares, or losing the vowel of a
+  syllable voiced from its first frame. Tests now catch each, 1805 of
+  1843 mutants are detected, and the 38 left are reviewed in
+  `MUTATION_AUDIT.md`.
+- **The noise seed is tested at both ends of its range,** with NumPy's own
+  integers and with the values it refuses, and `noises` and `stimuli` are
+  measured again with it: every mutant of the seed is detected.
+
 ### Maintenance
 
 - **CI installs the two new extras,** validates SSTIM against its 0.19.0

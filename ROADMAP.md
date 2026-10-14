@@ -829,8 +829,10 @@ engine renders the same samples from an SSTIM description -- is in
   them yet.
 - **Mutation audits of the new code**
   ([#113](https://github.com/ttm/music/issues/113)). The eleven new modules
-  are in no area, and the `seed` in `noises` and `stimuli` came after
-  theirs.
+  are in no area yet. `noises`, `stimuli` and `singing` were measured
+  again on 2026-10-14, for the `seed` and for the singing work that went
+  into 1.10.0 after its area was first measured; the singing's tests
+  could not tell 25 mutants from the code, and can now.
 
 ## Open after the September 2026 audits
 

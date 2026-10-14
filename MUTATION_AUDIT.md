@@ -16,29 +16,31 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `export` | `core/functions.py`, `core/io.py`, `stimulation/session.py` | 2026-09-16 | 767 | 698 | 69 | all |
 | `envelopes` | `synths/envelopes.py`, `filters/adsr.py`, `filters/fade.py` | 2026-09-21 | 561 | 526 | 35 | all |
 | `oscillators` | `synths/notes.py` | 2026-09-23 | 1462 | 1444 | 18 | all |
-| `stimuli` | `stimulation/stimuli.py` | 2026-09-23 | 427 | 423 | 4 | all |
+| `stimuli` | `stimulation/stimuli.py` | 2026-10-14 | 429 | 425 | 4 | all |
 | `localization` | `filters/localization.py` | 2026-09-23 | 652 | 631 | 21 | all |
 | `utils` | `utils.py` | 2026-09-25 | 915 | 825 | 90 | all |
 | `filters` | `filters/design.py`, `impulse_response.py`, `loud.py`, `reverb.py`, `stretches.py` | 2026-09-30 | 527 | 501 | 26 | all |
 | `theory` | `theory/chords.py`, `intervals.py`, `scales.py` | 2026-09-27 | 214 | 213 | 1 | all |
 | `structures` | `structures/permutations.py`, `peals/base.py`, `peals.py`, `plain_changes.py` | 2026-09-27 | 684 | 669 | 15 | all |
-| `noises` | `synths/noises.py` | 2026-09-28 | 285 | 280 | 5 | all |
+| `noises` | `synths/noises.py` | 2026-10-14 | 303 | 298 | 5 | all |
 | `sequencer` | `sequencer.py` | 2026-09-28 | 157 | 157 | 0 | all |
 | `bonds` | `bonds.py` | 2026-09-28 | 106 | 103 | 3 | all |
 | `tables` | `tables.py` | 2026-09-28 | 77 | 77 | 0 | all |
 | `hrtf` | `hrtf.py` | 2026-09-28 | 224 | 217 | 7 | all |
-| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py`, `psola.py` | 2026-10-01 | 1416 | 1401 | 15 | all |
+| `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py`, `psola.py` | 2026-10-14 | 1843 | 1805 | 38 | all |
 | `legacy` | `legacy/CanonicalSynth.py`, `IteratorSynth.py`, `classes.py`, `tables.py`, `pieces/testSong2.py` | 2026-09-30 | 1645 | 1154 | 491 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
 mutmut reports mutants no test reaches. All areas report none.
 
-The table describes the package as each area was measured. The `seed`
-that `synths/noises.py` and `stimulation/stimuli.py` gained on 2026-10-10
-came after their areas, and the eleven modules added since 1.10.0 -- the
-band-limited oscillators in `core/synths/` and the SSTIM modules in
-`stimulation/` -- are in no area yet.
+The table describes the package as each area was measured: `noises` and
+`stimuli` again on 2026-10-14, after the `seed` they gained on
+2026-10-10, and `singing` that day too, after the singing that went into
+1.10.0 once its area had been measured, and the lock it took on
+2026-10-14. The eleven modules added since 1.10.0 -- the band-limited
+oscillators in `core/synths/` and the SSTIM modules in `stimulation/` --
+are in no area yet.
 
 ## `export` — normalization, export and session envelopes
 
@@ -680,6 +682,11 @@ later review corrected one docstring, and a rerun on that source,
 detects the same 423 of 427 with the same four survivors. The first run
 took 60 seconds with two workers.
 
+Measured again on 2026-10-14, over `180aa8a`, after `modulated_noise`
+took a `seed` it hands to `noise`: 425 of 429, in 47 seconds with four
+workers. The seed's two mutations are detected by a test that it reaches
+the bed, and the four survivors are the four above, at the same numbers.
+
 ## `localization` — interaural cues, fixed, per-frequency, moving and convolved
 
 Measured 2026-09-23 on Python 3.12.7, macOS, with `mutmut` 3.7.0. No
@@ -1225,7 +1232,16 @@ the fixes and `test_noises_audit.py`, detected 280 of 285.
 | Function | IDs | Why accepted |
 |---|---|---|
 | `_band` | 9, 19 | Rounding the edge to ten decimals rather than nine: both absorb the error of the division, which is near 1e-16. |
-| `noise` | 107, 133, 145 | Each rescales the frequency the slope is measured from, which multiplies every component by one constant. The normalization takes it out; the article's test divides it out too. |
+| `noise` | 125, 151, 163 | Each rescales the frequency the slope is measured from, which multiplies every component by one constant. The normalization takes it out; the article's test divides it out too. Numbered 107, 133 and 145 before the seed. |
+
+Measured again on 2026-10-14, over `180aa8a`, after `noise` took a
+`seed`: 298 of 303, in 54 seconds with four workers. Only two tests had
+passed a seed, so `test_noises_audit.py` gained three for it: both ends
+of the range a generator is seeded with, and NumPy's own integers; the
+values outside it, a boolean, a float and a string among them; and a
+seeded draw that is the same whatever NumPy's global state, and leaves
+it alone, where an unseeded one still draws from it. The seed's 18
+mutations are all detected, and the five survivors are the five above.
 
 ## `sequencer` — scheduling, rendering and mixing notes
 
@@ -1438,17 +1454,58 @@ convolution's transform, which leaves a linear convolution as it is,
 one moves `_require_flite`'s colon to `_flite_voices`, and one leaves
 the tremolo at its default rate, which is the backend's.
 
+Measured again on 2026-10-14, over `9b5200b` with the tests below
+overlaid, after everything that went into 1.10.0 since -- a syllable
+said slower, its vowel's nucleus held, the vibrato and the accents --
+and the lock that keeps eCantorix to one render at a time. The first
+run detected 1780 of 1843, one of them a mutant that hung, and left 63
+alive, 48 of them new. Twenty-five were tests too weak to tell. Nothing
+asked the psola backend to accent by a unit other than a quarter, so
+leaving the unit out of its accents went unseen. The nucleus was read
+from a level rather than a tone, and on a level, energy read from the
+samples themselves, or over two of them, looks the same; nor was it
+read from a quiet onset that is voiced, which an energy counted from
+anything but nothing makes no level at all. Its threshold was tried
+only at a peak of 1, where 70 percent of the peak and 70 percent over
+it agree, and it was never reached back to a syllable's first frame,
+or across a stretch an odd number of frames long. Slowing was never
+checked for the speaker, syllable and voice it asks, nor at exactly 5
+percent, nor on a tie, and nothing sang a syllable said in exactly its
+note's time. A hold shorter than 10 ms was tried only at the start,
+`accents` was never called with its defaults or with a unit that is
+none, and a MIDI file removed by its name in capitals, which on macOS
+is the same file, went unseen. The final run detected 1805 of 1843.
+The 23 new survivors are below, with the 15 accepted before, four of
+them renumbered.
+
 | Function | IDs | Why accepted |
 |---|---|---|
 | `psola._flite_voices` | 15 | `rpartition(":")` for `partition`: flite's voice line has one colon. |
 | `Notes.make_dict` | 8, 29, 46, 49, 57 | As above: the `XX` the pattern ignores, the octave above 96, and `strict` on equal lengths. |
 | `psola._fit` | 21 | `endpoint=None` is false, as `False` is. |
-| `psola._sung` | 28 | A voiced frame above 1 Hz rather than 0: Praat gives an unvoiced frame 0 and a voiced one at least the 60 Hz floor. |
-| `psola._sung` | 33 | Starting an unvoiced syllable's voiced stretch at 1 s: its end, 0, is before its start, so the stretch is not used either way. |
+| `psola._sung` | 29 | A voiced frame above 1 Hz rather than 0: Praat gives an unvoiced frame 0 and a voiced one at least the 60 Hz floor. |
+| `psola._sung` | 34 | Starting an unvoiced syllable's voiced stretch at 1 s: its end, 0, is before its start, so the stretch is not used either way. |
 | `psola._convolved` | 6, 11, 12 | A transform longer than the convolution needs: the padding is zeros, and the convolution the same. |
 | `psola._trembling` | 8 | The tremolo's own default rate, 44,100 Hz, which is the backend's. |
-| `psola.sing` | 31 | Note edges left as floats: each is taken `int()` before use. |
-| `psola.sing` | 160 | The peak of an empty line taken as 1 rather than 0: nothing divided is nothing. |
+| `psola.sing` | 39 | Note edges left as floats: each is taken `int()` before use. |
+| `psola.sing` | 177 | The peak of an empty line taken as 1 rather than 0: nothing divided is nothing. |
+| `perform._meter` | 4 | `rpartition` for `partition`: a meter has one slash, and one with two is refused either way, in the same words. |
+| `perform.accents` | 44 | A note's start counted backwards: it falls on a strong beat when the beat's length divides it, which is as true of the start negated. |
+| `psola._said_for` | 11 | A syllable said in exactly its note's time handed to `_slowed`, which finds it within 5 percent at once and says nothing more. |
+| `psola._nucleus` | 22 | A window of at least two samples rather than one: 20 ms is two samples or more at any rate above 75 Hz. |
+| `psola._nucleus` | 31 | The first windows starting a sample later: one sample of 40 ms. |
+| `psola._nucleus` | 47 | The energy multiplied by the window's length rather than divided: every whole window is scaled alike, which a threshold that is a fraction of the peak ignores, and the windows cut short are at the syllable's ends. |
+| `psola._nucleus_from_frames` | 3, 5 | The arrays taken as given rather than as floats, which Praat's are. |
+| `psola._nucleus_from_frames` | 8 | A voiced frame above 1 Hz rather than 0, as for `_sung` above. |
+| `psola._nucleus_from_frames` | 20 | An unvoiced frame's level taken as -2 rather than -1: it only has to be below any level. |
+| `psola._nucleus_from_frames` | 54 | `>` for `>=` at 30 ms less 1e-12: the tolerance already stands between them. |
+| `psola._sung` | 50 | `<=` for `<` between a region's ends, which must also be more than 10 ms apart. |
+| `psola._sung` | 109 | `>=` for `>` where a region reaches the syllable's end: at exactly three times the syllable nothing is padded, and the point it adds lies past the end, where the duration tier has nothing left to stretch. |
+| `psola._vibrato` | 3, 5 | The times taken as given rather than as floats, which they are. |
+| `psola._warp` | 3, 5 | The duration tier taken as given rather than as floats, which its points are. |
+| `psola._warp` | 14, 16 | A grid of 50 or 2002 points rather than 2001: the rate is linear between the tier's points, which the grid holds, so the integral is exact either way, and only its inverse is read more coarsely, inside the tier's millisecond ramps. |
+| `psola._warp` | 19 | The tier's points under a second left off the grid: between grid points a 2000th of the syllable apart, the integral moves by a fraction of a millisecond. |
+| `psola._warp` | 17, 18, 20 | Points at the syllable's ends, or past them, added to the grid: `np.unique` drops those at its ends, and one past its end only places the last vibrato point past it. |
 
 ## `legacy` — the synthesizers, the Being and the demonstration piece
 

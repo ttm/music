@@ -19,8 +19,12 @@ musical elements expressed as equations and corresponding Python routines.
 The envelope brings each note to silence at its ends so that joining
 different pitches does not introduce a click.
 
-For noise, spatial movement, multi-phase exchange and pitch-aware\nsynthesis, see :doc:`advanced_sstim_dsp`.\n\nFor executable SSTIM descriptions and oversampled DSP, see\n:doc:`sstim_interop`.\n\nNot sure which routine to start with? :doc:`choosing_an_api` maps common\ntasks onto a small supported entry-point set, including band-limited\nstatic-pitch notes.\n\nNew here? The :doc:`tutorial` walks from a single note to a short stereo
+New here? The :doc:`tutorial` walks from a single note to a short stereo
 piece, and explains what the sample-by-sample model actually buys you.
+:doc:`choosing_an_api` maps common tasks onto the few routines to start
+with, :doc:`bandlimited_synthesis` renders without the folding a
+wavetable read brings, and :doc:`sstim` writes stimuli as SSTIM
+descriptions and renders them back.
 
 What it does
 ------------
@@ -28,6 +32,9 @@ What it does
 - **Synthesis** of notes and their variation, sample by sample: vibrato,
   glissando, FM and AM, Doppler, ADSR envelopes, tremolo, and noise of
   six colours.
+- **Band-limited synthesis**, when asked for: notes whose partials stop
+  short of the Nyquist frequency, oscillators for a pitch that moves, and
+  any generator rendered at several times the rate and filtered.
 - **Filters**: IIR and FIR, reverberation, loudness transitions, and the
   four filter designs the MASS article specifies.
 - **Spatial audio**: interaural time and intensity differences computed at
@@ -40,7 +47,8 @@ What it does
 - **Bonds** that tie a note's vibrato and tremolo to its pitch, once, for
   a whole piece.
 - **Sensory stimulation**: seven auditory stimuli named for the SSTIM
-  techniques they implement, and sessions that sequence them.
+  techniques they implement, and sessions that sequence them, each of
+  which can be written as an SSTIM description and rendered back.
 - **Singing**: a lyric sung to a melody by speech synthesis and PSOLA,
   with a vibrato on long notes and accents on the beats, and the
   eCantorix engine as a second backend that sings the same score.
@@ -103,6 +111,14 @@ through praat-parselmouth, which the singing extra installs:
 Its second backend, eCantorix, is a Perl program the package clones; the
 :doc:`api` says what it needs.
 
+:func:`music.render_oversampled` needs SciPy, and the SSTIM modules need
+RDFLib and SSTIM's own validator:
+
+.. code-block:: console
+
+   pip install 'music[antialias]'
+   pip install 'music[sstim]'
+
 Where things live
 -----------------
 
@@ -113,7 +129,8 @@ Where things live
    * - Module
      - What it holds
    * - :doc:`core.synths <api>`
-     - Notes with vibrato, glissando, FM and Doppler; envelopes; noises
+     - Notes with vibrato, glissando, FM and Doppler; envelopes; noises;
+       :doc:`band-limited <bandlimited_synthesis>` notes and oscillators
    * - :doc:`core.filters <api>`
      - ADSR, fades, FIR/IIR, reverb, loudness, stereo localization
    * - :doc:`core.io <api>`
@@ -131,7 +148,8 @@ Where things live
    * - :doc:`hrtf <api>`
      - The KEMAR measurements, fetched and read by direction
    * - :doc:`stimulation <api>`
-     - Binaural, monaural and isochronic beats, modulations, sessions
+     - Binaural, monaural and isochronic beats, modulations, sessions,
+       and their :doc:`SSTIM descriptions <sstim>`
    * - :doc:`singing <api>`
      - ``sing``, with the PSOLA singer and the eCantorix engine
    * - :doc:`tables <api>`
@@ -148,11 +166,8 @@ The whole public API is re-exported flat from the top level, so
 
    tutorial
    choosing_an_api
-   sstim_interop
-   advanced_sstim_dsp
-   dynamic_aliasing_and_portable_sstim
-   sstim_import_security
-   polyblep_synthesis
+   bandlimited_synthesis
+   sstim
    api
 
 .. toctree::

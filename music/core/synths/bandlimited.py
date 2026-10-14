@@ -75,7 +75,9 @@ def bandlimited_note(
     ------
     ValueError
         For invalid sampling parameters, frequency, duration, table size,
-        or waveform name.\n\n    Notes
+        or waveform name.
+
+    Notes
     -----
     This is **opt-in**: `music.note` remains sample-identical to MASS.
     Band-limiting is frequency-dependent. Do not reuse one filtered

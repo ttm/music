@@ -139,6 +139,41 @@ session holding a rendered array, another callable or a custom table is
 refused, and so is one of more than fifty phases or five million samples.
 A noise phase without a seed stays random.
 
+A plan of a whole number of seconds, from a minute to two hours, can also
+be written as SSTIM's own ``SessionSpecification``, which SSTIM's Full
+profile accepts only with a preset, a creation time and a master volume.
+``sstim_planned`` asks for all three rather than inventing them:
+
+.. code-block:: python
+
+   from datetime import datetime, timezone
+
+   import music
+   from music.stimulation.sstim_planned import (
+       from_sstim_planned_session_graph, to_sstim_planned_session_graph,
+   )
+
+   plan = music.StimulationSession(sample_rate=8000)
+   plan.add(music.binaural_beats, duration=60, beat_freq=10)
+   planned = to_sstim_planned_session_graph(
+       plan,
+       preset_iri="https://your-lab.example/presets/alpha-v1",
+       preset_label="Alpha, version 1",
+       created_at=datetime.now(timezone.utc),
+       master_volume=0.2,
+       base="https://your-lab.example/plans/002/")
+   checked = from_sstim_planned_session_graph(planned)
+
+The specification wraps the program and declares only
+``reproEquivalentPresentation``. Its ``configurationDigest`` is a
+SHA-256, named ``sha256-music-plan-json-v1``, of a JSON object holding
+the program's N-Triples, sorted, with the preset, the master volume and
+the duration, so that it changes with any of them. It identifies the
+plan as the package writes it, not the samples another engine would
+render, and it is still a plan: no ``SessionInstance``, event or exposure
+is written. A session shorter than a minute, or not a whole number of
+seconds, stays a program in the package's terms.
+
 Reading SSTIM's terms alone
 ---------------------------
 
@@ -188,6 +223,70 @@ cannot be rendered from them: a duty cycle and its ramps, a depth, a
 deviation, a noise's spectral model and generator, a trajectory's
 geometry. They would have to be invented, and are not.
 
+Rendering another tool's description
+------------------------------------
+
+Any of the seven can be rendered from a description another tool wrote,
+if you say in full how: what SSTIM's terms do not give has to come from
+somewhere, and the package will not take it from its own defaults.
+``sstim_contract`` takes the graph, with none of the package's terms in
+it, and a sidecar naming the generator and every one of its controls,
+and renders only if the two agree:
+
+.. code-block:: python
+
+   from music.stimulation.sstim_contract import (
+       render_sstim_contract, resolve_sstim_contract,
+   )
+
+   resolution = resolve_sstim_contract(
+       "tests/fixtures/sstim_third_party_am.ttl",
+       generator="amplitude_modulation",
+       parameters={"carrier_freq": 220.0, "modulation_freq": 9.0,
+                   "modulation_depth": 0.7},
+       duration=0.04, sample_rate=48000)
+   samples = render_sstim_contract(resolution)
+
+That Turtle file was written by hand, without the package, as were the
+noise and the spatial motion beside it in the repository's
+``tests/fixtures``. What is compared is what the two say, not how: the
+IRIs, the order of the statements, the lexical form of a number and the
+labels may differ. Every SSTIM statement about the stimulus, its
+signals, channels and renderings must agree with the sidecar's
+stimulus, and an SSTIM statement the reader does not know is refused,
+since it might change the stimulus; statements in other vocabularies are
+ignored. A graph carrying the package's own terms is refused here, and
+read with ``from_sstim_graph`` instead, so that the two sets of terms
+cannot disagree unseen. What a noise's description leaves to its
+renderer -- the colour, the seed, the depth -- and a motion's -- the
+trajectory and the geometry -- come from the sidecar. The render is the
+package's, and ``exact_pcm_portable`` stays false: another engine given
+the same sidecar owes nothing to these samples.
+
+The same check runs from the command line, on a Turtle file and a JSON
+sidecar of at most 8 KiB:
+
+.. code-block:: console
+
+   python tools/sstim_interop_check.py \
+       tests/fixtures/sstim_third_party_am.ttl \
+       tests/fixtures/sstim_third_party_am.contract.json \
+       --json interop-report.json
+
+Its report gives the package's version, the generator, the shape, the
+peak and RMS, and SHA-256 digests of the samples, as little-endian
+float64, and of the sidecar, which identify a render on this
+installation and nothing more. ``--official`` also validates the file
+against SSTIM's Full profile, and ``--wav`` writes the samples as 24-bit
+PCM.
+
+None of this is an agreement between engines. A shared reference for
+phase and amplitude, a random stream, a localization model, calibration
+of the hardware, timing and records of delivery would each need a
+rendering profile versioned apart from any one engine, with shared
+fixtures and tolerances, and a perceptual comparison would need
+listeners.
+
 What can be done with a graph
 -----------------------------
 
@@ -207,9 +306,11 @@ the readers above would take a graph:
 ``portable-beat-reference`` is a beat SSTIM's terms suffice for, rendered
 under the convention above. ``music-extension`` and ``music-program`` are
 a stimulus and a session in the package's terms, which the package
-renders as it wrote them. ``descriptive-only`` is an SSTIM description
-the package recognizes but cannot render without what it lacks, which
-``missing_contract`` lists. ``unsupported`` is anything unknown,
+renders as it wrote them, and ``sstim-planned-music-program`` a planned
+session as ``sstim_planned`` writes it. ``descriptive-only`` is an SSTIM
+description the package recognizes but cannot render without what it
+lacks, which ``missing_contract`` lists and a sidecar can supply.
+``unsupported`` is anything unknown,
 ambiguous or contradictory. ``exact_pcm_portable`` is false for all of
 them, since conforming to SSTIM fixes no samples. This is a quick local
 inspection, not the validator.

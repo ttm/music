@@ -63,17 +63,34 @@ state unless given a `seed`. `render_oversampled` needs
   gains, and renders it back as the session would. A session is written
   in the package's terms, as a plan, and never as an
   `sstim:SessionInstance`: nothing was delivered.
+- **A session of a minute or more can be written as SSTIM's own plan.**
+  `sstim_planned` wraps a session of a whole number of seconds, from 60 to
+  7,200, in an `sstim:SessionSpecification`, with the preset, creation
+  time and master volume the caller gives, the reproducibility level
+  `reproEquivalentPresentation`, and a digest of the program, the preset,
+  the volume and the duration. It is a plan still, never a
+  `SessionInstance`.
 - **`sstim_semantic` reads a binaural or monaural beat from SSTIM's terms
   alone,** needing nothing of the package's in the graph, and renders it
   under a convention it names, `zero-phase-equal-gain-beats-v1`, because
   SSTIM fixes neither the carriers' phases nor their gains.
+- **A description another tool wrote can be rendered, given every control
+  in full.** `sstim_contract` takes a graph in SSTIM's terms alone and a
+  sidecar naming the generator and every one of its controls, compares
+  what the two say, whatever the IRIs, the order, the lexical forms and
+  the labels, and refuses any disagreement, any SSTIM statement it does
+  not know, and any graph carrying the package's own terms. All seven
+  stimuli can be rendered so, and `tools/sstim_interop_check.py` runs the
+  check from the command line, with digests of the samples and the
+  sidecar. Three descriptions written by hand, without the package, are
+  in `tests/fixtures` with their sidecars.
 - **`inspect_sstim_capabilities` says what can be done with a graph
   before anything renders:** a beat SSTIM's own terms suffice for, a
-  stimulus or a program in the package's terms, an SSTIM description the
-  package cannot render, with what it would need, or nothing. A graph
-  carrying the package's terms is judged by them, and one whose two sets
-  of terms disagree is refused. It never promises that another engine
-  renders the same samples.
+  stimulus, a program or a planned session in the package's terms, an
+  SSTIM description the package cannot render, with what it would need,
+  or nothing. A graph carrying the package's terms is judged by them, and
+  one whose two sets of terms disagree is refused. It never promises that
+  another engine renders the same samples.
 - **SSTIM is read locally, and within bounds:** a graph, a local file or
   Turtle text, never a URL, of at most 2 MiB and 15,000 triples. The
   bounds stop a large file being read by accident. They do not make a

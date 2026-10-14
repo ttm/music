@@ -707,7 +707,8 @@ the release notes, verified through its DataCite export.
 ## Completed: band-limited synthesis and SSTIM, 2026-10-10
 
 Two things this file listed as waiting were taken up together, in seven
-pull requests merged on 2026-10-10: the aliasing of `note`'s wavetables,
+pull requests merged on 2026-10-10 and an eighth folded in on 2026-10-14:
+the aliasing of `note`'s wavetables,
 which it keeps as MASS has them, and the first of the feature choices
 below, describing stimuli in SSTIM
 ([#75](https://github.com/ttm/music/issues/75)). Nothing that existed
@@ -728,6 +729,11 @@ changelog's unreleased section lists it.
   within bounds, and `inspect_sstim_capabilities`.
 - [#123](https://github.com/ttm/music/pull/123): PolyBLEP, and the blinded
   listening pairs.
+- [#124](https://github.com/ttm/music/pull/124), squashed onto master on
+  2026-10-14: `sstim_contract`, rendering another tool's description given
+  every control in a sidecar, with three descriptions written by hand and
+  `tools/sstim_interop_check.py`; `sstim_planned`, a session as SSTIM's
+  own plan; and the capability fix below.
 
 ### Corrected before release
 
@@ -763,14 +769,18 @@ serializer writes "15.0" either way. `_decimal` now writes a number as
 the float it will be read back as, and tests read whole seconds back
 for a noise, a spatial motion and a session.
 
-It also took one fix from draft
-[#124](https://github.com/ttm/music/pull/124) ahead of the rest.
+It took one fix from #124 ahead of the rest.
 `inspect_sstim_capabilities` recognized a beat by its SSTIM terms before
 looking at the package's, so a description whose two sets of terms
 disagreed, 40 Hz in one and 10 Hz in the other, was reported as a
 portable beat by the SSTIM ones, where `from_sstim_graph` refuses it. The
 package's terms are now checked first, and a disagreement is refused;
-the hunk and its tests are #124's own, so that it still applies.
+the hunk and its tests were #124's own, so that #124 still applied. The
+rest of #124 followed once its examples ran and its readers took
+ordinary input -- whole seconds, integer volumes, local time zones --
+which they did, at the declared minimum versions too. Its second copy of
+the extended lint report was left out, and its page folded into the
+SSTIM one.
 
 The same review found the documentation's front page printing
 "pitch-awarensynthesis", from newline escapes written into the source of
@@ -786,8 +796,7 @@ whose 48 kHz figures a local run reproduces exactly; the timings aside,
 which are the machine's. And it wrote the changelog entries
 for all of it, declared the license as an SPDX expression ahead of
 setuptools' 2027-02-18 deadline, and made the source distribution carry
-every fixture, which draft
-[#124](https://github.com/ttm/music/pull/124)'s Turtle and JSON files need.
+every fixture, which #124's Turtle and JSON files need.
 
 What none of this establishes -- how anything sounds, or that another
 engine renders the same samples from an SSTIM description -- is in
@@ -802,13 +811,15 @@ engine renders the same samples from an SSTIM description -- is in
   the cost of rendering in a stream; and whether to change any default.
 - **SSTIM beyond the package's own terms**
   ([#117](https://github.com/ttm/music/issues/117)): rendering more than
-  beats from SSTIM's terms alone, sessions in SSTIM's own terms, and
-  isolation for reading untrusted Turtle. Draft #124 continues it.
+  beats without a sidecar; a reference shared between engines for phase,
+  amplitude, random streams and localization; records of what was
+  delivered, which only a real session can give; and isolation for
+  reading untrusted Turtle.
 - **The listening tests have not been run.** The tools prepare blinded
   pairs and a blank form; no claim about what a listener hears rests on
   them yet.
 - **Mutation audits of the new code**
-  ([#113](https://github.com/ttm/music/issues/113)). The nine new modules
+  ([#113](https://github.com/ttm/music/issues/113)). The eleven new modules
   are in no area, and the `seed` in `noises` and `stimuli` came after
   theirs.
 - **eCantorix cannot sing for two processes at once.** It renders into

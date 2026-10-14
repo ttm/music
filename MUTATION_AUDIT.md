@@ -36,7 +36,7 @@ mutmut reports mutants no test reaches. All areas report none.
 
 The table describes the package as each area was measured. The `seed`
 that `synths/noises.py` and `stimulation/stimuli.py` gained on 2026-10-10
-came after their areas, and the nine modules added that day -- the
+came after their areas, and the eleven modules added since 1.10.0 -- the
 band-limited oscillators in `core/synths/` and the SSTIM modules in
 `stimulation/` -- are in no area yet.
 

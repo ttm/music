@@ -326,8 +326,9 @@ again = render_sstim_program("session.ttl")
 
 A description says what a stimulus is, not that anyone heard it or that it
 does anything. [Stimuli in SSTIM](https://ttm.github.io/music/sstim.html)
-has the rest: reading a beat another tool described, and what can and
-cannot be rendered from a graph.
+has the rest: a session of a minute or more written as SSTIM's own plan,
+a description another tool wrote rendered with every control spelled
+out, and what can and cannot be rendered from a graph.
 
 ### Singing
 
@@ -480,7 +481,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 6,102 tests, 100% line and branch coverage
+pytest                                       # 6,223 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

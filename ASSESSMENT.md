@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-14**,
-`music` 1.10.0: 57 modules, 15,680 LOC package + 23,823 LOC tests, 129 names
+`music` 1.10.0: 59 modules, 16,119 LOC package + 24,471 LOC tests, 129 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,13 +59,13 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **6102 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,205 stmts, 0 missed) |
+| Test suite | `pytest -q` | **6223 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,435 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 57 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,958 findings |
-| Annotation coverage | AST scan | **139 / 286 functions (49 %)**; 65 / 98 exported (66 %) |
-| Docstring coverage | AST scan | **205 / 213 public defs (96 %)** |
+| Lint, extended rule set | `ruff check --select ALL music` | 3,088 findings |
+| Annotation coverage | AST scan | **142 / 300 functions (47 %)**; 65 / 98 exported (66 %) |
+| Docstring coverage | AST scan | **211 / 219 public defs (96 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **22 of 35 routines sample-exact**; 9 divergent with a stated reason, 4 where the reference does not run |
@@ -100,7 +100,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; Linux CI across Python 3.10–3.14 including a job pinned to the declared lower bounds; installed-wheel checks on Linux, macOS and Windows with Python 3.12 |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 49 %; the `legacy/` subpackage |
+| **Needs work** | Annotation coverage at 47 %; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -187,8 +187,12 @@ either documented in the code or tracked in the issue list.
   seed reproduces a noise in this implementation, with no contract
   across libraries. Only a binaural or monaural beat is read from SSTIM's
   terms alone, and then under a convention the reader names, zero phase
-  and equal gains. A session is written as a plan in the package's terms
-  and never as an `sstim:SessionInstance`, which would claim a delivery.
+  and equal gains; any other stimulus another tool describes is rendered
+  only with a sidecar giving every control, and the render is the
+  package's. A session is a plan, in the package's terms or, from a
+  minute up, as SSTIM's own `SessionSpecification`, whose digest
+  identifies the plan as the package writes it; it is never an
+  `sstim:SessionInstance`, which would claim a delivery.
   The readers also differ in what else they let through: the first
   ignores annotations it does not know, where the noise, spatial and
   session readers refuse anything they would not have written. And the
@@ -241,8 +245,8 @@ either documented in the code or tracked in the issue list.
   mutants individually reviewed. These tests exposed timing, gain,
   modulation, envelope-rate, phase, padding, naming, permutation and
   refusal defects that line and branch coverage had not revealed. The
-  nine modules added on 2026-10-10, the band-limited oscillators and the
-  SSTIM modules, are in no area yet, and the `seed` that `noises` and
+  eleven modules added since, the band-limited oscillators and the SSTIM
+  modules, are in no area yet, and the `seed` that `noises` and
   `stimuli` gained came after their areas were measured.
 
   [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records the scope, assertions,
@@ -459,7 +463,7 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 49 %**, and 66 % across the exported API. The
+- **Annotation coverage is 47 %**, and 66 % across the exported API. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones
@@ -468,8 +472,8 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,958 findings** on `music/`, almost all
-  stylistic: 731 quote-style, 381 missing argument annotations, 84 missing
+- **The extended lint set reports 3,088 findings** on `music/`, almost all
+  stylistic: 731 quote-style, 398 missing argument annotations, 85 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.

@@ -25,10 +25,12 @@ abstract: >-
   audio, expressed as equations and corresponding Python routines.
   State is updated at every sample, so a rendered sound is as close as
   it can be to the mathematical model that describes it. It covers
-  synthesis, filters and their design, spatial audio with measured
-  head-related transfer functions, music theory, permutation groups and
-  change-ringing peals, a sensory-stimulation toolkit, and singing by
-  speech synthesis and pitch-synchronous overlap-add.
+  synthesis, band-limited when asked for, filters and their design,
+  spatial audio with measured head-related transfer functions, music
+  theory, permutation groups and change-ringing peals, a
+  sensory-stimulation toolkit whose stimuli can be written as SSTIM
+  descriptions and rendered back, and singing by speech synthesis and
+  pitch-synchronous overlap-add.
 keywords:
   - audio
   - music
@@ -47,6 +49,9 @@ keywords:
   - spatial audio
   - HRTF
   - sensory stimulation
+  - SSTIM
+  - band-limited synthesis
+  - anti-aliasing
   - singing synthesis
   - PSOLA
 authors:

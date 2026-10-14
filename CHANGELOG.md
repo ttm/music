@@ -162,6 +162,10 @@ state unless given a `seed`. `render_oversampled` needs
   look at each and at sensory stimulation, the two extras under
   installation, and the example among the others. Its plans count the
   mutation audits' sixteen areas, where they said six.
+- **The archival metadata describes and tags both.** `.zenodo.json`,
+  `CITATION.cff` and `pyproject.toml` name band-limited synthesis and the
+  SSTIM descriptions among what the package covers, with keywords for
+  each.
 
 ## [1.10.0] - 2026-10-06
 

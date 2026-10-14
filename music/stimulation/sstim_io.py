@@ -65,7 +65,10 @@ class RenderableStimulus:
 
 
 def _decimal(value: float) -> Literal:
-    return Literal(str(Decimal(str(value))), datatype=XSD.decimal)
+    # Every reader takes these back as floats and rebuilds the graph to
+    # compare, so a number is written as the float it will be read as: an
+    # int 15 was written "15", rebuilt "15.0", and the graph refused.
+    return Literal(str(Decimal(str(float(value)))), datatype=XSD.decimal)
 
 
 def _input(generator: str, params: Mapping[str, Any], duration: float,

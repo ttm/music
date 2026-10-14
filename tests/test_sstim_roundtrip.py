@@ -47,6 +47,22 @@ def test_sstim_roundtrip_preserves_exact_output(generator, params):
     assert reread == decoded
 
 
+@pytest.mark.parametrize("value, lexical", [
+    (15, "15.0"), (15., "15.0"), (.1, "0.1"),
+])
+def test_a_decimal_is_written_as_the_float_it_is_read_back_as(value,
+                                                               lexical):
+    """Every importer rebuilds its graph from floats and compares.
+
+    An int was written as it came, "15", and rebuilt "15.0", so a
+    session or a noise exported with whole seconds could not be read back.
+    """
+    from music.stimulation.sstim_io import _decimal
+
+    assert str(_decimal(value)) == lexical
+    assert _decimal(value) == _decimal(float(lexical))
+
+
 def test_binaural_presence_is_perceptual_and_channels_are_distinct():
     graph = to_sstim_graph(
         "binaural_beats", parameters={

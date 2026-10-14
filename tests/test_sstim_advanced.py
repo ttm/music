@@ -57,6 +57,29 @@ def test_unmodulated_noise_describes_one_spectral_signal():
     assert render_sstim_advanced(g).shape == (4800,)
 
 
+@pytest.mark.parametrize("generator, parameters, shape", [
+    ("modulated_noise", {"noise_type": "pink", "seed": 42}, (48000,)),
+    ("spatial_motion", {"carrier_freq": 440, "motion_rate": .6},
+     (2, 48000)),
+])
+def test_a_whole_number_of_seconds_reads_back(generator, parameters, shape):
+    """`duration=1` is how a duration is written, and it must read back.
+
+    The importer rebuilds the graph from the duration it reads, as a
+    float, and refuses one that differs. An int was written as "1" and
+    rebuilt as "1.0", so every stimulus exported with a whole number of
+    seconds was refused, while the fractions the other tests use passed.
+    """
+    whole = to_sstim_advanced_graph(
+        generator, parameters=parameters, duration=1, sample_rate=48000,
+        base="https://example.org/music/whole/")
+    assert set(whole) == set(to_sstim_advanced_graph(
+        generator, parameters=parameters, duration=1., sample_rate=48000,
+        base="https://example.org/music/whole/"))
+    assert from_sstim_advanced_graph(whole)[2] == 1.
+    assert render_sstim_advanced(whole).shape == shape
+
+
 def test_spatial_motion_is_stereo_and_asserts_position_signal():
     g = spatial_graph()
     name, params, duration, rate = from_sstim_advanced_graph(g)

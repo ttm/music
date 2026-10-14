@@ -50,6 +50,22 @@ def test_program_roundtrip_is_sample_exact_with_seeded_noise():
     assert not list(graph.subjects(RDF.type, SSTIM.SessionInstance))
 
 
+def test_a_program_of_whole_seconds_reads_back():
+    """A noise or spatial phase lasting `duration=1` is read back too.
+
+    Each of those phases is read through the noise and spatial importer,
+    which refused any duration written as an int.
+    """
+    session = music.StimulationSession(sample_rate=48000)
+    session.add(music.modulated_noise, duration=1, noise_type="pink",
+                seed=3)
+    session.add(music.spatial_motion, duration=1, ramp=.1)
+    graph = to_sstim_program_graph(
+        session, base="https://example.org/music/whole-seconds/")
+    np.testing.assert_array_equal(render_sstim_program(graph),
+                                  session.render())
+
+
 def test_program_serialization_and_linear_ramps():
     session = music.StimulationSession(
         sample_rate=44100, ramp_shape="linear", end_ramp=0.0)

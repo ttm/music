@@ -6,7 +6,8 @@ authors = [
     { name = 'Jacopo Donati', email = 'jacopo.donati@gmail.com' }
 ]
 description = 'Extreme-fidelity synthesis of musical elements, based on the MASS framework'
-license = { file = "LICENSE" }
+license = 'MIT'
+license-files = ['LICENSE']
 readme = 'README.md'
 requires-python = '>=3.10'
 dependencies = [
@@ -43,7 +44,6 @@ classifiers = [
     'Programming Language :: Python :: 3.13',
     'Programming Language :: Python :: 3.14',
     'Typing :: Typed',
-    'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Development Status :: 5 - Production/Stable',
     'Intended Audience :: Science/Research',
@@ -108,7 +108,7 @@ Issues = 'https://github.com/ttm/music/issues'
 Funding = 'https://github.com/sponsors/ttm'
 
 [build-system]
-requires = ['setuptools>=61.0']
+requires = ['setuptools>=77.0']
 build-backend = 'setuptools.build_meta'
 
 [tool.setuptools.package-data]

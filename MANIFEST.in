@@ -15,7 +15,10 @@
 include conftest.py
 include pytest.ini
 recursive-include tests *.py
-recursive-include tests/fixtures *.npz
+# Every fixture, whatever its format. This listed `*.npz`, the only kind
+# there was, and the first Turtle and JSON fixtures would have been left
+# out of the tarball while their tests passed in the checkout.
+recursive-include tests/fixtures *
 
 # tests/test_mass_reconciliation.py imports the register from here,
 # tools/mass_reference.py is what it reads a MASS checkout with, and

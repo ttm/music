@@ -1,0 +1,32 @@
+@prefix s: <https://w3id.org/sstim#> .
+@prefix v: <https://w3id.org/sstim/vocab#> .
+@prefix e: <https://w3id.org/sstim/exposure#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<urn:interop:third-party:am> a s:StimulusSpecification ;
+  rdfs:label "Externally authored amplitude modulation" ;
+  s:stimulusRegime "determinate" ;
+  s:hasSignal <urn:interop:third-party:am-signal> ;
+  s:hasStimulusChannel <urn:interop:third-party:mono> .
+
+<urn:interop:third-party:am-signal> a s:StimulationSignal ;
+  rdfs:label "9 Hz modulation sine" ;
+  s:hasSignalShape v:shapeSine ;
+  s:hzMin 9.0 ;
+  s:hzMax 9.00 .
+
+<urn:interop:third-party:mono> a e:StimulusChannel ;
+  rdfs:label "Single auditory channel" ;
+  e:perceivedModality e:modalityAuditory ;
+  e:deliveryMedium e:mediumAirConductedSound ;
+  e:hasBodyPlacement e:placementEars ;
+  s:channelDurationSeconds 0.04 ;
+  s:hasSignalRendering <urn:interop:third-party:rendering> .
+
+<urn:interop:third-party:rendering> a s:SignalRendering ;
+  rdfs:label "Physical air-conducted modulation" ;
+  s:rendersSignal <urn:interop:third-party:am-signal> ;
+  s:rendersOntoParameter v:paramAmplitude ;
+  s:hasRenderingMechanism v:mechanismAmplitudeModulation ;
+  s:hasRenderingPresence v:presencePhysical ;
+  s:renderingCarrierHz 220.0 .

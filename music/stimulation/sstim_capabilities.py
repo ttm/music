@@ -40,6 +40,19 @@ def inspect_sstim_capabilities(
     from .sstim_semantic import inspect_sstim_beat
 
     graph = _graph(value)
+    planned = list(graph.subjects(RDF.type, SSTIM.SessionSpecification))
+    if planned:
+        try:
+            from .sstim_planned import from_sstim_planned_session_graph
+            from_sstim_planned_session_graph(graph)
+        except (ValueError, TypeError, KeyError, AttributeError):
+            return InteroperabilityCapability(
+                "unsupported", "planned-session", False, False,
+                ("invalid, incomplete or non-MUSIC session plan",))
+        return InteroperabilityCapability(
+            "sstim-planned-music-program", "planned-session", True, False,
+            ("MUSIC phase and renderer contract",
+             "observed delivery and timing are not present",))
     programs = list(graph.subjects(RDF.type, MUSIC.StimulationProgram))
     if programs:
         try:

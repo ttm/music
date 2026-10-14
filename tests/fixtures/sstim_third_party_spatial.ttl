@@ -1,0 +1,68 @@
+@prefix s: <https://w3id.org/sstim#> .
+@prefix v: <https://w3id.org/sstim/vocab#> .
+@prefix e: <https://w3id.org/sstim/exposure#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<urn:interop:spatial:spec> a s:StimulusSpecification ;
+  rdfs:label "Externally authored moving acoustic tone" ;
+  s:stimulusRegime "determinate" ;
+  s:hasSignal <urn:interop:spatial:tone>, <urn:interop:spatial:position> ;
+  s:hasStimulusChannel <urn:interop:spatial:left>, <urn:interop:spatial:right> .
+
+<urn:interop:spatial:tone> a s:StimulationSignal ;
+  rdfs:label "220 Hz sine sound" ;
+  s:hasSignalShape v:shapeSine ;
+  s:hzMin 220.0 ; s:hzMax 220.0 .
+
+<urn:interop:spatial:position> a s:StimulationSignal ;
+  rdfs:label "0.5 Hz triangular angular position modulation" ;
+  s:hasSignalShape v:shapeTriangle ;
+  s:hzMin 0.5 ; s:hzMax 0.5 .
+
+<urn:interop:spatial:left> a e:StimulusChannel ;
+  rdfs:label "Left ear spatial trajectory" ;
+  e:perceivedModality e:modalityAuditory ;
+  e:deliveryMedium e:mediumAirConductedSound ;
+  e:hasBodyPlacement e:placementEarLeft ;
+  s:channelDurationSeconds 0.04 ;
+  s:hasSignalRendering
+    <urn:interop:spatial:l-audio>,
+    <urn:interop:spatial:l-position> .
+
+<urn:interop:spatial:right> a e:StimulusChannel ;
+  rdfs:label "Right ear spatial trajectory" ;
+  e:perceivedModality e:modalityAuditory ;
+  e:deliveryMedium e:mediumAirConductedSound ;
+  e:hasBodyPlacement e:placementEarRight ;
+  s:channelDurationSeconds 0.04 ;
+  s:hasSignalRendering
+    <urn:interop:spatial:r-audio>,
+    <urn:interop:spatial:r-position> .
+
+<urn:interop:spatial:l-audio> a s:SignalRendering ;
+  rdfs:label "Left ear tone" ;
+  s:rendersSignal <urn:interop:spatial:tone> ;
+  s:rendersOntoParameter v:paramAmplitude ;
+  s:hasRenderingMechanism v:mechanismDirectPresentation ;
+  s:hasRenderingPresence v:presencePhysical .
+
+<urn:interop:spatial:r-audio> a s:SignalRendering ;
+  rdfs:label "Right ear tone" ;
+  s:rendersSignal <urn:interop:spatial:tone> ;
+  s:rendersOntoParameter v:paramAmplitude ;
+  s:hasRenderingMechanism v:mechanismDirectPresentation ;
+  s:hasRenderingPresence v:presencePhysical .
+
+<urn:interop:spatial:l-position> a s:SignalRendering ;
+  rdfs:label "Left position control" ;
+  s:rendersSignal <urn:interop:spatial:position> ;
+  s:rendersOntoParameter v:paramSpatialPosition ;
+  s:hasRenderingMechanism v:mechanismDirectPresentation ;
+  s:hasRenderingPresence v:presencePhysical .
+
+<urn:interop:spatial:r-position> a s:SignalRendering ;
+  rdfs:label "Right position control" ;
+  s:rendersSignal <urn:interop:spatial:position> ;
+  s:rendersOntoParameter v:paramSpatialPosition ;
+  s:hasRenderingMechanism v:mechanismDirectPresentation ;
+  s:hasRenderingPresence v:presencePhysical .

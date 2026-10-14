@@ -1,0 +1,10 @@
+{
+  "generator": "amplitude_modulation",
+  "parameters": {
+    "carrier_freq": 220.0,
+    "modulation_freq": 9.0,
+    "modulation_depth": 0.7
+  },
+  "duration": 0.04,
+  "sample_rate": 48000
+}

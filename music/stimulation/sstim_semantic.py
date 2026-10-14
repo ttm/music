@@ -73,6 +73,18 @@ def inspect_sstim_beat(
 
     The caller must supply the intended *output* sampling rate because
     SSTIM's engine-independent specification need not select one.
+
+    Parameters
+    ----------
+    value : rdflib.Graph, str or Path
+        The description: a graph, a local Turtle file, or Turtle text.
+    sample_rate : int
+        The rate to render at.
+
+    Returns
+    -------
+    SemanticBeat
+        The technique, the carrier, the beat, the duration and the rate.
     """
     if (not isinstance(sample_rate, int) or isinstance(sample_rate, bool)
             or not 8000 <= sample_rate <= 192000):
@@ -170,6 +182,22 @@ def render_semantic_beat(
     equal-gain mean. Amplitude calibration and physical playback are not
     represented. Compare spectral/temporal properties across engines,
     not exact DAC samples or neural effects.
+
+    Parameters
+    ----------
+    value : SemanticBeat, rdflib.Graph, str or Path
+        A beat :func:`inspect_sstim_beat` read, or a description to read
+        it from.
+    profile : str
+        The convention assumed, which must be
+        ``zero-phase-equal-gain-beats-v1``.
+    sample_rate : int
+        The rate to render at, when ``value`` is read from a description.
+
+    Returns
+    -------
+    ndarray
+        ``(2, nsamples)`` for a binaural beat, mono for a monaural one.
     """
     if profile != _PROFILE:
         raise ValueError("explicit zero-phase-equal-gain-beats-v1 required")

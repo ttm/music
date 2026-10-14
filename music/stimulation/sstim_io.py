@@ -137,6 +137,28 @@ def to_sstim_graph(
     engine-independent descriptions do not specify every implementation
     detail. Validate with `sstim.validate(graph, profile="full")`.
 
+    Parameters
+    ----------
+    generator : str
+        ``binaural_beats``, ``monaural_beats``, ``isochronic_tones``,
+        ``amplitude_modulation`` or ``frequency_modulation``.
+    parameters : mapping
+        The generator's numeric arguments, by name, but for its duration,
+        sample count, sample rate and tables. Those left out take the
+        generator's defaults, which are written out too.
+    duration : float
+        Seconds, of at most five million samples.
+    sample_rate : int
+        Samples per second, from 8,000 to 192,000. SSTIM has no term for
+        it, so it is written in the package's namespace.
+    base : str
+        The IRI the description's resources are named under.
+
+    Returns
+    -------
+    rdflib.Graph
+        The description, in SSTIM's terms and the package's.
+
     Raises
     ------
     ValueError
@@ -252,6 +274,17 @@ def from_sstim_graph(value: Graph | str | Path) -> RenderableStimulus:
     Refuse ambiguous graphs or a mismatch between engine hints and the
     portable SSTIM assertions. Unknown predicates are left untouched;
     unknown executable generator names are never dispatched.
+
+    Parameters
+    ----------
+    value : rdflib.Graph, str or Path
+        A description the package wrote: a graph, a local Turtle file, or
+        Turtle text.
+
+    Returns
+    -------
+    RenderableStimulus
+        The generator, its arguments, the duration and the sample rate.
     """
     g = _graph(value)
     roots = list(g.subjects(RDF.type, SSTIM.StimulusSpecification))
@@ -355,6 +388,21 @@ def render_sstim(value: Graph | str | Path, *,
     Default is the original generator. Set `oversampling_factor=4` to
     low-pass before decimating, for example for hard-gated isochronic tones.
     SSTIM itself specifies the stimulus, not the engine's numerical fidelity.
+
+    Parameters
+    ----------
+    value : rdflib.Graph, str or Path
+        A description the package wrote: a graph, a local Turtle file, or
+        Turtle text.
+    oversampling_factor : int, optional
+        Render through :func:`music.render_oversampled` at this many times
+        the rate, from 2 to 16, which needs SciPy; None renders directly.
+
+    Returns
+    -------
+    ndarray
+        The samples the call the description records renders, mono or
+        ``(2, nsamples)``.
     """
     from . import stimuli
     spec = from_sstim_graph(value)

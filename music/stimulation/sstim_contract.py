@@ -182,6 +182,27 @@ def resolve_sstim_contract(
     standard-only description.
 
     Does not infer a delivered SessionInstance or portable PCM identity.
+
+    Parameters
+    ----------
+    value : rdflib.Graph, str or Path
+        The description, in SSTIM's terms alone: a graph, a local Turtle
+        file, or Turtle text.
+    generator : str
+        Which of the seven stimuli to render it as.
+    parameters : mapping
+        Every one of the generator's controls, by name, but for its
+        duration, sample count, sample rate, source array and tables;
+        none is left to a default.
+    duration : float
+        Seconds, which the description's channels must say too.
+    sample_rate : int
+        Samples per second, the renderer's choice: SSTIM does not fix it.
+
+    Returns
+    -------
+    PortableResolution
+        What to render, for :func:`render_sstim_contract`.
     """
     graph = _graph(value)
     if any(str(pred).startswith(str(MUSIC)) for _, pred, _ in graph):

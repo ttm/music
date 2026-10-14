@@ -47,6 +47,20 @@ def to_sstim_program_graph(
     closures or custom waveform tables) can be encoded. Engine-owned terms
     preserve gain, phase order, ramp shape and fade times exactly.
 
+    Parameters
+    ----------
+    session : StimulationSession
+        One to fifty phases, each one of the seven stimuli with portable
+        arguments, of at most five million samples in all.
+    base : str
+        The IRI the program's resources are named under.
+
+    Returns
+    -------
+    rdflib.Graph
+        The program, in the package's terms, holding each phase's SSTIM
+        description.
+
     Raises
     ------
     ValueError

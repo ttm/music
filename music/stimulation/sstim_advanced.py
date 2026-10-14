@@ -90,6 +90,27 @@ def to_sstim_advanced_graph(
     Source arrays and custom wavetables are not portable through this
     adapter. A noise seed reproduces one stochastic realization in MUSIC.
 
+    Parameters
+    ----------
+    generator : str
+        ``modulated_noise`` or ``spatial_motion``.
+    parameters : mapping
+        The generator's arguments, by name, but for its duration, sample
+        count, sample rate, source array and tables: a noise's colour is
+        named, and its seed is an integer below 2**64 or None. Those left
+        out take the generator's defaults, which are written out too.
+    duration : float
+        Seconds, of at most five million samples.
+    sample_rate : int
+        Samples per second, from 8,000 to 192,000.
+    base : str
+        The IRI the description's resources are named under.
+
+    Returns
+    -------
+    rdflib.Graph
+        The description, in SSTIM's terms and the package's.
+
     Raises
     ------
     ValueError

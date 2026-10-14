@@ -61,6 +61,28 @@ def to_sstim_planned_session_graph(
     a normative duration. The caller identifies a real preset and passes
     the timestamp; this function never pretends to have observed delivery.
     Uses the conservative published reproEquivalentPresentation level.
+
+    Parameters
+    ----------
+    session : StimulationSession
+        A session of a whole number of seconds, from 60 to 7,200, that
+        :func:`~music.stimulation.sstim_program.to_sstim_program_graph`
+        can write.
+    preset_iri : str
+        An http(s) IRI naming the preset, outside SSTIM's namespace.
+    preset_label : str
+        The preset's name, not empty.
+    created_at : datetime
+        When the plan was made, with its time zone.
+    master_volume : float
+        The playback level, from 0 to 1.
+    base : str
+        The IRI the plan's resources are named under.
+
+    Returns
+    -------
+    rdflib.Graph
+        The SessionSpecification, around the program it plans.
     """
     if (not isinstance(preset_iri, str)
             or not preset_iri.startswith(("https://", "http://"))

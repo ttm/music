@@ -316,3 +316,43 @@ def test_a_modulated_noise_says_its_band_holds_nothing():
             "min_freq (15.0 Hz) is above the Nyquist frequency (10.0 Hz), "
             "so the band holds nothing")):
         music.modulated_noise(duration=1, sample_rate=20)
+
+
+# --------------------------------------------------------------------------
+# The seed, which came after this area was first measured
+# --------------------------------------------------------------------------
+
+@pytest.mark.parametrize("seed", [0, 1, 2**64 - 1, np.uint64(7), np.int32(7)])
+def test_a_seed_is_any_integer_a_generator_takes(seed):
+    """Both ends of the range NumPy's generators are seeded with, and
+    NumPy's own integers, which a seed read from an array is."""
+    first = music.noise(duration=.01, seed=seed)
+    assert np.array_equal(first, music.noise(duration=.01, seed=seed))
+
+
+@pytest.mark.parametrize("seed", [-1, 2**64, True, 1.0, "1"])
+def test_a_seed_outside_that_range_is_refused(seed):
+    with pytest.raises(ValueError, match=_exactly(
+            "seed must be a nonnegative uint64 integer")):
+        music.noise(duration=.01, seed=seed)
+
+
+def test_a_seed_draws_from_a_generator_of_its_own():
+    """Seeded, the noise is the same whatever NumPy's global state is,
+    and leaves that state where it was; unseeded, it draws from that
+    state, as it always has."""
+    saved = np.random.get_state()
+    try:
+        np.random.seed(3)
+        seeded = music.noise(duration=.01, seed=5)
+        np.random.seed(4)
+        before = np.random.get_state()[1].copy()
+        assert np.array_equal(seeded, music.noise(duration=.01, seed=5))
+        assert np.array_equal(np.random.get_state()[1], before)
+        np.random.seed(3)
+        unseeded = music.noise(duration=.01)
+        np.random.seed(3)
+        assert np.array_equal(unseeded, music.noise(duration=.01))
+        assert not np.array_equal(seeded, unseeded)
+    finally:
+        np.random.set_state(saved)

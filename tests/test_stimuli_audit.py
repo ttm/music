@@ -140,6 +140,21 @@ def test_the_noise_envelope_is_the_same_envelope_on_the_same_bed(depth):
     np.testing.assert_allclose(rendered, bed * np.tile(crest_to_trough, 2))
 
 
+def test_a_seed_reaches_the_noise_bed():
+    """`modulated_noise` hands its `seed` to `noise`, which came after
+    this area was first measured: unmodulated, it is that noise, and
+    modulated, the same seed shapes the same bed."""
+    band = dict(noise_type="white", min_freq=100, max_freq=300,
+                number_of_samples=8, sample_rate=1000)
+    bed = music.noise(seed=11, **band)
+    assert np.array_equal(
+        music.modulated_noise(modulation_freq=0, seed=11, **band), bed)
+    rendered = music.modulated_noise(
+        modulation_freq=250, modulation_depth=1,
+        modulation_waveform_table=STEPS, seed=11, **band)
+    np.testing.assert_allclose(rendered, bed * np.tile([1, .5, 0, .5], 2))
+
+
 def test_unmodulated_noise_is_the_band_it_was_asked_for_at_its_rate():
     """Its colour, band and rate reach `noise`. Dropping `min_freq`,
     `max_freq` or `sample_rate` on the way survived."""

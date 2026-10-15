@@ -255,8 +255,10 @@ either documented in the code or tracked in the issue list.
   2026-10-15, and its tests could not tell 394 of 3,020 mutants from the
   code: nothing pinned the form a description is written in or the
   plan's digest, so a change to either would have left every description
-  written before it unreadable. The four band-limited oscillator modules
-  added since 1.10.0 are in no area yet.
+  written before it unreadable. Tests now pin both, and of 3,011 mutants
+  the 111 left change only a refusal's wording or nothing at all. The
+  four band-limited oscillator modules added since 1.10.0 are in no area
+  yet.
 
   [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records the scope, assertions,
   survivor IDs and reproduction command. The tool skips decorated classes,

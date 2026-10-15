@@ -78,7 +78,9 @@ with the equation it implements and the article it comes from.
   crossfaded rather than cut, lasting exactly the sum of the durations you
   wrote down. The sample-accurate synthesis is the point here, because the
   frequency difference *is* the stimulus. Each stimulus, and a session,
-  can be written as an SSTIM description and rendered back from one.
+  can be written as an SSTIM description and rendered back from one, and a
+  description another tool wrote is rendered from SSTIM's own terms, given
+  only what they cannot say.
 * **Singing.** `sing` sings a lyric to a melody, one syllable a note, in
   any language espeak speaks. The package's own singer has espeak-ng say
   each syllable and Praat's PSOLA hold it at its note's pitch: a syllable
@@ -315,20 +317,18 @@ descriptions of its stimuli, in the order the session plays them, and
 rendered back from them sample for sample:
 
 ```python
-from music.stimulation.sstim_program import (
-    render_sstim_program, to_sstim_program_graph)
+from music.stimulation.sstim import render_sstim, to_sstim_graph
 
-graph = to_sstim_program_graph(
-    session, base="https://your-lab.example/plans/1/")
+graph = to_sstim_graph(session, base="https://your-lab.example/plans/1/")
 graph.serialize("session.ttl", format="turtle")
-again = render_sstim_program("session.ttl")
+again = render_sstim("session.ttl")
 ```
 
 A description says what a stimulus is, not that anyone heard it or that it
 does anything. [Stimuli in SSTIM](https://ttm.github.io/music/sstim.html)
-has the rest: a session of a minute or more written as SSTIM's own plan,
-a description another tool wrote rendered with every control spelled
-out, and what can and cannot be rendered from a graph.
+has the rest: a session written as SSTIM's own plan, a description another
+tool wrote rendered from SSTIM's terms with only what they cannot say
+given, and what can be rendered from a graph before anything is.
 
 ### Singing
 
@@ -408,6 +408,7 @@ Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) 
 * [bonds](https://github.com/ttm/music/tree/master/examples/bonds.py): plays one line three times, changing only how its characteristics are bound to its pitch.
 * [binaural_beats](https://github.com/ttm/music/tree/master/examples/binaural_beats.py): generates binaural beats using two pure tones with tremolo for relaxation or focus.
 * [sensory_stimulation](https://github.com/ttm/music/tree/master/examples/sensory_stimulation.py): writes one file per SSTIM technique with `music.stimulation`, and one three-phase session, which is the form these stimuli are actually delivered in.
+* [sstim_descriptions](https://github.com/ttm/music/tree/master/examples/sstim_descriptions.py): writes a stimulus and a planned session as SSTIM descriptions, renders both back, and renders an amplitude modulation another tool might have described, in SSTIM's terms alone.
 * [aliasing_demo](https://github.com/ttm/music/tree/master/examples/aliasing_demo.py): writes a 10 kHz sawtooth twice, read from the table as MASS does and band-limited, at one gain, so the folding can be heard.
 * [Singing](#singing), above, says what each singing backend needs.
 
@@ -424,7 +425,7 @@ The modules are:
 * **theory** for scales, chords and the harmonic series. Counterpoint, harmonic expansion and modulation are described in the companion paper and are [not there yet](https://github.com/ttm/music/issues/1).
 * **bonds** for tying a note's vibrato and tremolo to its frequency, which is where an arbitrary construction of that kind goes.
 * **legacy** for musical pieces that are rendered with the Music package and might be used as material to make more music.
-* **stimulation** for sensory-stimulation work: the seven stimuli above, each carrying the SSTIM term it implements, `StimulationSession` for sequencing them into a protocol, and the `sstim_` modules that write them as SSTIM descriptions and read them back.
+* **stimulation** for sensory-stimulation work: the seven stimuli above, each carrying the SSTIM term it implements, `StimulationSession` for sequencing them into a protocol, and `music.stimulation.sstim`, which writes them as SSTIM descriptions, reads them back, and reads what other tools write.
 * **singing** for `sing` and its two backends: `psola`, the package's own singer, and `perform`, which writes the score and runs the eCantorix engine that `bootstrap` clones and `paths` finds.
 * **hrtf** for fetching the KEMAR measurements into your cache and reading a direction's impulse responses out of them.
 * **tables** for the generation of lookup tables for some basic waveform.
@@ -481,7 +482,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 6,255 tests, 100% line and branch coverage
+pytest                                       # 6,496 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

@@ -6,7 +6,7 @@
 has to be asked for. `note` still reads its table as MASS does, sample for
 sample, and `noise` and `modulated_noise` draw from NumPy's global random
 state unless given a `seed`. `render_oversampled` needs
-`pip install 'music[antialias]'` and the SSTIM modules need
+`pip install 'music[antialias]'` and `music.stimulation.sstim` needs
 `pip install 'music[sstim]'`; `import music` needs neither.
 
 ### Added
@@ -47,52 +47,59 @@ state unless given a `seed`. `render_oversampled` needs
   that join to within 1e-8 of one render. Neither module is exported at
   the top level.
 - **A stimulus can be written in SSTIM and rendered back from it.**
-  `music.stimulation.sstim_io` describes binaural, monaural and
-  isochronic beats, AM and FM as SSTIM 0.19.0 stimulus specifications:
-  signals, channels and renderings in SSTIM's own terms, and the
-  arguments SSTIM has no term for, a duty cycle or a depth, in the
-  package's namespace rather than minted as SSTIM's. `render_sstim`
-  renders a description as the call it records would, optionally
-  oversampled, and `validate_sstim` checks one with SSTIM's own
-  Full-profile validator. Only the stimuli the package names are
-  rendered, and nothing in a graph is run.
-- **Modulated noise, spatial motion and whole sessions are written too.**
-  `sstim_advanced` describes a noise as a stochastic band with its seed,
-  and spatial motion as a tone with a position signal; `sstim_program`
-  writes a `StimulationSession`'s phases in order, with their ramps and
-  gains, and renders it back as the session would. A session is written
-  in the package's terms, as a plan, and never as an
+  `music.stimulation.sstim.to_sstim_graph` describes any of the seven
+  stimuli as an SSTIM 0.19.0 stimulus specification, as the call that
+  renders it, with every default written out. Its signals, channels and
+  renderings are in SSTIM's own terms, and so are each channel's
+  frequencies -- its carrier, beat, modulation or tone frequency, its duty
+  cycle, and a noise's colour as SSTIM's noise pattern -- so that a
+  consumer reading only SSTIM's channel terms finds them. What SSTIM has
+  no term for, a depth or a seed, is in the package's namespace rather
+  than minted as SSTIM's. `render_sstim` renders a description as the call
+  it records would, optionally oversampled, and `validate_sstim` checks
+  one with SSTIM's own Full-profile validator.
+- **Sessions are written too, as a program and as SSTIM's own plan.**
+  `to_sstim_graph` writes a `StimulationSession`'s phases in order, with
+  their ramps and gains, each phase an SSTIM stimulus, and renders it back
+  as the session would. Given a `SessionPlan`, a session of a whole number
+  of seconds from 60 to 7,200 is also an `sstim:SessionSpecification`,
+  with the preset, creation time and master volume the plan gives, the
+  reproducibility level `reproEquivalentPresentation`, and a digest of the
+  program, the preset, the volume and the duration. Neither is ever an
   `sstim:SessionInstance`: nothing was delivered.
-- **A session of a minute or more can be written as SSTIM's own plan.**
-  `sstim_planned` wraps a session of a whole number of seconds, from 60 to
-  7,200, in an `sstim:SessionSpecification`, with the preset, creation
-  time and master volume the caller gives, the reproducibility level
-  `reproEquivalentPresentation`, and a digest of the program, the preset,
-  the volume and the duration. It is a plan still, never a
-  `SessionInstance`.
-- **`sstim_semantic` reads a binaural or monaural beat from SSTIM's terms
-  alone,** needing nothing of the package's in the graph, and renders it
-  under a convention it names, `zero-phase-equal-gain-beats-v1`, because
-  SSTIM fixes neither the carriers' phases nor their gains.
-- **A description another tool wrote can be rendered, given every control
-  in full.** `sstim_contract` takes a graph in SSTIM's terms alone and a
-  sidecar naming the generator and every one of its controls, compares
-  what the two say, whatever the IRIs, the order, the lexical forms and
-  the labels, and refuses any disagreement, any SSTIM statement it does
-  not know, and any graph carrying the package's own terms. All seven
-  stimuli can be rendered so, and `tools/sstim_interop_check.py` runs the
-  check from the command line, with digests of the samples and the
-  sidecar. Three descriptions written by hand, without the package, are
-  in `tests/fixtures` with their sidecars.
-- **`inspect_sstim_capabilities` says what can be done with a graph
-  before anything renders:** a beat SSTIM's own terms suffice for, a
-  stimulus, a program or a planned session in the package's terms, an
-  SSTIM description the package cannot render, with what it would need,
-  or nothing. A graph carrying the package's terms is judged by them, and
-  one whose two sets of terms disagree is refused. It never promises that
-  another engine renders the same samples.
+- **`from_sstim_graph` reads a description back, and refuses one it did
+  not write.** A description the package wrote must state, in SSTIM's
+  terms and in its own, exactly what the package writes for what it says,
+  so one whose two sets of terms disagree, or that adds a gain or a phase,
+  is refused rather than half believed. Annotations in other
+  vocabularies are left alone.
+- **A description another tool wrote is rendered from SSTIM's terms,
+  given only what they cannot say.** Its mechanisms and signals say which
+  of the seven stimuli it is; its carriers, rates, duty cycle, noise band
+  and colour and its length are read from it; and the sample rate and
+  what SSTIM has no term for -- a depth, a deviation, a seed, a geometry --
+  are given, never taken from the package's defaults. The package's own
+  description of the result must then state everything the given one
+  does, whatever its node names, order, lexical forms and labels, and an
+  SSTIM term the package does not render, such as a gain or a phase
+  offset, is refused. Three descriptions written by hand, without the
+  package, are in `tests/fixtures`, and `tools/sstim_interop_check.py`
+  renders one from the command line, with digests of the samples and the
+  arguments.
+- **A binaural or monaural beat can also be rendered by a named
+  convention,** `zero-phase-equal-gain-beats-v1`, rather than by the
+  package's generator, because SSTIM fixes neither the tones' phases nor
+  their gains.
+- **`inspect_sstim` says what can be done with a description before
+  anything renders:** whether it is a stimulus, a session or a planned
+  session, whether the package wrote it, what rendering it still needs,
+  and why it is unsupported, if it is. A description carrying the
+  package's terms is judged by them, and never read by its SSTIM terms
+  instead.
 - **SSTIM is read locally, and within bounds:** a graph, a local file or
-  Turtle text, never a URL, of at most 2 MiB and 15,000 triples. The
+  Turtle text, never a URL, of at most 2 MiB and 15,000 triples, and
+  `render_sstim` renders at most five million samples a channel unless
+  given more. Writing or reading a description has no length cap. The
   bounds stop a large file being read by accident. They do not make a
   hostile one safe, since the parser has run before the triples are
   counted.
@@ -145,13 +152,13 @@ state unless given a `seed`. `render_oversampled` needs
   Full profile on Python 3.12, and publishes the aliasing benchmarks and
   the PolyBLEP listening pairs as artifacts. It prints the extended lint
   count too, for information, and the documentation is built with the
-  SSTIM extra, whose modules the reference imports.
+  SSTIM extra, whose module the reference imports.
 - **The extras' lower bounds are tested,** as the core dependencies'
   are: the job that installs the lowest versions pyproject declares
   installs SciPy 1.11.1, RDFLib 7.0.0 and SSTIM 0.2.0 with them. SciPy's
-  floor is 1.11.1, since 1.11.0 is yanked, and RDFLib, which the SSTIM
-  modules import, is declared rather than left to SSTIM's own
-  requirements.
+  floor is 1.11.1, since 1.11.0 is yanked, and RDFLib, which
+  `music.stimulation.sstim` imports, is declared rather than left to
+  SSTIM's own requirements.
 - **The license is declared as the SPDX expression `MIT`.** setuptools has
   deprecated the `{ file = "LICENSE" }` table and the license classifier,
   and stops building them after 2027-02-18, so building the package now
@@ -166,13 +173,18 @@ state unless given a `seed`. `render_oversampled` needs
 - **A page on band-limited synthesis, and one on stimuli in SSTIM.** The
   first follows the folding from a fixed pitch to a moving one and to
   whatever the rendering does, with the benchmarks' figures and what they
-  do not show. The second writes a stimulus and a session, reads a beat
-  another tool described, and says what can be rendered from a graph and
-  how safely a graph is read. Each ends with a reference to the functions
-  it describes, which are not exported at the top level and which no page
-  showed.
+  do not show. The second writes a stimulus and a session, renders
+  descriptions other tools wrote, and says what can be rendered from a
+  description and how safely one is read. Each ends with a reference to
+  the functions it describes, which are not exported at the top level and
+  which no page showed.
 - **A page on where to start,** *Choosing the smallest API*, maps common
   tasks onto a few routines.
+- **An example writes stimuli as SSTIM descriptions.**
+  `examples/sstim_descriptions.py` writes a stimulus and a planned
+  session, renders both back, and renders an amplitude modulation
+  described by hand in SSTIM's terms alone, given its depth; CI runs it
+  with the others.
 - **The README describes both among the core features,** with a closer
   look at each and at sensory stimulation, the two extras under
   installation, and the example among the others. Its plans count the

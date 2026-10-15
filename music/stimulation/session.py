@@ -15,9 +15,10 @@ a configuration, ``sstim:AudioTrack`` -- "an isochronic tone, a binaural
 carrier pair, a plain carrier, noise" -- taken in sequence rather than
 in parallel.
 
-Teaching this class to *read and write* those descriptions is separate
-work, tracked as issue #75; the vocabulary is adopted here so that the
-two do not have to be reconciled later.
+:mod:`music.stimulation.sstim` writes a session as an SSTIM description
+and reads it back: as a program of its phases in the package's terms,
+since SSTIM has none for phases in order, and, given a plan, as SSTIM's
+own ``SessionSpecification`` around that program.
 
 References
 ----------

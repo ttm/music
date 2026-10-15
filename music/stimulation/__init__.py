@@ -37,6 +37,10 @@ A protocol is a sequence of these rather than one of them, and
 :class:`StimulationSession` is that sequence: phases in order, each with
 its own stimulus and duration, joined by ramps rather than by cuts.
 
+:mod:`music.stimulation.sstim` writes a stimulus or a session as an SSTIM
+description and renders it back, and renders descriptions other tools
+wrote; it needs ``pip install 'music[sstim]'``, and is not imported here.
+
 These routines build on the package's own primitives and follow its
 sample-by-sample model: a modulator is folded into the wavetable lookup
 rather than applied to a finished sound.

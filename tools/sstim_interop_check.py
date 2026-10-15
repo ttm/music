@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Check independently authored SSTIM against a complete MUSIC sidecar.
+"""Render another tool's SSTIM description, given what SSTIM cannot say.
 
 Example:
   python tools/sstim_interop_check.py \
       tests/fixtures/sstim_third_party_am.ttl \
-      tests/fixtures/sstim_third_party_am.contract.json
+      tests/fixtures/sstim_third_party_am.render.json
 
-All input is local. Official validation is opt-in and can fetch the
-pinned SSTIM 0.19.0 closure on a first run. SHA256 identifies an
-installation-specific float64 rendering, not cross-engine PCM identity.
+The JSON holds render_sstim's keyword arguments: the sample rate and the
+controls SSTIM has no term for; a duration, if the description's channels
+state none; or a profile, to render a beat by a named convention. All
+input is local. Validation against SSTIM's Full profile is opt-in, and
+fetches the release's modules on a first run. The SHA-256 identifies this
+installation's float64 render, not the samples another engine makes.
 """
 import argparse
 from hashlib import sha256
@@ -18,52 +21,58 @@ from pathlib import Path
 import numpy as np
 
 import music
-from music.stimulation.sstim_contract import (
-    render_sstim_contract, resolve_sstim_contract,
+from music.stimulation.sstim import (
+    SSTIM_VERSION, SstimBeat, SstimStimulus, from_sstim_graph, render_sstim,
+    validate_sstim,
 )
-from music.stimulation.sstim_io import validate_sstim
+
+_KEYS = {"sample_rate", "duration", "controls", "profile"}
 
 
-def check(turtle, sidecar, *, official=False, wav=None):
-    """Return report for an independently authored local stimulus."""
-    path = Path(sidecar)
+def check(turtle, arguments, *, official=False, wav=None):
+    """Report on rendering a local description with the given arguments."""
+    path = Path(arguments)
     if not path.is_file() or path.stat().st_size > 8192:
-        raise ValueError("sidecar must be an existing local JSON under 8 KiB")
+        raise ValueError(
+            "the arguments must be an existing local JSON file under 8 KiB")
     try:
-        params = json.loads(path.read_text(encoding="utf-8"))
+        given = json.loads(path.read_text(encoding="utf-8"))
     except (ValueError, UnicodeError) as exc:
-        raise ValueError("invalid sidecar JSON") from exc
-    if (not isinstance(params, dict) or
-            set(params) != {"generator", "parameters", "duration",
-                            "sample_rate"} or
-            not isinstance(params["parameters"], dict)):
-        raise ValueError("unexpected or incomplete sidecar shape")
-
-    resolution = resolve_sstim_contract(
-        Path(turtle), **params)
+        raise ValueError("the arguments are not valid JSON") from exc
+    if (not isinstance(given, dict) or not set(given) <= _KEYS
+            or not isinstance(given.get("controls", {}), dict)):
+        raise ValueError(
+            "the arguments must be an object of sample_rate, duration, "
+            "controls and profile, its controls an object")
     conforms = None
     if official:
-        status = validate_sstim(Path(turtle), version="0.19.0")
-        conforms = bool(status.ok)
+        conforms = bool(validate_sstim(Path(turtle),
+                                       version=SSTIM_VERSION).ok)
         if not conforms:
-            raise ValueError("SSTIM 0.19.0 Full-profile validation failed")
-    samples = np.asarray(render_sstim_contract(resolution), dtype=float)
+            raise ValueError(f"the description does not conform to SSTIM "
+                             f"{SSTIM_VERSION}'s Full profile")
+    described = from_sstim_graph(Path(turtle), **given)
+    if not isinstance(described, (SstimStimulus, SstimBeat)):
+        raise ValueError("the tool renders a single stimulus, not a session")
+    samples = np.asarray(render_sstim(Path(turtle), **given), dtype=float)
     if samples.ndim not in (1, 2) or not np.isfinite(samples).all():
-        raise ValueError("renderer returned invalid samples")
+        raise ValueError("the render returned invalid samples")
     canonical = np.ascontiguousarray(samples, dtype="<f8")
     result = {
-        "contract": "MUSIC explicit sidecar, not normative SSTIM DSP",
-        "sstim_version": "0.19.0",
+        "sstim_version": SSTIM_VERSION,
         "sstim_full_profile_conforms": conforms,
         "engine": "music",
         "music_version": music.__version__,
-        "generator": resolution.generator,
-        "sample_rate_hz": resolution.sample_rate,
+        "generator": described.generator,
+        "rendered_by": ("profile " + given["profile"]
+                        if isinstance(described, SstimBeat)
+                        else "music." + described.generator),
+        "sample_rate_hz": described.sample_rate,
         "shape": list(samples.shape),
         "sample_dtype": "little-endian float64",
         "render_sha256": sha256(canonical.tobytes()).hexdigest(),
-        "sidecar_sha256": sha256(
-            json.dumps(params, sort_keys=True, separators=(",", ":"))
+        "arguments_sha256": sha256(
+            json.dumps(given, sort_keys=True, separators=(",", ":"))
             .encode("utf-8")).hexdigest(),
         "rms": float(np.sqrt(np.mean(samples**2))),
         "peak": float(np.max(np.abs(samples))),
@@ -72,21 +81,21 @@ def check(turtle, sidecar, *, official=False, wav=None):
     if wav:
         import soundfile as sf
         output = samples.T if samples.ndim == 2 else samples
-        sf.write(str(wav), output, resolution.sample_rate, subtype="PCM_24")
+        sf.write(str(wav), output, described.sample_rate, subtype="PCM_24")
     return result
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("turtle", help="Local standard SSTIM 0.19.0 Turtle")
-    parser.add_argument("sidecar",
-                        help="Complete MUSIC engine parameters JSON")
+    parser.add_argument("turtle", help="A local SSTIM description, in Turtle")
+    parser.add_argument("arguments",
+                        help="render_sstim's keyword arguments, in JSON")
     parser.add_argument("--official", action="store_true",
-                        help="Run the pinned official SHACL validation")
-    parser.add_argument("--wav", help="Optional output PCM24 WAV")
-    parser.add_argument("--json", help="Write report to this JSON path")
+                        help="Validate against SSTIM's Full profile first")
+    parser.add_argument("--wav", help="Also write the render, as PCM24 WAV")
+    parser.add_argument("--json", help="Also write the report to this path")
     args = parser.parse_args(argv)
-    result = check(args.turtle, args.sidecar,
+    result = check(args.turtle, args.arguments,
                    official=args.official, wav=args.wav)
     encoded = json.dumps(result, indent=2) + "\n"
     print(encoded, end="")

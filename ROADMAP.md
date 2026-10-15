@@ -807,6 +807,22 @@ other's melody in 15 of 30 renders, without an error. A render now holds
 the folder, by a lock on the folder itself, from writing its score to
 reading its samples back, and the same race gives 0 of 30.
 
+On 2026-10-15, before any of it was released, the seven SSTIM modules
+became one, `music.stimulation.sstim`, with five functions:
+`to_sstim_graph` writes a stimulus or a session, `from_sstim_graph`
+reads one back, `render_sstim` renders one, `inspect_sstim` says what
+can be done with one, and `validate_sstim` validates it. Its readers had
+differed -- the first left statements it did not know alone, the others
+refused any but their own -- and now share one rule: statements in
+SSTIM's terms and the package's must be exactly those the package
+writes, and statements in other vocabularies are left alone. A
+description another tool wrote is read from its SSTIM terms, with only
+what SSTIM has no term for given, where a sidecar had to spell out every
+control, and each channel states its frequencies in SSTIM's own channel
+terms. The five-million-sample cap moved from writing and reading to
+rendering: it had kept any plan longer than about 113 s at 44.1 kHz from
+being written, though SSTIM's run to two hours.
+
 What none of this establishes -- how anything sounds, or that another
 engine renders the same samples from an SSTIM description -- is in
 `ASSESSMENT.md`'s known limitations.
@@ -819,16 +835,18 @@ engine renders the same samples from an SSTIM description -- is in
   than through a spectral difference; PolyBLEP against mipmapped tables;
   the cost of rendering in a stream; and whether to change any default.
 - **SSTIM beyond the package's own terms**
-  ([#117](https://github.com/ttm/music/issues/117)): rendering more than
-  beats without a sidecar; a reference shared between engines for phase,
-  amplitude, random streams and localization; records of what was
+  ([#117](https://github.com/ttm/music/issues/117)): terms SSTIM lacks
+  for what the stimuli need -- a modulation's depth, a deviation, a ramp,
+  a seed, a geometry, phases in order -- which a description from
+  elsewhere must still be given; a reference shared between engines for
+  phase, amplitude, random streams and localization; records of what was
   delivered, which only a real session can give; and isolation for
   reading untrusted Turtle.
 - **The listening tests have not been run.** The tools prepare blinded
   pairs and a blank form; no claim about what a listener hears rests on
   them yet.
 - **Mutation audits of the new code**
-  ([#113](https://github.com/ttm/music/issues/113)). The eleven new modules
+  ([#113](https://github.com/ttm/music/issues/113)). The ten new modules
   are in no area yet. `noises`, `stimuli` and `singing` were measured
   again on 2026-10-14, for the `seed` and for the singing work that went
   into 1.10.0 after its area was first measured; the singing's tests
@@ -917,10 +935,10 @@ the behaviour is, too; this is the list in one place.
 
 Choose according to the next real use case:
 
-1. **Stimulation interoperability: done for stimuli, 2026-10-10,** with
-   RDF tooling in an optional extra
-   ([#75](https://github.com/ttm/music/issues/75)); see above. Sessions in
-   SSTIM's own terms remain, in
+1. **Stimulation interoperability: done, 2026-10-10 to 2026-10-15,**
+   with RDF tooling in an optional extra
+   ([#75](https://github.com/ttm/music/issues/75)); see above. What SSTIM
+   has no terms for remains, in
    [#117](https://github.com/ttm/music/issues/117). Registering the tool
    in SSTIM itself is separate work in that repository
    ([#73](https://github.com/ttm/music/issues/73)).

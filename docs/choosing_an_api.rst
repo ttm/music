@@ -54,11 +54,11 @@ limits.
 Machine-readable stimulus exchange
 ----------------------------------
 
-The optional ``music.stimulation.sstim_io`` module exports and imports
-a safe, bounded MUSIC-renderable subset of SSTIM 0.19.0 RDF, and
-``sstim_advanced`` and ``sstim_program`` do the same for noise, spatial
-motion and sessions. These are separate modules, rather than new names
-in the flat API. See :doc:`sstim` for examples and validation.
+The optional ``music.stimulation.sstim`` module writes the seven stimuli,
+and sessions of them, as SSTIM 0.19.0 descriptions and renders them back;
+it also renders a description another tool wrote, from SSTIM's terms and
+what they cannot say. It is a separate module, rather than new names in
+the flat API. See :doc:`sstim` for examples and validation.
 
 Legacy classes
 --------------

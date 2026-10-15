@@ -1,0 +1,8 @@
+{
+  "sample_rate": 48000,
+  "controls": {
+    "noise_type": "pink",
+    "modulation_depth": 0.6,
+    "seed": 27
+  }
+}

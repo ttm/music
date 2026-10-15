@@ -352,7 +352,8 @@ def test_a_hand_made_stimulus_is_checked_again_before_it_renders():
     ("json-array", "must be a JSON object"),
     ("unknown-parameter", "named volume"),
     ("wrong-rate-type", "an xsd:integer"),
-    ("no-channel", "has no channel"),
+    ("no-channel", "not those the package writes"),
+    ("no-first-channel", "channel-1, states no single duration"),
     ("bad-channel-duration", "duration is not a number"),
     ("one-channel-gone", "not those the package writes"),
     ("signal-rate", "not those the package writes"),
@@ -405,6 +406,9 @@ def test_the_reader_refuses_a_description_it_did_not_write(kind, match):
              Literal("48000.0", datatype=XSD.decimal))
     elif kind == "no-channel":
         graph.remove((root, SSTIM.hasStimulusChannel, None))
+    elif kind == "no-first-channel":
+        for triple in list(graph.triples((left, None, None))):
+            graph.remove(triple)
     elif kind == "bad-channel-duration":
         for channel in (left, right):
             swap(graph, channel, SSTIM.channelDurationSeconds,
@@ -511,8 +515,10 @@ def test_validation_says_how_to_install_the_validator(monkeypatch):
 
     monkeypatch.delitem(sys.modules, "sstim", raising=False)
     monkeypatch.setattr(builtins, "__import__", fail_import)
-    with pytest.raises(ImportError, match="music\\[sstim\\]"):
+    with pytest.raises(ImportError) as caught:
         validate_sstim(described())
+    assert str(caught.value) == (
+        "validating needs SSTIM's validator: pip install 'music[sstim]'")
 
 
 @pytest.mark.network

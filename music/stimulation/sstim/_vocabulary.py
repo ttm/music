@@ -110,6 +110,26 @@ def difference(found: set, expected: set) -> str:
     return ", ".join(parts)
 
 
+def _turtle(value: str | Path) -> str:
+    """The Turtle `value` is, or names the local file of."""
+    if isinstance(value, str):
+        trimmed = value.lstrip()
+        if trimmed.startswith(("http://", "https://", "file://", "ftp://")):
+            raise ValueError("only local Turtle; URI RDF input denied")
+        if ("\n" in value or trimmed.startswith(
+                ("@prefix", "@base", "PREFIX", "BASE", "<"))):
+            return value
+        value = Path(value)
+    try:
+        if not value.is_file():
+            raise ValueError("expected an existing local Turtle file")
+        if value.stat().st_size > MAX_TURTLE_BYTES:
+            raise ValueError("Turtle input exceeds byte budget")
+        return value.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise ValueError("cannot read local Turtle file") from exc
+
+
 def read_graph(value: Graph | str | Path) -> Graph:
     """A graph, from a graph, a local Turtle file, or Turtle text.
 
@@ -118,36 +138,14 @@ def read_graph(value: Graph | str | Path) -> Graph:
     """
     if isinstance(value, Graph):
         graph = value
-    else:
-        path: Path | None = None
-        text = ""
-        if isinstance(value, Path):
-            path = value
-        elif isinstance(value, str):
-            trimmed = value.lstrip()
-            if trimmed.startswith(("http://", "https://", "file://",
-                                   "ftp://")):
-                raise ValueError("only local Turtle; URI RDF input denied")
-            if ("\n" in value or trimmed.startswith(
-                    ("@prefix", "@base", "PREFIX", "BASE", "<"))):
-                text = value
-            else:
-                path = Path(value)
-        else:
-            raise TypeError("expected RDF Graph, local Turtle or local path")
-        if path is not None:
-            try:
-                if not path.is_file():
-                    raise ValueError("expected an existing local Turtle file")
-                if path.stat().st_size > MAX_TURTLE_BYTES:
-                    raise ValueError("Turtle input exceeds byte budget")
-                text = path.read_text(encoding="utf-8")
-            except (OSError, UnicodeError) as exc:
-                raise ValueError("cannot read local Turtle file") from exc
+    elif isinstance(value, (str, Path)):
+        text = _turtle(value)
         if len(text.encode("utf-8")) > MAX_TURTLE_BYTES:
             raise ValueError("Turtle input exceeds byte budget")
         graph = Graph()
         graph.parse(data=text, format="turtle")
+    else:
+        raise TypeError("expected RDF Graph, local Turtle or local path")
     if len(graph) > MAX_TRIPLES:
         raise ValueError("RDF graph exceeds triple budget")
     return graph

@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-15**,
-`music` 1.10.0: 58 modules, 16,573 LOC package + 24,932 LOC tests, 129 names
+`music` 1.10.0: 58 modules, 16,597 LOC package + 25,801 LOC tests, 129 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,12 +59,12 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **6496 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,452 stmts, 0 missed) |
+| Test suite | `pytest -q` | **6631 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,457 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 57 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,945 findings |
-| Annotation coverage | AST scan | **186 / 326 functions (57 %)**; 65 / 98 exported (66 %) |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,948 findings |
+| Annotation coverage | AST scan | **190 / 330 functions (58 %)**; 65 / 98 exported (66 %) |
 | Docstring coverage | AST scan | **227 / 233 public defs (97 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
@@ -100,7 +100,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; Linux CI across Python 3.10–3.14 including a job pinned to the declared lower bounds; installed-wheel checks on Linux, macOS and Windows with Python 3.12 |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 57 %; the `legacy/` subpackage |
+| **Needs work** | Annotation coverage at 58 %; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -239,10 +239,11 @@ either documented in the code or tracked in the issue list.
   registered, so the class has somewhere to be recorded.
 
 - **Mutation testing covers every module 1.10.0 had, in sixteen areas,
-  and none added since.** The audits change each of the 36 modules
-  1.10.0 had with code to mutate, one operation at a time: everything
-  but `structures/symmetry.py`, which only re-exports. All sixteen areas
-  are complete, with their surviving mutants individually reviewed.
+  and the SSTIM package added since, in a seventeenth.** The audits
+  change each of the 36 modules 1.10.0 had with code to mutate, one
+  operation at a time: everything but `structures/symmetry.py`, which
+  only re-exports. All seventeen areas are complete, with their surviving
+  mutants individually reviewed.
   These tests exposed timing, gain, modulation, envelope-rate, phase,
   padding, naming, permutation and refusal defects that line and branch
   coverage had not revealed. `noises`, `stimuli` and `singing` were
@@ -250,8 +251,12 @@ either documented in the code or tracked in the issue list.
   for the singing that went into 1.10.0 after its area was first
   measured -- the slower syllables, the held vowels, the vibrato and the
   accents -- whose tests could not tell 25 mutants from the code until
-  tests were added for them. The ten modules added since 1.10.0, the
-  band-limited oscillators and the SSTIM package, are in no area yet.
+  tests were added for them. The SSTIM package was measured on
+  2026-10-15, and its tests could not tell 394 of 3,020 mutants from the
+  code: nothing pinned the form a description is written in or the
+  plan's digest, so a change to either would have left every description
+  written before it unreadable. The four band-limited oscillator modules
+  added since 1.10.0 are in no area yet.
 
   [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records the scope, assertions,
   survivor IDs and reproduction command. The tool skips decorated classes,
@@ -460,7 +465,7 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 57 %**, and 66 % across the exported API. The
+- **Annotation coverage is 58 %**, and 66 % across the exported API. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones
@@ -469,7 +474,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,945 findings** on `music/`, almost all
+- **The extended lint set reports 2,948 findings** on `music/`, almost all
   stylistic: 731 quote-style, 375 missing argument annotations, 80 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
@@ -592,5 +597,6 @@ documented, and clean under both the default lint set and the type
 checker. Until the review after 1.8.3 it also built its noise tail at
 44.1 kHz whatever rate it was given, and nothing measured that. Coverage
 says a line ran; it cannot say the line was right. The mutation audits
-come closest to asking, and they cover every module in sixteen areas,
-each against its own tests: not a whole-package score.
+come closest to asking, and they cover every module 1.10.0 had and the
+SSTIM package since, in seventeen areas, each against its own tests: not
+a whole-package score.

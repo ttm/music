@@ -284,7 +284,7 @@ def read_plan(graph: Graph) -> PlannedSession:
     try:
         plan = SessionPlan(
             str(preset), str(one(graph, preset, RDFS.label)),
-            datetime.fromisoformat(str(created).replace("Z", "+00:00")),
+            datetime.fromisoformat(str(created)),
             float(one(graph, root, SSTIM.masterVolume)))
         duration = int(one(graph, root, SSTIM.durationSeconds))
     except (TypeError, ValueError) as exc:

@@ -75,7 +75,7 @@ def _term(term: Any) -> str:
     for space, prefix in _PREFIXES:
         if isinstance(term, URIRef) and str(term).startswith(space):
             return prefix + str(term)[len(space):]
-    return term.n3() if hasattr(term, "n3") else repr(term)
+    return term.n3()
 
 
 def _close(a: float, b: float) -> bool:
@@ -164,6 +164,20 @@ def _root(graph: Graph) -> Any:
     return roots[0]
 
 
+def _value(graph: Graph, node: Any, predicate: URIRef, where: str) -> float:
+    """The one number `node` states for `predicate`."""
+    return _number(_single(graph, node, predicate, where),
+                   f"{where}'s {_term(predicate)}")
+
+
+def _optional(graph: Graph, node: Any, predicate: URIRef,
+              where: str) -> float | None:
+    """The one number `node` states for `predicate`, if it states one."""
+    term = _single(graph, node, predicate, where, required=False)
+    return None if term is None else _number(
+        term, f"{where}'s {_term(predicate)}")
+
+
 def _project(graph: Graph, root: Any) -> _Stimulus:
     """The stimulus at `root` in SSTIM's terms, apart from its nodes' names.
 
@@ -177,61 +191,58 @@ def _project(graph: Graph, root: Any) -> _Stimulus:
     shapes: dict[Any, URIRef] = {}
     signals: dict[URIRef, tuple[float, float]] = {}
     for node in _objects(graph, root, SSTIM.hasSignal, "the stimulus"):
-        _check_node(graph, node, "signal", "a signal")
         shape = _single(graph, node, SSTIM.hasSignalShape, "a signal")
         where = f"the {_term(shape)} signal"
+        _check_node(graph, node, "signal", where)
         if shape in signals:
             raise ValueError(f"the stimulus has two signals of shape "
                              f"{_term(shape)}, which none of the package's "
                              f"stimuli has")
         shapes[node] = shape
-        signals[shape] = (
-            _number(_single(graph, node, SSTIM.hzMin, where), where),
-            _number(_single(graph, node, SSTIM.hzMax, where), where))
+        signals[shape] = (_value(graph, node, SSTIM.hzMin, where),
+                          _value(graph, node, SSTIM.hzMax, where))
     channels: dict[URIRef, _Channel] = {}
     for node in _objects(graph, root, SSTIM.hasStimulusChannel,
                          "the stimulus"):
-        _check_node(graph, node, "channel", "a channel")
         placement = _single(graph, node, SSTIM_EX.hasBodyPlacement,
                             "a channel")
         where = f"the {_term(placement)} channel"
+        _check_node(graph, node, "channel", where)
         if placement in channels:
             raise ValueError(f"the stimulus has two channels at "
                              f"{_term(placement)}")
         renderings: dict[URIRef, _Rendering] = {}
         for rendering in _objects(graph, node, SSTIM.hasSignalRendering,
                                   where):
-            _check_node(graph, rendering, "rendering", f"a rendering of "
-                        f"{where}")
-            signal = _single(graph, rendering, SSTIM.rendersSignal, where)
+            within = f"a rendering of {where}"
+            _check_node(graph, rendering, "rendering", within)
+            signal = _single(graph, rendering, SSTIM.rendersSignal, within)
             if signal not in shapes:
                 raise ValueError(f"{where} renders a signal the stimulus "
                                  f"does not have")
             if shapes[signal] in renderings:
                 raise ValueError(f"{where} renders its "
                                  f"{_term(shapes[signal])} signal twice")
-            carrier = _single(graph, rendering, SSTIM.renderingCarrierHz,
-                              where, required=False)
             renderings[shapes[signal]] = _Rendering(
-                _single(graph, rendering, SSTIM.rendersOntoParameter, where),
-                _single(graph, rendering, SSTIM.hasRenderingMechanism, where),
-                _single(graph, rendering, SSTIM.hasRenderingPresence, where),
-                None if carrier is None else _number(carrier, where))
+                _single(graph, rendering, SSTIM.rendersOntoParameter, within),
+                _single(graph, rendering, SSTIM.hasRenderingMechanism,
+                        within),
+                _single(graph, rendering, SSTIM.hasRenderingPresence, within),
+                _optional(graph, rendering, SSTIM.renderingCarrierHz,
+                          within))
         values = {}
         for predicate, functional in _VALUES.items():
-            found = [_number(term, where) for term in
-                     graph.objects(node, predicate)]
+            found = [_number(term, f"{where}'s {_term(predicate)}")
+                     for term in graph.objects(node, predicate)]
             if functional and len(found) > 1:
                 raise ValueError(f"{where} states more than one "
                                  f"{_term(predicate)}")
             if found:
                 values[predicate] = tuple(found)
-        duration = _single(graph, node, SSTIM.channelDurationSeconds, where,
-                           required=False)
         channels[placement] = _Channel(
             _single(graph, node, SSTIM_EX.perceivedModality, where),
             _single(graph, node, SSTIM_EX.deliveryMedium, where),
-            None if duration is None else _number(duration, where),
+            _optional(graph, node, SSTIM.channelDurationSeconds, where),
             renderings, values,
             frozenset(graph.objects(node, SSTIM_EX.hasStimulusPattern)))
     return _Stimulus(str(regime), signals, channels)
@@ -307,11 +318,6 @@ def _stated(generator: str, found: _Stimulus) -> dict[str, Any]:
         values["min_freq"], values["max_freq"] = signals[SSTIM_V.shapeNoise]
         modulation = signals.get(SSTIM_V.shapeSine)
         values["modulation_freq"] = modulation[0] if modulation else 0.0
-        if not values["modulation_freq"]:
-            # An unmodulated noise is the same whatever the depth, so the
-            # depth is not left for the caller to give.
-            default = inspect.signature(stimuli.modulated_noise).parameters
-            values["modulation_depth"] = default["modulation_depth"].default
         patterns = set().union(*(c.patterns for c in channels.values()))
         named = [name for name, term in COLOURS.items() if term in patterns]
         if len(named) == 1:
@@ -366,7 +372,7 @@ def _differences(found: _Stimulus, expected: _Stimulus) -> list[str]:
             + ", ".join(sorted(_term(s) for s in found.signals))
             + ", not " + ", ".join(sorted(_term(s) for s in expected.signals)))
     else:
-        for shape, (low, high) in found.signals.items():
+        for shape, (low, high) in sorted(found.signals.items()):
             span = expected.signals[shape]
             if not (_close(low, span[0]) and _close(high, span[1])):
                 problems.append(
@@ -379,7 +385,7 @@ def _differences(found: _Stimulus, expected: _Stimulus) -> list[str]:
             + ", not "
             + ", ".join(sorted(_term(p) for p in expected.channels)))
         return problems
-    for placement, channel in found.channels.items():
+    for placement, channel in sorted(found.channels.items()):
         want = expected.channels[placement]
         where = f"the {_term(placement)} channel"
         for name in ("modality", "medium"):
@@ -394,7 +400,7 @@ def _differences(found: _Stimulus, expected: _Stimulus) -> list[str]:
                 + ", not "
                 + ", ".join(sorted(_term(s) for s in want.renderings)))
             continue
-        for shape, rendering in channel.renderings.items():
+        for shape, rendering in sorted(channel.renderings.items()):
             target = want.renderings[shape]
             for name in ("parameter", "mechanism", "presence"):
                 if getattr(rendering, name) != getattr(target, name):
@@ -451,14 +457,29 @@ def _agree(given: Any, stated: Any) -> bool:
     return _close(float(given), float(stated)) if numbers else given == stated
 
 
+def _moot(reading: _Reading) -> dict[str, Any]:
+    """Controls that cannot change what `reading` renders, at defaults.
+
+    An unmodulated noise is the same whatever its modulation's depth, so
+    the depth is neither asked for nor taken as stated.
+    """
+    if (reading.generator != "modulated_noise"
+            or reading.stated["modulation_freq"]):
+        return {}
+    default = inspect.signature(stimuli.modulated_noise).parameters
+    return {"modulation_depth": default["modulation_depth"].default}
+
+
 def _needs(reading: _Reading, controls: Mapping[str, Any],
            sample_rate: Any, duration: Any) -> list[str]:
     """What a caller must give that `reading` does not state."""
     needs = [] if sample_rate is not None else ["sample_rate"]
     if reading.duration is None and duration is None:
         needs.append("duration")
+    moot = _moot(reading)
     return needs + [name for name in portable(reading.generator)
-                    if name not in reading.stated and name not in controls]
+                    if name not in reading.stated and name not in controls
+                    and name not in moot]
 
 
 def _asking(reading: _Reading, needs: list[str]) -> str:
@@ -508,7 +529,8 @@ def _check(reading: _Reading, controls: Mapping[str, Any] | None,
                defaults["duration"].default)
     try:
         stimulus = checked(reading.generator,
-                           {**stand_ins, **reading.stated, **controls},
+                           {**_moot(reading), **stand_ins, **reading.stated,
+                            **controls},
                            seconds,
                            192000 if sample_rate is None else sample_rate)
     except ValueError:

@@ -580,7 +580,7 @@ directory, so `lang`, `transpose` and `effect` did nothing; it needed
 render passed `make` unseen. `test_singing_engine.py` now sings and
 measures the pitch wherever the engine is set up.
 
-The sixteen areas have taught, worth carrying into a later audit:
+The seventeen areas have taught, worth carrying into a later audit:
 
 - **An absent argument cannot be mutated.** The `cross_fade` and `trill`
   sample-rate defects were not found by any mutant, because no edit can
@@ -609,10 +609,11 @@ The sixteen areas have taught, worth carrying into a later audit:
   forks. Record what is used, and build afresh in the test.
 
 Add each area to `AREAS` rather than widening an existing one, and select
-its tests with per-test coverage contexts. Every module is now in an
-area, but the sixteen bounded audits are still not a whole-package
-mutation score: each measures its own sources against its own
-selection. A change to a module is the time to re-run its area.
+its tests with per-test coverage contexts. Every module but the four
+band-limited oscillators is now in an area, but the seventeen bounded
+audits are still not a whole-package mutation score: each measures its
+own sources against its own selection. A change to a module is the time
+to re-run its area.
 
 ## Singing: next
 
@@ -846,7 +847,8 @@ engine renders the same samples from an SSTIM description -- is in
   pairs and a blank form; no claim about what a listener hears rests on
   them yet.
 - **Mutation audits of the new code**
-  ([#113](https://github.com/ttm/music/issues/113)). The ten new modules
+  ([#113](https://github.com/ttm/music/issues/113)). The SSTIM package
+  was audited on 2026-10-15; the four band-limited oscillator modules
   are in no area yet. `noises`, `stimuli` and `singing` were measured
   again on 2026-10-14, for the `seed` and for the singing work that went
   into 1.10.0 after its area was first measured; the singing's tests

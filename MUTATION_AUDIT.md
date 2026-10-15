@@ -29,6 +29,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `hrtf` | `hrtf.py` | 2026-09-28 | 224 | 217 | 7 | all |
 | `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py`, `psola.py` | 2026-10-14 | 1843 | 1805 | 38 | all |
 | `legacy` | `legacy/CanonicalSynth.py`, `IteratorSynth.py`, `classes.py`, `tables.py`, `pieces/testSong2.py` | 2026-09-30 | 1645 | 1154 | 491 | all |
+| `sstim` | `stimulation/sstim/`: `__init__.py`, `_capabilities.py`, `_others.py`, `_sessions.py`, `_stimuli.py`, `_vocabulary.py` | 2026-10-15 | 3011 | 2900 | 111 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -38,9 +39,9 @@ The table describes the package as each area was measured: `noises` and
 `stimuli` again on 2026-10-14, after the `seed` they gained on
 2026-10-10, and `singing` that day too, after the singing that went into
 1.10.0 once its area had been measured, and the lock it took on
-2026-10-14. The eleven modules added since 1.10.0 -- the band-limited
-oscillators in `core/synths/` and the SSTIM modules in `stimulation/` --
-are in no area yet.
+2026-10-14. Of the modules added since 1.10.0, the SSTIM package in
+`stimulation/sstim/` is the `sstim` area, measured on 2026-10-15; the
+four band-limited oscillators in `core/synths/` are in no area yet.
 
 ## `export` — normalization, export and session envelopes
 
@@ -860,24 +861,27 @@ than leaving this routine marked exact from its default-duration case.
 
 ## Tool limitation and adapter
 
-This applies to the `export` and `sequencer` areas; the other modules
-define plain functions or undecorated classes.
+This applies to the `export`, `sequencer` and `sstim` areas; the other
+modules define plain functions or undecorated classes.
 
 `mutmut` 3.7.0 skips decorated classes and property-decorated methods.
 Without an adapter, the session file contributes only `_ramp_shape`:
 18 mutations, leaving all of the session methods out.
 
-The runner removes each bare `@dataclass` decorator in the temporary copy
-and applies `dataclass(ClassName)` immediately after the class instead.
+The runner removes each `@dataclass` decorator in the temporary copy,
+bare or called, and applies `dataclass(ClassName)` or, for instance,
+`dataclass(frozen=True)(ClassName)` immediately after the class instead.
 It finds them by parsing the file, which the `sequencer` area needed: the
-adapter had named the session's two classes.
+adapter had named the session's two classes. An area may name several
+files, as `sstim` names the three that define its frozen dataclasses.
 Both classes are still dataclasses before any code uses them. Mutmut then
 visits the ordinary methods. The adapted baseline tests and mutmut's
 forced-failure check must pass before mutation results are collected.
 No adapter is applied to the distributed package.
 
-The `duration` property and generated dataclass methods remain outside
-mutation scope, though normal tests exercise them. Code outside an area's
+The `duration` property, `SstimCapability.can_render` and generated
+dataclass methods remain outside mutation scope, though normal tests
+exercise them. Code outside an area's
 selected files is also outside that area. The runner pins the tool version
 because its adapter and diff-export API depend on that behavior.
 See the [mutmut source](https://github.com/boxed/mutmut) and
@@ -906,6 +910,7 @@ python tools/mutation_audit.py --area tables --revision HEAD
 python tools/mutation_audit.py --area hrtf --revision HEAD
 python tools/mutation_audit.py --area singing --revision HEAD
 python tools/mutation_audit.py --area legacy --revision HEAD
+python tools/mutation_audit.py --area sstim --revision HEAD --max-children 8
 python tools/mutation_audit.py --area export --revision ef03962 --max-children 2
 ```
 
@@ -924,7 +929,7 @@ Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 582 seconds with two workers, `stimuli` 60 and `localization` 233, and
 `theory` 24 to 50 with four, `structures` 172, `noises` 117,
 `sequencer` 24, `bonds` 24, `tables` 12, `hrtf` 235, `singing` 55 and
-`legacy` 321. None
+`legacy` 321, and `sstim` 237 to 281 with eight. None
 is a candidate for CI at that cost — these are things to run
 deliberately, read, and act on.
 
@@ -1580,8 +1585,97 @@ platform rounds a phase, would fail, and nothing it caught would be a
 defect. The tables that are pinned are the ones with a statement of
 intent to check against, and that is where the three wrong ones were.
 
-**Expand to another bounded area when changing it.** All sixteen areas
-now have reviewed survivors. Pick later areas by measuring which tests reach
+## `sstim` — stimuli and sessions as SSTIM descriptions
+
+`music/stimulation/sstim/`, the six files that write the seven stimuli and
+sessions of them as SSTIM descriptions, read them back, read descriptions in
+SSTIM's terms alone, and render a beat by its named convention. Measured on
+2026-10-15, first at 8ff9a90 with the tests the module was written with, and
+again with the tests that run led to.
+
+### Result
+
+The first run, at `8ff9a90` with the SSTIM tests the module was written
+with, made 3,020 mutants and detected 2,626: 394 survived.
+`tests/test_sstim_audit.py` and the changes below brought a run over the
+working tree that records them to 2,900 of 3,011, in 251 seconds with
+eight workers; a run between the two, before the last of the tests,
+detected 2,854 of 3,003. All 111 survivors are reviewed below.
+
+### What it found
+
+- **The form a description is written in was unpinned.** Renaming a node,
+  relabelling one, writing the arguments' JSON unsorted or with spaces, or
+  binding other prefixes all survived, because the reader rebuilds a
+  description with the same writer it compares it against. After any such
+  change, every description written before it would have been refused. The
+  node names, the signal each rendering renders, each channel's placement,
+  the labels, the JSON and the prefixes are now pinned as a format.
+- **So was the plan's digest.** Mutants that changed what
+  `sha256-music-plan-json-v1` hashes -- the order of its keys, its
+  separators, its escaping, the names of its keys, the form of the volume,
+  even the N-Triples themselves -- survived, because nothing computed the
+  digest but the writer. A test now computes it from the definition the
+  SSTIM page gives, which the page now states in full, for a preset IRI
+  outside ASCII among others.
+- **Bounds were tested on one side.** A carrier of half a hertz, a depth of
+  zero, a duty cycle of one, a seed of zero, a noise band from 0 Hz, a
+  beat's tones at either edge, the air temperature's limits, fifty phases,
+  a phase of no gain, a master volume of zero, an `http` preset, and the
+  byte and triple budgets exactly: each was a survivor, and each now has a
+  test.
+- **A reader could take another resource's statement for its own.** Reading
+  a stimulus's regime, signals, channels, generator or parameters, a
+  program's ramps or phases, or a plan's creation time, volume or duration
+  from any subject rather than the description's own survived, and so did
+  finding the description by any statement that names its class. Tests
+  now put such statements on another resource -- a preset's own
+  `dct:created` among them -- and read the description unchanged.
+- **Refusals said what was wrong, not always where.** A test now reads each
+  refusal whole, and writing them found two that said less than they
+  could: a channel's unrendered terms were reported for "a channel",
+  because its placement was read after them, and a number that was not one
+  did not say which term held it. Each refusal now names the signal,
+  channel or rendering and the term it is about.
+- **What was given did not always reach the render.** A duration given for
+  a beat described without one survived being dropped on the way to the
+  convention's render, and the oversampling factor survived being dropped
+  for the default of 4, which was the factor the test asked for.
+- **A control that cannot matter was claimed as stated.** For an
+  unmodulated noise the reader pinned the modulation's depth to its
+  default and filed it among what the description states, so a caller who
+  gave a depth was told the description said otherwise. It is now neither
+  asked for nor taken as stated.
+- **A length came from whichever channel RDFLib listed first.** A
+  mutant reading every resource's channels, not the description's own,
+  survived because which came first was a matter of iteration order. The
+  reader now takes the length from the channel the package always names
+  first, `channel-1`, and the comparison checks the others.
+- **Labels said less than they could.** The two renderings of a modulated
+  noise shared one label, and the modulation, the source tone and the
+  motion signals did not give their frequencies. The renderings are now
+  labelled by their mechanisms, and those signals by their frequencies.
+- **Dead code.** The plan reader turned a `Z` time zone into `+00:00`,
+  which RDFLib already does; the term formatter fell back on `repr` for
+  objects without `n3`, which nothing passes it; and the Turtle reader
+  initialised its text to a value nothing read. Each is gone.
+
+### Accepted survivors
+
+| Function | IDs | Why accepted |
+|---|---|---|
+| 85 mutants | `_check` (reading) 5; `_differences` 96; `_read` 19; `SstimBeat.render` 3; `_check_plan` 3, 19, 26, 48; `plan_graph` 25, 26; `program_graph` 4, 13, 21, 29, 47, 48, 66, 68, 69; `read_plan` 10, 40, 51, 65, 161; `read_program` 10, 72, 94, 180, 182, 183; `_check` (writing) 17, 18, 20, 36, 37, 39, 40, 58, 72, 99, 100, 101, 102, 139, 140; `checked` 25; `read_stimulus` 10, 21, 22, 23, 47, 52, 57, 71, 94; `_turtle` 13, 33, 34, 38, 39, 45; `check_base` 19, 20, 22, 23, 24; `read_graph` 6, 7, 17, 22, 23; `from_sstim_graph` 18, 19, 20, 39, 40, 41; `render_sstim` 27, 29, 30; `to_sstim_graph` 3, 12, 13, 14, 33 | Refusal wording: `XX` around the text, or its case changed. The refusal still happens; the tests check what is refused, and read whole every message that says where the problem is or what to give. |
+| `plan_graph`, `program_graph`, `stimulus_graph` | 61, 63; 85, 87, 127, 129; 26, 28 | `datatype=XSD.integer` dropped from a literal of a Python `int`, which RDFLib types as `xsd:integer` anyway. |
+| `_check_node` | 13, 15, 24, 26, 30 | `key=str` dropped from sorting `URIRef`s, which are strings, and `predicates(node, None)` written without its default. |
+| `_close`, `_fixed` | 7; 18 | `rel_tol=1e-9` dropped, which is `math.isclose`'s default. |
+| `plan_graph`, `read_plan` | 20; 127 | The whole-seconds tolerance of 1e-8 dropped. A session lasts a whole number of samples at a whole rate, so one within 1e-8 of a whole second is exactly whole. |
+| `plan_graph` | 76, 95, 112 | The digest's JSON written with `ensure_ascii=None`, which is as false as `False`; its volume formatted `"F"`, which writes a finite decimal as `"f"` does; and encoded as `"UTF-8"`, the codec `"utf-8"` names. |
+| `_optional` | 6 | `required=None` for `required=False`. |
+| `_differences` | 39 | `span[1]` for `span[0]` in a message about the signal the package expects, which it writes as a point: both ends are the same. |
+| `_turtle`, `read_graph` | 41, 43; 11, 13 | A file read in the locale's encoding, which is UTF-8 wherever the audit runs, or as `"UTF-8"`; and Turtle text parsed without naming the format, which RDFLib takes to be Turtle. The code names both. |
+
+**Expand to another bounded area when changing it.** All seventeen
+areas now have reviewed survivors. Pick later areas by measuring which tests reach
 their modules with per-test coverage contexts, then add a separate entry to
 `AREAS` rather than widening an existing area. These bounded measurements
 are not a whole-package mutation score.
@@ -1632,6 +1726,16 @@ What the areas have taught, worth carrying:
   found something.
 - **Work done at import is out of mutmut's reach.** A table built when
   the module loads is built before the fork, with the original code.
+- **A round trip checks a writer against itself.** The SSTIM reader
+  rebuilt each description with the writer it compared it to, so
+  renaming a node or reordering the digest's JSON passed every test while
+  leaving every earlier description unreadable. A format has to be
+  tested against a fixed copy of itself, or a second computation from its
+  definition.
+- **A test can pass for a reason other than its own.** The whole-seconds
+  test refused a plan one sample past 7,200 s, which the range check
+  refuses first, with the same message, so the mutant it was written for
+  survived. Put the case where only the check under test can refuse it.
 
 Keep the sample-based assertions when refactoring these paths. Resolve the
 property/decorator coverage limitation before interpreting any future

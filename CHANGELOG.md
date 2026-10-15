@@ -142,6 +142,22 @@ state unless given a `seed`. `render_oversampled` needs
   syllable voiced from its first frame. Tests now catch each, 1805 of
   1843 mutants are detected, and the 38 left are reviewed in
   `MUTATION_AUDIT.md`.
+- **The SSTIM module is mutation-audited.** Measured against the tests it
+  was written with, it let 394 of 3,020 mutants through: nothing pinned
+  the form a description is written in or the plan's digest, so a change
+  to either would have left every description written before it
+  unreadable, unnoticed; bounds were tested on one side; a reader could
+  take another resource's statement for its own; and refusals said what
+  was wrong, not always where. `tests/test_sstim_audit.py` pins the
+  format, computes the digest from its definition, tests each bound from
+  both sides and reads each refusal whole. Writing it improved the module
+  too: refusals name the signal, channel or rendering and the term they
+  are about, each rendering has a label of its own, a control that cannot
+  change the sound is neither asked for nor taken as stated, and a
+  description's length is read from its first channel by name. 2,900 of
+  3,011 mutants are now detected, and the 111 left are reviewed in
+  `MUTATION_AUDIT.md`. The audit tool's dataclass adapter handles frozen
+  dataclasses, in several files at once.
 - **The noise seed is tested at both ends of its range,** with NumPy's own
   integers and with the values it refuses, and `noises` and `stimuli` are
   measured again with it: every mutant of the seed is detected.

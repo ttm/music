@@ -168,12 +168,14 @@ rather than the package inventing them:
        session, plan=plan, base="https://your-lab.example/plans/002/")
 
 The specification wraps the program and declares only
-``reproEquivalentPresentation``. Its ``configurationDigest`` is a
-SHA-256, named ``sha256-music-plan-json-v1``, of a JSON object holding
-the program's N-Triples, sorted, with the preset, the master volume and
-the duration, so that it changes with any of them. It identifies the
-plan as the package writes it, not the samples another engine would
-render. Neither a program nor a plan is an ``sstim:SessionInstance``,
+``reproEquivalentPresentation``. Its ``configurationDigest``, named
+``sha256-music-plan-json-v1``, is the SHA-256 of a JSON object, its keys
+sorted, written without spaces and in UTF-8 rather than escaped to
+ASCII: ``program_ntriples``, the program's N-Triples lines, sorted;
+``preset_iri``; ``master_volume``, as a plain decimal such as
+``"0.25"``; and ``duration_seconds``, a whole number. It changes with
+any of them, and identifies the plan as the package writes it, not the
+samples another engine would render. Neither a program nor a plan is an ``sstim:SessionInstance``,
 which would claim a delivery: no clock, listener or record of playback
 is written. The ``sstim`` package's own ``Session`` writes one, from what
 happened.

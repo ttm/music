@@ -370,11 +370,13 @@ def test_what_would_change_the_sound_unread_is_refused(node, term, value):
     ("regime", "stimulusRegime is 'adaptive', not 'determinate'"),
     ("no-signals", "states no sstim:hasSignal"),
     ("no-channels", "states no sstim:hasStimulusChannel"),
-    ("untyped-signal", "a signal is not typed sstim:StimulationSignal"),
-    ("literal-signal", "a signal is not typed"),
+    ("untyped-signal", "the sstim-v:shapeSine signal is not typed "
+     "sstim:StimulationSignal"),
+    ("literal-signal", "a signal states no sstim:hasSignalShape"),
     ("extra-class", "also typed sstim:SignalRendering"),
-    ("untyped-channel", "a channel is not typed"),
-    ("extra-channel", "a channel is not typed"),
+    ("untyped-channel", "the sstim-ex:placementEars channel is not typed "
+     "sstim-ex:StimulusChannel"),
+    ("extra-channel", "a channel states no sstim-ex:hasBodyPlacement"),
     ("untyped-rendering", "is not typed sstim:SignalRendering"),
     ("no-shape", "states no sstim:hasSignalShape"),
     ("literal-shape", "none of the package's stimuli"),

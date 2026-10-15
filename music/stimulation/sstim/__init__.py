@@ -203,7 +203,8 @@ PlannedSession
                                    or source is getattr(stimuli, name)):
         raise ValueError(
             f"expected one of the seven stimuli, by its function or name, a "
-            f"stimulus, or a session; got {source!r}")
+            f"stimulus, or a session; got {source!r}; they are "
+            f"{', '.join(STIMULI)}")
     defaults = inspect.signature(getattr(stimuli, name)).parameters
     return stimulus_graph(checked(
         name, parameters,

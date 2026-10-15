@@ -437,7 +437,8 @@ The modules are:
 See [the findings and prioritized roadmap](ROADMAP.md) for the September
 2026 review, the correctness patches since 1.8.1, the
 [mutation audits](MUTATION_AUDIT.md) of all sixteen areas of the package as
-it stood at 1.10.0, and the band-limited synthesis and SSTIM work since.
+it stood at 1.10.0 and of the SSTIM package since, and the band-limited
+synthesis and SSTIM work since.
 
 Concrete things the code itself is waiting for, rather than a wish list:
 
@@ -482,7 +483,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 6,496 tests, 100% line and branch coverage
+pytest                                       # 6,631 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

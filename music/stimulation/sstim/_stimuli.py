@@ -326,7 +326,7 @@ def _noise(graph: Graph, root: URIRef, stimulus: SstimStimulus,
     if rate > 0:
         modulation = URIRef(base + "signal-modulation")
         graph.add((root, SSTIM.hasSignal, modulation))
-        _signal(graph, modulation, "noise amplitude modulation",
+        _signal(graph, modulation, f"{rate:g} Hz noise amplitude modulation",
                 "shapeSine", rate, rate)
         renderings.append((modulation, "paramAmplitude",
                            "mechanismAmplitudeModulation"))
@@ -335,7 +335,7 @@ def _noise(graph: Graph, root: URIRef, stimulus: SstimStimulus,
     _channel(graph, channel, "placementEars", stimulus.duration)
     for index, (signal, parameter, mechanism) in enumerate(renderings, 1):
         _rendering(graph, channel, URIRef(base + f"rendering-1-{index}"),
-                   f"placementEars: {parameter}", signal, parameter,
+                   f"placementEars: {mechanism}", signal, parameter,
                    mechanism, "presencePhysical")
     if colour in COLOURS:
         graph.add((channel, SSTIM_EX.hasStimulusPattern, COLOURS[colour]))
@@ -353,10 +353,10 @@ def _motion(graph: Graph, root: URIRef, stimulus: SstimStimulus,
     tone, motion = URIRef(base + "signal-tone"), URIRef(base + "signal-motion")
     graph.add((root, SSTIM.hasSignal, tone))
     graph.add((root, SSTIM.hasSignal, motion))
-    _signal(graph, tone, "acoustic source tone", "shapeSine", carrier,
-            carrier)
-    _signal(graph, motion, "triangular azimuth motion", "shapeTriangle",
-            rate, rate)
+    _signal(graph, tone, f"{carrier:g} Hz acoustic source tone",
+            "shapeSine", carrier, carrier)
+    _signal(graph, motion, f"{rate:g} Hz triangular azimuth motion",
+            "shapeTriangle", rate, rate)
     for index, placement in enumerate(
             ("placementEarLeft", "placementEarRight"), 1):
         channel = URIRef(base + f"channel-{index}")
@@ -411,12 +411,15 @@ def read_stimulus(graph: Graph) -> SstimStimulus:
     rate = one(graph, root, MUSIC.sampleRateHz)
     if not isinstance(rate, Literal) or rate.datatype != XSD.integer:
         raise ValueError("the sample rate must be an xsd:integer")
-    channels = list(graph.objects(root, SSTIM.hasStimulusChannel))
-    if not channels:
-        raise ValueError("the stimulus has no channel")
+    # The package names its first channel channel-1; the comparison below
+    # checks every other channel against it.
+    durations: list[Any] = list(graph.objects(
+        URIRef(base + "channel-1"), SSTIM.channelDurationSeconds))
+    if len(durations) != 1:
+        raise ValueError("the stimulus's first channel, channel-1, states "
+                         "no single duration")
     try:
-        duration = float(one(graph, channels[0],
-                             SSTIM.channelDurationSeconds))
+        duration = float(durations[0])
     except (TypeError, ValueError) as exc:
         raise ValueError("the channel's duration is not a number") from exc
     stimulus = checked(generator, parameters, duration, int(rate))

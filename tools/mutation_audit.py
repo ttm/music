@@ -462,6 +462,34 @@ AREAS = {
         ),
         'dataclass_adapter': None,
     },
+    # Stimuli and sessions as SSTIM descriptions: writing them, reading
+    # them back, reading what other tools write, and the beat convention.
+    # The tests are the SSTIM ones, whose coverage of these files is
+    # complete on its own.
+    'sstim': {
+        'sources': (
+            'music/stimulation/sstim/__init__.py',
+            'music/stimulation/sstim/_capabilities.py',
+            'music/stimulation/sstim/_others.py',
+            'music/stimulation/sstim/_sessions.py',
+            'music/stimulation/sstim/_stimuli.py',
+            'music/stimulation/sstim/_vocabulary.py',
+        ),
+        'tests': (
+            'tests/test_sstim_stimuli.py',
+            'tests/test_sstim_sessions.py',
+            'tests/test_sstim_others.py',
+            'tests/test_sstim_inspect.py',
+            'tests/test_sstim_io_limits.py',
+            'tests/test_sstim_interop_cli.py',
+            'tests/test_sstim_audit.py',
+        ),
+        'dataclass_adapter': (
+            'music/stimulation/sstim/_others.py',
+            'music/stimulation/sstim/_sessions.py',
+            'music/stimulation/sstim/_stimuli.py',
+        ),
+    },
     # The legacy synthesizers, the Being and the demonstration piece.
     # Selected from full-suite per-test coverage.
     'legacy': {
@@ -486,37 +514,46 @@ AREAS = {
 }
 
 
+def _dataclass_decorator(node):
+    """The ``@dataclass`` or ``@dataclass(...)`` decorating `node`, if any."""
+    for decorator in node.decorator_list:
+        target = (decorator.func if isinstance(decorator, ast.Call)
+                  else decorator)
+        if isinstance(target, ast.Name) and target.id == 'dataclass':
+            return decorator
+    return None
+
+
 def expose_dataclasses(tree, relative_path):
     """Apply dataclass after each class so mutmut visits its methods.
 
     mutmut 3.7.0 skips decorated classes. This changes only the scratch
-    copy: each class decorated with a bare ``@dataclass`` loses the
-    decorator and is followed by ``Name = dataclass(Name)``, so it is
-    still a dataclass before anything uses it. Property-decorated methods
-    remain outside mutmut's scope.
+    copy: each class decorated with ``@dataclass``, bare or called, loses
+    the decorator and is followed by ``Name = dataclass(Name)`` or
+    ``Name = dataclass(frozen=True)(Name)``, so it is still the same
+    dataclass before anything uses it. Property-decorated methods remain
+    outside mutmut's scope.
 
     Only an area whose sources define decorated classes needs this:
-    ``export`` for the session, and ``sequencer``.
+    ``export`` for the session, ``sequencer``, and ``sstim``.
     """
     path = tree / relative_path
     source = path.read_text()
     lines = source.splitlines(keepends=True)
     classes = [node for node in ast.parse(source).body
                if isinstance(node, ast.ClassDef)
-               and any(isinstance(decorator, ast.Name)
-                       and decorator.id == 'dataclass'
-                       for decorator in node.decorator_list)]
+               and _dataclass_decorator(node) is not None]
     if not classes:
         raise SystemExit(f'dataclass adapter found no dataclass in '
                          f'{relative_path}')
     # From the end, so earlier line numbers stay put.
     for node in reversed(classes):
-        lines.insert(node.end_lineno,
-                     f'\n\n{node.name} = dataclass({node.name})\n')
-        decorator = next(decorator for decorator in node.decorator_list
-                         if isinstance(decorator, ast.Name)
-                         and decorator.id == 'dataclass')
-        if lines[decorator.lineno - 1].strip() != '@dataclass':
+        decorator = _dataclass_decorator(node)
+        text = ast.get_source_segment(source, decorator)
+        applied = (f'{text}({node.name})' if isinstance(decorator, ast.Call)
+                   else f'dataclass({node.name})')
+        lines.insert(node.end_lineno, f'\n\n{node.name} = {applied}\n')
+        if lines[decorator.lineno - 1].strip() != '@' + text:
             raise SystemExit(f'dataclass adapter no longer matches '
                              f'{node.name}')
         del lines[decorator.lineno - 1]
@@ -575,8 +612,10 @@ def main():
             overlay.append(relative)
         print(f'Overlaid {len(overlay)} working-tree paths', flush=True)
     adapted = area['dataclass_adapter']
-    if adapted:
-        expose_dataclasses(tree, adapted)
+    if isinstance(adapted, str):
+        adapted = (adapted,)
+    for relative in adapted or ():
+        expose_dataclasses(tree, relative)
     config = {
         'source_paths': ['music/'],
         'only_mutate': list(sources),
@@ -610,7 +649,7 @@ def main():
         'mutmut': version,
         'elapsed_seconds': round(elapsed, 2),
         'configuration': config,
-        'dataclass_adapter': adapted,
+        'dataclass_adapter': list(adapted or ()),
         'working_tree_overlay': overlay,
         'stats': stats,
         'exit_code_by_mutant': results,

@@ -295,16 +295,17 @@ their mean.
 
    from music.stimulation.sstim import BEAT_PROFILE, from_sstim_graph
 
-   beat = from_sstim_graph("beat.ttl", profile=BEAT_PROFILE,
-                           sample_rate=48000)
-   print(beat.carrier_freq, beat.beat_freq)
+   beat = from_sstim_graph("stimulus.ttl", profile=BEAT_PROFILE)
+   print(beat.generator, beat.carrier_freq, beat.beat_freq)
    samples = beat.render()
 
-SSTIM fixes neither the phase nor the gain, so the convention is the
-package's, named, and not SSTIM's: a render that agrees in beat,
-laterality and mechanism can differ in every sample from another
-engine's that does not follow it. A description the package wrote can be
-rendered by it too.
+That is the binaural beat written at the top of this page. A description
+the package wrote fixes its own sample rate; one in SSTIM's terms alone
+fixes none, and is read with a ``sample_rate`` given too. SSTIM fixes
+neither the phase nor the gain, so the convention is the package's,
+named, and not SSTIM's: a render that agrees in beat, laterality and
+mechanism can differ in every sample from another engine's that does not
+follow it.
 
 From the command line
 ---------------------

@@ -48,7 +48,8 @@ What it does
   a whole piece.
 - **Sensory stimulation**: seven auditory stimuli named for the SSTIM
   techniques they implement, and sessions that sequence them, each of
-  which can be written as an SSTIM description and rendered back.
+  which can be written as an SSTIM description and rendered back; and a
+  description another tool wrote, rendered from SSTIM's own terms.
 - **Singing**: a lyric sung to a melody by speech synthesis and PSOLA,
   with a vibrato on long notes and accents on the beats, and the
   eCantorix engine as a second backend that sings the same score.

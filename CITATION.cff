@@ -28,9 +28,9 @@ abstract: >-
   synthesis, band-limited when asked for, filters and their design,
   spatial audio with measured head-related transfer functions, music
   theory, permutation groups and change-ringing peals, a
-  sensory-stimulation toolkit whose stimuli can be written as SSTIM
-  descriptions and rendered back, and singing by speech synthesis and
-  pitch-synchronous overlap-add.
+  sensory-stimulation toolkit that writes its stimuli as SSTIM
+  descriptions, renders them back and renders those other tools write,
+  and singing by speech synthesis and pitch-synchronous overlap-add.
 keywords:
   - audio
   - music

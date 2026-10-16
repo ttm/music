@@ -28,8 +28,14 @@ specialized routines when an experiment requires them.
      - Prefer scheduled notes to assembling timing by hand.
    * - Render a named sensory-stimulation technique
      - :mod:`music.stimulation`
-     - Explicit binaural, monaural, isochronic, amplitude/FM and noise
-       routines; test stimulus properties independently of clinical claims.
+     - Explicit binaural, monaural, isochronic, amplitude/FM, noise and
+       spatial-motion routines; test stimulus properties independently of
+       clinical claims.
+   * - Describe a stimulus for another tool, or render one it described
+     - :func:`music.stimulation.sstim.to_sstim_graph`,
+       :func:`~music.stimulation.sstim.render_sstim`
+     - SSTIM 0.19.0 descriptions, with ``pip install 'music[sstim]'``;
+       what SSTIM has no term for is given, never guessed.
    * - Run a phase-structured stimulation protocol
      - :class:`music.StimulationSession`
      - Ordered phases, duration-preserving crossfades, reproducible params.

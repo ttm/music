@@ -142,6 +142,19 @@ state unless given a `seed`. `render_oversampled` needs
   syllable voiced from its first frame. Tests now catch each, 1805 of
   1843 mutants are detected, and the 38 left are reviewed in
   `MUTATION_AUDIT.md`.
+- **The band-limited oscillators are mutation-audited.** Their tests
+  measured spectra, and let 159 of 619 mutants through, the most of any
+  area: every Fourier coefficient of the frequency path could change its
+  size or sign, a square could be summed with a triangle's coefficients,
+  PolyBLEP's sawtooth could run backwards, and oversampling could filter
+  with another window or drop the generator's arguments, without moving
+  a spectrum the tests read. `tests/test_bandlimited_audit.py` reads the
+  samples instead, against each waveform's closed form and its Fourier
+  series, PolyBLEP as its authors define it, and SciPy's `resample_poly`
+  called directly, and pins every default and both sides of every bound.
+  558 of 619 are detected now, and the 61 left are reviewed in
+  `MUTATION_AUDIT.md`. PolyBLEP's routines document their parameters,
+  and `render_oversampled` the beta of its window.
 - **A singing test no longer fails one run in some hundreds.** The
   comparison tool read each window's pitch from its largest
   autocorrelation peak, and where the voice changed within a window the

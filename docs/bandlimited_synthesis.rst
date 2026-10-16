@@ -137,7 +137,8 @@ whose partials are made as the sound is rendered. It needs SciPy:
        carrier_freq=12000, pulse_rate=100, duty_cycle=0.5)
 
 The generator is called once, here at 192 kHz, and SciPy's
-``resample_poly`` filters with a Kaiser window and decimates to 48 kHz.
+``resample_poly`` filters with a Kaiser window of beta 8.6 and decimates to
+48 kHz.
 Any generator that takes ``number_of_samples`` and ``sample_rate`` will
 do, and its other arguments are passed through; it must return time on
 the last axis, mono or channels first. The result has exactly the samples

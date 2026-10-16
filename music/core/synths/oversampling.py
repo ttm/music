@@ -63,7 +63,8 @@ def render_oversampled(
 
     Notes
     -----
-    Uses `scipy.signal.resample_poly` and a Kaiser-window low-pass filter.
+    Uses `scipy.signal.resample_poly` and a Kaiser-window low-pass
+    filter, of beta 8.6.
     Filtering smooths intentional hard edges; alias suppression and an
     infinitely sharp pulse are incompatible at finite sample rate.
     Always benchmark audio quality and CPU/memory costs for your use case.

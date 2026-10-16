@@ -44,6 +44,15 @@ class PolyBLEPOscillator:
     This is offline chunked generation, with no hard real-time guarantee.
 
     Positive finite fundamentals must stay strictly below Nyquist.
+
+    Parameters
+    ----------
+    sample_rate : int
+        Samples per second, from 8,000 to 192,000.
+    waveform : {'sawtooth', 'square'}
+        The waveform whose edges are corrected.
+    phase_cycles : float
+        Where in its cycle the first sample falls, from 0 up to 1.
     """
 
     def __init__(self, *, sample_rate: int = 44100,
@@ -63,7 +72,27 @@ class PolyBLEPOscillator:
         self._previous: float | None = None
 
     def render(self, frequencies: ArrayLike) -> NDArray[np.float64]:
-        """Return a mono block, keeping oscillator state for the next one."""
+        """Return a mono block, keeping oscillator state for the next one.
+
+        Parameters
+        ----------
+        frequencies : array_like
+            One instantaneous frequency in Hz per sample, each positive,
+            finite and below the Nyquist frequency; fewer than five
+            million of them. An empty block leaves the state as it was.
+
+        Returns
+        -------
+        ndarray
+            One float64 sample per frequency, continuing the phase the
+            previous block left.
+
+        Raises
+        ------
+        ValueError
+            For a block that is not one-dimensional, too long, or holds a
+            frequency out of range. The state is left as it was.
+        """
         f = np.asarray(frequencies, dtype=np.float64)
         if f.ndim != 1:
             raise ValueError("frequencies must be one-dimensional")
@@ -106,6 +135,23 @@ def polyblep_frequency_path(
     trajectories, use :class:`PolyBLEPOscillator` across blocks instead
     of allocating the entire path. Arbitrary nonlinear processing may
     reintroduce aliases; inspect the rendered signal independently.
+
+    Parameters
+    ----------
+    frequencies : array_like
+        One instantaneous frequency in Hz per sample, each positive,
+        finite and below the Nyquist frequency.
+    sample_rate : int
+        Samples per second, from 8,000 to 192,000.
+    waveform : {'sawtooth', 'square'}
+        The waveform whose edges are corrected.
+    phase_cycles : float
+        Where in its cycle the first sample falls, from 0 up to 1.
+
+    Returns
+    -------
+    ndarray
+        One float64 sample per frequency.
     """
     return PolyBLEPOscillator(
         sample_rate=sample_rate, waveform=waveform,

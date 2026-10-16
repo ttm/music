@@ -490,6 +490,38 @@ AREAS = {
             'music/stimulation/sstim/_stimuli.py',
         ),
     },
+    # Band-limited synthesis: the prefiltered static-pitch table, the
+    # frequency path summed partial by partial, PolyBLEP's corrected edges
+    # and oversampling around a whole generator. Selected from full-suite
+    # per-test coverage.
+    'bandlimited': {
+        'sources': (
+            'music/core/synths/bandlimited.py',
+            'music/core/synths/frequency_path.py',
+            'music/core/synths/oversampling.py',
+            'music/core/synths/polyblep.py',
+        ),
+        'tests': (
+            'tests/test_bandlimited.py',
+            'tests/test_bandlimited_audit.py',
+            'tests/test_frequency_path.py',
+            'tests/test_oversampling.py',
+            'tests/test_polyblep.py',
+            'tests/test_legacy_pitch_antialias.py',
+            'tests/test_dynamic_aliasing_benchmark.py',
+            'tests/test_polyblep_listening.py',
+            'tests/test_spectral_benchmark.py',
+            'tests/test_degenerate.py::test_a_parameter_at_zero_does_not_quietly_add_a_bias',
+            'tests/test_degenerate.py::test_a_parameter_at_zero_works_or_is_refused_clearly',
+            'tests/test_degenerate.py::test_a_zero_duration_renders_nothing',
+            'tests/test_degenerate.py::test_a_zero_duration_renders_nothing_down_every_branch',
+            'tests/test_properties.py::test_a_render_is_as_long_as_the_duration_and_rate_it_was_given',
+            'tests/test_public_api.py::test_export_runs_with_its_documented_defaults',
+            'tests/test_sstim_audit.py::test_the_oversampling_factor_asked_for_is_the_one_used',
+            'tests/test_sstim_stimuli.py::test_oversampled_render_matches_the_manual_call',
+        ),
+        'dataclass_adapter': None,
+    },
     # The legacy synthesizers, the Being and the demonstration piece.
     # Selected from full-suite per-test coverage.
     'legacy': {

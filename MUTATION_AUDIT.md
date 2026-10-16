@@ -29,6 +29,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `hrtf` | `hrtf.py` | 2026-09-28 | 224 | 217 | 7 | all |
 | `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py`, `psola.py` | 2026-10-14 | 1843 | 1805 | 38 | all |
 | `legacy` | `legacy/CanonicalSynth.py`, `IteratorSynth.py`, `classes.py`, `tables.py`, `pieces/testSong2.py` | 2026-09-30 | 1645 | 1154 | 491 | all |
+| `bandlimited` | `synths/bandlimited.py`, `frequency_path.py`, `oversampling.py`, `polyblep.py` | 2026-10-16 | 619 | 558 | 61 | all |
 | `sstim` | `stimulation/sstim/`: `__init__.py`, `_capabilities.py`, `_others.py`, `_sessions.py`, `_stimuli.py`, `_vocabulary.py` | 2026-10-15 | 3011 | 2900 | 111 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
@@ -40,8 +41,9 @@ The table describes the package as each area was measured: `noises` and
 2026-10-10, and `singing` that day too, after the singing that went into
 1.10.0 once its area had been measured, and the lock it took on
 2026-10-14. Of the modules added since 1.10.0, the SSTIM package in
-`stimulation/sstim/` is the `sstim` area, measured on 2026-10-15; the
-four band-limited oscillators in `core/synths/` are in no area yet.
+`stimulation/sstim/` is the `sstim` area, measured on 2026-10-15, and the
+band-limited oscillators in `core/synths/` are the `bandlimited` area,
+measured on 2026-10-16.
 
 ## `export` — normalization, export and session envelopes
 
@@ -911,6 +913,7 @@ python tools/mutation_audit.py --area hrtf --revision HEAD
 python tools/mutation_audit.py --area singing --revision HEAD
 python tools/mutation_audit.py --area legacy --revision HEAD
 python tools/mutation_audit.py --area sstim --revision HEAD --max-children 8
+python tools/mutation_audit.py --area bandlimited --revision HEAD --max-children 8
 python tools/mutation_audit.py --area export --revision ef03962 --max-children 2
 ```
 
@@ -929,7 +932,8 @@ Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 582 seconds with two workers, `stimuli` 60 and `localization` 233, and
 `theory` 24 to 50 with four, `structures` 172, `noises` 117,
 `sequencer` 24, `bonds` 24, `tables` 12, `hrtf` 235, `singing` 55 and
-`legacy` 321, and `sstim` 237 to 281 with eight. None
+`legacy` 321, and `sstim` 237 to 281 and `bandlimited` 38 to 50 with
+eight. None
 is a candidate for CI at that cost — these are things to run
 deliberately, read, and act on.
 
@@ -1674,7 +1678,75 @@ detected 2,854 of 3,003. All 111 survivors are reviewed below.
 | `_differences` | 39 | `span[1]` for `span[0]` in a message about the signal the package expects, which it writes as a point: both ends are the same. |
 | `_turtle`, `read_graph` | 41, 43; 11, 13 | A file read in the locale's encoding, which is UTF-8 wherever the audit runs, or as `"UTF-8"`; and Turtle text parsed without naming the format, which RDFLib takes to be Turtle. The code names both. |
 
-**Expand to another bounded area when changing it.** All seventeen
+## `bandlimited` — static, moving and oversampled band-limited synthesis
+
+`core/synths/bandlimited.py`, `frequency_path.py`, `oversampling.py` and
+`polyblep.py`: the prefiltered table for a fixed pitch, the frequency path
+summed partial by partial, PolyBLEP's corrected edges, and oversampling
+around a whole generator. Its tests were selected from full-suite
+per-test coverage. Measured on 2026-10-16 at `1d27a71`, with the tests
+the modules were written with and with those the run led to.
+
+### Result
+
+The first run made 619 mutants and detected 459, one by hanging: 159
+survived, a quarter, the most of any area. `tests/test_bandlimited_audit.py`
+brought a run over the working tree that records it to 558 of 619, in 42
+seconds with eight workers; runs between the two detected 548 and 556.
+All 61 survivors are reviewed below.
+
+### What it found
+
+- **A spectrum is not a sample, again.** The tests measured these
+  oscillators by where their energy fell: off the harmonics, near the
+  Nyquist frequency, in a jump. Every Fourier coefficient of the frequency
+  path could change its size or its sign, a square or a sawtooth could be
+  summed with a triangle's coefficients, partials above the Nyquist
+  frequency could come back with a negative weight, and each test still
+  passed, since the wrong waveform's spectrum can sit on the right
+  harmonics. PolyBLEP's sawtooth could run backwards or be offset, and an
+  oscillator that lost its waveform rendered a square for a sawtooth,
+  which the sawtooth's spectral test accepts: every partial of a square
+  is one of a sawtooth's. Tests now compare the frequency path with each
+  waveform's closed form, and with its Fourier series term by term, and
+  PolyBLEP with its authors' definition rendered a sample at a time.
+- **Oversampling was not compared with its filter.** A Kaiser beta of 9.6
+  for 8.6, and the generator called without the arguments passed for it,
+  survived, because the comparison was with a reference at a higher rate,
+  which both still approached. The render is now compared with SciPy's
+  `resample_poly` called directly, and the beta is documented.
+- **What precision a render keeps was unasserted.** Converting a
+  generator's samples to float64 before filtering them, and a PolyBLEP
+  block's frequencies before integrating them, both survived being
+  dropped: with a float32 renderer, or float32 frequencies, the result
+  moved by 1e-7. Tests render in single precision and compare with
+  double.
+- **Defaults and bounds.** No default of the four was pinned -- a 221 Hz
+  note, 3 seconds, a table of 16,385, a rolloff of a hertz, 257 partials
+  and a rate of 44,101 all survived -- and no bound from its own side: a
+  rate of one, a pitch of half a hertz or above a third of the rate, a
+  transition of one, 1 and 2,048 partials, a table of four, a factor of
+  16, the rates 8,000 and 192,000, a duration given rather than a count,
+  and the work and frame bounds exactly, at fifty million and at one
+  over. The frame bound is reached without rendering fifty million
+  frames, by a renderer that stops the test when it is called.
+- **PolyBLEP's parameters were undocumented.** `polyblep_frequency_path`,
+  `PolyBLEPOscillator` and its `render` now say what they take and give.
+
+### Accepted survivors
+
+| Function | IDs | Why accepted |
+|---|---|---|
+| 35 mutants | `bandlimited_note` 12, 21, 27, 37, 45, 50; `bandlimited_frequency_path` 13, 25, 36, 47, 57, 58, 71, 72, 94; `render_oversampled` 11, 22, 30, 38, 54, 57, 58, 59, 60, 83, 84, 86, 87, 91; `PolyBLEPOscillator.__init__` 14, 23, 36; `PolyBLEPOscillator.render` 9, 13, 27 | Refusal wording: `XX` around the text, or its case changed. The refusal still happens, and the tests check what is refused. |
+| `bandlimited_note`, `bandlimited_frequency_path`, `render_oversampled`, `PolyBLEPOscillator.render` | 58, 60; 76, 78, 110, 112, 203; 46, 48, 111, 113; 32, 34, 39, 41 | A dtype of `float64` dropped where NumPy's default, or the data's own, is already `float64`. |
+| `bandlimited_frequency_path` | 128 | A partial beyond the highest below the Nyquist frequency, whose weight is zero at every sample. |
+| `bandlimited_frequency_path` | 157, 174 | A coefficient divided by `(-1)**n` rather than multiplied by it, which is the same: it is ±1. |
+| `bandlimited_frequency_path` | 162, 179 | A sign of `(-1)**(k - 1)` for `(-1)**(k + 1)`, of the same parity, and `(-1)**((k - 1) / 2)` for `// 2`, whole for the odd partials it is used for. |
+| `bandlimited_frequency_path` | 204 | A partial exactly at the Nyquist frequency kept rather than dropped: from a phase of zero it is `sin(πn)`, silent but for rounding. |
+| `_correction` | 4, 16 | `<=` for `<` at the edge of each correction, where both polynomials are zero. |
+| `PolyBLEPOscillator.render` | 45, 105, 106 | A whole cycle added to the phase, and `- .5` or `+ 1.5` for `+ .5`, modulo one. |
+
+**Expand to another bounded area when changing it.** All eighteen
 areas now have reviewed survivors. Pick later areas by measuring which tests reach
 their modules with per-test coverage contexts, then add a separate entry to
 `AREAS` rather than widening an existing area. These bounded measurements

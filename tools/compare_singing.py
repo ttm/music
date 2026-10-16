@@ -79,6 +79,20 @@ def fundamental(segment, rate=RATE, low=40, high=1500):
     if not usable.any():
         return None
     lag = int(lags[usable][np.argmax(correlation[usable])])
+    # An autocorrelation peaks at every multiple of the period, and in a
+    # window where the voice changes, the second can edge out the first:
+    # the pitch then reads an octave low. The shortest whole fraction of
+    # the peak that is nearly as periodic is the period.
+    shortest = int(np.ceil(rate / high))
+    for divisor in (4, 3, 2):
+        near = int(round(lag / divisor))
+        if near + 2 < shortest:
+            continue
+        around = np.arange(max(near - 2, shortest), near + 3)
+        candidate = int(around[np.argmax(correlation[around])])
+        if correlation[candidate] >= 0.9 * correlation[lag]:
+            lag = candidate
+            break
     if correlation[lag] < 0.5 * energy or lag + 1 >= len(correlation):
         return None
     left, peak, right = correlation[lag - 1:lag + 2]

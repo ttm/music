@@ -13,8 +13,9 @@ import pytest
 
 from music.singing import psola
 from tools import singing_timing as timing
-from tools.compare_singing import (SCORES, cents, expected_pitches,
-                                   expected_seconds, note_pitches)
+from tools.compare_singing import (RATE, SCORES, cents, expected_pitches,
+                                   expected_seconds, fundamental,
+                                   note_pitches)
 
 
 @pytest.mark.parametrize("target, durations, chosen, tried, fastest", [
@@ -140,7 +141,15 @@ def test_slowed_sings_notes_shorter_than_their_syllables_as_the_baseline(
     dict(text="Jac-ques", notes=(4, 0), durs=(1, 1), lang="fr"),
 ])
 def test_timing_candidates_keep_pitch_and_score_duration(variant, score):
-    sound, diagnostics = timing.render(score, variant)
+    from parselmouth.praat import run
+
+    # Praat's PSOLA draws from Praat's random generator, so an unseeded
+    # render is a different one each run, as the other renders here are not.
+    run("random_initializeWithSeedUnsafelyButPredictably (42)")
+    try:
+        sound, diagnostics = timing.render(score, variant)
+    finally:
+        run("random_initializeSafelyAndUnpredictably ()")
     seconds = expected_seconds(score)
     assert len(sound) == round(sum(seconds) * psola.RATE)
     pitches = note_pitches(sound, seconds)
@@ -224,3 +233,40 @@ def test_the_envelope_is_the_package_s_adsr_on_each_note():
     expected = plain * envelope
     np.testing.assert_allclose(shaped, expected / np.abs(expected).max(),
                                atol=1e-12)
+
+
+@pytest.mark.parametrize("subharmonic", [0, .24, .26])
+def test_a_weak_subharmonic_does_not_halve_the_pitch_read(subharmonic):
+    """The autocorrelation peaks at every multiple of the period, and a
+    weak subharmonic can lift the second peak over the first. The largest
+    peak then read 196 Hz as 98: the shortest fraction of it nearly as
+    periodic is the period."""
+    t = np.arange(2756) / RATE
+    tone = (np.sin(2 * np.pi * 196 * t)
+            + subharmonic * np.sin(np.pi * 196 * t))
+    assert abs(cents(fundamental(tone), 196)) < 10
+
+
+def test_a_strong_second_harmonic_is_not_read_as_the_pitch():
+    t = np.arange(2756) / RATE
+    tone = .3 * np.sin(2 * np.pi * 196 * t) + np.sin(4 * np.pi * 196 * t)
+    assert abs(cents(fundamental(tone), 196)) < 10
+
+
+@REAL
+@pytest.mark.parametrize("variant", ["speed", "combined"])
+def test_a_render_the_pitch_reading_once_halved_reads_true(variant):
+    """Praat's seeds 122 and 183, among 400, gave renders of this song
+    whose fourth note read 147.5 Hz for its 196: two of the note's windows
+    had read an octave low, and their median split the difference. The
+    singing was right; the reading was not."""
+    from parselmouth.praat import run
+
+    score = SCORES["test song"]
+    run("random_initializeWithSeedUnsafelyButPredictably (122)")
+    try:
+        sound, _ = timing.render(score, variant)
+    finally:
+        run("random_initializeSafelyAndUnpredictably ()")
+    pitches = note_pitches(sound, expected_seconds(score))
+    assert abs(cents(pitches[3], expected_pitches(score)[3])) < 35

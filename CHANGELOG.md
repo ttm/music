@@ -142,6 +142,16 @@ state unless given a `seed`. `render_oversampled` needs
   syllable voiced from its first frame. Tests now catch each, 1805 of
   1843 mutants are detected, and the 38 left are reviewed in
   `MUTATION_AUDIT.md`.
+- **A singing test no longer fails one run in some hundreds.** The
+  comparison tool read each window's pitch from its largest
+  autocorrelation peak, and where the voice changed within a window the
+  peak at twice the period could edge out the first. Two such windows in
+  one note read it an octave low, and the median of its windows split
+  the difference: 147.5 Hz for 196, in 2 of 400 of Praat's random seeds.
+  The singing was right. The reading now takes the shortest fraction of
+  the peak that is nearly as periodic, which reads every note of every
+  score, variant and seed the tests sing within about 10 cents, and the
+  test seeds Praat's random generator, as those beside it do.
 - **The SSTIM module is mutation-audited.** Measured against the tests it
   was written with, it let 394 of 3,020 mutants through: nothing pinned
   the form a description is written in or the plan's digest, so a change

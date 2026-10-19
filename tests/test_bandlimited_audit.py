@@ -14,11 +14,22 @@ import numpy as np
 import pytest
 
 import music
-from music.core.synths import polyblep
+from music.core.synths import bandlimited, polyblep
 from music.core.synths.frequency_path import bandlimited_frequency_path
 from music.core.synths.polyblep import (
     PolyBLEPOscillator, polyblep_frequency_path,
 )
+
+
+@pytest.fixture(autouse=True)
+def fresh_tables():
+    """Filter each test's tables anew, rather than read another test's.
+
+    bandlimited_note keeps the table it filters for a pitch, so every
+    test after the first would read tables filtered before it ran -- in
+    a mutation run, before the mutant it judges was switched on.
+    """
+    bandlimited._filtered_table.cache_clear()
 
 
 def phase_of(frequencies, rate):
@@ -264,6 +275,15 @@ def test_oversampling_filters_the_whole_generator_called_once():
     np.testing.assert_array_equal(out, expected)
 
 
+def test_the_filter_reaches_sixty_four_samples_either_side():
+    """Its length is its cost, and how far into the silence it reaches."""
+    pytest.importorskip("scipy")
+    from music.core.synths.oversampling import _decimation_filter
+
+    lengths = [len(_decimation_filter(factor)) for factor in (2, 4, 16)]
+    assert lengths == [259, 515, 2053]
+
+
 def sine(hz):
     def render(*, number_of_samples, sample_rate):
         return np.sin(2 * np.pi * hz * np.arange(number_of_samples)
@@ -357,6 +377,26 @@ def test_a_band_limited_note_defaults_to_two_seconds_of_220_hz_sine():
 def test_the_edges_of_what_a_band_limited_note_takes_are_taken(kwargs):
     kwargs.setdefault("number_of_samples", 64)
     assert np.isfinite(music.bandlimited_note(**kwargs)).all()
+
+
+@pytest.mark.parametrize("size", (1000, 1001))
+def test_a_table_is_built_at_the_size_asked_for(size):
+    """A sine's table holds the sine, whatever its size, even or odd.
+
+    At fifty entries a sample every read lands on an entry, so the note
+    is the sine itself, sampled.
+    """
+    rate = 44100
+    out = music.bandlimited_note(50 * rate / size, number_of_samples=40,
+                                 sample_rate=rate, table_size=size)
+    np.testing.assert_allclose(
+        out, np.sin(2 * np.pi * 50 * np.arange(40) / size), atol=1e-9)
+
+
+def test_a_cached_table_is_read_only():
+    """The cache hands every caller the same array, which none may change."""
+    table = bandlimited._filtered_table("sawtooth", 1000., 48000, 4096, 0.)
+    assert not table.flags.writeable
 
 
 def test_a_rolloff_given_fades_the_partials_it_reaches():

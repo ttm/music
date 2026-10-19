@@ -4,6 +4,18 @@ import numpy as np
 import pytest
 
 import music
+from music.core.synths import bandlimited
+
+
+@pytest.fixture(autouse=True)
+def fresh_tables():
+    """Filter each test's tables anew, rather than read another test's.
+
+    bandlimited_note keeps the table it filters for a pitch, so every
+    test after the first would read tables filtered before it ran -- in
+    a mutation run, before the mutant it judges was switched on.
+    """
+    bandlimited._filtered_table.cache_clear()
 
 
 def _off_harmonic_fraction(signal, fundamental, rate=44100):

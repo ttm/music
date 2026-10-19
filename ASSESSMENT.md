@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-19**,
-`music` 1.10.0: 59 modules, 16,900 LOC package + 26,798 LOC tests, 129 names
+`music` 1.10.0: 59 modules, 16,905 LOC package + 26,896 LOC tests, 129 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,11 +59,11 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **6845 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,542 stmts, 0 missed) |
+| Test suite | `pytest -q` | **6856 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,541 stmts, 0 missed) |
 | Type check | `mypy music` | **clean**, 59 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,981 findings |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,980 findings |
 | Annotation coverage | AST scan | **198 / 338 functions (59 %)**; 65 / 98 exported (66 %) |
 | Docstring coverage | AST scan | **231 / 237 public defs (97 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
@@ -261,13 +261,18 @@ either documented in the code or tracked in the issue list.
   through, the most of any area: their tests measured spectra, and every
   Fourier coefficient of the frequency path, and PolyBLEP's sawtooth,
   could change without moving one. Tests now read their samples, against
-  each waveform's closed form and PolyBLEP's own definition, and the 61
-  mutants left change only wording or nothing at all.
+  each waveform's closed form and PolyBLEP's own definition. Measured
+  again on 2026-10-19 with the mipmapped tables, a cache had kept 105
+  mutants of the tables' builders from ever running, and a decorator had
+  kept `bandlimited_note`'s table filter out of reach; the tests clear
+  both caches now, and of 965 mutants the 76 left change only wording or
+  nothing at all.
 
   [MUTATION_AUDIT.md](MUTATION_AUDIT.md) records the scope, assertions,
-  survivor IDs and reproduction command. The tool skips decorated classes,
-  so an isolated adapter was needed to reach session methods; properties
-  remain outside mutation scope. The measured results apply to those
+  survivor IDs and reproduction command. The tool skips decorated classes
+  and functions, so isolated adapters were needed to reach session
+  methods and the one cached function; properties remain outside
+  mutation scope. The measured results apply to those
   files and their selected tests. Expanding the audit remains
   issue #113.
 
@@ -491,7 +496,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,981 findings** on `music/`, almost all
+- **The extended lint set reports 2,980 findings** on `music/`, almost all
   stylistic: 731 quote-style, 375 missing argument annotations, 80 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their

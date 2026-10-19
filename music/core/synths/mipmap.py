@@ -29,8 +29,9 @@ _MAX_BLOCK_SAMPLES = 5_000_000
 #: octave, to 1024.
 PARTIALS = tuple(range(1, 16)) + tuple(
     int(round(16 * 2 ** (step / 4))) for step in range(25))
-#: Entries in each table: 4096, or sixteen for each partial where that is
-#: more, so that a linear read never has fewer than sixteen to a cycle.
+#: Entries in each table, a power of two: 4096, or sixteen for each
+#: partial where that is more, so that a linear read never has fewer than
+#: sixteen to a cycle.
 SIZES = tuple(max(4096, 1 << (16 * count - 1).bit_length())
               for count in PARTIALS)
 _COUNTS = np.array(PARTIALS, dtype=np.float64)
@@ -58,14 +59,14 @@ def _all_tables(waveform: str) -> NDArray[np.float64]:
     if waveform not in ("sawtooth", "square", "triangle"):
         raise ValueError("waveform must be sawtooth, square or triangle")
     if waveform not in _TABLES:
-        coefficients = _coefficient(waveform, np.arange(1, PARTIALS[-1] + 1))
-        flat = np.empty(int(np.sum(_SIZES + 1)))
-        for count, size, offset in zip(PARTIALS, SIZES, _OFFSETS):
-            spectrum = np.zeros(size // 2 + 1, dtype=complex)
-            # A sine's coefficient c at bin n, as irfft scales it.
-            spectrum[1:count + 1] = -0.5j * size * coefficients[:count]
-            flat[offset:offset + size] = np.fft.irfft(spectrum, size)
-            flat[offset + size] = flat[offset]
+        pieces = []
+        for count, size in zip(PARTIALS, SIZES):
+            # A sine's coefficient c at bin n, as irfft scales it; it pads
+            # the bins above the last partial with zeros.
+            partials = _coefficient(waveform, np.arange(1, count + 1))
+            table = np.fft.irfft(np.r_[0, -0.5j * size * partials], size)
+            pieces += [table, table[:1]]
+        flat = np.concatenate(pieces)
         flat.setflags(write=False)
         _TABLES[waveform] = flat
     return _TABLES[waveform]
@@ -95,11 +96,15 @@ def tables(waveform: str) -> tuple[NDArray[np.float64], ...]:
 
 def _read(flat: NDArray[np.float64], level: NDArray[np.intp],
           phase: NDArray[np.float64]) -> NDArray[np.float64]:
-    """Each sample's table at its phase, linear between two entries."""
+    """Each sample's table at its phase, linear between two entries.
+
+    Every size is a power of two, so ``phase * size`` is exact: a phase
+    below one reads no further than a table's last entry and the copy of
+    its first that follows it.
+    """
     size = _SIZES[level]
     position = phase * size
-    # A phase a hair below one can round up to the table's end.
-    entry = np.minimum(position.astype(np.intp), size - 1)
+    entry = position.astype(np.intp)
     base = _OFFSETS[level] + entry
     here = flat[base]
     return here + (position - entry) * (flat[base + 1] - here)

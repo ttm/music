@@ -171,9 +171,12 @@ state unless given a `seed`. `render_oversampled` needs
   samples instead, against each waveform's closed form and its Fourier
   series, PolyBLEP as its authors define it, and SciPy's `resample_poly`
   called directly, and pins every default and both sides of every bound.
-  558 of 619 are detected now, and the 61 left are reviewed in
-  `MUTATION_AUDIT.md`. PolyBLEP's routines document their parameters,
-  and `render_oversampled` the beta of its window.
+  558 of 619 were detected then. Measured again with the mipmapped
+  tables in the area, a cache had kept all 105 mutants of the tables'
+  builders from running, and a decorator had kept `bandlimited_note`'s
+  table filter out of mutmut's reach altogether: the tests clear both
+  caches now, and 889 of 965 are detected, the 76 left reviewed in
+  `MUTATION_AUDIT.md`. PolyBLEP's routines document their parameters.
 - **A singing test no longer fails one run in some hundreds.** The
   comparison tool read each window's pitch from its largest
   autocorrelation peak, and where the voice changed within a window the

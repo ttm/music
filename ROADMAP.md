@@ -854,7 +854,13 @@ compares the four oscillators at five pitches, along a sweep, and
 rendered in blocks against the time each block lasts. No default
 changes: the measurements are of signals, and the listening test that
 would say whether anyone hears the differences has an issue of its own,
-[#125](https://github.com/ttm/music/issues/125).
+[#125](https://github.com/ttm/music/issues/125). The area's mutation
+audit was run again with the tables in it. A cache had kept all 105
+mutants of their builders from running, since mutmut forks each mutant
+from a process whose tables were already built, and `bandlimited_note`'s
+cached table filter, a decorated function, had never been mutated at
+all. The tests clear both caches now, and 889 of 965 mutants are
+detected.
 
 What none of this establishes -- how anything sounds, or that another
 engine renders the same samples from an SSTIM description -- is in

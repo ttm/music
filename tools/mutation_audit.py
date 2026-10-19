@@ -525,6 +525,8 @@ AREAS = {
             'tests/test_sstim_stimuli.py::test_oversampled_render_matches_the_manual_call',
         ),
         'dataclass_adapter': None,
+        # bandlimited_note's table is filtered once a pitch and cached.
+        'cache_adapter': ('music/core/synths/bandlimited.py',),
     },
     # The legacy synthesizers, the Being and the demonstration piece.
     # Selected from full-suite per-test coverage.
@@ -596,6 +598,53 @@ def expose_dataclasses(tree, relative_path):
     path.write_text(''.join(lines))
 
 
+def _cache_decorator(node):
+    """The ``@lru_cache``, ``@lru_cache(...)`` or ``@cache`` on `node`."""
+    for decorator in node.decorator_list:
+        target = (decorator.func if isinstance(decorator, ast.Call)
+                  else decorator)
+        name = (target.attr if isinstance(target, ast.Attribute)
+                else getattr(target, 'id', None))
+        if name in ('lru_cache', 'cache'):
+            return decorator
+    return None
+
+
+def expose_cached_functions(tree, relative_path):
+    """Apply each cache after its function so mutmut visits the body.
+
+    mutmut 3.7.0 skips decorated functions, as it skips decorated
+    classes. This changes only the scratch copy: each top-level function
+    decorated with a cache loses the decorator and is followed by
+    ``name = lru_cache(...)(name)``, so it is cached, as before, before
+    anything calls it.
+
+    A cache also outlives the test that fills it, and mutmut forks each
+    mutant's run from the process that ran the tests unmutated. The tests
+    of a cached function must clear the cache, or a mutant of it never
+    runs: ``bandlimited``'s do.
+    """
+    path = tree / relative_path
+    source = path.read_text()
+    lines = source.splitlines(keepends=True)
+    functions = [node for node in ast.parse(source).body
+                 if isinstance(node, ast.FunctionDef)
+                 and _cache_decorator(node) is not None]
+    if not functions:
+        raise SystemExit(f'cache adapter found no cached function in '
+                         f'{relative_path}')
+    # From the end, so earlier line numbers stay put.
+    for node in reversed(functions):
+        decorator = _cache_decorator(node)
+        text = ast.get_source_segment(source, decorator)
+        lines.insert(node.end_lineno,
+                     f'\n\n{node.name} = {text}({node.name})\n')
+        if lines[decorator.lineno - 1].strip() != '@' + text:
+            raise SystemExit(f'cache adapter no longer matches {node.name}')
+        del lines[decorator.lineno - 1]
+    path.write_text(''.join(lines))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--area', default='export', choices=sorted(AREAS),
@@ -652,6 +701,9 @@ def main():
         adapted = (adapted,)
     for relative in adapted or ():
         expose_dataclasses(tree, relative)
+    cached = area.get('cache_adapter', ())
+    for relative in cached:
+        expose_cached_functions(tree, relative)
     config = {
         'source_paths': ['music/'],
         'only_mutate': list(sources),
@@ -686,6 +738,7 @@ def main():
         'elapsed_seconds': round(elapsed, 2),
         'configuration': config,
         'dataclass_adapter': list(adapted or ()),
+        'cache_adapter': list(cached),
         'working_tree_overlay': overlay,
         'stats': stats,
         'exit_code_by_mutant': results,

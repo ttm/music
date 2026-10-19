@@ -1,5 +1,7 @@
 """Mipmapped tables, read against the Fourier series they are built from."""
 
+import re
+
 import numpy as np
 import pytest
 
@@ -8,6 +10,22 @@ from music.core.synths.frequency_path import bandlimited_frequency_path
 from music.core.synths.mipmap import (
     PARTIALS, SIZES, MipmapOscillator, mipmap_frequency_path, tables,
 )
+
+
+@pytest.fixture(autouse=True)
+def fresh_tables(monkeypatch):
+    """Build the tables in each test, rather than read another test's.
+
+    The module keeps them once built, so every test after the first
+    would read tables built before it ran -- in a mutation run, before
+    the mutant it judges was switched on.
+    """
+    monkeypatch.setattr(mipmap, "_TABLES", {})
+
+
+def refused(message):
+    """The exact refusal, not merely some refusal containing it."""
+    return pytest.raises(ValueError, match=f"^{re.escape(message)}$")
 
 
 def coefficient(waveform, n):
@@ -54,6 +72,7 @@ def test_the_counts_are_every_one_to_sixteen_then_four_an_octave():
                              609, 724, 861, 1024)
     # Sixteen entries or more to a cycle of a table's top partial.
     assert SIZES == (4096,) * 32 + (8192,) * 4 + (16384,) * 4
+    assert all(size & (size - 1) == 0 for size in SIZES)
 
 
 @pytest.mark.parametrize("waveform", ("sawtooth", "square", "triangle"))
@@ -71,9 +90,9 @@ def test_each_table_is_its_partial_sum(waveform):
 
 
 def test_an_unknown_waveform_is_refused():
-    with pytest.raises(ValueError, match="sawtooth, square or triangle"):
+    with refused("waveform must be sawtooth, square or triangle"):
         tables("sine")
-    with pytest.raises(ValueError, match="sawtooth, square or triangle"):
+    with refused("waveform must be sawtooth, square or triangle"):
         MipmapOscillator(waveform="sine")
 
 
@@ -189,18 +208,40 @@ def test_a_refused_block_leaves_the_state_as_it_was():
     rate = 48000
     oscillator = MipmapOscillator(sample_rate=rate)
     first = oscillator.render([1000., 1000.])
-    for bad in ([[1000.]], [0.], [-1.], [np.nan], [np.inf], [rate / 2]):
-        with pytest.raises(ValueError):
+    with refused("frequencies must be one-dimensional"):
+        oscillator.render([[1000.]])
+    for bad in ([0.], [-1.], [np.nan], [np.inf], [rate / 2]):
+        with refused("frequencies must be finite, positive, < Nyquist"):
             oscillator.render(bad)
     resumed = oscillator.render([1000.])
     whole = mipmap_frequency_path([1000.] * 3, sample_rate=rate)
     np.testing.assert_allclose(np.r_[first, resumed], whole, atol=1e-12)
 
 
-def test_a_phase_a_hair_below_one_reads_the_table_s_start():
+@pytest.mark.parametrize("hz", (440., 10.))
+def test_a_phase_a_hair_below_one_reads_the_table_s_start(hz):
+    """At 10 Hz the richest table is read, whose end is the array's.
+
+    The phase times a table's size is exact, a power of two, so even the
+    largest phase below one reads inside the table.
+    """
     out = MipmapOscillator(phase_cycles=float(np.nextafter(1., 0.))).render(
-        [440.])
+        [hz])
     assert out[0] == pytest.approx(0., abs=1e-9)
+
+
+def test_a_pitch_below_one_hertz_is_taken():
+    out = MipmapOscillator(sample_rate=8000, phase_cycles=.25).render(
+        [.5, .5])
+    rows = tables("sawtooth")
+    assert out[0] == pytest.approx(rows[-1][len(rows[-1]) // 4], abs=1e-12)
+
+
+def test_single_precision_frequencies_are_integrated_in_double():
+    path = np.linspace(500, 9000, 2000).astype(np.float32)
+    np.testing.assert_array_equal(
+        mipmap_frequency_path(path, sample_rate=48000),
+        mipmap_frequency_path(path.astype(np.float64), sample_rate=48000))
 
 
 def test_the_block_bound_is_five_million(monkeypatch):
@@ -208,7 +249,7 @@ def test_the_block_bound_is_five_million(monkeypatch):
     monkeypatch.setattr(mipmap, "_MAX_BLOCK_SAMPLES", 10)
     oscillator = MipmapOscillator()
     assert oscillator.render(np.full(10, 440.)).shape == (10,)
-    with pytest.raises(ValueError, match="block exceeds 5 million frames"):
+    with refused("frequency block exceeds 5 million frames"):
         oscillator.render(np.full(11, 440.))
 
 
@@ -220,12 +261,17 @@ def test_the_edges_of_the_rates_are_taken(rate):
 
 @pytest.mark.parametrize("kwargs", (
     {"sample_rate": 7999}, {"sample_rate": 192001}, {"sample_rate": 48000.},
-    {"sample_rate": True}, {"phase_cycles": -.1}, {"phase_cycles": 1.},
-    {"phase_cycles": np.nan}, {"phase_cycles": "0"},
+    {"sample_rate": True},
 ))
-def test_what_the_oscillator_refuses(kwargs):
-    with pytest.raises(ValueError):
+def test_what_the_oscillator_refuses_for_a_rate(kwargs):
+    with refused("sample_rate must be 8000 to 192000 Hz"):
         MipmapOscillator(**kwargs)
+
+
+@pytest.mark.parametrize("phase", (-.1, 1., np.nan, "0"))
+def test_what_the_oscillator_refuses_for_a_phase(phase):
+    with refused("phase_cycles must be finite in [0, 1)"):
+        MipmapOscillator(phase_cycles=phase)
 
 
 def test_defaults_are_a_sawtooth_at_44100_from_phase_zero():

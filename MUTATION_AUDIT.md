@@ -29,7 +29,7 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 | `hrtf` | `hrtf.py` | 2026-09-28 | 224 | 217 | 7 | all |
 | `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py`, `psola.py` | 2026-10-14 | 1843 | 1805 | 38 | all |
 | `legacy` | `legacy/CanonicalSynth.py`, `IteratorSynth.py`, `classes.py`, `tables.py`, `pieces/testSong2.py` | 2026-09-30 | 1645 | 1154 | 491 | all |
-| `bandlimited` | `synths/bandlimited.py`, `frequency_path.py`, `oversampling.py`, `polyblep.py` | 2026-10-16 | 619 | 558 | 61 | all |
+| `bandlimited` | `synths/bandlimited.py`, `frequency_path.py`, `mipmap.py`, `oversampling.py`, `polyblep.py` | 2026-10-19 | 965 | 889 | 76 | all |
 | `sstim` | `stimulation/sstim/`: `__init__.py`, `_capabilities.py`, `_others.py`, `_sessions.py`, `_stimuli.py`, `_vocabulary.py` | 2026-10-15 | 3011 | 2900 | 111 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
@@ -43,7 +43,8 @@ The table describes the package as each area was measured: `noises` and
 2026-10-14. Of the modules added since 1.10.0, the SSTIM package in
 `stimulation/sstim/` is the `sstim` area, measured on 2026-10-15, and the
 band-limited oscillators in `core/synths/` are the `bandlimited` area,
-measured on 2026-10-16.
+measured on 2026-10-16 and again on 2026-10-19, when the mipmapped tables
+joined it.
 
 ## `export` — normalization, export and session envelopes
 
@@ -863,8 +864,9 @@ than leaving this routine marked exact from its default-duration case.
 
 ## Tool limitation and adapter
 
-This applies to the `export`, `sequencer` and `sstim` areas; the other
-modules define plain functions or undecorated classes.
+This applies to the `export`, `sequencer` and `sstim` areas, and its
+cache adapter to `bandlimited`; the other modules define plain functions
+or undecorated classes.
 
 `mutmut` 3.7.0 skips decorated classes and property-decorated methods.
 Without an adapter, the session file contributes only `_ramp_shape`:
@@ -880,6 +882,16 @@ Both classes are still dataclasses before any code uses them. Mutmut then
 visits the ordinary methods. The adapted baseline tests and mutmut's
 forced-failure check must pass before mutation results are collected.
 No adapter is applied to the distributed package.
+
+mutmut skips decorated functions too, and the one the package caches,
+`bandlimited_note`'s `_filtered_table`, had never been mutated. A second
+adapter removes its `@lru_cache(maxsize=128)` in the temporary copy and
+applies `_filtered_table = lru_cache(maxsize=128)(_filtered_table)` after
+it, so it is cached before anything calls it, and mutmut visits its body.
+A cache outlives the test that fills it, and each mutant runs in a
+process forked from the one that ran the tests unmutated, so the tests
+that judge a cached function clear its cache first; the mipmapped
+tables' tests do the same for theirs.
 
 The `duration` property, `SstimCapability.can_render` and generated
 dataclass methods remain outside mutation scope, though normal tests
@@ -932,7 +944,7 @@ Earlier runtimes, with four workers: 72 seconds for `envelopes`, 210 for
 582 seconds with two workers, `stimuli` 60 and `localization` 233, and
 `theory` 24 to 50 with four, `structures` 172, `noises` 117,
 `sequencer` 24, `bonds` 24, `tables` 12, `hrtf` 235, `singing` 55 and
-`legacy` 321, and `sstim` 237 to 281 and `bandlimited` 38 to 50 with
+`legacy` 321, and `sstim` 237 to 281 and `bandlimited` 38 to 113 with
 eight. None
 is a candidate for CI at that cost — these are things to run
 deliberately, read, and act on.
@@ -1680,12 +1692,15 @@ detected 2,854 of 3,003. All 111 survivors are reviewed below.
 
 ## `bandlimited` — static, moving and oversampled band-limited synthesis
 
-`core/synths/bandlimited.py`, `frequency_path.py`, `oversampling.py` and
-`polyblep.py`: the prefiltered table for a fixed pitch, the frequency path
-summed partial by partial, PolyBLEP's corrected edges, and oversampling
-around a whole generator. Its tests were selected from full-suite
-per-test coverage. Measured on 2026-10-16 at `1d27a71`, with the tests
-the modules were written with and with those the run led to.
+`core/synths/bandlimited.py`, `frequency_path.py`, `mipmap.py`,
+`oversampling.py` and `polyblep.py`: the prefiltered table for a fixed
+pitch, the frequency path summed partial by partial, PolyBLEP's corrected
+edges, mipmapped tables, and oversampling around a whole generator. Its
+tests were selected from full-suite per-test coverage. Measured on
+2026-10-16 at `1d27a71`, and again on 2026-10-19 at `f8bbb1d`, when the
+mipmapped tables joined the area and oversampling took a filter of its
+own, each time with the tests the modules were written with and with
+those the run led to.
 
 ### Result
 
@@ -1693,9 +1708,15 @@ The first run made 619 mutants and detected 459, one by hanging: 159
 survived, a quarter, the most of any area. `tests/test_bandlimited_audit.py`
 brought a run over the working tree that records it to 558 of 619, in 42
 seconds with eight workers; runs between the two detected 548 and 556.
-All 61 survivors are reviewed below.
 
-### What it found
+The second measurement's first run made 952 mutants and let 194 through.
+105 of them were in the two functions that build the mipmapped tables,
+which no test could have caught, for the reason below. With the tests it
+led to, and an adapter that reaches `bandlimited_note`'s filtered table for
+the first time, the area makes 965 mutants and detects 889, in 75 seconds
+with eight workers. All 76 survivors are reviewed below.
+
+### What the first measurement found
 
 - **A spectrum is not a sample, again.** The tests measured these
   oscillators by where their energy fell: off the harmonics, near the
@@ -1733,18 +1754,61 @@ All 61 survivors are reviewed below.
 - **PolyBLEP's parameters were undocumented.** `polyblep_frequency_path`,
   `PolyBLEPOscillator` and its `render` now say what they take and give.
 
+### What the second found
+
+- **A cache outlives the test that fills it.** The mipmapped tables are
+  built the first time a waveform is asked for, and kept. mutmut runs
+  each mutant in a process forked from the one that ran the tests
+  unmutated, so every table was built, by the original code, before any
+  mutant was switched on, and all 105 mutants of the two functions that
+  build them survived. mutmut's record of which tests reach a function
+  was cut short the same way: it named only the first test to ask. The
+  mipmap's tests now give each test an empty cache. `bandlimited_note`
+  keeps its filtered tables with `functools.lru_cache`, a decorator, and
+  mutmut 3.7.0 skips decorated functions, so the first measurement never
+  mutated that function at all. An adapter now applies the cache after
+  the function in the scratch copy, as the dataclass one does, and the
+  tests clear it. Of its 38 mutants, two groups survived on tests that
+  existed: no test read a table built at a size other than the default,
+  so one built at 16,384 entries whatever was asked for passed; and
+  nothing checked that the table the cache hands out is read-only.
+- **A guard that could never act.** The mipmap's read kept its entry
+  below the table's size, in case a phase a hair below one rounded up. It
+  cannot: every table's size is a power of two, and multiplying by one is
+  exact. The guard's mutant survived because the guard was dead code, and
+  it is gone.
+- **Slack shelters equivalent mutants.** The tables were written into an
+  array allocated to its full length, each from a spectrum as long as
+  the table's, with only the first partials set; lengthening or
+  shortening either changed nothing. Each table is now built from exactly
+  its partials, and the tables are joined, and those mutants are
+  detected.
+- **The filter's size was unpinned.** The decimation filter designed for
+  101 dB rather than 100 survived: a stricter filter passes every test of
+  the band. Tests now pin its length, 259, 515 and 2,053 taps at 2x, 4x
+  and 16x, which is its cost and how far it reaches into the silence past
+  a render.
+- **What a new oscillator refuses, and takes.** Its refusals are matched
+  by their whole text, not a fragment that a mutated message still
+  contains; a pitch below one hertz renders, where a refusal of `f <= 1`
+  had passed; and frequencies in single precision are integrated in
+  double.
+
 ### Accepted survivors
 
 | Function | IDs | Why accepted |
 |---|---|---|
 | 35 mutants | `bandlimited_note` 12, 21, 27, 37, 45, 50; `bandlimited_frequency_path` 13, 25, 36, 47, 57, 58, 71, 72, 94; `render_oversampled` 11, 22, 30, 38, 54, 57, 58, 59, 60, 83, 84, 86, 87, 91; `PolyBLEPOscillator.__init__` 14, 23, 36; `PolyBLEPOscillator.render` 9, 13, 27 | Refusal wording: `XX` around the text, or its case changed. The refusal still happens, and the tests check what is refused. |
-| `bandlimited_note`, `bandlimited_frequency_path`, `render_oversampled`, `PolyBLEPOscillator.render` | 58, 60; 76, 78, 110, 112, 203; 46, 48, 111, 113; 32, 34, 39, 41 | A dtype of `float64` dropped where NumPy's default, or the data's own, is already `float64`. |
+| `bandlimited_note`, `bandlimited_frequency_path`, `render_oversampled`, `PolyBLEPOscillator.render`, `MipmapOscillator.render` | 58, 60; 76, 78, 110, 112, 203; 46, 48, 109, 111; 32, 34, 39, 41; 32, 34, 39, 41 | A dtype of `float64` dropped where NumPy's default, or the data's own, is already `float64`. |
+| `_filtered_table` | 25, 37 | `astype(None)` for `astype(float)`, both `float64`; and the table's writeable flag set to `None` rather than `False`, which NumPy reads as false. |
+| `render_oversampled` | 64, 66 | The generator's samples left in their own precision. SciPy filters in the precision of the filter's taps, which are `float64`, so a single-precision render is filtered in double either way. |
 | `bandlimited_frequency_path` | 128 | A partial beyond the highest below the Nyquist frequency, whose weight is zero at every sample. |
-| `bandlimited_frequency_path` | 157, 174 | A coefficient divided by `(-1)**n` rather than multiplied by it, which is the same: it is ±1. |
-| `bandlimited_frequency_path` | 162, 179 | A sign of `(-1)**(k - 1)` for `(-1)**(k + 1)`, of the same parity, and `(-1)**((k - 1) / 2)` for `// 2`, whole for the odd partials it is used for. |
-| `bandlimited_frequency_path` | 204 | A partial exactly at the Nyquist frequency kept rather than dropped: from a phase of zero it is `sin(πn)`, silent but for rounding. |
+| `bandlimited_frequency_path`, `_coefficient` | 157, 174; 5, 38 | A coefficient divided by `(-1)**n` rather than multiplied by it, which is the same: it is ±1. |
+| `bandlimited_frequency_path`, `_coefficient` | 162, 179; 10, 43 | A sign of `(-1)**(k - 1)` for `(-1)**(k + 1)`, of the same parity, and `(-1)**((k - 1) / 2)` for `// 2`, whole for the odd partials it is used for. |
+| `bandlimited_frequency_path`, `_filtered_table` | 204; 26 | A partial exactly at the Nyquist frequency kept rather than dropped: from a phase of zero it is `sin(πn)`, silent but for rounding and, in a table, the linear read between entries. |
 | `_correction` | 4, 16 | `<=` for `<` at the edge of each correction, where both polynomials are zero. |
-| `PolyBLEPOscillator.render` | 45, 105, 106 | A whole cycle added to the phase, and `- .5` or `+ 1.5` for `+ .5`, modulo one. |
+| `PolyBLEPOscillator.render`, `MipmapOscillator.render` | 45, 105, 106; 45 | A whole cycle added to the phase, and `- .5` or `+ 1.5` for `+ .5`, modulo one. |
+| `MipmapOscillator.render` | 78 | `searchsorted` from the left rather than the right. The two differ only where exactly a table's count of partials fits, and there the right reads the table below at full weight, and the left the same table at full weight from the step below: the crossfade makes them one. |
 
 **Expand to another bounded area when changing it.** All eighteen
 areas now have reviewed survivors. Pick later areas by measuring which tests reach
@@ -1798,6 +1862,15 @@ What the areas have taught, worth carrying:
   found something.
 - **Work done at import is out of mutmut's reach.** A table built when
   the module loads is built before the fork, with the original code.
+- **So is work a cache kept.** A table built on first use and kept is
+  built by the first test to ask, in the unmutated run, and every
+  mutant's process inherits it: the builder's mutants survive, and
+  mutmut's record of which tests reach the builder names only that first
+  test. Clear the cache in each test that judges what it holds.
+- **Slack shelters equivalent mutants.** An array allocated longer than
+  it needs, or a spectrum longer than the partials it holds, lets a
+  mutant lengthen or shorten it to no effect. Building exactly what is
+  used leaves such an edit nowhere to hide.
 - **A round trip checks a writer against itself.** The SSTIM reader
   rebuilt each description with the writer it compared it to, so
   renaming a node or reordering the digest's JSON passed every test while

@@ -191,9 +191,9 @@ The naive sawtooth keeps its harmonics nearly exact and folds the most;
 PolyBLEP folds a little and softens the top harmonics; the mipmapped
 tables fold less than 1e-8 of their energy at any pitch tried, and lose
 part of the top; summing partials is exact and costs the more partials
-fit. Along a sweep from 48
-Hz to 21.6 kHz, the energy away from each moment's harmonics is 0.058
-naive, 0.001 with PolyBLEP and 5e-8 with the tables.
+fit. Along a sweep from 96 Hz to 21.6 kHz, the energy away from each
+moment's harmonics is 0.070 naive, 0.0013 with PolyBLEP and 8e-8 with the
+tables.
 
 None of the three bounds the sidebands that fast modulation makes, which
 no count of instantaneous harmonics can, and none corrects a nonlinearity

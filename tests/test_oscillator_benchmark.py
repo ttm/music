@@ -59,7 +59,7 @@ def test_a_sweep_separates_folding_from_cutting():
     assert rows["naive"]["off_harmonic_fraction"] > .01
     assert (rows["mipmap"]["off_harmonic_fraction"]
             < rows["polyblep"]["off_harmonic_fraction"] / 1000)
-    assert rows["mipmap"]["from_hz"] == pytest.approx(48)
+    assert rows["mipmap"]["from_hz"] == pytest.approx(96)
     assert rows["mipmap"]["to_hz"] == pytest.approx(21600)
 
 

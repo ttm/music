@@ -130,7 +130,9 @@ def static(waveform, rate=48000, fraction=.20835, repeats=3):
 def sweep(waveform, rate=48000, seconds=2.0, window=2048):
     """Each oscillator along an exponential sweep, read in windows.
 
-    The sweep runs from a thousandth of the rate to 45 % of it. In each
+    The sweep runs from a five-hundredth of the rate to 45 % of it, which
+    summed partials render within their bound of fifty million
+    partial-samples at every rate here, two seconds at 96 kHz. In each
     window, half overlapping, a Blackman-Harris window keeps leakage 92 dB
     down, and every harmonic that sounds anywhere in the window is masked,
     across the band it sweeps and three bins either side. What is left is
@@ -140,7 +142,7 @@ def sweep(waveform, rate=48000, seconds=2.0, window=2048):
             or not .1 <= seconds <= 10 or window not in (1024, 2048, 4096)):
         raise ValueError("invalid waveform, rate, length or window")
     count = int(seconds * rate)
-    path = np.geomspace(.001 * rate, .45 * rate, count)
+    path = np.geomspace(.002 * rate, .45 * rate, count)
     from scipy.signal.windows import blackmanharris
     taper = blackmanharris(window)
     renders = {method: render(method, path, rate, waveform)

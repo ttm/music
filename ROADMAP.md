@@ -882,6 +882,19 @@ engine renders the same samples from an SSTIM description -- is in
   blinded pairs and a blank form; no claim about what a listener hears
   rests on them yet, and no default changes until one does.
 
+## Released: 1.11.0, 2026-10-19
+
+The SSTIM module, band-limited synthesis and the work around them went
+out as 1.11.0, a minor release in which everything is new and has to be
+asked for: nothing an existing call returns changes. Zenodo archived it
+as 10.5281/zenodo.23470273 within seconds of the release event, and the
+record carries the nineteen controlled subjects, the fifty-five keywords
+and the release notes, verified through its DataCite export. The notes
+first showed three headlines with their asterisks, because the sync's
+converter cut a line at its code spans before looking for bold. It no
+longer does, and the record was synced again; every earlier release's
+notes have the same fault.
+
 ## Open after the September 2026 audits
 
 What the audits found and did not fix, and why. Each is recorded where

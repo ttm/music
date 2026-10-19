@@ -1,4 +1,4 @@
-## [Unreleased]
+## [1.11.0] - 2026-10-19
 
 ### Note for anyone upgrading
 
@@ -249,7 +249,7 @@ state unless given a `seed`. `render_oversampled` needs
 - **The README describes both among the core features,** with a closer
   look at each and at sensory stimulation, the two extras under
   installation, and the example among the others. Its plans count the
-  mutation audits' sixteen areas, where they said six.
+  mutation audits' eighteen areas, where they said six.
 - **The archival metadata describes and tags both.** `.zenodo.json`,
   `CITATION.cff` and `pyproject.toml` name band-limited synthesis and the
   SSTIM descriptions among what the package covers, with keywords for

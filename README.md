@@ -464,7 +464,8 @@ Concrete things the code itself is waiting for, rather than a wish list:
   all 46 that a test could settle. Routines without a MASS counterpart
   also have signal-property and composition tests, and the mutation audits
   measure, one area at a time, whether the assertions detect deliberate
-  implementation errors; the areas not yet audited are the next step.
+  implementation errors; every module is in an area, measured again when
+  it changes.
   [`DISCREPANCIES.md`](DISCREPANCIES.md) is where the article, the reference
   implementation and this package are recorded as disagreeing.
 * **An article describing the package**, as a companion to the MASS one.

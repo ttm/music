@@ -713,7 +713,7 @@ which it keeps as MASS has them, and the first of the feature choices
 below, describing stimuli in SSTIM
 ([#75](https://github.com/ttm/music/issues/75)). Nothing that existed
 changes what it returns; everything added has to be asked for, and the
-changelog's unreleased section lists it.
+changelog's 1.11.0 section lists it.
 
 - [#114](https://github.com/ttm/music/pull/114): `bandlimited_note`, and
   the static-pitch spectral benchmark.

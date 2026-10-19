@@ -834,28 +834,47 @@ now in an area; `noises`, `stimuli` and `singing` had been measured
 again on 2026-10-14, for the `seed` and for the singing work that went
 into 1.10.0 after its area was first measured.
 
+The rest of #115 was done on 2026-10-19. `tools/attribute_aliasing.py`
+predicts, from each test signal's line spectrum in closed form -- FM's
+Bessel sidebands, a waveshaper's Fourier series, a gate's pulse train --
+which lines fold, where they land and with what power, and the package's
+renders match it to 0.2 dB. It showed what the spectral difference had
+hidden. `render_oversampled` decimated through `resample_poly`'s default
+filter, whose transition is centred on the Nyquist frequency, so a wide
+FM folded at -28 dB of its signal at 4x and at 8x alike. Its filter now
+stops everything from the Nyquist frequency up, and the same FM folds at
+-123 dB, at 2x as well as at 16x; what folds at the higher rate itself,
+a gate's lines or a waveshaper's, falls only as the factor grows. The
+dynamic benchmark had rendered its waveshaper from `note`'s default
+triangle table and compared it with a closed form of a sine, a mismatch
+its reading had put down to phase. `music.core.synths.mipmap` adds
+mipmapped tables, which fold 1e-14 of a sawtooth's energy at 10,001 Hz
+where PolyBLEP folds 0.68 %, and `tools/benchmark_oscillators.py`
+compares the four oscillators at five pitches, along a sweep, and
+rendered in blocks against the time each block lasts. No default
+changes: the measurements are of signals, and the listening test that
+would say whether anyone hears the differences has an issue of its own,
+[#125](https://github.com/ttm/music/issues/125).
+
 What none of this establishes -- how anything sounds, or that another
 engine renders the same samples from an SSTIM description -- is in
 `ASSESSMENT.md`'s known limitations.
 
 ### Still open
 
-- **Band-limiting beyond a static pitch**
-  ([#115](https://github.com/ttm/music/issues/115)): the sidebands of
-  fast FM and of nonlinear processing, attributed analytically rather
-  than through a spectral difference; PolyBLEP against mipmapped tables;
-  the cost of rendering in a stream; and whether to change any default.
 - **SSTIM beyond the package's own terms**
   ([#117](https://github.com/ttm/music/issues/117)): terms SSTIM lacks
   for what the stimuli need -- a modulation's depth, a deviation, a ramp,
-  a seed, a geometry, phases in order -- which a description from
-  elsewhere must still be given; a reference shared between engines for
-  phase, amplitude, random streams and localization; records of what was
-  delivered, which only a real session can give; and isolation for
-  reading untrusted Turtle.
-- **The listening tests have not been run.** The tools prepare blinded
-  pairs and a blank form; no claim about what a listener hears rests on
-  them yet.
+  a seed, a geometry, how a session's segments join -- which a
+  description from elsewhere must still be given, and which are proposed
+  to SSTIM in [w3c-cg/sstim#7](https://github.com/w3c-cg/sstim/issues/7);
+  a reference shared between engines for phase, amplitude, random streams
+  and localization; records of what was delivered, which only a real
+  session can give; and isolation for reading untrusted Turtle.
+- **The listening tests have not been run**
+  ([#125](https://github.com/ttm/music/issues/125)). The tools prepare
+  blinded pairs and a blank form; no claim about what a listener hears
+  rests on them yet, and no default changes until one does.
 
 ## Open after the September 2026 audits
 

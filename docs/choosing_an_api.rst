@@ -54,8 +54,11 @@ Use :func:`music.render_oversampled` with existing generators when
 sample-rate conversion is part of the synthesis itself. It is opt-in and
 requires ``pip install 'music[antialias]'``. This protects more general
 modulated output than a static harmonic table, with increased memory and
-rendering cost. :doc:`bandlimited_synthesis` explains measurement and
-limits.
+rendering cost: 2x already removes FM's folding, while a hard gate or a
+waveshaper needs a higher factor or ramps. For a rich wave whose pitch
+moves, the mipmapped tables in ``music.core.synths.mipmap`` fold less
+than 1e-8 of its energy, at a fixed cost per sample. :doc:`bandlimited_synthesis`
+explains measurement and limits.
 
 Machine-readable stimulus exchange
 ----------------------------------

@@ -9,6 +9,8 @@ import music
 scipy = pytest.importorskip("scipy")
 from scipy.signal import resample_poly  # noqa: E402
 
+from music.core.synths.oversampling import _decimation_filter  # noqa: E402
+
 
 def gated_carrier(*, number_of_samples, sample_rate,
                   freq=15000.0, pulse_rate=500.0, duty=.30):
@@ -23,7 +25,7 @@ def test_oversampling_improves_against_high_rate_reference():
     reference = resample_poly(
         gated_carrier(number_of_samples=count * 16,
                       sample_rate=rate * 16), 1, 16,
-        window=("kaiser", 8.6))
+        window=_decimation_filter(16))
     direct = gated_carrier(number_of_samples=count, sample_rate=rate)
     filtered = music.render_oversampled(
         gated_carrier, sample_rate=rate, number_of_samples=count,

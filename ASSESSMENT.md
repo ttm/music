@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
-*A living record, not a point-in-time audit. Last measured **2026-10-16**,
-`music` 1.10.0: 58 modules, 16,644 LOC package + 26,241 LOC tests, 129 names
+*A living record, not a point-in-time audit. Last measured **2026-10-19**,
+`music` 1.10.0: 59 modules, 16,900 LOC package + 26,798 LOC tests, 129 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -59,13 +59,13 @@ figures described above are automatically compared with the checkout.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **6696 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,457 stmts, 0 missed) |
-| Type check | `mypy music` | **clean**, 57 files |
+| Test suite | `pytest -q` | **6845 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,542 stmts, 0 missed) |
+| Type check | `mypy music` | **clean**, 59 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,951 findings |
-| Annotation coverage | AST scan | **190 / 330 functions (58 %)**; 65 / 98 exported (66 %) |
-| Docstring coverage | AST scan | **227 / 233 public defs (97 %)** |
+| Lint, extended rule set | `ruff check --select ALL music` | 2,981 findings |
+| Annotation coverage | AST scan | **198 / 338 functions (59 %)**; 65 / 98 exported (66 %) |
+| Docstring coverage | AST scan | **231 / 237 public defs (97 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **22 of 35 routines sample-exact**; 9 divergent with a stated reason, 4 where the reference does not run |
@@ -75,8 +75,8 @@ figures described above are automatically compared with the checkout.
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
 | Rendering artifacts | `tests/test_artifacts.py` | every render swept for clicks and DC offset; the steps that remain are registered with a reason, and the measures' blind spots are measured |
 | Aliasing | `tests/test_artifacts.py` | a sine strays **1.2e-08** of its energy off the harmonics at any frequency; a sawtooth strays **24 %** at 10 kHz |
-| Band-limited oscillators | `tools/benchmark_spectral_aliasing.py`, `tools/benchmark_polyblep.py` | `bandlimited_note`'s sawtooth strays **1.2e-16** at 10 kHz; PolyBLEP's sawtooth **0.68 %** and square **0.73 %** at 10,001 Hz and 48 kHz |
-| Oversampling | `tools/benchmark_dynamic_aliasing.py` | at 48 kHz, 4x brings the spectral difference from a 16x reference from **0.119 to 0.0026** for wide FM, **0.335 to 0.016** for a tanh waveshaper and **0.162 to 0.023** for an abrupt gate |
+| Band-limited oscillators | `tools/benchmark_spectral_aliasing.py`, `tools/benchmark_oscillators.py` | `bandlimited_note`'s sawtooth strays **1.2e-16** at 10 kHz; at 10,001 Hz and 48 kHz, PolyBLEP's sawtooth **0.68 %** and square **0.73 %**, the mipmapped tables' sawtooth **1.3e-14**, and **9.3e-9** at 110 Hz |
+| Oversampling | `tools/attribute_aliasing.py`, `tools/benchmark_dynamic_aliasing.py` | at 48 kHz, 4x takes the folded power of a wide FM from **-19 to -123 dB** of its signal, and of an abrupt gate from **-15 to -30 dB**; predicted from each signal's closed-form lines to within **0.2 dB** of the package's renders |
 | Round-trip noise | `tests/test_artifacts.py` | **48 dB** at 8-bit, **121** at 16, **145** at 24, against what was written |
 | Filter stability | `tests/test_artifacts.py` | every design's poles inside the unit circle across its whole parameter range |
 | Degenerate parameters | `tests/test_degenerate.py` | **148** (routine, parameter) pairs set to zero: each works or is refused with a `ValueError` |
@@ -100,7 +100,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; Linux CI across Python 3.10–3.14 including a job pinned to the declared lower bounds; installed-wheel checks on Linux, macOS and Windows with Python 3.12 |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 58 %; the `legacy/` subpackage |
+| **Needs work** | Annotation coverage at 59 %; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -315,21 +315,28 @@ either documented in the code or tracked in the issue list.
   `bandlimited_note` drops a table's partials above the Nyquist frequency
   for the note's pitch, which leaves a 10 kHz sawtooth 1.2e-16 of its
   energy off its harmonics, and holds only while the pitch does.
-  `bandlimited_frequency_path` fades each partial out near Nyquist for a
-  pitch that moves, and PolyBLEP corrects a sawtooth's or a square's
-  edges, leaving 0.68 % and 0.73 % at 10,001 Hz and 48 kHz. None of them
-  bounds the sidebands fast modulation makes, which no count of
-  instantaneous harmonics can. `render_oversampled` renders a whole
-  generator at up to sixteen times the rate and filters before
-  decimating: at four times, wide FM's spectral difference from a
-  reference at sixteen falls from 0.119 to 0.0026. It costs five to
-  twelve times the render, rounds a hard gate's edges, and leaves what
-  folds past the higher rate's own Nyquist, and the reference is finite
-  too. A truncated harmonic series overshoots full scale near its edges,
-  so a band-limited note needs headroom when written. Every figure here
-  measures the signal: the listening pairs the tools prepare have not been
-  listened to. `note` and the rest are unchanged, so everything above
-  still holds for them.
+  For a pitch that moves, `bandlimited_frequency_path` fades each partial
+  out near Nyquist; PolyBLEP corrects a sawtooth's or a square's edges,
+  leaving 0.68 % and 0.73 % at 10,001 Hz and 48 kHz; and mipmapped tables
+  leave 1.3e-14 there and 9.3e-9 at 110 Hz, giving up part of the top of
+  the band for it. None of them bounds the sidebands fast modulation
+  makes, which no count of instantaneous harmonics can.
+  `render_oversampled` renders a whole generator at up to sixteen times
+  the rate and decimates through a filter that stops everything from the
+  Nyquist frequency up: at four times a wide FM's folded power falls from
+  -19 dB of its signal to -123 dB, and at two to -119 dB, and the top
+  tenth of the band goes with it. What folds past the higher rate's own Nyquist
+  still folds -- an abrupt gate's falls only from -15 dB to -30 dB at
+  4x, and 6 dB more with each doubling -- and a hard gate's edges are
+  rounded. At 4x it takes about 30 ms a second of mono sound, 15 to 26
+  times a direct render. `tools/attribute_aliasing.py` predicts each of
+  these from the signal's closed-form line spectrum, and the package's
+  renders match the prediction to 0.2 dB. A truncated harmonic series
+  overshoots full scale near its edges, so a band-limited note needs
+  headroom when written. Every figure here measures the signal: the
+  listening pairs the tools prepare have not been listened to, which
+  [#125](https://github.com/ttm/music/issues/125) is for. `note` and the
+  rest are unchanged, so everything above still holds for them.
 
   Worth knowing about the measurement too: it is blind whenever the
   sample rate is a whole multiple of the frequency, since then the folded
@@ -343,8 +350,12 @@ either documented in the code or tracked in the issue list.
   else -- but a carrier near the top of the band swung wide puts sidebands
   past Nyquist, and those come back down too: an 18 kHz carrier swung by
   8 kHz shows partials below 10 kHz, which is the lowest the modulation
-  could legitimately reach. Measured, not fixed; it is the same wavetable
-  read.
+  could legitimately reach. Measured, not fixed by default;
+  `render_oversampled` removes it when asked. Separately, at a deviation
+  of kilohertz `frequency_modulation` puts about -50 dB of its signal
+  elsewhere in the band, because its modulator is read from a table
+  without interpolation; that falls 20 dB with each tenfold smaller
+  deviation, to the -79 dB the carrier's own table leaves.
 
 - **Writing normalizes, so a file's level is not the render's level.**
   `write_wav_mono` runs `normalize_mono` over everything it is given: a
@@ -471,7 +482,7 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 58 %**, and 66 % across the exported API. The
+- **Annotation coverage is 59 %**, and 66 % across the exported API. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones
@@ -480,7 +491,7 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,951 findings** on `music/`, almost all
+- **The extended lint set reports 2,981 findings** on `music/`, almost all
   stylistic: 731 quote-style, 375 missing argument annotations, 80 missing
   return annotations. The configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their

@@ -85,6 +85,8 @@ jobs:
           python tools/benchmark_dynamic_aliasing.py --repeats 2 \
             --fixed-reference-rate 48000 \
             --json dynamic-alias-fixed-hz.json > dynamic-alias-fixed-hz.md
+          python tools/attribute_aliasing.py \
+            --json alias-attribution.json > alias-attribution.md
       - uses: actions/upload-artifact@v7
         with:
           name: dynamic-alias-report
@@ -93,19 +95,21 @@ jobs:
             dynamic-alias-report.md
             dynamic-alias-fixed-hz.json
             dynamic-alias-fixed-hz.md
+            alias-attribution.json
+            alias-attribution.md
 
-      - name: Benchmark discontinuity alias suppression
+      - name: Benchmark the oscillators for a rich wave
         run: |
-          python tools/benchmark_polyblep.py --repeats 2 \
-            --json polyblep-spectrum.json > polyblep-spectrum.md
+          python tools/benchmark_oscillators.py --repeats 2 \
+            --json oscillators.json > oscillators.md
           python tools/prepare_polyblep_listening.py \
             --out polyblep-listening --seed 17
       - uses: actions/upload-artifact@v7
         with:
-          name: polyblep-spectral-benchmark
+          name: oscillator-benchmark
           path: |
-            polyblep-spectrum.json
-            polyblep-spectrum.md
+            oscillators.json
+            oscillators.md
       - uses: actions/upload-artifact@v7
         with:
           name: polyblep-blinded-reviewer

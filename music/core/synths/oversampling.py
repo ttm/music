@@ -63,8 +63,13 @@ def render_oversampled(
 
     Notes
     -----
-    Uses `scipy.signal.resample_poly` and a Kaiser-window low-pass
-    filter, of beta 8.6.
+    Decimates with `scipy.signal.resample_poly` through a Kaiser-window
+    low-pass that is flat to within 0.0001 dB up to 90 % of the output's
+    Nyquist frequency and about 100 dB down from that frequency up. What
+    the render makes above the output's band is removed rather than
+    folded into it, except what folds at the higher rate already; the
+    top tenth of the band is the price. The first and last 64 or so
+    samples are filtered against the silence beyond the render.
     Filtering smooths intentional hard edges; alias suppression and an
     infinitely sharp pulse are incompatible at finite sample rate.
     Always benchmark audio quality and CPU/memory costs for your use case.
@@ -114,7 +119,22 @@ def render_oversampled(
             "exactly number_of_samples on the last axis")
     if not np.isfinite(raw).all():
         raise ValueError("renderer returned non-finite audio samples")
-    # A narrow transition and strong stopband attenuation reduce folding.
-    result = resample_poly(
-        raw, up=1, down=factor, axis=-1, window=("kaiser", 8.6))
+    result = resample_poly(raw, up=1, down=factor, axis=-1,
+                           window=_decimation_filter(factor))
     return np.asarray(result[..., :count], dtype=np.float64)
+
+
+def _decimation_filter(factor: int) -> NDArray[np.float64]:
+    """The low-pass a render at ``factor`` times the rate is decimated by.
+
+    Flat to within 0.0001 dB up to 90 % of the output's Nyquist frequency
+    and about 100 dB down from that frequency up, so that what lies above
+    the output's band is removed, not folded into it. ``resample_poly``'s
+    own filter centres its transition on the Nyquist frequency instead:
+    it passes a line 5 % above it at -10.5 dB, to fold, and takes 1.3 dB
+    from one at 90 %.
+    """
+    from scipy.signal import firwin, kaiserord
+
+    taps, beta = kaiserord(100, 0.1 / factor)
+    return firwin(taps | 1, 0.95 / factor, window=("kaiser", beta))

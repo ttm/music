@@ -5,6 +5,9 @@ A high-rate continuous-time numerical construction is low-pass filtered
 before decimation. The target is the *band-limited* version of the modeled
 signal, not its direct samples. No assumption is made that every legacy
 MUSIC generator is phase-exact relative to that independent construction.
+The reference is decimated through render_oversampled's own filter, so
+that both mean the same band: what the filter removes from the top tenth
+of it is not counted as an error, and attribute_aliasing.py reports it.
 
 Run: python tools/benchmark_dynamic_aliasing.py --json alias-report.json
 """
@@ -16,6 +19,8 @@ import numpy as np
 from scipy.signal import resample_poly
 
 import music
+from music.core.synths.oversampling import _decimation_filter
+from music.utils import WAVEFORM_SINE
 
 CASES = ("fm_wide", "fm_extreme", "nonlinear", "hard_gate")
 RATES = (44100, 48000, 96000)
@@ -60,7 +65,8 @@ def actual_music(case, *, target_rate, sample_rate, number_of_samples):
             modulation_freq=fm, number_of_samples=number_of_samples,
             sample_rate=sample_rate)
     if case == "nonlinear":
-        x = music.note(freq=fc, number_of_samples=number_of_samples,
+        x = music.note(freq=fc, waveform_table=WAVEFORM_SINE,
+                       number_of_samples=number_of_samples,
                        sample_rate=sample_rate)
         return np.tanh(drive * x) / np.tanh(drive)
     return music.isochronic_tones(
@@ -117,7 +123,8 @@ def evaluate(case, rate=48000, count=4096, *,
         case, target_rate=source_rate, sample_rate=rate * reference_factor,
         number_of_samples=count * reference_factor)
     reference = resample_poly(
-        raw_ref, 1, reference_factor, window=("kaiser", 8.6))
+        raw_ref, 1, reference_factor,
+        window=_decimation_filter(reference_factor))
 
     rows = []
     for engine, producer in (("analytic", analytic),

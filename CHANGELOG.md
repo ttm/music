@@ -27,13 +27,20 @@ state unless given a `seed`. `render_oversampled` needs
   FM, glissandi, isochronic gates and waveshaping, whose components are
   made as the sound is rendered. It calls any generator that takes
   `number_of_samples` and `sample_rate` once, at 2 to 16 times the rate
-  and 4 by default, low-passes and decimates with SciPy's `resample_poly`,
-  and returns exactly the samples asked for, mono or channels first, at
-  the level they were rendered. At 48 kHz, against a reference rendered at
-  16 times the rate, 4x brings the spectral difference from 0.119 to
-  0.0026 for wide FM, from 0.335 to 0.016 for a tanh waveshaper and from
-  0.162 to 0.023 for an abrupt gate, in five to twelve times the time. It
-  rounds the gate's edges along with the folding.
+  and 4 by default, and returns exactly the samples asked for, mono or
+  channels first, at the level they were rendered. It decimates with
+  SciPy's `resample_poly` through a low-pass that is flat to 90 % of the
+  Nyquist frequency and about 100 dB down from it up, so what lies above
+  the band is removed rather than folded. SciPy's default filter centres
+  its transition on the Nyquist frequency instead, and passes what lies 5 %
+  above it at -10.5 dB, whatever the factor. At 48 kHz, 4x takes a wide
+  FM's folded power from -19 dB of its signal to -123 dB, where the
+  default filter left -28 dB, and 2x does as well. What folds at the
+  higher rate itself still folds: an abrupt gate's falls from -15 dB
+  direct to -30 dB at 4x, and by 6 dB with each doubling of the factor
+  after that. The top tenth of the band goes with the folding, the gate's
+  edges are rounded, and the filter is most of the cost: a second of mono
+  sound at 48 kHz took about 30 ms at 4x.
 - **Oscillators for a pitch that moves, in `music.core.synths`.**
   `frequency_path.bandlimited_frequency_path` takes one frequency per
   sample and sums a sine, sawtooth, square or triangle partial by partial,
@@ -44,8 +51,14 @@ state unless given a `seed`. `render_oversampled` needs
   harmonics: at 48 kHz and 10,001 Hz it leaves 0.68 % of a sawtooth's
   energy off its harmonics, where a naive one leaves 24 %, and 0.73 % of
   a square's against 19 %. Its `PolyBLEPOscillator` renders in chunks
-  that join to within 1e-8 of one render. Neither module is exported at
-  the top level.
+  that join to within 1e-8 of one render. `mipmap` reads tables of a
+  sawtooth's, square's or triangle's first partials, one for every count
+  to 16 and four to an octave up to 1024, and fades between the two that
+  bracket what fits below the Nyquist frequency. It folds 1e-14 of a
+  sawtooth's energy at 10,001 Hz, and less than 1e-8 at any pitch
+  tried, for up to twice PolyBLEP's time and 1.75 MiB of tables, and
+  gives up part of the top of the band. Its `MipmapOscillator` renders in blocks as
+  PolyBLEP's does. None of the three is exported at the top level.
 - **A stimulus can be written in SSTIM and rendered back from it.**
   `music.stimulation.sstim.to_sstim_graph` describes any of the seven
   stimuli as an SSTIM 0.19.0 stimulus specification, as the call that
@@ -108,13 +121,19 @@ state unless given a `seed`. `render_oversampled` needs
   NumPy's global state is left alone. Without one they draw as they always
   have.
 - **Tools that measure aliasing.** `tools/benchmark_spectral_aliasing.py`
-  measures the energy off a static pitch's harmonics, and the render time,
-  and `tools/benchmark_polyblep.py` the same for PolyBLEP's edges.
+  measures the energy off a static pitch's harmonics, and the render time.
+  `tools/benchmark_oscillators.py` compares a naive oscillator, PolyBLEP,
+  the mipmapped tables and summed partials at five pitches, along a sweep
+  and rendered in blocks against the time each lasts.
   `tools/benchmark_dynamic_aliasing.py` renders FM, a waveshaper and a
   gate directly and at 4x and 8x, against a reference at 16x, at 44.1, 48
-  and 96 kHz, and `tools/compare_stimulation_renderers.py` checks four
-  stimuli against sinusoids written out in NumPy. All of them measure a
-  signal, not what a listener hears.
+  and 96 kHz. `tools/attribute_aliasing.py` predicts, from each signal's
+  line spectrum in closed form, which lines fold, where they land and with
+  what power, and measures the package's renders at exactly those bins.
+  `tools/compare_stimulation_renderers.py` checks four stimuli against
+  sinusoids written out in NumPy. All of them measure a signal, not what
+  a listener hears; [#125](https://github.com/ttm/music/issues/125) is for
+  a listening test.
 - **Tools that prepare listening tests, and run none.**
   `tools/prepare_polyblep_listening.py` and
   `tools/prepare_singing_listening.py` write pairs matched in RMS level,

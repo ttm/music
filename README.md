@@ -192,8 +192,9 @@ swept = music.render_oversampled(music.note_with_fm, duration=1,
 
 The sawtooth that kept 24 % of its energy off its harmonics keeps about
 1e-16. [Band-limited synthesis](https://ttm.github.io/music/bandlimited_synthesis.html)
-has the oscillators for a pitch that moves, by partials or with PolyBLEP,
-and what each is measured to do.
+has the oscillators for a pitch that moves, by partials, with PolyBLEP or
+from mipmapped tables, what each is measured to do, and where the folding
+of FM, gates and waveshaping comes from, line by line.
 
 ### Scales, chords and intervals
 
@@ -483,7 +484,7 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 6,696 tests, 100% line and branch coverage
+pytest                                       # 6,845 tests, 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html

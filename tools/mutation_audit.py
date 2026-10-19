@@ -491,20 +491,24 @@ AREAS = {
         ),
     },
     # Band-limited synthesis: the prefiltered static-pitch table, the
-    # frequency path summed partial by partial, PolyBLEP's corrected edges
-    # and oversampling around a whole generator. Selected from full-suite
-    # per-test coverage.
+    # frequency path summed partial by partial, PolyBLEP's corrected edges,
+    # mipmapped tables and oversampling around a whole generator. Selected
+    # from full-suite per-test coverage.
     'bandlimited': {
         'sources': (
             'music/core/synths/bandlimited.py',
             'music/core/synths/frequency_path.py',
+            'music/core/synths/mipmap.py',
             'music/core/synths/oversampling.py',
             'music/core/synths/polyblep.py',
         ),
         'tests': (
+            'tests/test_alias_attribution.py',
             'tests/test_bandlimited.py',
             'tests/test_bandlimited_audit.py',
             'tests/test_frequency_path.py',
+            'tests/test_mipmap.py',
+            'tests/test_oscillator_benchmark.py',
             'tests/test_oversampling.py',
             'tests/test_polyblep.py',
             'tests/test_legacy_pitch_antialias.py',

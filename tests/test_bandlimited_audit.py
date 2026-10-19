@@ -6,7 +6,8 @@ Fourier coefficient of the frequency path could change, a square could be
 summed with a triangle's coefficients, PolyBLEP's sawtooth could run
 backwards, and each test still passed. These read the samples, against
 references built apart from the code: the waveforms' closed forms,
-PolyBLEP as its authors define it, and SciPy called directly.
+PolyBLEP as its authors define it, SciPy called directly, and sines
+read through the oversampler's filter.
 """
 
 import numpy as np
@@ -241,15 +242,58 @@ def test_a_block_may_be_as_long_as_the_limit(monkeypatch):
 # oversampling
 # --------------------------------------------------------------------------
 
-def test_oversampling_is_scipy_s_filter_around_the_whole_generator():
+def test_oversampling_filters_the_whole_generator_called_once():
     signal = pytest.importorskip("scipy.signal")
+    from music.core.synths.oversampling import _decimation_filter
+
+    calls = []
+
+    def gated(**kwargs):
+        calls.append(dict(kwargs))
+        return music.isochronic_tones(**kwargs)
+
     out = music.render_oversampled(
-        music.isochronic_tones, sample_rate=48000, number_of_samples=960,
+        gated, sample_rate=48000, number_of_samples=960,
         factor=4, carrier_freq=9000, pulse_rate=40)
+    assert calls == [{"number_of_samples": 3840, "sample_rate": 192000,
+                      "carrier_freq": 9000, "pulse_rate": 40}]
     raw = music.isochronic_tones(number_of_samples=3840, sample_rate=192000,
                                  carrier_freq=9000, pulse_rate=40)
-    expected = signal.resample_poly(raw, 1, 4, window=("kaiser", 8.6))[:960]
+    expected = signal.resample_poly(
+        raw, 1, 4, window=_decimation_filter(4))[:960]
     np.testing.assert_array_equal(out, expected)
+
+
+def sine(hz):
+    def render(*, number_of_samples, sample_rate):
+        return np.sin(2 * np.pi * hz * np.arange(number_of_samples)
+                      / sample_rate)
+    return render
+
+
+@pytest.mark.parametrize("factor", (2, 3, 4, 16))
+def test_the_filter_keeps_nine_tenths_of_the_band_and_shuts_the_rest(factor):
+    """Within 1.1e-5 of a sine below 0.9 Nyquist; 99 dB down from it up.
+
+    Read in the middle of a render, beyond the 65 samples at each end
+    that the filter reaches into the silence past it.
+    """
+    pytest.importorskip("scipy")
+    rate, count = 8000, 1200
+    n = np.arange(count)[100:-100]
+    for fraction in (.05, .5, .8, .9):
+        hz = fraction * rate / 2
+        out = music.render_oversampled(sine(hz), sample_rate=rate,
+                                       number_of_samples=count,
+                                       factor=factor)[100:-100]
+        exact = np.sin(2 * np.pi * hz * n / rate)
+        assert np.max(np.abs(out - exact)) < 1.1e-5
+    for fraction in (1, 1.02, 1.5, factor - .02):
+        out = music.render_oversampled(sine(fraction * rate / 2),
+                                       sample_rate=rate,
+                                       number_of_samples=count,
+                                       factor=factor)[100:-100]
+        assert np.max(np.abs(out)) < 10 ** (-99 / 20)
 
 
 def zeros(*, number_of_samples, sample_rate):
@@ -382,8 +426,10 @@ def test_a_single_precision_render_is_filtered_in_double():
                                    sample_rate=48000)
     raw = np.asarray(single(number_of_samples=2000, sample_rate=192000),
                      dtype=np.float64)
+    from music.core.synths.oversampling import _decimation_filter
+
     np.testing.assert_array_equal(out, signal.resample_poly(
-        raw, 1, 4, window=("kaiser", 8.6))[:500])
+        raw, 1, 4, window=_decimation_filter(4))[:500])
 
 
 def test_single_precision_frequencies_are_integrated_in_double():

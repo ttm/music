@@ -306,19 +306,24 @@ def _inline(text):
     changelog quotes expressions such as ``2 ** (bit_depth - 1)``, and a
     bold rule that ran over them would pair those asterisks with the next
     ones outside the span and emit tags that cross.
+
+    They are held out as placeholders, not by cutting the text at them: a
+    headline such as ``**`render_oversampled` renders...**`` is bold
+    around a code span, and cut there neither piece held both of its
+    ``**``. 1.11.0's record showed three headlines with their asterisks.
     """
-    pieces = []
-    for index, part in enumerate(re.split(r"`([^`]+)`", text)):
-        escaped = html.escape(part)
-        if index % 2:  # the captured inside of a code span
-            pieces.append(f"<code>{escaped}</code>")
-            continue
-        escaped = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>",
-                         escaped)
-        pieces.append(
-            re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>',
-                   escaped))
-    return "".join(pieces)
+    spans = []
+
+    def hold(match):
+        spans.append(f"<code>{html.escape(match.group(1))}</code>")
+        return f"\0{len(spans) - 1}\0"
+
+    escaped = html.escape(re.sub(r"`([^`]+)`", hold, text))
+    escaped = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", escaped)
+    escaped = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>',
+                     escaped)
+    return re.sub(r"\0(\d+)\0", lambda match: spans[int(match.group(1))],
+                  escaped)
 
 
 def markdown_to_html(markdown):

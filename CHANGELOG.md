@@ -1,3 +1,15 @@
+## [Unreleased]
+
+### Maintenance
+
+- **The Zenodo record's release notes keep the bold of a headline that
+  opens with code.** The sync converted bold piece by piece between code
+  spans, so a headline that is bold around one, as the one on
+  `render_oversampled` is, reached the record with its asterisks: three
+  of 1.11.0's did, and some of every release's since 1.1.0. Code spans
+  are held out as placeholders now, and a test converts every section of
+  the changelog.
+
 ## [1.11.0] - 2026-10-19
 
 ### Note for anyone upgrading

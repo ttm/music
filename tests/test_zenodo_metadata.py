@@ -196,3 +196,30 @@ def test_the_sync_refuses_to_send_a_summary_that_drops_entries(monkeypatch):
     monkeypatch.setattr(zenodo_sync, "record_version", lambda _: "v1.8.1")
     with pytest.raises(zenodo_sync.SyncError, match="4 changelog entries"):
         zenodo_sync.main([])
+
+
+def test_bold_around_a_code_span_is_bold():
+    from tools.zenodo_sync import _inline
+
+    assert (_inline("**`render_oversampled` renders a generator,** then")
+            == "<strong><code>render_oversampled</code> renders a "
+               "generator,</strong> then")
+
+
+def test_asterisks_inside_a_code_span_stay_asterisks():
+    from tools.zenodo_sync import _inline
+
+    assert (_inline("`2 ** (bit_depth - 1)` and **this** & [a](b)")
+            == "<code>2 ** (bit_depth - 1)</code> and <strong>this</strong>"
+               ' &amp; <a href="b">a</a>')
+
+
+def test_no_headline_reaches_the_record_with_its_asterisks():
+    """1.11.0's record showed three, each bold around a code span."""
+    from tools.zenodo_sync import (changelog_section, markdown_to_html,
+                                   summarise)
+
+    changelog = (ZENODO.parent / "CHANGELOG.md").read_text()
+    for version in re.findall(r"^## \[([^\]]+)\]", changelog, re.MULTILINE):
+        notes = markdown_to_html(summarise(changelog_section(version)))
+        assert "**" not in re.sub(r"<code>.*?</code>", "", notes), version

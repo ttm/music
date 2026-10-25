@@ -6,6 +6,10 @@
 major one.** Each change below was a trap, and each is either a fix or
 says so when it is met:
 
+- `pip install music` no longer installs sympy, termcolor or colorama.
+  The permutation groups and peals need `pip install 'music[structures]'`;
+  an environment that has them keeps them, and every name still imports
+  without them -- building a structure says what to install.
 - `number_of_samples=0` is zero samples. It meant "use `duration`", so
   pass None, the default, for that.
 - `cross_fade` no longer fades the arrays it is given.
@@ -37,16 +41,27 @@ Old names keep working and warn: see **Deprecated**.
   given.** Every file arrived at full scale, so a piece written a phrase
   to a file lost its dynamics, and scaling by hand first was undone by the
   writer. A sound reaching past full scale is refused rather than clipped.
-- **A `play` extra, for `play_audio`.**
+- **A `play` extra, for `play_audio`, and a `structures` extra, for the
+  permutations and peals.**
 
 ### Changed
 
+- **sympy, termcolor and colorama are the `structures` extra.** sympy and
+  the mpmath it needs were about 74 MB of the 114 that `pip install music`
+  installed, for the change-ringing structures alone. The structures
+  import sympy when one is built rather than when their module is, so the
+  names import without it, `from music import *` included, and are no
+  longer deferred behind a module `__getattr__`.
 - **Parameters in milliseconds say so in their names.** `adsr` and
   `adsr_stereo` take `attack_ms`, `decay_ms`, `release_ms` and
   `to_zero_ms`, `cross_fade` takes `duration_ms`, and the writers take
   `fades_ms`, among parameters in seconds: `cross_fade(a, b,
   duration=0.5)` crossfaded over half a millisecond, beside a `fade` whose
   `duration` is seconds.
+- **`print_peal` turns on colour where Windows needs it, and nowhere
+  else.** colorama's `init()` ran when the peals were imported and
+  replaced `sys.stdout` for the whole process with a wrapper that strips
+  colour from anything not sent to a terminal.
 
 ### Fixed
 

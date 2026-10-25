@@ -151,10 +151,14 @@ pip install 'music[sstim]'
 ```
 
 `play_audio` plays a sound through sounddevice, which on Linux needs the
-PortAudio library as well (`sudo apt install libportaudio2`):
+PortAudio library as well (`sudo apt install libportaudio2`). The
+permutation groups and change-ringing peals are built from sympy's, about
+74 MB that most callers never need, so they are an extra too; their names
+import without it, and building one says what to install:
 
 ```console
 pip install 'music[play]'
+pip install 'music[structures]'
 ```
 
 To hack on it, install from a checkout so your edits take effect immediately:
@@ -282,7 +286,8 @@ music.write_wav_stereo(music.localize_hrtf(music.note(duration=2),
 ### Change ringing
 
 Permutation groups and the peals of campanology, acted on any domain you like
-— here on frequencies, so the peal *is* the melody:
+— here on frequencies, so the peal *is* the melody. They need
+`pip install 'music[structures]'`:
 
 ```python
 peal = music.PlainChanges(4)                      # every permutation, once
@@ -450,7 +455,7 @@ The modules are:
   * **filters** for the application of filters such as ADSR envelopes, fades, IIR and FIR, reverb, loudness, and localization, and for designing the coefficients the IIR ones take.
   * **io** for reading, writing and playing audio, both mono and stereo.
   * **functions** for normalization.
-* **structures** for higher level musical structures: permutations and the algebraic groups they form, change-ringing peals, and symmetry.
+* **structures** for higher level musical structures: permutations and the algebraic groups they form, change-ringing peals, and symmetry, built from sympy's, which the `structures` extra installs.
 * **theory** for scales, chords and the harmonic series. Counterpoint, harmonic expansion and modulation are described in the companion paper and are [not there yet](https://github.com/ttm/music/issues/1).
 * **bonds** for tying a note's vibrato and tremolo to its frequency, which is where an arbitrary construction of that kind goes.
 * **legacy** for musical pieces that are rendered with the Music package and might be used as material to make more music.

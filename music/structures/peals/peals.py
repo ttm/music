@@ -2,13 +2,9 @@
 Provides functions for generating and representing peals using permutations.
 """
 
-from sympy.combinatorics import Permutation
-from termcolor import colored
-from colorama import init
 from .base import GenericPeal
+from .._sympy import combinatorics
 from ..permutations import InterestingPermutations
-
-init()
 
 
 def print_peal(peal, hunts=(0, 1)):
@@ -23,10 +19,22 @@ def print_peal(peal, hunts=(0, 1)):
         The indices of hunted elements. Defaults to
         [0, 1].
 
+    Raises
+    ------
+    ImportError
+        If termcolor is not installed: ``pip install 'music[structures]'``.
+
     Notes
     -----
     There are eight colours, so from the ninth bell on they repeat. A
     ninth bell used to raise an ``IndexError`` instead.
+
+    The colours need termcolor, and on an older Windows console colorama,
+    which are imported here rather than with the module. colorama's
+    ``init()`` used to run on import, replacing ``sys.stdout`` for the
+    whole process with a wrapper that strips colour from any output not
+    sent to a terminal; ``just_fix_windows_console()`` turns colour on
+    where Windows needs it and changes nothing anywhere else.
 
 
     Examples
@@ -37,6 +45,14 @@ def print_peal(peal, hunts=(0, 1)):
     1023
     <BLANKLINE>
     """
+    try:
+        from termcolor import colored
+        from colorama import just_fix_windows_console
+    except ModuleNotFoundError as exc:
+        raise ImportError(
+            "print_peal colours its bells with termcolor and colorama: "
+            "pip install 'music[structures]'") from exc
+    just_fix_windows_console()
     colors = 'yellow', 'magenta', 'green', 'red', 'blue', 'white', 'grey', \
         'cyan'
     hcolors = 'on_white', 'on_blue', 'on_red', 'on_grey', 'on_yellow', \
@@ -128,6 +144,7 @@ class Peals(InterestingPermutations, GenericPeal):
                 f"this Peals was built for {self.nelements}; the default "
                 "domain act() builds would not fit it"
             )
+        Permutation = combinatorics().Permutation
         self.peals[peal_name] = [
             Permutation(*pair, size=permutation.size)
             for pair in permutation.transpositions()
@@ -141,6 +158,7 @@ class Peals(InterestingPermutations, GenericPeal):
         as the permutation that reaches each row from rounds rather than
         as the change that gets there from the row before.
         """
+        Permutation = combinatorics().Permutation
         self.peals[peal_name] = [Permutation(list(row)) for row in rows]
         return self.peals[peal_name]
 

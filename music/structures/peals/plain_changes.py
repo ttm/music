@@ -7,8 +7,9 @@ References
        http://www.gutenberg.org/files/18567/18567-h/18567-h.htm
 """
 
-import sympy
 import warnings
+
+from .._sympy import combinatorics
 
 
 class PlainChanges:
@@ -62,10 +63,10 @@ class PlainChanges:
         self.domain = None
         self.acted_peals = None
         hunts = self.initialize_hunts(nelements, nhunts)
-        self.neutral_perm = sympy.combinatorics.Permutation(size=nelements)
-        self.neighbor_swaps = [
-            sympy.combinatorics.Permutation(i, i + 1, size=nelements)
-            for i in range(nelements - 1)]
+        Permutation = combinatorics().Permutation
+        self.neutral_perm = Permutation(size=nelements)
+        self.neighbor_swaps = [Permutation(i, i + 1, size=nelements)
+                               for i in range(nelements - 1)]
         self.domains = []
         self.perform_peal(nelements, dict(hunts))
         self.hunts = hunts

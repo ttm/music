@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-19**,
-`music` 1.11.0: 61 modules, 17,522 LOC package + 27,541 LOC tests, 131 names
+`music` 1.11.0: 62 modules, 17,525 LOC package + 27,573 LOC tests, 131 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -64,8 +64,8 @@ figures described above are automatically compared with the checkout.
 | Type check | `mypy music` | **clean**, 59 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
 | Lint, extended rule set | `ruff check --select ALL music` | 2,980 findings |
-| Annotation coverage | AST scan | **209 / 351 functions (60 %)**; 68 / 102 exported (67 %) |
-| Docstring coverage | AST scan | **236 / 245 public defs (96 %)** |
+| Annotation coverage | AST scan | **208 / 350 functions (59 %)**; 68 / 102 exported (67 %) |
+| Docstring coverage | AST scan | **237 / 246 public defs (96 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **22 of 35 routines sample-exact**; 9 divergent with a stated reason, 4 where the reference does not run |
@@ -103,7 +103,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; Linux CI across Python 3.10–3.14 including a job pinned to the declared lower bounds; installed-wheel checks on Linux, macOS and Windows with Python 3.12 |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 60 %; the `legacy/` subpackage |
+| **Needs work** | Annotation coverage at 59 %; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -482,18 +482,20 @@ either documented in the code or tracked in the issue list.
   tables; issue #3.
 - **matplotlib is an extra**, needed only by `PrimaryTables.draw_tables()`.
   Installing without it makes `import music` about 40 % faster.
-- **sympy is required, but no longer imported at `import music`.** The
-  permutation and change-ringing structures need it and cannot be written
-  without reimplementing a permutation group; two exported signatures take
-  and return sympy `Permutation` objects, so it is part of the public API
-  rather than an implementation detail. It is now reached through a
-  module-level `__getattr__`, so only callers who touch those structures
-  pay the roughly 400 ms it costs to import. It remains the largest single
-  dependency at 73 MB.
+- **The structures need sympy, which is an extra.** The permutation and
+  change-ringing structures cannot be written without reimplementing a
+  permutation group, and two exported signatures take and return sympy
+  `Permutation` objects, so it is part of their API rather than an
+  implementation detail. But it is the largest dependency, about 74 MB
+  with its mpmath, and most callers never touch a peal, so
+  `pip install 'music[structures]'` installs it, with termcolor and
+  colorama for `print_peal`. The structures import it when one is built,
+  so every name imports without it, `from music import *` included, and
+  building one says what to install.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 60 %**, and 67 % across the exported API. The
+- **Annotation coverage is 59 %**, and 67 % across the exported API. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones
@@ -547,6 +549,10 @@ worse than the code.
 - **Names could not be retired.** Second names such as `mix2` were kept
   bound with nothing telling their callers to move. They warn now, and
   CONTRIBUTING.md says when one may go.
+- **`pip install music` installed a computer algebra system,** and
+  importing the peals replaced `sys.stdout` for the whole process. sympy
+  is the `structures` extra, and `print_peal` changes nothing outside
+  Windows.
 
 - **Three parameter combinations escaped the 1.8.0 suite.** The
   September 2026 review found shared stereo normalization exceeding full

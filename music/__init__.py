@@ -2,7 +2,6 @@
 
 from importlib.metadata import (PackageNotFoundError as _NotFound,
                                 version as _version)
-from typing import TYPE_CHECKING as _TYPE_CHECKING, Any as _Any
 
 try:
     __version__ = _version("music")
@@ -114,68 +113,15 @@ from .theory import (CHORDS, CONSONANCE, DIATONIC_STEPS,
                      interval_between, interval_names, invert,
                      mode_by_rotation, scale)
 
-# The permutation and change-ringing structures are reached through
-# ``__getattr__`` rather than imported here, because importing them means
-# importing sympy, and importing sympy means importing the computer algebra
-# system it sits on -- ``sympy.polys`` and the rest. That cost about half of
-# ``import music`` (roughly 550-830 ms down to 225-320 ms measured warm on
-# 3.12) and was paid by everyone, including the majority of callers who only
-# synthesize sound and never touch a peal.
-#
-# Nothing about the API changes: ``music.Peals``, ``from music import Peals``
-# and ``help(music.Peals)`` all work, and sympy loads on the first of them.
-# ``music.structures`` can still be imported directly for the eager path.
-#
-# This is the same bargain matplotlib already gets here, one layer up: an
-# expensive dependency that a minority of the package needs should be paid
-# for by the callers who need it.
-_LAZY_STRUCTURES = frozenset({
-    'dist',
-    'GenericPeal',
-    'InterestingPermutations',
-    'Peals',
-    'PlainChanges',
-    'print_peal',
-    'transpose_permutation',
-})
-
-if _TYPE_CHECKING:  # pragma: no cover - for type checkers and IDEs only
-    from .structures import (  # noqa: F401
-        dist,
-        GenericPeal,
-        InterestingPermutations,
-        Peals,
-        PlainChanges,
-        print_peal,
-        transpose_permutation,
-    )
-
-
-def __getattr__(name: str) -> _Any:
-    """Resolve the structures exports on first use.
-
-    PEP 562. Anything not deferred raises ``AttributeError`` as it would
-    have without this hook, so a typo still fails the way a reader expects
-    rather than reporting an import error from somewhere else.
-    """
-    if name in _LAZY_STRUCTURES:
-        from . import structures
-        return getattr(structures, name)
-    if name == 'structures':
-        # `music.structures` used to be bound as a side effect of
-        # importing the names above. Deferring that import took the
-        # submodule attribute with it, and `music.structures.peals`
-        # stopped resolving -- which the examples use and the tests did
-        # not cover.
-        import importlib
-        return importlib.import_module('.structures', __name__)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-def __dir__() -> list[str]:
-    """Keep the deferred names visible to ``dir()`` and to tab completion."""
-    return sorted(set(globals()) | _LAZY_STRUCTURES | {'structures'})
-
+# The permutation and change-ringing structures are built from sympy's
+# permutation groups, which the `structures` extra installs. They import it
+# when a structure is built rather than when they are imported, so these
+# names cost nothing at `import music` -- sympy was about half of it -- and
+# stay importable without it, `from music import *` included; building one
+# without sympy says what to install. They were deferred behind a module
+# `__getattr__` for the import cost alone, which this made unnecessary.
+from .structures import (dist, GenericPeal, InterestingPermutations, Peals,
+                         PlainChanges, print_peal, transpose_permutation)
 
 __all__ = [
     'Bonds',

@@ -1,7 +1,6 @@
 """What the `music.structures` mutation audit found untested or wrong."""
 
 import functools
-from importlib import import_module
 import itertools
 import re
 import warnings
@@ -418,8 +417,7 @@ _BACKGROUNDS = ("on_white", "on_blue", "on_red", "on_grey", "on_yellow",
 
 
 def test_a_peal_prints_one_row_a_line_without_colour(monkeypatch, capsys):
-    module = import_module("music.structures.peals.peals")
-    monkeypatch.setattr(module, "colored",
+    monkeypatch.setattr(termcolor, "colored",
                         functools.partial(termcolor.colored, no_color=True))
     music.print_peal([[0, 1, 2, 3], [1, 0, 2, 3]])
     assert capsys.readouterr().out == "0123\n1023\n\n"
@@ -430,9 +428,8 @@ def test_each_bell_has_its_colour_and_a_hunt_its_background(monkeypatch,
     """Bell i is drawn in the i-th colour, bold on white; a hunt is not
     bold, and has the i-th background counted from the end. The colours
     repeat from the ninth bell."""
-    module = import_module("music.structures.peals.peals")
     forced = functools.partial(termcolor.colored, force_color=True)
-    monkeypatch.setattr(module, "colored", forced)
+    monkeypatch.setattr(termcolor, "colored", forced)
     row = list(range(10))
     # Every background once: 9 takes the second's, 1 and 8 are not hunts.
     hunts = (0, 2, 3, 4, 5, 6, 7, 9)

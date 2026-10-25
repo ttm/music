@@ -11,16 +11,17 @@ license-files = ['LICENSE']
 readme = 'README.md'
 requires-python = '>=3.10'
 dependencies = [
-    'colorama >= 0.4.6',
     'numpy >= 1.26.4',
     'soundfile >= 0.12.1',
-    'sympy >= 1.12',
-    'termcolor >= 2.4.0',
 ]
 optional-dependencies = { plot = [
     'matplotlib >= 3.7.1',
 ], play = [
     'sounddevice >= 0.4.6',
+], structures = [
+    'colorama >= 0.4.6',
+    'sympy >= 1.12',
+    'termcolor >= 2.4.0',
 ], singing = [
     'praat-parselmouth >= 0.4.3',
 ], antialias = [
@@ -29,6 +30,8 @@ optional-dependencies = { plot = [
     'rdflib >= 7.0',
     'sstim >= 0.2.0, < 0.3',
 ], dev = [
+    # The suite tests the structures, which need the extra's sympy.
+    'music[structures]',
     'pytest >= 8.2',
     'pytest-cov >= 5.0',
     'mypy >= 2.0',

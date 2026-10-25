@@ -26,9 +26,7 @@ To work with interesting permutations:
 12
 
 """
-from sympy.combinatorics import Permutation
-from sympy.combinatorics.named_groups import AlternatingGroup
-import sympy
+from ._sympy import combinatorics
 
 
 class InterestingPermutations:
@@ -107,7 +105,7 @@ class InterestingPermutations:
         self.vertex_mirrors = None
         self.edge_mirrors = None
         self.nelements = nelements
-        self.neutral_perm = Permutation(size=nelements)
+        self.neutral_perm = combinatorics().Permutation(size=nelements)
         self.method = method
         self.get_rotations()
         self.get_mirrors()
@@ -124,11 +122,12 @@ class InterestingPermutations:
         # sympy builds the alternating group of two elements on one point,
         # so its rounds matched nothing in the dihedral group and was
         # counted outside it. Rounds is the one even permutation of two.
+        groups = combinatorics()
         if self.nelements > 2:
-            self.alternations = list(AlternatingGroup(self.nelements).
-                                     generate(method=self.method))
+            self.alternations = list(groups.named_groups.AlternatingGroup(
+                self.nelements).generate(method=self.method))
         else:
-            self.alternations = [Permutation([0, 1])]
+            self.alternations = [groups.Permutation([0, 1])]
         self.alternations_complement = [i for i in self.alternations
                                         if i not in self.dihedral]
         length_max = self.nelements
@@ -149,7 +148,7 @@ class InterestingPermutations:
         This method generates rotations of permutations of the specified size
         using the provided generation method.
         """
-        self.rotations = list(sympy.combinatorics.named_groups.
+        self.rotations = list(combinatorics().named_groups.
                               CyclicGroup(self.nelements).
                               generate(method=self.method))
 
@@ -162,12 +161,14 @@ class InterestingPermutations:
         # sympy builds the dihedral group of two elements on four points,
         # as the Klein four-group, rather than on two, so the pair is
         # written out: rounds and the swap.
+        groups = combinatorics()
         if self.nelements > 2:
-            self.dihedral = list(sympy.combinatorics.named_groups.
+            self.dihedral = list(groups.named_groups.
                                  DihedralGroup(self.nelements).
                                  generate(method=self.method))
         else:
-            self.dihedral = [Permutation([0, 1]), Permutation([1, 0])]
+            self.dihedral = [groups.Permutation([0, 1]),
+                             groups.Permutation([1, 0])]
         self.mirrors = [i for i in self.dihedral if i not in self.rotations]
         # even elements have edge and vertex mirrors
         if self.nelements % 2 == 0:
@@ -188,7 +189,7 @@ class InterestingPermutations:
                             key=lambda x: -x.rank())
         self.swaps_as_comes = self.permutations_by_sizes[0]
         self.swaps_by_stepsizes = []
-        self.neighbor_swaps = [sympy.combinatorics.
+        self.neighbor_swaps = [combinatorics().
                                Permutation(i, i + 1, size=self.nelements)
                                for i in range(self.nelements - 1)]
         dist_ = 1
@@ -256,7 +257,7 @@ class InterestingPermutations:
         This method generates permutations with full symmetry of the specified
         size using the provided generation method.
         """
-        self.permutations = list(sympy.combinatorics.named_groups.
+        self.permutations = list(combinatorics().named_groups.
                                  SymmetricGroup(self.nelements).
                                  generate(method=self.method))
         # sympy.combinatorics.generators.symmetric(self.nelements)
@@ -378,4 +379,4 @@ def transpose_permutation(permutation, step=1):
               for cycle in permutation.cyclic_form]
     # sympy grows the size to fit the highest point, and keeps this one
     # when the shifted points fit inside it.
-    return sympy.combinatorics.Permutation(cycles, size=permutation.size)
+    return combinatorics().Permutation(cycles, size=permutation.size)

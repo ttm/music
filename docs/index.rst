@@ -121,11 +121,14 @@ RDFLib and SSTIM's own validator:
    pip install 'music[sstim]'
 
 :func:`music.play_audio` plays through sounddevice, which on Linux needs the
-PortAudio library as well:
+PortAudio library as well. The permutation groups and change-ringing peals
+are built from sympy's, about 74 MB most callers never need; their names
+import without it, and building one says what to install:
 
 .. code-block:: console
 
    pip install 'music[play]'
+   pip install 'music[structures]'
 
 Where things live
 -----------------

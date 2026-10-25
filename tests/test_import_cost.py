@@ -1,23 +1,36 @@
-"""What `import music` is allowed to cost.
+"""What `import music` is allowed to cost, and what it needs installed.
 
 Importing the package should not import a computer algebra system. The
-permutation and change-ringing structures need sympy, and importing
-`sympy.combinatorics` runs `sympy/__init__.py` first, which pulls in
-`sympy.polys` and the rest -- about half of `import music`, paid by every
-caller including the majority who only synthesize sound.
+permutation and change-ringing structures are built from sympy's
+permutation groups, and importing `sympy.combinatorics` runs
+`sympy/__init__.py` first, which pulls in `sympy.polys` and the rest --
+about half of `import music`, paid by every caller including the majority
+who only synthesize sound.
 
-`music/__init__.py` defers those exports behind PEP 562 `__getattr__`.
-That is easy to undo by accident: one `from .structures import ...`
-added at the top of any eagerly imported module puts the cost straight
-back, with nothing failing. These tests are the thing that fails.
+So sympy is the `structures` extra, and the structures import it when one
+is built rather than when their modules are imported. That is easy to
+undo by accident: one `from sympy ...` at the top of a structures module
+puts the cost straight back, and breaks `import music` wherever the extra
+is not installed, with nothing failing here but these tests.
 """
 
+import builtins
 import subprocess
 import sys
 
 import pytest
 
 import music
+from music.structures import _sympy
+
+#: The names the structures export, which have to resolve with or without
+#: sympy installed.
+STRUCTURES = ('dist', 'GenericPeal', 'InterestingPermutations', 'Peals',
+              'PlainChanges', 'print_peal', 'transpose_permutation')
+
+#: Python, started with sympy unimportable: what `pip install music`
+#: without the extra gives.
+WITHOUT_SYMPY = "import sys; sys.modules['sympy'] = None; "
 
 
 def run(code):
@@ -33,75 +46,97 @@ def test_importing_music_does_not_import_sympy():
     assert run("import sys, music; print('sympy' in sys.modules)") == "False"
 
 
-def test_touching_a_structure_imports_sympy():
+def test_reaching_a_structure_does_not_import_sympy_either():
+    """The names, the module that holds them, and `from music import`:
+    none of them is a structure being built."""
+    assert run("import sys, music; from music import Peals, dist; "
+               "music.structures.peals.PlainChanges; "
+               "print('sympy' in sys.modules)") == "False"
+
+
+def test_building_a_structure_is_what_imports_sympy():
     """The other half of the bargain: deferred, not removed."""
-    assert run("import sys, music; music.Peals; "
+    assert run("import sys, music; music.PlainChanges(4); "
                "print('sympy' in sys.modules)") == "True"
 
 
-@pytest.mark.parametrize("name", sorted(music._LAZY_STRUCTURES))
-def test_every_deferred_name_resolves(name):
+@pytest.mark.parametrize("name", STRUCTURES)
+def test_every_structure_is_exported(name):
+    assert name in music.__all__
     assert getattr(music, name) is not None
 
 
-def test_from_import_reaches_the_deferred_names():
-    """`from music import Peals` goes through __getattr__ too, and a
-    reader would not expect it to behave differently from an attribute."""
-    assert run("from music import Peals, dist; print(Peals.__name__)") \
-        == "Peals"
+def test_without_sympy_every_name_still_imports():
+    """`from music import *` is how the docstrings are written to be read,
+    so an install without the extra must still be able to do it."""
+    assert run(WITHOUT_SYMPY + "from music import *; "
+               "print(Peals.__name__, PlainChanges.__name__)") \
+        == "Peals PlainChanges"
+
+
+def test_without_sympy_building_a_structure_says_what_to_install():
+    assert "music[structures]" in run(
+        WITHOUT_SYMPY + "import music\n"
+        "try:\n    music.PlainChanges(4)\n"
+        "except ImportError as exc:\n    print(exc)")
+
+
+def test_the_install_hint_is_given_in_this_process_too(monkeypatch):
+    """The subprocess tests above run where coverage cannot see them."""
+    for name in [name for name in sys.modules
+                 if name.startswith('sympy.')]:
+        monkeypatch.delitem(sys.modules, name)
+    monkeypatch.setitem(sys.modules, 'sympy', None)
+    with pytest.raises(ImportError, match=r"music\[structures\]"):
+        _sympy.combinatorics()
+
+
+def test_a_sympy_that_is_there_and_broken_is_not_reported_as_missing(
+        monkeypatch):
+    """Installing sympy would not fix a sympy missing one of its own
+    dependencies, so that failure is raised as it is."""
+    real_import = builtins.__import__
+
+    def broken(name, *args, **kwargs):
+        if name.startswith('sympy'):
+            raise ModuleNotFoundError("No module named 'mpmath'",
+                                      name='mpmath')
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, '__import__', broken)
+    with pytest.raises(ModuleNotFoundError, match='mpmath'):
+        _sympy.combinatorics()
+
+
+def test_print_peal_says_what_to_install_without_its_colours(monkeypatch):
+    monkeypatch.setitem(sys.modules, 'termcolor', None)
+    with pytest.raises(ImportError, match=r"music\[structures\]"):
+        music.print_peal([[0, 1]])
+
+
+def test_printing_a_peal_leaves_standard_output_alone():
+    """colorama's `init()` used to run on import and replace
+    `sys.stdout` for the whole process with a wrapper that strips colour
+    from anything not sent to a terminal."""
+    assert run("import sys, music; before = sys.stdout; "
+               "music.print_peal([[0, 1]]); "
+               "print(sys.stdout is before)").splitlines()[-1] == "True"
 
 
 def test_a_name_that_does_not_exist_still_raises_attribute_error():
-    """A typo must fail as a missing attribute, not as an import error
-    from somewhere the caller has never heard of."""
     with pytest.raises(AttributeError, match="no attribute 'nonesuch'"):
         music.nonesuch
 
 
-def test_dir_still_lists_the_deferred_names():
+def test_dir_lists_the_structures():
     """Otherwise tab completion quietly loses half the structures API."""
     listed = dir(music)
-    assert music._LAZY_STRUCTURES <= set(listed)
-    assert "note" in listed
-    assert listed == sorted(listed)
+    assert set(STRUCTURES) <= set(listed)
+    assert 'structures' in listed
 
 
-def test_the_structures_submodule_still_resolves_as_an_attribute():
-    """Regression: `music.structures` was bound as a side effect of the
-    eager `from .structures import ...`. Deferring that import took the
-    attribute with it, so `music.structures.peals.PlainChanges` -- which
-    three of the examples use -- raised AttributeError. Nothing in the
-    suite touched it, and CI does not run the examples.
-    """
+def test_the_structures_submodule_resolves_as_an_attribute():
+    """`music.structures.peals.PlainChanges` is how three of the examples
+    reach it."""
     assert run("import music; print(music.structures.__name__)") \
         == "music.structures"
-
-
-def test_the_submodule_hook_runs_even_once_something_has_imported_it():
-    """The subprocess tests above prove the behaviour but run in another
-    interpreter, where coverage cannot see the hook. Once anything has
-    imported the submodule it is cached in the module dict and
-    `__getattr__` is never consulted again, so it is removed and put
-    back to exercise the path in this process.
-    """
-    cached = music.__dict__.pop('structures', None)
-    try:
-        assert music.structures.__name__ == 'music.structures'
-    finally:
-        if cached is not None:
-            music.__dict__['structures'] = cached
-
-
-def test_reaching_the_submodule_is_what_pulls_sympy_in():
-    """It is lazy in the same way the names are, not eager again."""
-    assert run("import sys, music; music.structures; "
-               "print('sympy' in sys.modules)") == "True"
-
-
-def test_a_submodule_that_does_not_exist_still_raises_attribute_error():
-    with pytest.raises(AttributeError, match="no attribute 'sctructures'"):
-        music.sctructures
-
-
-def test_dir_lists_the_structures_submodule_too():
-    assert 'structures' in dir(music)

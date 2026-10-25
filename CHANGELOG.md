@@ -9,6 +9,8 @@ says so when it is met:
 - `number_of_samples=0` is zero samples. It meant "use `duration`", so
   pass None, the default, for that.
 - `cross_fade` no longer fades the arrays it is given.
+- `read_audio` warns when a file's rate is not the default and the rate
+  was not asked for.
 
 Old names keep working and warn: see **Deprecated**.
 
@@ -24,6 +26,11 @@ Old names keep working and warn: see **Deprecated**.
   and `with set_sample_rate(48000):` for a block. A `Sequencer`, a
   `StimulationSession` and the oscillators keep the rate in effect when
   they are made, and `sing` resamples its line to it.
+- **`read_audio(path, return_sample_rate=True)` returns the file's rate.**
+  It returned the samples alone, so a 48 kHz file read and written back
+  came out at 44.1 kHz, 9 % long and a semitone and a half flat, and
+  nothing said so. Without the rate it now warns when the file's is not
+  the default.
 
 ### Changed
 

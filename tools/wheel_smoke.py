@@ -70,11 +70,14 @@ def smoke(target: Path, version: str) -> None:
                 path = Path(f'fade-{sample_rate}-{stereo}.{extension}')
                 music.write_audio(signal, str(path), sample_rate=sample_rate,
                                   fades_ms=np.array([100, 150]))
-                restored = music.read_audio(str(path))
+                restored, rate = music.read_audio(str(path),
+                                                  return_sample_rate=True)
                 _require(restored.shape == signal.shape,
                          f'{path}: writing changed the signal shape')
                 _require(sf.info(str(path)).samplerate == sample_rate,
                          f'{path}: wrong output sample rate')
+                _require(rate == sample_rate,
+                         f'{path}: read_audio reports the wrong rate')
                 channel = restored[0] if stereo else restored
                 full = np.flatnonzero(np.abs(channel) > 0.9999)
                 _require(full.size > 0, f'{path}: no full-level plateau')

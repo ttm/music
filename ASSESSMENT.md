@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-19**,
-`music` 1.11.0: 61 modules, 17,404 LOC package + 27,412 LOC tests, 131 names
+`music` 1.11.0: 61 modules, 17,437 LOC package + 27,463 LOC tests, 131 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -64,8 +64,8 @@ figures described above are automatically compared with the checkout.
 | Type check | `mypy music` | **clean**, 59 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
 | Lint, extended rule set | `ruff check --select ALL music` | 2,980 findings |
-| Annotation coverage | AST scan | **207 / 348 functions (59 %)**; 67 / 100 exported (67 %) |
-| Docstring coverage | AST scan | **236 / 243 public defs (97 %)** |
+| Annotation coverage | AST scan | **208 / 350 functions (59 %)**; 68 / 102 exported (67 %) |
+| Docstring coverage | AST scan | **236 / 245 public defs (96 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **22 of 35 routines sample-exact**; 9 divergent with a stated reason, 4 where the reference does not run |
@@ -529,6 +529,10 @@ worse than the code.
   defaults to the rate `get_sample_rate` returns, which `set_sample_rate`
   changes, and `tests/test_sample_rate.py` holds every export to it and
   refuses a routine that declares a rate of its own.
+- **`read_audio` lost a file's rate.** A 48 kHz file read and written back
+  came out at 44.1 kHz, 9 % long and a semitone and a half flat. It gives
+  the rate when asked, and warns when a file's differs from the default
+  and was not asked for.
 - **A count of zero samples was two seconds of sound,** in every routine
   that takes one, while a zero duration was nothing. Zero is zero now.
 - **`cross_fade` faded the arrays it was given,** the one routine that

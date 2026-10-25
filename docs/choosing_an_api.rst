@@ -45,7 +45,8 @@ specialized routines when an experiment requires them.
    * - Read or write files
      - :func:`music.read_audio`, :func:`music.write_audio`
      - Writers normalize levels; preserve mix relationships by writing
-       once rather than normalizing every phrase separately.
+       once rather than normalizing every phrase separately. Ask
+       ``read_audio`` for a file's rate with ``return_sample_rate=True``.
 
 Changing pitch, nonlinear effects and hard gates
 ------------------------------------------------

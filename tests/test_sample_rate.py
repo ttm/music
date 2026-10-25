@@ -186,6 +186,20 @@ def test_a_description_is_written_at_the_rate_the_stimulus_would_render():
     assert from_sstim_graph(graph).sample_rate == 48000
 
 
+def test_a_file_read_at_its_rate_and_written_at_it_is_unchanged(tmp_path):
+    """The round trip that came back 9 % long and a semitone and a half
+    flat: a 48 kHz file, read without its rate and written back."""
+    path, again = tmp_path / "in.wav", tmp_path / "out.wav"
+    with music.set_sample_rate(48000):
+        music.write_wav_mono(music.note(440, 1), str(path))
+    samples, rate = music.read_audio(str(path), return_sample_rate=True)
+    with music.set_sample_rate(rate):
+        music.write_wav_mono(samples, str(again))
+    back, back_rate = music.read_audio(str(again), return_sample_rate=True)
+    assert back_rate == 48000
+    np.testing.assert_allclose(back, samples, atol=2 ** -15)
+
+
 # ---------------------------------------------------------------------
 # Singing, which both backends render at 44,100 Hz
 # ---------------------------------------------------------------------

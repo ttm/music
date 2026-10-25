@@ -2,13 +2,14 @@
 
 import logging
 import pathlib
-from typing import Any, Sequence
+import warnings
+from typing import Any, Literal, Sequence, overload
 
 import numpy as np
 import soundfile as sf
 from numpy.typing import ArrayLike, NDArray
 from .._deprecation import alias, renamed_arguments
-from .._rate import resolve_rate
+from .._rate import get_sample_rate, resolve_rate
 from .functions import normalize_mono, normalize_stereo
 from .filters.adsr import adsr, adsr_stereo
 
@@ -112,7 +113,14 @@ def _quantize(samples: NDArray[np.float64], bit_depth: int) -> NDArray[Any]:
     return scaled.astype(np.int16 if bit_depth <= 16 else np.int32)
 
 
-def read_audio(filename: str) -> NDArray[np.float64]:
+@overload
+def read_audio(filename: str,
+               return_sample_rate: Literal[False] = False
+               ) -> NDArray[np.float64]: ...
+@overload
+def read_audio(filename: str, return_sample_rate: Literal[True]
+               ) -> tuple[NDArray[np.float64], int]: ...
+def read_audio(filename, return_sample_rate=False):
     """Read an audio file and return an array of its values.
 
     Parameters
@@ -120,6 +128,8 @@ def read_audio(filename: str) -> NDArray[np.float64]:
     filename : string
         The path to read. WAV and FLAC are understood; the container is
         whatever the file says it is, not what the extension claims.
+    return_sample_rate : boolean
+        Return the file's sample rate as well, as ``(samples, rate)``.
 
     Returns
     -------
@@ -127,6 +137,8 @@ def read_audio(filename: str) -> NDArray[np.float64]:
         The samples in [-1, 1], mono as ``(nsamples,)`` and stereo as
         ``(2, nsamples)``. Integer PCM is divided by its own full scale;
         a float WAV declares none, so it is scaled by its own peak.
+    int
+        The file's sample rate, only with ``return_sample_rate=True``.
 
     Raises
     ------
@@ -137,11 +149,23 @@ def read_audio(filename: str) -> NDArray[np.float64]:
         the normalization is defined against, so being decodable is not
         the same as being supported.
 
+    Warns
+    -----
+    UserWarning
+        If the file's rate is not :func:`music.get_sample_rate`'s and was
+        not asked for. Every routine that is not told otherwise works at
+        that rate, so a 48 kHz file read without its rate and written back
+        came out at 44.1 kHz, a semitone and a half flat and 9 % long, and
+        nothing said so. Ask for the rate, or set it, and the warning goes.
+
     Examples
     --------
     >>> write_audio(note(freq=440, duration=0.5), "tone.flac")
     >>> read_audio("tone.flac").shape      # any format libsndfile reads
     (22050,)
+    >>> samples, rate = read_audio("tone.flac", return_sample_rate=True)
+    >>> rate
+    44100
     """
     with sf.SoundFile(str(filename)) as handle:
         subtype = handle.subtype
@@ -152,6 +176,7 @@ def read_audio(filename: str) -> NDArray[np.float64]:
         # way to float, which is the normalization this function used to do
         # by hand, and it does it for 24-bit too.
         data = handle.read(dtype="float64")
+        sample_rate = int(handle.samplerate)
 
     if subtype in ("FLOAT", "DOUBLE"):
         # A float WAV declares no full scale, so it is scaled by its own
@@ -159,9 +184,17 @@ def read_audio(filename: str) -> NDArray[np.float64]:
         peak = float(np.max(np.abs(data))) if data.size else 0.0
         data = data / peak if peak else data
 
-    if data.ndim == 2:
-        return np.ascontiguousarray(data.T)
-    return data
+    samples = np.ascontiguousarray(data.T) if data.ndim == 2 else data
+    if return_sample_rate:
+        return samples, sample_rate
+    if sample_rate != get_sample_rate():
+        warnings.warn(
+            f"{filename} is at {sample_rate} Hz, and routines not told "
+            f"otherwise work at {get_sample_rate()} Hz, so this sound would "
+            f"come back at the wrong pitch and length: read it with "
+            f"return_sample_rate=True, or set_sample_rate({sample_rate})",
+            stacklevel=2)
+    return samples
 
 
 def write_wav_mono(

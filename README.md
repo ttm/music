@@ -171,7 +171,12 @@ a `with` statement for one block; a rate given to a routine still wins:
 music.set_sample_rate(48000)
 with music.set_sample_rate(96000):
     high = music.note(440, duration=1)    # 96,000 samples
+samples, rate = music.read_audio("in.wav", return_sample_rate=True)
 ```
+
+`read_audio` gives a file's rate when asked, and warns when the file is at
+a rate other than the default and you did not ask, since played back at
+the default it would be at the wrong pitch.
 
 ### Notes and envelopes
 

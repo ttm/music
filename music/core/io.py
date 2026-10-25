@@ -517,10 +517,21 @@ def play_audio(
         If ``True`` (default), normalize ``sonic_vector`` before playback using
         :func:`normalize_mono` or :func:`normalize_stereo`.
 
+    Raises
+    ------
+    ImportError
+        If sounddevice is not installed: ``pip install 'music[play]'``.
+    RuntimeError
+        If it is, but cannot find the PortAudio library it plays through,
+        which Linux distributions package separately.
+
     Notes
     -----
-    If the ``sounddevice`` module is not installed, this function logs a
-    warning and returns without playing anything.
+    This used to log a warning and return when sounddevice was missing,
+    which no extra declared and no install instruction named, so on a
+    fresh install the routine the README offers for listening played
+    nothing and went on. It now says what to install, as
+    :func:`render_oversampled` does for SciPy.
 
     Examples
     --------
@@ -529,9 +540,17 @@ def play_audio(
     sample_rate = resolve_rate(sample_rate)
     try:
         import sounddevice as sd  # type: ignore
-    except Exception:  # pragma: no cover - fallback when sounddevice missing
-        logging.warning("sounddevice module not available; cannot play audio")
-        return
+    except ImportError as exc:
+        raise ImportError(
+            "play_audio needs sounddevice; pip install 'music[play]'"
+        ) from exc
+    except OSError as exc:
+        # sounddevice loads PortAudio as it is imported, and says so with
+        # an OSError when the library is not there.
+        raise RuntimeError(
+            f"play_audio needs the PortAudio library, which sounddevice "
+            f"could not load ({exc}); on Debian and Ubuntu, "
+            f"sudo apt install libportaudio2") from exc
 
     data = np.array(sonic_vector, dtype=np.float64)
 

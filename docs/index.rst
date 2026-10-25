@@ -120,6 +120,13 @@ RDFLib and SSTIM's own validator:
    pip install 'music[antialias]'
    pip install 'music[sstim]'
 
+:func:`music.play_audio` plays through sounddevice, which on Linux needs the
+PortAudio library as well:
+
+.. code-block:: console
+
+   pip install 'music[play]'
+
 Where things live
 -----------------
 

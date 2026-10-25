@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-19**,
-`music` 1.11.0: 61 modules, 17,503 LOC package + 27,522 LOC tests, 131 names
+`music` 1.11.0: 61 modules, 17,522 LOC package + 27,541 LOC tests, 131 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -538,8 +538,9 @@ worse than the code.
 - **A count of zero samples was two seconds of sound,** in every routine
   that takes one, while a zero duration was nothing. Zero is zero now.
 - **`cross_fade` faded the arrays it was given,** the one routine that
-  changed its inputs, and **`adsr` refused a stereo sound** with a numpy
-  broadcast error. Both fixed, and tested.
+  changed its inputs; **`adsr` refused a stereo sound** with a numpy
+  broadcast error; and **`play_audio` played nothing, silently,** without
+  sounddevice, which no extra declared. All three fixed, and tested.
 - **Parameters in milliseconds were named like the ones in seconds,** so
   `cross_fade(a, b, duration=0.5)` crossfaded over half a millisecond. They
   end in `_ms`, and the old names still work and warn.

@@ -215,7 +215,7 @@ jobs:
           # The extras' floors too. They were installed at their newest,
           # which said nothing about the versions pyproject names.
           pip install pytest pytest-cov 'scipy==1.11.1' 'rdflib==7.0.0' \
-                      'sstim==0.2.0'
+                      'sstim==0.2.0' 'sounddevice==0.4.6'
           pip install --no-deps -e .
       - name: Test
         run: pytest -q

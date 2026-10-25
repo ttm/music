@@ -91,7 +91,8 @@ with the equation it implements and the article it comes from.
   [eCantorix](https://github.com/ttm/ecantorix) engine sings the same score
   as a second backend, kept as the reference, and both sing its tremolo,
   melted and flite voices.
-* **`play_audio`** to listen to a result without saving a file.
+* **`play_audio`** to listen to a result without saving a file, with the
+  `play` extra.
 
 Music can be used alone or with other packages, and it is well suited to the
 audiovisualization of data. It works with
@@ -120,8 +121,8 @@ Requires Python 3.10 or newer. Everything needed to synthesise, filter and
 write audio comes with it; the dependencies are declared in
 [pyproject.toml](https://github.com/ttm/music/blob/master/pyproject.toml).
 
-Two things are optional. `PrimaryTables.draw_tables()`, which plots the
-waveform tables so you can look at them, needs matplotlib:
+The rest is optional, an extra at a time. `PrimaryTables.draw_tables()`,
+which plots the waveform tables so you can look at them, needs matplotlib:
 
 ```console
 pip install 'music[plot]'
@@ -147,6 +148,13 @@ descriptions needs RDFLib and SSTIM's own validator:
 ```console
 pip install 'music[antialias]'
 pip install 'music[sstim]'
+```
+
+`play_audio` plays a sound through sounddevice, which on Linux needs the
+PortAudio library as well (`sudo apt install libportaudio2`):
+
+```console
+pip install 'music[play]'
 ```
 
 To hack on it, install from a checkout so your edits take effect immediately:

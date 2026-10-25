@@ -290,8 +290,27 @@ def test_playback_preserves_samples_channels_and_rate(
     device.wait.assert_called_once()
 
 
-def test_play_audio_says_so_when_sounddevice_is_missing(caplog):
-    """It is an optional dependency, so this is a warning, not an error."""
+def test_play_audio_says_what_to_install_when_sounddevice_is_missing():
+    """It logged a warning and returned, and no extra declared
+    sounddevice, so on a fresh install the routine offered for listening
+    played nothing and went on. Now it says what to install."""
     with patch.dict(sys.modules, {"sounddevice": None}):
+        with pytest.raises(ImportError, match=r"music\[play\]"):
+            music.play_audio(np.zeros(4))
+
+
+def test_play_audio_says_what_is_missing_when_portaudio_is(monkeypatch):
+    """sounddevice raises OSError as it is imported when the PortAudio
+    library it plays through is not there, as on a bare Linux."""
+    import builtins
+    real_import = builtins.__import__
+
+    def without_portaudio(name, *args, **kwargs):
+        if name == "sounddevice":
+            raise OSError("PortAudio library not found")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.delitem(sys.modules, "sounddevice", raising=False)
+    monkeypatch.setattr(builtins, "__import__", without_portaudio)
+    with pytest.raises(RuntimeError, match="libportaudio2"):
         music.play_audio(np.zeros(4))
-    assert "sounddevice" in caplog.text

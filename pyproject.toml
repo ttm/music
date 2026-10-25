@@ -19,6 +19,8 @@ dependencies = [
 ]
 optional-dependencies = { plot = [
     'matplotlib >= 3.7.1',
+], play = [
+    'sounddevice >= 0.4.6',
 ], singing = [
     'praat-parselmouth >= 0.4.3',
 ], antialias = [

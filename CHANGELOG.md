@@ -9,6 +9,8 @@ says so when it is met:
 - `number_of_samples=0` is zero samples. It meant "use `duration`", so
   pass None, the default, for that.
 - `cross_fade` no longer fades the arrays it is given.
+- `play_audio` raises `ImportError` without sounddevice, which
+  `pip install 'music[play]'` installs, rather than logging and returning.
 - `read_audio` warns when a file's rate is not the default and the rate
   was not asked for.
 
@@ -35,6 +37,7 @@ Old names keep working and warn: see **Deprecated**.
   given.** Every file arrived at full scale, so a piece written a phrase
   to a file lost its dynamics, and scaling by hand first was undone by the
   writer. A sound reaching past full scale is refused rather than clipped.
+- **A `play` extra, for `play_audio`.**
 
 ### Changed
 
@@ -61,6 +64,10 @@ Old names keep working and warn: see **Deprecated**.
 - **`adsr` refused a stereo sound with a numpy broadcast error.** It took
   the two channels for the sound's length and built a two-sample
   envelope; it now shapes every channel alike, as `fade` does.
+- **`play_audio` played nothing, silently, on a fresh install.**
+  sounddevice was in no extra and no install instruction, and the routine
+  logged a warning and returned without it. It now says what to install,
+  and what is missing when it is PortAudio.
 - **`sing` returned 44.1 kHz audio whatever rate the caller worked at.**
 
 ### Deprecated

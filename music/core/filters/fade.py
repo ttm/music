@@ -157,9 +157,9 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration_ms=500,
 
     Parameters
     ----------
-    sonic_vector_1 : ndarray
+    sonic_vector_1 : array_like
         The sound that fades out. Mono, or ``(2, nsamples)`` stereo.
-    sonic_vector_2 : ndarray
+    sonic_vector_2 : array_like
         The sound that fades in, of the same number of dimensions.
     duration_ms : scalar
         The length of the crossfade in milliseconds.
@@ -196,9 +196,9 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration_ms=500,
 
     Notes
     -----
-    **Both inputs are modified in place.** The fades are applied to the
-    caller's arrays rather than to copies, so a sound that is crossfaded
-    is no longer the sound it was. Pass a copy to keep the original.
+    The inputs are left as they were. The fades used to be applied to the
+    caller's arrays, the one routine here that did that, so crossfading
+    the same two sounds twice faded each of them twice.
 
     The overlap makes the result shorter, which is why
     :class:`music.StimulationSession` does not use this function: a
@@ -220,6 +220,10 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration_ms=500,
     duration_ms = renamed_arguments('cross_fade', renamed,
                                     duration='duration_ms'
                                     ).get('duration_ms', duration_ms)
+    # Copies, which the fades below are applied to: they were applied to
+    # the caller's arrays.
+    sonic_vector_1 = np.array(sonic_vector_1, dtype=np.float64)
+    sonic_vector_2 = np.array(sonic_vector_2, dtype=np.float64)
     ns = int(duration_ms * sample_rate / 1000)
     if len(sonic_vector_1.shape) != len(sonic_vector_2.shape):
         raise ValueError('sonic_vector_1 and sonic_vector_2 must have '

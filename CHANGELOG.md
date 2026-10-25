@@ -8,6 +8,7 @@ says so when it is met:
 
 - `number_of_samples=0` is zero samples. It meant "use `duration`", so
   pass None, the default, for that.
+- `cross_fade` no longer fades the arrays it is given.
 
 Old names keep working and warn: see **Deprecated**.
 
@@ -43,6 +44,9 @@ Old names keep working and warn: see **Deprecated**.
   records at least five defects of that kind, each fixed where it was
   found. None means "not given" now,
   and the guards that worked around the convention are gone with it.
+- **`cross_fade` faded the caller's arrays,** the one routine here that
+  changed what it was given, so crossfading the same two sounds twice
+  faded each twice. It works on copies, and takes any array-like.
 - **`sing` returned 44.1 kHz audio whatever rate the caller worked at.**
 
 ### Deprecated

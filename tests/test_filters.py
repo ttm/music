@@ -309,8 +309,7 @@ def test_a_cross_fade_measures_the_overlap_at_the_rate_it_was_given():
 
 def test_a_cross_fade_uses_the_curve_it_was_given():
     first, second = np.ones(441) * 3, np.ones(441) * 5
-    linear = cross_fade(first.copy(), second.copy(), duration_ms=5,
-                        method='lin')
+    linear = cross_fade(first, second, duration_ms=5, method='lin')
     exponential = cross_fade(first, second, duration_ms=5, method='exp')
     assert not np.allclose(linear, exponential)
 
@@ -406,3 +405,23 @@ def test_louds_refuses_an_envelope_of_no_transitions():
     own words."""
     with pytest.raises(ValueError, match="at least one"):
         louds(number_of_samples=[])
+
+
+def test_a_cross_fade_leaves_the_sounds_it_was_given_alone():
+    """It faded the caller's arrays in place, the one routine here that
+    did, so crossfading the same two sounds twice faded them twice."""
+    for first, second in ((music.note(220, 0.5), music.note(330, 0.5)),
+                          (localize(music.note(220, 0.5)),
+                           localize(music.note(330, 0.5)))):
+        kept = first.copy(), second.copy()
+        once = cross_fade(first, second, duration_ms=100)
+        np.testing.assert_array_equal(first, kept[0])
+        np.testing.assert_array_equal(second, kept[1])
+        np.testing.assert_array_equal(
+            cross_fade(first, second, duration_ms=100), once)
+
+
+def test_a_cross_fade_takes_any_array_like():
+    as_lists = cross_fade([1.0] * 441, [2.0] * 441, duration_ms=5)
+    np.testing.assert_array_equal(
+        as_lists, cross_fade(np.ones(441), 2 * np.ones(441), duration_ms=5))

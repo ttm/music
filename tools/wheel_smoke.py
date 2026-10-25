@@ -69,7 +69,7 @@ def smoke(target: Path, version: str) -> None:
             for extension in ('wav', 'flac'):
                 path = Path(f'fade-{sample_rate}-{stereo}.{extension}')
                 music.write_audio(signal, str(path), sample_rate=sample_rate,
-                                  fades=np.array([100, 150]))
+                                  fades_ms=np.array([100, 150]))
                 restored = music.read_audio(str(path))
                 _require(restored.shape == signal.shape,
                          f'{path}: writing changed the signal shape')

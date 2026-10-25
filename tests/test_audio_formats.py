@@ -119,7 +119,7 @@ def test_write_audio_with_nothing_writes_noise_like_the_others(tmp_path):
 def test_fades_reach_the_writer_through_write_audio(tmp_path):
     """It forwards its arguments rather than quietly dropping some."""
     path = tmp_path / "faded.wav"
-    music.write_audio(music.note(duration=0.2), str(path), fades=50)
+    music.write_audio(music.note(duration=0.2), str(path), fades_ms=50)
     out = music.read_audio(str(path))
     assert abs(out[0]) < abs(out[len(out) // 2])
 

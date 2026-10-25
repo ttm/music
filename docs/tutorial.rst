@@ -104,9 +104,9 @@ instrument:
 .. code-block:: python
 
    raw = music.note(440, 1)
-   shaped = music.adsr(sonic_vector=raw, attack_duration=50,
-                       decay_duration=100, sustain_level=-9,
-                       release_duration=300)
+   shaped = music.adsr(sonic_vector=raw, attack_ms=50,
+                       decay_ms=100, sustain_level=-9,
+                       release_ms=300)
 
 ``shaped`` is the same length as ``raw``: the envelope is fitted to the
 sound it is given, not appended to it. Called *without* a ``sonic_vector``,
@@ -114,7 +114,9 @@ the same function returns the bare envelope, which you can inspect, plot,
 or multiply into something yourself.
 
 Note the units. They are not uniform, and deliberately so — each parameter
-is expressed in the unit that parameter is normally thought about in:
+is expressed in the unit that parameter is normally thought about in. The
+few in milliseconds say so, ending in ``_ms``, so a duration without that
+ending is in seconds:
 
 .. list-table::
    :header-rows: 1
@@ -126,9 +128,9 @@ is expressed in the unit that parameter is normally thought about in:
    * - Duration of a sound
      - seconds
      - ``duration``, ``envelope_duration``
-   * - Duration of an envelope stage
-     - milliseconds
-     - ``attack_duration``, ``release_duration``
+   * - Duration of an envelope stage, or of a crossfade
+     - milliseconds, which the name says: ``_ms``
+     - ``attack_ms``, ``release_ms``, ``duration_ms``
    * - Level
      - decibels
      - ``sustain_level``, ``max_db_dev``, ``trans_dev``
@@ -261,8 +263,8 @@ absolute start times instead:
    seq = music.Sequencer()
    for i, freq in enumerate([440, 550, 660]):
        seq.add_note(freq, start=i * 0.25, duration=1.0,
-                    adsr_params={"attack_duration": 20,
-                                 "release_duration": 400})
+                    adsr_params={"attack_ms": 20,
+                                 "release_ms": 400})
    seq.write("chord.wav")
 
 ``seq.render()`` returns the array instead of writing it, so the result
@@ -293,7 +295,7 @@ sample:
 
    passing = music.localize_linear(music.note(330, 3),
                                    theta1=150, theta2=30, dist=0.6)
-   music.write_wav_stereo(passing, "passing.wav", fades=(100, 500))
+   music.write_wav_stereo(passing, "passing.wav", fades_ms=(100, 500))
 
 Angles are in degrees, and *x is the lateral axis*: 0° is the right ear,
 90° is straight ahead, 180° is the left ear. So the call above sweeps from
@@ -304,7 +306,7 @@ the other is rendered as 0.3 of a sample, by cubic interpolation, not
 rounded to the nearest one. At 44.1 kHz a whole sample is already 8 mm of
 head, so rounding would be audible as a coarse, stepping image.
 
-``fades`` above is a shorthand every writer takes: ``(in, out)`` in
+``fades_ms`` above is a shorthand every writer takes: ``(in, out)`` in
 milliseconds, applied on the way out to the file.
 
 Noise
@@ -480,7 +482,7 @@ Nothing here is new; it is the pieces above composed:
    # mix them, then sweep the result across the stereo field
    piece = music.localize_linear(music.mix(voice, bed),
                                  theta1=120, theta2=60)
-   music.write_wav_stereo(piece, "piece.wav", fades=(100, 500))
+   music.write_wav_stereo(piece, "piece.wav", fades_ms=(100, 500))
 
 Where to go next
 ----------------

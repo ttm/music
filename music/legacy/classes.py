@@ -427,8 +427,8 @@ class Being:
         R = self.R_[ii % len(self.R_)]
         notes = [ADV({'freq': ff, 'duration': dd, 'vibrato_freq': fvv,
                       'max_pitch_dev': nuu, 'waveform_table': tabb},
-                     {'attack_duration': AA, 'decay_duration': DD,
-                      'sustain_level': SS, 'release_duration': RR})
+                     {'attack_ms': AA, 'decay_ms': DD,
+                      'sustain_level': SS, 'release_ms': RR})
                  for ff, dd, fvv, nuu, tabb, AA, DD, SS, RR
                  in zip(freq, duration, vibrato_freq, max_pitch_dev,
                         waveform_table, A, D, S, R)]

@@ -24,6 +24,15 @@ Old names keep working and warn: see **Deprecated**.
   `StimulationSession` and the oscillators keep the rate in effect when
   they are made, and `sing` resamples its line to it.
 
+### Changed
+
+- **Parameters in milliseconds say so in their names.** `adsr` and
+  `adsr_stereo` take `attack_ms`, `decay_ms`, `release_ms` and
+  `to_zero_ms`, `cross_fade` takes `duration_ms`, and the writers take
+  `fades_ms`, among parameters in seconds: `cross_fade(a, b,
+  duration=0.5)` crossfaded over half a millisecond, beside a `fade` whose
+  `duration` is seconds.
+
 ### Fixed
 
 - **A count of zero samples was two seconds of sound.** `note(duration=0)`
@@ -43,6 +52,9 @@ Old names keep working and warn: see **Deprecated**.
   and warn. CONTRIBUTING.md states the policy: a retired name keeps
   working, warning, for at least a minor release, and goes only in a major
   one.
+- **`attack_duration`, `decay_duration`, `release_duration`, `to_zero`,
+  `cross_fade`'s `duration` and the writers' `fades`,** the names the
+  millisecond parameters had. They still work, and warn.
 
 ### Tests
 

@@ -178,13 +178,14 @@ with music.set_sample_rate(96000):
 ```python
 note = music.note_with_vibrato(freq=220, duration=2,
                                vibrato_freq=6, max_pitch_dev=0.5)
-shaped = music.adsr(sonic_vector=note, attack_duration=80,
-                    sustain_level=-6, release_duration=200)
+shaped = music.adsr(sonic_vector=note, attack_ms=80,
+                    sustain_level=-6, release_ms=200)
 ```
 
 Durations are in seconds, envelope stages in milliseconds, levels in decibels
 and pitch deviations in semitones — each parameter in the unit it is usually
-thought about in.
+thought about in. The few in milliseconds end in `_ms`, so a duration
+without that ending is in seconds.
 
 ### Band-limited synthesis
 
@@ -292,7 +293,7 @@ music.write_wav_stereo(passing, "passing.wav")
 seq = music.Sequencer()
 for i, freq in enumerate([440, 550, 660]):
     seq.add_note(freq, start=i * 0.25, duration=1.0,
-                 adsr_params={"attack_duration": 20, "release_duration": 400})
+                 adsr_params={"attack_ms": 20, "release_ms": 400})
 seq.write("chord.wav")
 ```
 

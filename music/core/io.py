@@ -7,7 +7,7 @@ from typing import Any, Sequence
 import numpy as np
 import soundfile as sf
 from numpy.typing import ArrayLike, NDArray
-from .._deprecation import alias
+from .._deprecation import alias, renamed_arguments
 from .._rate import resolve_rate
 from .functions import normalize_mono, normalize_stereo
 from .filters.adsr import adsr, adsr_stereo
@@ -71,7 +71,7 @@ def _wav_subtype(bit_depth: int) -> str:
 
 
 def _fade_pair(fades: Sequence[int] | int) -> tuple[int, int]:
-    """Resolve ``fades`` to (fade in, fade out) durations in milliseconds.
+    """Resolve ``fades_ms`` to (fade in, fade out) durations in milliseconds.
 
     A scalar applies the same duration to both ends.  np.ndim is used rather
     than isinstance because numpy integer scalars do not subclass int.
@@ -168,9 +168,10 @@ def write_wav_mono(
     sonic_vector: ArrayLike | None = None,
     filename: str = "asound.wav",
     sample_rate: int | None = None,
-    fades: Sequence[int] | int = 0,
+    fades_ms: Sequence[int] | int = 0,
     bit_depth: int = 16,
     remove_bias: bool = True,
+    **renamed: Any,
 ) -> None:
     """Writes a mono WAV file for a numpy array.
 
@@ -189,7 +190,7 @@ def write_wav_mono(
     sample_rate : scalar or None
         The sample frequency. None, the default, is the rate
         :func:`music.get_sample_rate` returns.
-    fades : iterable or scalar
+    fades_ms : iterable or scalar
         Milliseconds of fade in and fade out (to avoid clicks), either as a
         pair or as a single value applied to both ends.
     bit_depth : integer
@@ -198,6 +199,9 @@ def write_wav_mono(
         Any other value raises ValueError.
     remove_bias : boolean
         Whether to remove or not the bias (or offset)
+    **renamed
+        ``fades``, the name ``fades_ms`` had before it said its unit.
+        Still accepted, with a :class:`DeprecationWarning`.
 
     See Also
     --------
@@ -212,9 +216,11 @@ def write_wav_mono(
     >>> write_wav_mono(note(freq=440, duration=0.5), "tone.wav")
     >>> read_audio("tone.wav").shape
     (22050,)
-    >>> write_wav_mono(note(), "faded.wav", fades=(50, 200))   # ms in, ms out
+    >>> write_wav_mono(note(), "faded.wav", fades_ms=(50, 200))  # in, out
     """
     sample_rate = resolve_rate(sample_rate)
+    fades_ms = renamed_arguments('write_wav_mono', renamed,
+                                 fades='fades_ms').get('fades_ms', fades_ms)
     # Reject a bad depth, and a container that cannot hold it, before
     # doing the work of rendering anything.
     audio_format = _audio_format(filename)
@@ -222,11 +228,10 @@ def write_wav_mono(
     if sonic_vector is None:
         sonic_vector = np.random.uniform(-1, 1, size=100000)
     result = normalize_mono(sonic_vector, remove_bias)
-    if np.any(fades):
-        f0, f1 = _fade_pair(fades)
-        result = adsr(attack_duration=f0, sustain_level=0,
-                      release_duration=f1, sonic_vector=result,
-                      sample_rate=sample_rate)
+    if np.any(fades_ms):
+        f0, f1 = _fade_pair(fades_ms)
+        result = adsr(attack_ms=f0, sustain_level=0, release_ms=f1,
+                      sonic_vector=result, sample_rate=sample_rate)
     sf.write(str(filename), _quantize(result, bit_depth), sample_rate,
              format=audio_format, subtype=subtype)
 
@@ -235,10 +240,11 @@ def write_wav_stereo(
     sonic_vector: ArrayLike | None = None,
     filename: str = "asound.wav",
     sample_rate: int | None = None,
-    fades: Sequence[int] | int = 0,
+    fades_ms: Sequence[int] | int = 0,
     bit_depth: int = 16,
     remove_bias: bool = True,
     normalize_separately: bool = False,
+    **renamed: Any,
 ) -> None:
     """Write a stereo WAV files for a numpy array.
 
@@ -255,7 +261,7 @@ def write_wav_stereo(
     sample_rate : scalar or None
         The sample frequency. None, the default, is the rate
         :func:`music.get_sample_rate` returns.
-    fades : iterable or scalar
+    fades_ms : iterable or scalar
         Milliseconds of fade in and fade out (to avoid clicks), either as a
         pair or as a single value applied to both ends.
     bit_depth : integer
@@ -267,6 +273,9 @@ def write_wav_stereo(
     normalize_separately : boolean
         Set to True if each channel should be normalized separately.
         If False (default), the arrays will be rescaled in the same proportion.
+    **renamed
+        ``fades``, the name ``fades_ms`` had before it said its unit.
+        Still accepted, with a :class:`DeprecationWarning`.
 
     See Also
     --------
@@ -283,17 +292,18 @@ def write_wav_stereo(
     2
     """
     sample_rate = resolve_rate(sample_rate)
+    fades_ms = renamed_arguments('write_wav_stereo', renamed,
+                                 fades='fades_ms').get('fades_ms', fades_ms)
     audio_format = _audio_format(filename)
     subtype = _subtype(bit_depth, audio_format)
     if sonic_vector is None:
         sonic_vector = np.random.uniform(-1, 1, size=(2, 100000))
     result = normalize_stereo(sonic_vector, remove_bias,
                               normalize_separately)
-    if np.any(fades):
-        f0, f1 = _fade_pair(fades)
-        result = adsr_stereo(attack_duration=f0, sustain_level=0,
-                             release_duration=f1, sonic_vector=result,
-                             sample_rate=sample_rate)
+    if np.any(fades_ms):
+        f0, f1 = _fade_pair(fades_ms)
+        result = adsr_stereo(attack_ms=f0, sustain_level=0, release_ms=f1,
+                             sonic_vector=result, sample_rate=sample_rate)
     sf.write(str(filename), _quantize(result, bit_depth).T, sample_rate,
              format=audio_format, subtype=subtype)
 
@@ -307,9 +317,10 @@ def write_audio(
     sonic_vector: ArrayLike | None = None,
     filename: str = "asound.wav",
     sample_rate: int | None = None,
-    fades: Sequence[int] | int = 0,
+    fades_ms: Sequence[int] | int = 0,
     bit_depth: int = 16,
     remove_bias: bool = True,
+    **renamed: Any,
 ) -> None:
     """Write a sound to a file, mono or stereo, WAV or FLAC.
 
@@ -328,7 +339,7 @@ def write_audio(
     sample_rate : scalar or None
         The sample frequency. None, the default, is the rate
         :func:`music.get_sample_rate` returns.
-    fades : iterable or scalar
+    fades_ms : iterable or scalar
         Milliseconds of fade in and fade out, either as a pair or as a
         single value applied to both ends.
     bit_depth : integer
@@ -336,6 +347,9 @@ def write_audio(
         FLAC, which has no 32-bit form.
     remove_bias : boolean
         Whether to remove the bias, or offset.
+    **renamed
+        ``fades``, the name ``fades_ms`` had before it said its unit.
+        Still accepted, with a :class:`DeprecationWarning`.
 
     Returns
     -------
@@ -373,13 +387,15 @@ def write_audio(
     >>> write_audio(localize_linear(note()), "moving.wav")
 
     """
+    fades_ms = renamed_arguments('write_audio', renamed,
+                                 fades='fades_ms').get('fades_ms', fades_ms)
     if sonic_vector is None:
         write = write_wav_mono
     else:
         write = (write_wav_stereo if np.ndim(sonic_vector) == 2
                  else write_wav_mono)
     write(sonic_vector=sonic_vector, filename=filename,
-          sample_rate=sample_rate, fades=fades, bit_depth=bit_depth,
+          sample_rate=sample_rate, fades_ms=fades_ms, bit_depth=bit_depth,
           remove_bias=remove_bias)
 
 

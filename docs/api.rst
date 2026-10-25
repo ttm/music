@@ -383,7 +383,9 @@ Deprecated names
 
 Second names for routines that have better ones. Each still works, warns
 with a ``DeprecationWarning`` naming its replacement, and will be removed
-in a major release.
+in a major release. Parameters renamed for their unit -- ``attack_ms`` and
+the rest of ``adsr``'s, ``cross_fade``'s ``duration_ms`` and the writers'
+``fades_ms`` -- still take their old names the same way.
 
 .. autosummary::
    :toctree: generated

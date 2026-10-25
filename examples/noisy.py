@@ -11,7 +11,7 @@ silence = music.core.synths.silence(duration=0.4)
 # A note starts and stops abruptly, which clicks. An ADSR envelope fades it
 # in and out, so it makes a cleaner separator between the noises.
 beep = music.adsr(sonic_vector=music.core.synths.note(duration=0.1),
-                  attack_duration=10, release_duration=20)
+                  attack_ms=10, release_ms=20)
 
 for noise in noises:
     sonic_vector.append(music.core.synths.noises.noise(noise_type=noise))

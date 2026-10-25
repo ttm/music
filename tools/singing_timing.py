@@ -44,8 +44,8 @@ VARIANTS = TIMINGS + SHAPES
 #: as the package's :func:`~music.core.filters.adsr.adsr` makes one: a
 #: 20 ms attack, a fall of 3 dB over 150 ms, and a 60 ms release, in
 #: exponential steps.
-ENVELOPE = dict(attack_duration=20, decay_duration=150, sustain_level=-3,
-                release_duration=60, transition="exp")
+ENVELOPE = dict(attack_ms=20, decay_ms=150, sustain_level=-3,
+                release_ms=60, transition="exp")
 SPEED_MIN, SPEED_START, SPEED_MAX = psola.SLOWEST, psola.SPEED, 450
 ATTEMPTS = 4
 

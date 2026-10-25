@@ -18,10 +18,10 @@ import music
 def test_adsr_envelope_basic():
     env = adsr(
         envelope_duration=0.1,
-        attack_duration=10,
-        decay_duration=20,
+        attack_ms=10,
+        decay_ms=20,
         sustain_level=-6,
-        release_duration=10,
+        release_ms=10,
         transition="exp",
         sample_rate=1000,
     )
@@ -41,7 +41,7 @@ def test_fade_and_cross_fade():
 
     s1 = np.ones(441)
     s2 = np.ones(441) * 2
-    mixed = cross_fade(s1.copy(), s2.copy(), duration=5, sample_rate=44100)
+    mixed = cross_fade(s1.copy(), s2.copy(), duration_ms=5, sample_rate=44100)
     assert len(mixed) == 661
     assert mixed[0] == 1.0
     assert np.isclose(mixed[-1], 2.0, atol=1e-6)
@@ -151,22 +151,22 @@ def test_the_adsr_defaults_are_the_ones_its_docstring_promises():
     assert len(env) == 2 * 44100
     assert env[attack - 1] == pytest.approx(1.0, abs=1e-6)
     assert np.allclose(env[attack + decay:-release], 10 ** (-5 / 20))
-    # `to_zero` defaults to 1 ms, so the envelope departs from zero and
+    # `to_zero_ms` defaults to 1 ms, so the envelope departs from zero and
     # returns to it. It did neither until the audit: the milliseconds were
     # passed on as a ratio where `fade` reads a percentage, which rounded
     # to no samples, and the envelope began and ended at `db_dev` instead.
     assert env[0] == pytest.approx(0.0, abs=1e-12)
     assert env[-1] == pytest.approx(0.0, abs=1e-12)
-    assert adsr(to_zero=0)[0] == pytest.approx(10 ** (-80 / 20), rel=1e-6)
+    assert adsr(to_zero_ms=0)[0] == pytest.approx(10 ** (-80 / 20), rel=1e-6)
 
 
 @pytest.mark.parametrize("milliseconds", [1, 3, 5])
 def test_the_adsr_departs_from_zero_for_as_long_as_it_is_told_to(milliseconds):
-    # `to_zero` is a duration, so the straight part is that many
+    # `to_zero_ms` is a duration, so the straight part is that many
     # milliseconds of samples and not some other multiple of them: the
     # whole defect was a factor of a hundred in exactly this number.
-    # Every value of `to_zero` gave the same envelope before the audit.
-    env = adsr(to_zero=milliseconds)
+    # Every value of `to_zero_ms` gave the same envelope before the audit.
+    env = adsr(to_zero_ms=milliseconds)
     expected = int(milliseconds * 44100 / 1000)
     assert env[0] == pytest.approx(0.0, abs=1e-12)
     # Straight for `expected` samples, and curved immediately after.
@@ -178,7 +178,7 @@ def test_the_adsr_departs_from_zero_for_as_long_as_it_is_told_to(milliseconds):
     assert not np.allclose(np.diff(env[-(expected + 2):], 2), 0.0,
                            atol=1e-14)
     head = expected + 40
-    assert not np.allclose(env[:head], adsr(to_zero=0)[:head])
+    assert not np.allclose(env[:head], adsr(to_zero_ms=0)[:head])
 
 
 @pytest.mark.parametrize("transition", ["exp", "linear"])
@@ -187,8 +187,8 @@ def test_adsr_hands_each_stage_the_shape_it_was_given(transition):
     # them. What is under test is that `transition`, `alpha` and `db_dev`
     # reach all three: each could be dropped from any of the calls and
     # every test still passed, because none used a non-default value.
-    env = adsr(envelope_duration=0.2, attack_duration=30, decay_duration=40,
-               sustain_level=-6, release_duration=50, transition=transition,
+    env = adsr(envelope_duration=0.2, attack_ms=30, decay_ms=40,
+               sustain_level=-6, release_ms=50, transition=transition,
                alpha=2, db_dev=-40, sample_rate=1000)
     sustain = 10 ** (-6 / 20)
     assert len(env) == 200
@@ -207,9 +207,9 @@ def test_adsr_hands_each_stage_the_shape_it_was_given(transition):
 def test_adsr_stereo_gives_both_channels_every_setting(transition):
     # The stereo shorthand forwards eight arguments to `adsr` twice over,
     # and any of them could be dropped from either call unnoticed.
-    settings = dict(attack_duration=30, decay_duration=40, sustain_level=-6,
-                    release_duration=50, transition=transition, alpha=2,
-                    db_dev=-40, to_zero=3, number_of_samples=200,
+    settings = dict(attack_ms=30, decay_ms=40, sustain_level=-6,
+                    release_ms=50, transition=transition, alpha=2,
+                    db_dev=-40, to_zero_ms=3, number_of_samples=200,
                     sample_rate=1000)
     mono = adsr(envelope_duration=5, **settings)
     stereo = music.adsr_stereo(duration=5, **settings)
@@ -279,7 +279,7 @@ def test_the_cross_fade_defaults_are_the_ones_its_docstring_promises():
 
 def test_a_cross_fade_overlaps_by_the_time_it_was_given():
     first, second = np.ones(44100), np.ones(44100) * 2
-    joined = cross_fade(first, second, duration=200)
+    joined = cross_fade(first, second, duration_ms=200)
     assert len(joined) == 44100 + 44100 - 8820
 
 
@@ -291,7 +291,7 @@ def test_a_cross_fade_blends_rather_than_summing(sample_rate):
     # second one out instead of in, breaks it -- and the level-1 sounds
     # the previous test used could not tell any of those apart.
     first, second = np.ones(441) * 3, np.ones(441) * 5
-    joined = cross_fade(first, second, duration=5, sample_rate=sample_rate)
+    joined = cross_fade(first, second, duration_ms=5, sample_rate=sample_rate)
     assert joined.min() >= 3.0 - 1e-9
     assert joined.max() <= 5.0 + 0.05
     assert joined[0] == pytest.approx(3.0)
@@ -302,15 +302,16 @@ def test_a_cross_fade_measures_the_overlap_at_the_rate_it_was_given():
     # The fades were cut at `sample_rate` and the overlap was placed at
     # 44.1 kHz, so at any other rate the two sounds met at full level.
     first, second = np.ones(441) * 3, np.ones(441) * 5
-    joined = cross_fade(first, second, duration=5, sample_rate=8000)
+    joined = cross_fade(first, second, duration_ms=5, sample_rate=8000)
     assert len(joined) == 441 + 441 - 40
     assert joined.max() <= 5.0 + 1e-9
 
 
 def test_a_cross_fade_uses_the_curve_it_was_given():
     first, second = np.ones(441) * 3, np.ones(441) * 5
-    linear = cross_fade(first.copy(), second.copy(), duration=5, method='lin')
-    exponential = cross_fade(first, second, duration=5, method='exp')
+    linear = cross_fade(first.copy(), second.copy(), duration_ms=5,
+                        method='lin')
+    exponential = cross_fade(first, second, duration_ms=5, method='exp')
     assert not np.allclose(linear, exponential)
 
 
@@ -321,7 +322,7 @@ def test_a_stereo_cross_fade_keeps_each_channel_to_itself():
     second = np.vstack((np.ones(441) * 5, np.ones(441) * 9))
     # A rate the recursion has to carry down with it, rather than the one
     # each channel would have fallen back to on its own.
-    joined = cross_fade(first, second, duration=5, sample_rate=8000)
+    joined = cross_fade(first, second, duration_ms=5, sample_rate=8000)
     assert joined.shape[1] == 441 + 441 - 40
     assert joined.shape[0] == 2
     assert joined[0].min() >= 3.0 - 1e-9 and joined[0].max() <= 5.0 + 0.05
@@ -337,7 +338,8 @@ def test_a_stereo_cross_fade_keeps_each_channel_to_itself():
 def test_a_cross_fade_refuses_an_overlap_it_cannot_make(duration, sample_rate):
     first, second = np.ones(441), np.ones(441) * 2
     with pytest.raises(ValueError, match="duration"):
-        cross_fade(first, second, duration=duration, sample_rate=sample_rate)
+        cross_fade(first, second, duration_ms=duration,
+                   sample_rate=sample_rate)
 
 
 @pytest.mark.parametrize("samples", [1, 441])
@@ -346,7 +348,7 @@ def test_a_cross_fade_allows_the_overlaps_at_the_edge_of_what_fits(samples):
     # are both things it can make; the refusal above them must not creep
     # inward onto either.
     first, second = np.ones(441) * 3, np.ones(441) * 5
-    joined = cross_fade(first, second, duration=samples * 1000 / 44100)
+    joined = cross_fade(first, second, duration_ms=samples * 1000 / 44100)
     assert joined.min() >= 3.0 - 1e-9
     assert joined.max() <= 5.0 + 1e-9
 

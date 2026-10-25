@@ -3,15 +3,21 @@
 import numpy as np
 from .fade import fade
 from .loud import loud
+from ..._deprecation import renamed_arguments
 from ..._rate import resolve_rate
 from ...utils import _transition_is_linear, as_sonic_vector
 
+#: The parameters :func:`adsr` and :func:`adsr_stereo` renamed so their
+#: names say they are milliseconds, among parameters that are seconds.
+_RENAMED = {'attack_duration': 'attack_ms', 'decay_duration': 'decay_ms',
+            'release_duration': 'release_ms', 'to_zero': 'to_zero_ms'}
 
-def adsr(envelope_duration=2, attack_duration=20,
-         decay_duration=20, sustain_level=-5,
-         release_duration=50, transition="exp", alpha=1,
-         db_dev=-80, to_zero=1, number_of_samples=None, sonic_vector=0,
-         sample_rate=None):
+
+def adsr(envelope_duration=2, attack_ms=20,
+         decay_ms=20, sustain_level=-5,
+         release_ms=50, transition="exp", alpha=1,
+         db_dev=-80, to_zero_ms=1, number_of_samples=None, sonic_vector=0,
+         sample_rate=None, **renamed):
     """
     Synthesize an ADSR envelope.
 
@@ -22,14 +28,14 @@ def adsr(envelope_duration=2, attack_duration=20,
     ----------
     envelope_duration : scalar
         The duration of the envelope in seconds.
-    attack_duration : scalar
+    attack_ms : scalar
         The duration of the Attack in milliseconds.
-    decay_duration : scalar
+    decay_ms : scalar
         The duration of the Decay in milliseconds.
     sustain_level : scalar
         The Sustain level after the Decay in decibels.
         Usually negative.
-    release_duration : scalar
+    release_ms : scalar
         The duration of the Release in milliseconds.
     transition : string
         "exp" or "exponential" for exponential transitions of amplitude
@@ -43,7 +49,7 @@ def adsr(envelope_duration=2, attack_duration=20,
         The decibels deviation to reach before using a linear fade to reach
         zero amplitude. If it is an array_like, it should hold two values, one
         for Attack and another for Release. Ignored if trans="linear".
-    to_zero : scalar or array_like
+    to_zero_ms : scalar or array_like
         The duration in milliseconds for linearly departing from zero in the
         Attack and reaching the value of zero at the end of the Release. If it
         is an array_like, it should hold two values, one for Attack and
@@ -57,6 +63,11 @@ def adsr(envelope_duration=2, attack_duration=20,
     sample_rate : integer or None
         The sample rate. None, the default, is the rate
         :func:`music.get_sample_rate` returns.
+    **renamed
+        ``attack_duration``, ``decay_duration``, ``release_duration`` and
+        ``to_zero``, the names these milliseconds had before they said
+        their unit among parameters in seconds. Still accepted, with a
+        :class:`DeprecationWarning`.
 
     Returns
     -------
@@ -71,6 +82,8 @@ def adsr(envelope_duration=2, attack_duration=20,
         If `transition` is not one of the four names above. It is checked
         here because a stage of zero length never reaches :func:`fade` or
         :func:`loud`, so an envelope of no stages accepted any name.
+    TypeError
+        If a keyword is neither a parameter nor one of the old names.
 
     See Also
     --------
@@ -82,13 +95,13 @@ def adsr(envelope_duration=2, attack_duration=20,
     --------
     >>> write_wav_mono(note_with_vibrato() * adsr())
     >>> s = horizontal_stack(*[note_with_vibrato() *
-    ...                       adsr(attack_duration=i, release_duration=j)
+    ...                       adsr(attack_ms=i, release_ms=j)
     ...                       for i, j in zip([6, 50, 300], [100, 10, 200])])
-    >>> s = horizontal_stack(*[adsr(attack_duration=i, release_duration=j,
+    >>> s = horizontal_stack(*[adsr(attack_ms=i, release_ms=j,
     ...                            sonic_vector=note_with_vibrato())
     ...                       for i, j in zip([6, 15, 100], [2, 2, 20])])
-    >>> envelope = adsr(envelope_duration=440, attack_duration=10e3,
-    ...                 decay_duration=0, release_duration=5e3)
+    >>> envelope = adsr(envelope_duration=440, attack_ms=10e3,
+    ...                 decay_ms=0, release_ms=5e3)
 
     Notes
     -----
@@ -101,6 +114,11 @@ def adsr(envelope_duration=2, attack_duration=20,
 
     """
     sample_rate = resolve_rate(sample_rate)
+    given = renamed_arguments('adsr', renamed, **_RENAMED)
+    attack_ms = given.get('attack_ms', attack_ms)
+    decay_ms = given.get('decay_ms', decay_ms)
+    release_ms = given.get('release_ms', release_ms)
+    to_zero_ms = given.get('to_zero_ms', to_zero_ms)
     _transition_is_linear(transition, 'transition')
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
@@ -109,9 +127,9 @@ def adsr(envelope_duration=2, attack_duration=20,
         lambda_adsr = number_of_samples
     else:
         lambda_adsr = int(envelope_duration * sample_rate)
-    lambda_a = int(attack_duration * sample_rate * 0.001)
-    lambda_d = int(decay_duration * sample_rate * 0.001)
-    lambda_r = int(release_duration * sample_rate * 0.001)
+    lambda_a = int(attack_ms * sample_rate * 0.001)
+    lambda_d = int(decay_ms * sample_rate * 0.001)
+    lambda_r = int(release_ms * sample_rate * 0.001)
 
     # The attack, decay and release stages cannot outlast the envelope they
     # belong to: compress them proportionally when the sound is too short,
@@ -124,21 +142,21 @@ def adsr(envelope_duration=2, attack_duration=20,
         lambda_r = int(lambda_r * ratio)
 
     # An attack or release of no samples is built explicitly, because its
-    # share of `to_zero` is divided by its duration: an attack of 0 ms
+    # share of `to_zero_ms` is divided by its duration: an attack of 0 ms
     # divides by zero, and one too short to round to a sample asks `fade`
     # for a linear share past 100 %.
     #
-    # `to_zero` and the stage durations are both in milliseconds, so their
-    # ratio is a fraction; `fade` reads `perc` as a percentage. Passing the
-    # fraction, as the reference does, made `to_zero` a hundred times
-    # smaller than it says it is, so it rounded to no samples at all below
-    # about 2.3 ms at 44.1 kHz: `adsr(to_zero=1)` was byte-identical to
-    # `adsr(to_zero=0)` and the envelope never reached zero at either end.
-    # This is why `AD` and `ADS` are no longer sample-exact rows in
+    # `to_zero_ms` and the stage durations are both in milliseconds, so
+    # their ratio is a fraction; `fade` reads `perc` as a percentage.
+    # Passing the fraction, as the reference does, made `to_zero` a hundred
+    # times smaller than it says it is, so it rounded to no samples at all
+    # below about 2.3 ms at 44.1 kHz: `adsr(to_zero=1)` was byte-identical
+    # to `adsr(to_zero=0)` and the envelope never reached zero at either
+    # end. This is why `AD` and `ADS` are no longer sample-exact rows in
     # RECONCILIATION.md.
     if lambda_a:
         attack = fade(fade_out=0, method=transition, alpha=alpha, db=db_dev,
-                      perc=100 * to_zero / attack_duration,
+                      perc=100 * to_zero_ms / attack_ms,
                       number_of_samples=lambda_a)
     else:
         attack = np.array([])
@@ -151,7 +169,7 @@ def adsr(envelope_duration=2, attack_duration=20,
 
     if lambda_r:
         release = fade(method=transition, alpha=alpha, db=db_dev,
-                       perc=100 * to_zero / release_duration,
+                       perc=100 * to_zero_ms / release_ms,
                        number_of_samples=lambda_r) * a_s
     else:
         release = np.array([])
@@ -206,10 +224,10 @@ def adsr_vibrato(note_dict={}, adsr_dict={}):
     return adsr(sonic_vector=note_with_vibrato(**note_dict), **adsr_dict)
 
 
-def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
-                sustain_level=-5, release_duration=50, transition="exp",
-                alpha=1, db_dev=-80, to_zero=1, number_of_samples=None,
-                sonic_vector=0, sample_rate=None):
+def adsr_stereo(duration=2, attack_ms=20, decay_ms=20,
+                sustain_level=-5, release_ms=50, transition="exp",
+                alpha=1, db_dev=-80, to_zero_ms=1, number_of_samples=None,
+                sonic_vector=0, sample_rate=None, **renamed):
     """
     A shorthand to make an ADSR envelope for a stereo sound.
 
@@ -222,13 +240,13 @@ def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
     duration : scalar
         The duration of the envelope in seconds. Passed to :func:`adsr`
         as ``envelope_duration``.
-    attack_duration : scalar
+    attack_ms : scalar
         The duration of the Attack in milliseconds.
-    decay_duration : scalar
+    decay_ms : scalar
         The duration of the Decay in milliseconds.
     sustain_level : scalar
         The Sustain level after the Decay in decibels. Usually negative.
-    release_duration : scalar
+    release_ms : scalar
         The duration of the Release in milliseconds.
     transition : string
         "exp" or "exponential" for exponential transitions of amplitude
@@ -242,7 +260,7 @@ def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
         The decibels deviation to reach before using a linear fade to
         reach zero amplitude. An array_like should hold two values, for
         Attack and Release. Ignored if ``transition="linear"``.
-    to_zero : scalar or array_like
+    to_zero_ms : scalar or array_like
         The duration in milliseconds for linearly departing from zero in
         the Attack and reaching zero at the end of the Release. An
         array_like should hold two values, for Attack and Release.
@@ -257,12 +275,21 @@ def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
     sample_rate : integer or None
         The sample rate. None, the default, is the rate
         :func:`music.get_sample_rate` returns.
+    **renamed
+        ``attack_duration``, ``decay_duration``, ``release_duration`` and
+        ``to_zero``, as :func:`adsr` takes them. Still accepted, with a
+        :class:`DeprecationWarning`.
 
     Returns
     -------
     ndarray
         A ``(2, nsamples)`` array: the envelope itself if
         ``sonic_vector`` is 0, or the sound with the envelope applied.
+
+    Raises
+    ------
+    TypeError
+        If a keyword is neither a parameter nor one of the old names.
 
     See Also
     --------
@@ -276,6 +303,11 @@ def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
 
     """
     sample_rate = resolve_rate(sample_rate)
+    given = renamed_arguments('adsr_stereo', renamed, **_RENAMED)
+    attack_ms = given.get('attack_ms', attack_ms)
+    decay_ms = given.get('decay_ms', decay_ms)
+    release_ms = given.get('release_ms', release_ms)
+    to_zero_ms = given.get('to_zero_ms', to_zero_ms)
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
         sonic_vector1 = sonic_vector[0]
@@ -283,16 +315,16 @@ def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
     else:
         sonic_vector1 = 0
         sonic_vector2 = 0
-    s1 = adsr(envelope_duration=duration, attack_duration=attack_duration,
-              decay_duration=decay_duration, sustain_level=sustain_level,
-              release_duration=release_duration, transition=transition,
-              alpha=alpha, db_dev=db_dev, to_zero=to_zero,
+    s1 = adsr(envelope_duration=duration, attack_ms=attack_ms,
+              decay_ms=decay_ms, sustain_level=sustain_level,
+              release_ms=release_ms, transition=transition,
+              alpha=alpha, db_dev=db_dev, to_zero_ms=to_zero_ms,
               number_of_samples=number_of_samples, sonic_vector=sonic_vector1,
               sample_rate=sample_rate)
-    s2 = adsr(envelope_duration=duration, attack_duration=attack_duration,
-              decay_duration=decay_duration, sustain_level=sustain_level,
-              release_duration=release_duration, transition=transition,
-              alpha=alpha, db_dev=db_dev, to_zero=to_zero,
+    s2 = adsr(envelope_duration=duration, attack_ms=attack_ms,
+              decay_ms=decay_ms, sustain_level=sustain_level,
+              release_ms=release_ms, transition=transition,
+              alpha=alpha, db_dev=db_dev, to_zero_ms=to_zero_ms,
               number_of_samples=number_of_samples, sonic_vector=sonic_vector2,
               sample_rate=sample_rate)
     s = np.vstack((s1, s2))

@@ -2,6 +2,7 @@
 
 import numpy as np
 from .loud import loud
+from ..._deprecation import renamed_arguments
 from ..._rate import resolve_rate
 from ...utils import (resolve_stereo, mix_with_offset,
                       as_sonic_vector, _transition_is_linear)
@@ -145,10 +146,10 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
     return ai
 
 
-def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
-               sample_rate=None):
+def cross_fade(sonic_vector_1, sonic_vector_2, duration_ms=500,
+               method='lin', sample_rate=None, **renamed):
     """
-    Cross fade two sounds over `duration` milliseconds.
+    Cross fade two sounds over `duration_ms` milliseconds.
 
     The tail of the first sound is faded out, the head of the second is
     faded in, and the two are overlapped by that duration, so the result
@@ -160,7 +161,7 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
         The sound that fades out. Mono, or ``(2, nsamples)`` stereo.
     sonic_vector_2 : ndarray
         The sound that fades in, of the same number of dimensions.
-    duration : scalar
+    duration_ms : scalar
         The length of the crossfade in milliseconds.
     method : string
         The fade shape, as :func:`fade` takes it: "lin" or "linear", "exp"
@@ -168,11 +169,15 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
     sample_rate : integer or None
         The sample rate in Hertz. None, the default, is the rate
         :func:`music.get_sample_rate` returns.
+    **renamed
+        ``duration``, the name ``duration_ms`` had before it said its
+        unit beside :func:`fade`'s ``duration``, which is in seconds.
+        Still accepted, with a :class:`DeprecationWarning`.
 
     Returns
     -------
     ndarray
-        The two sounds overlapped, ``duration`` milliseconds shorter
+        The two sounds overlapped, ``duration_ms`` milliseconds shorter
         than their concatenation.
 
     Raises
@@ -182,10 +187,12 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
         Crossfading a mono sound with a stereo one has no single sensible
         answer, so it is refused rather than guessed at.
 
-        If ``duration`` is not a positive number of samples at
+        If ``duration_ms`` is not a positive number of samples at
         ``sample_rate``, or is longer than the shorter of the two sounds.
         Both used to reach a NumPy broadcast failure naming two sample
         counts, which does not say which duration caused it.
+    TypeError
+        If a keyword is neither a parameter nor the old name.
 
     Notes
     -----
@@ -205,19 +212,22 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
 
     Examples
     --------
-    >>> joined = cross_fade(note(220, 1), note(330, 1), duration=200)
+    >>> joined = cross_fade(note(220, 1), note(330, 1), duration_ms=200)
     >>> len(joined) / 44100    # the overlap is 200 ms of the two seconds
     1.8
     """
     sample_rate = resolve_rate(sample_rate)
-    ns = int(duration * sample_rate / 1000)
+    duration_ms = renamed_arguments('cross_fade', renamed,
+                                    duration='duration_ms'
+                                    ).get('duration_ms', duration_ms)
+    ns = int(duration_ms * sample_rate / 1000)
     if len(sonic_vector_1.shape) != len(sonic_vector_2.shape):
         raise ValueError('sonic_vector_1 and sonic_vector_2 must have '
                          'the same shape')
     if len(sonic_vector_1.shape) == 2:
-        s1_ = cross_fade(sonic_vector_1[0], sonic_vector_2[0], duration,
+        s1_ = cross_fade(sonic_vector_1[0], sonic_vector_2[0], duration_ms,
                          method, sample_rate)
-        s2_ = cross_fade(sonic_vector_1[1], sonic_vector_2[1], duration,
+        s2_ = cross_fade(sonic_vector_1[1], sonic_vector_2[1], duration_ms,
                          method, sample_rate)
         s = np.array((s1_, s2_))
         return s
@@ -228,12 +238,12 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
         # broadcast failure naming sample counts, which says nothing about
         # the duration.
         raise ValueError(
-            f"duration ({duration} ms) must be a positive number of "
+            f"duration_ms ({duration_ms} ms) must be a positive number of "
             f"samples at {sample_rate} Hz; got {ns}")
     if ns > shortest:
         raise ValueError(
-            f"duration ({duration} ms, {ns} samples at {sample_rate} Hz) "
-            f"cannot exceed the shorter of the two sounds ({shortest} "
+            f"duration_ms ({duration_ms} ms, {ns} samples at {sample_rate} "
+            f"Hz) cannot exceed the shorter of the two sounds ({shortest} "
             f"samples): there is nothing for the rest of the fade to "
             f"overlap with")
     sonic_vector_1[-ns:] *= fade(number_of_samples=ns, method=method,
@@ -247,5 +257,5 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
     # 5 crossfaded at 8 kHz summed to 8 where they should have stayed
     # between 3 and 5. Same defect as the export fades fixed in 1.8.1.
     s = mix_with_offset(sonic_vector_1, sonic_vector_2,
-                        duration=-duration / 1000, sample_rate=sample_rate)
+                        duration=-duration_ms / 1000, sample_rate=sample_rate)
     return s

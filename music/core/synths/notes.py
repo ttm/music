@@ -1544,7 +1544,7 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
         # The envelope's durations are milliseconds, so it needs the rate
         # too. It was the one call left at the 44,100 default: at 8,000 Hz
         # every attack, decay and release lasted 5.5 times as long.
-        s.append(adsr(sonic_vector=note_, release_duration=10,
+        s.append(adsr(sonic_vector=note_, release_ms=10,
                       sample_rate=sample_rate))
         pointer += ns
         i += 1

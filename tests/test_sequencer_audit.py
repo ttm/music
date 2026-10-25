@@ -102,8 +102,8 @@ def test_a_vibrato_needs_both_a_rate_and_a_depth(vibrato_freq,
 
 
 def test_a_note_s_envelope_is_the_adsr_it_was_given():
-    params = dict(attack_duration=10, decay_duration=10,
-                  release_duration=20, sustain_level=-6)
+    params = dict(attack_ms=10, decay_ms=10,
+                  release_ms=20, sustain_level=-6)
     np.testing.assert_array_equal(
         _alone(freq=330, start=0, duration=0.1, adsr_params=params),
         music.adsr(sonic_vector=music.note(330, 0.1, sample_rate=RATE),
@@ -184,11 +184,11 @@ def test_nothing_scheduled_renders_an_empty_mono_array():
 def test_add_note_records_every_field_it_is_given():
     sequencer = Sequencer()
     sequencer.add_note(330, 0.5, 0.25, vibrato_freq=6, max_pitch_dev=3,
-                       adsr_params={"attack_duration": 5},
+                       adsr_params={"attack_ms": 5},
                        spatial={"x": 1.0})
     sequencer.add_note(220, 0, 1)
     assert sequencer.events == [
-        NoteEvent(330, 0.5, 0.25, 6, 3, {"attack_duration": 5},
+        NoteEvent(330, 0.5, 0.25, 6, 3, {"attack_ms": 5},
                   {"x": 1.0}),
         NoteEvent(220, 0, 1, 0.0, 0.0, None, None)]
 

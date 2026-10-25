@@ -195,7 +195,7 @@ def test_adsr_envelope_matches_the_signal_length(length):
 
 @pytest.mark.parametrize(
     "stage",
-    ["attack_duration", "decay_duration", "release_duration"],
+    ["attack_ms", "decay_ms", "release_ms"],
 )
 def test_adsr_accepts_a_zero_length_stage(stage):
     """A zero stage used to divide by zero, and once guarded it made the

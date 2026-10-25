@@ -35,7 +35,7 @@ def test_sequencer_renders_a_vibrato_note():
 def test_sequencer_applies_an_adsr_envelope():
     seq = music.Sequencer()
     seq.add_note(440, start=0, duration=0.05,
-                 adsr_params={"attack_duration": 5, "release_duration": 5})
+                 adsr_params={"attack_ms": 5, "release_ms": 5})
     assert _finite(seq.render())
 
 

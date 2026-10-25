@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-19**,
-`music` 1.11.0: 61 modules, 17,335 LOC package + 27,301 LOC tests, 131 names
+`music` 1.11.0: 61 modules, 17,393 LOC package + 27,382 LOC tests, 131 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -531,6 +531,9 @@ worse than the code.
   refuses a routine that declares a rate of its own.
 - **A count of zero samples was two seconds of sound,** in every routine
   that takes one, while a zero duration was nothing. Zero is zero now.
+- **Parameters in milliseconds were named like the ones in seconds,** so
+  `cross_fade(a, b, duration=0.5)` crossfaded over half a millisecond. They
+  end in `_ms`, and the old names still work and warn.
 - **Names could not be retired.** Second names such as `mix2` were kept
   bound with nothing telling their callers to move. They warn now, and
   CONTRIBUTING.md says when one may go.

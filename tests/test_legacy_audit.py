@@ -30,7 +30,7 @@ def test_a_bare_v_is_two_seconds_of_220_hz():
 
 def test_adv_is_the_envelope_over_the_note():
     note = dict(freq=330, duration=0.2, vibrato_freq=6)
-    envelope = dict(attack_duration=10, release_duration=30)
+    envelope = dict(attack_ms=10, release_ms=30)
     np.testing.assert_array_equal(
         ADV(note, envelope),
         music.adsr(sonic_vector=V_(**note), **envelope))
@@ -53,8 +53,8 @@ def test_a_being_plays_each_note_for_its_own_duration():
         music.adsr(sonic_vector=music.note_with_vibrato(
             freq=freq, duration=duration, vibrato_freq=rate,
             max_pitch_dev=depth, waveform_table=being.tab_[0]),
-            attack_duration=attack, decay_duration=decay,
-            sustain_level=sustain, release_duration=release)
+            attack_ms=attack, decay_ms=decay,
+            sustain_level=sustain, release_ms=release)
         for freq, duration, rate, depth, attack, decay, sustain, release in [
             (220, 0.3, 5, 1, 10, 10, -3, 20),
             (330, 0.2, 7, 3, 5, 5, -6, 30),
@@ -197,8 +197,8 @@ def test_a_bare_being_s_note_is_the_one_its_defaults_describe():
         music.adsr(sonic_vector=music.note_with_vibrato(
             freq=220, duration=1, vibrato_freq=3, max_pitch_dev=1,
             waveform_table=being.tab_[0]),
-            attack_duration=20, decay_duration=20, sustain_level=-5,
-            release_duration=50))
+            attack_ms=20, decay_ms=20, sustain_level=-5,
+            release_ms=50))
 
 
 def test_dscale_scales_every_duration():

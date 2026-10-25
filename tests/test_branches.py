@@ -147,7 +147,7 @@ def test_fade_resolves_a_stereo_vector_per_channel():
 
 def test_cross_fade_handles_stereo_pairs():
     stereo = np.vstack((music.note(duration=0.1),) * 2)
-    out = cross_fade(stereo, stereo * 0.5, duration=10)
+    out = cross_fade(stereo, stereo * 0.5, duration_ms=10)
     assert out.shape[0] == 2 and _finite(out)
 
 

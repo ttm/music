@@ -37,9 +37,9 @@ def test_a_scalar_fade_is_applied_at_both_ends(stereo, tmp_path):
     signal = np.vstack((tone, tone)) if stereo else tone
     writer = music.write_wav_stereo if stereo else music.write_wav_mono
 
-    writer(signal, filename=str(path), fades=20)
+    writer(signal, filename=str(path), fades_ms=20)
     faded = music.read_audio(str(path))
-    writer(signal, filename=str(path), fades=0)
+    writer(signal, filename=str(path), fades_ms=0)
     plain = music.read_audio(str(path))
     assert faded.shape == signal.shape
 
@@ -64,7 +64,7 @@ def test_written_fade_durations_follow_the_file_sample_rate(
     path = tmp_path / f"faded.{extension}"
 
     writer(signal, filename=str(path), sample_rate=sample_rate,
-           fades=(100, 150))
+           fades_ms=(100, 150))
 
     restored = music.read_audio(str(path))
     assert restored.shape == signal.shape
@@ -96,8 +96,8 @@ def test_numpy_fade_pair_writes_the_same_sound_as_a_tuple(stereo, tmp_path):
     tuple_path = tmp_path / "tuple.wav"
     array_path = tmp_path / "array.wav"
 
-    writer(signal, filename=str(tuple_path), fades=(10, 30))
-    writer(signal, filename=str(array_path), fades=np.array([10, 30]))
+    writer(signal, filename=str(tuple_path), fades_ms=(10, 30))
+    writer(signal, filename=str(array_path), fades_ms=np.array([10, 30]))
 
     assert np.array_equal(music.read_audio(str(array_path)),
                           music.read_audio(str(tuple_path)))
@@ -114,7 +114,7 @@ def test_disabled_fades_leave_the_samples_untouched(stereo, fades, tmp_path):
     faded_path = tmp_path / "disabled.wav"
 
     writer(signal, filename=str(plain_path))
-    writer(signal, filename=str(faded_path), fades=fades)
+    writer(signal, filename=str(faded_path), fades_ms=fades)
 
     assert np.array_equal(music.read_audio(str(faded_path)),
                           music.read_audio(str(plain_path)))

@@ -1,77 +1,87 @@
 # Quality assessment and known limitations
 
-*A living record, not a point-in-time audit. Last measured **2026-10-19**,
-`music` 1.11.0: 62 modules, 17,525 LOC package + 27,573 LOC tests, 131 names
-in the public API.*
+*A living record, not a point-in-time audit. What the code can measure
+about itself is in **Figures**, below, written from the code at every
+release; the section that matters most is **Known limitations** -- what
+the package does not do, stated by the people who know.*
 
 The first version of this file graded the repository once, in August 2026,
 and was already stale four days later: it reported 125 tests at 61 % coverage
 against a package that had 504 at 100 %. A snapshot that nobody updates
 misrepresents the code it describes, and it undersells it in exactly the
-places recent work improved. So this file is now kept current with the code,
-and the section that matters most is **Known limitations** — what the package
-does not do, stated by the people who know.
+places recent work improved. So this file is now kept current with the code.
 
-`tools/assessment_figures.py` checks the package size, public API,
-annotation and docstring coverage, test count, line coverage, extended lint
-count and version stamps below. CI runs its fast checks on every push and
-the release gate runs the complete set. Other measurements and descriptive
-claims still need review: the September 2026 audit found stale example and
-type-check counts and an obsolete claim that interval naming was missing.
-[ROADMAP.md](ROADMAP.md) records that review and the follow-up work.
+Its figures were then quoted through the prose and checked against the
+package on every push, by regular expressions over the sentences that held
+them. That kept them true; it also made every change that added a test or
+a line a change to this file as well, and a reflowed sentence a check that
+silently stopped running. So the figures the code can measure are one
+table, which `tools/assessment_figures.py` writes whole, and the prose
+refers to it rather than restating it:
 
 ```console
 python tools/assessment_figures.py           # report any drift
 python tools/assessment_figures.py --write   # correct it
+python tools/assessment_figures.py --fast    # the quoted figures alone
 ```
 
-The version in the stamp above is checked too, against `pyproject.toml`,
-here and in `RECONCILIATION.md` and `DISCREPANCIES.md`. All three still
-said 1.4.0 at 1.7.0, with every number around them correct and current,
-because a stamp was the one figure the script never read.
+The release gate runs the complete check, so every released copy of this
+file carries figures measured from that release; between releases the
+table describes the last one, and says which. What prose still quotes
+changes only when something meaningful does -- the version each of the
+three living documents stamps itself with, here and in `RECONCILIATION.md`
+and `DISCREPANCIES.md`, and the reconciliation register's counts wherever
+they appear -- and `--fast` checks those on every push. The three stamps
+all said 1.4.0 at 1.7.0, with every number around them correct and
+current, because a stamp was the one figure the script never read.
 
-`tests/test_assessment_figures.py` checks the other half of it: that every
-figure is still *where* the script looks for it. These checks are regexes
-over prose that people rewrite, and one that no longer matches is a check
-that no longer runs. The seven needing `pytest` and `ruff` to answer were
-built only by a full run, so until that test existed a reflowed table row
-could have gone from one release to the next without anyone learning the
-figure had stopped being read.
+The test count is what `pytest` collects rather than what passes. A few
+tests skip when an optional external resource is absent -- the KEMAR
+measurements `music.hrtf` reads, the singers `music.singing` drives -- so
+the number that passes depends on the machine it ran on, and a figure that
+does is not a figure. Everything collected that runs, passes.
 
-The wall-clock time in the test-suite row is not checked, being a
-property of the machine rather than of the package, and neither is the
-history in the paragraph above, which quotes figures from when this file
-was wrong and has to keep quoting them. The date in the stamp is written
-by a full run rather than checked, since a date that is not today is not
-drift -- it is a file nothing has had to correct since.
+## Figures
 
-The test-suite row counts what `pytest` collects rather than what passes.
-A few tests skip when an optional external resource is absent -- the KEMAR
-measurements `music.hrtf` reads, the singers `music.singing` drives --
-so the number that passes depends on the machine it ran on, and
-a figure that does is not a figure. Everything collected that runs, passes.
+<!-- BEGIN FIGURES: written by `python tools/assessment_figures.py --write`; change the script, not the table. -->
+Measured **2026-10-25**, at `music` 1.11.0.
+
+| Figure | Value |
+|---|---|
+| Package | 62 modules, 17,525 lines |
+| Public API | 131 names |
+| Tests | 7,105 collected by `pytest`, in 27,605 lines |
+| Docstring examples | 136 docstrings, each run as a doctest |
+| Examples | 18 scripts, every one run by `tools/run_examples.py` |
+| Line and branch coverage | 100 % of 4,727 statements and 1,604 branches: 0 statements missed, 0 branches taken only one way |
+| Annotation coverage | 208 / 350 functions (59 %); 68 / 102 exported (67 %) |
+| Docstring coverage | 237 / 246 public definitions (96 %) |
+| Extended lint, `ruff check --select ALL music` | 3,081 findings, the largest kinds 756 quote-style, 376 missing argument annotations and 80 missing return annotations |
+| `legacy/` | 1,223 lines |
+<!-- END FIGURES -->
 
 ## How this was measured
 
 The figures below come from running the code. The table combines the
-latest suite checks with specialized measurements; only the selected
-figures described above are automatically compared with the checkout.
+latest suite checks with specialized measurements; the counts that change
+with ordinary work are in **Figures**, written by the script, and the rest
+are settled by the tests and tools each row names.
 
 | Check | Command | Result |
 |---|---|---|
-| Test suite | `pytest -q` | **6859 tests**; 9 doctest items skip by explicit `+SKIP`, and the tests that sing where their backend is not set up |
-| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** (4,541 stmts, 0 missed) |
-| Type check | `mypy music` | **clean**, 59 files |
+| Test suite | `pytest -q` | **every test passes** that runs: doctest items marked `+SKIP` skip, and the tests that sing where their backend is not set up |
+| Coverage | `pytest --cov=music --cov-branch --cov-fail-under=100` | **100 %** of lines and branches |
+| Type check | `mypy music` | **clean**, every module |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
-| Lint, extended rule set | `ruff check --select ALL music` | 2,980 findings |
-| Annotation coverage | AST scan | **208 / 350 functions (59 %)**; 68 / 102 exported (67 %) |
-| Docstring coverage | AST scan | **237 / 246 public defs (96 %)** |
+| Lint, extended rule set | `ruff check --select ALL music` | counted in **Figures** |
+| Annotation coverage | AST scan | in **Figures** |
+| Docstring coverage | AST scan | in **Figures** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **22 of 35 routines sample-exact**; 9 divergent with a stated reason, 4 where the reference does not run |
 | Article coverage | `tools/article_coverage.py --strict` | **46 of 47 labelled equations** cited by a test; **all 46** a test could settle |
-| Docstring examples | `pytest --doctest-modules` | **62 examples run**, 1 skipped |
-| Examples | `python tools/run_examples.py` | **16 pass**, 0 skipped |
+| Docstring examples | `pytest --doctest-modules` | **every one runs** but those marked `+SKIP` |
+| Examples | `python tools/run_examples.py` | **every one runs** |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
 | Sample rate | `tests/test_sample_rate.py` | every export that takes a rate renders at the default rate exactly what it renders when handed it, and none declares a rate of its own |
 | Deprecated names | `tests/test_deprecation.py` | each still works and warns where it is used; no export uses one itself |
@@ -103,7 +113,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; Linux CI across Python 3.10–3.14 including a job pinned to the declared lower bounds; installed-wheel checks on Linux, macOS and Windows with Python 3.12 |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 59 %; the `legacy/` subpackage |
+| **Needs work** | Annotation coverage, which **Figures** gives; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -495,7 +505,8 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 59 %**, and 67 % across the exported API. The
+- **Annotation coverage is incomplete**, in the package and across the
+  exported API; **Figures** gives both. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones
@@ -504,9 +515,10 @@ either documented in the code or tracked in the issue list.
   annotating them honestly needs `np.asarray` coercion through the
   bodies rather than a signature edit. Doing it by signature alone
   produced 583 mypy errors and was reverted.
-- **The extended lint set reports 2,980 findings** on `music/`, almost all
-  stylistic: 731 quote-style, 375 missing argument annotations, 80 missing
-  return annotations. The configured set — `E`, `W`, `F` — is clean. The
+- **The extended lint set reports thousands of findings** on `music/`,
+  almost all stylistic; **Figures** counts them and their three largest
+  kinds, quote style and missing argument and return annotations. The
+  configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.
 - **`pan_transitions` accepts a `method` it does not read.** The
@@ -516,9 +528,9 @@ either documented in the code or tracked in the issue list.
   now says so, and a test pins it, so implementing the three laws is a
   deliberate change rather than a discovery. The same routine's legs are
   fixed -- see the changelog.
-- **`legacy/` is 1,223 LOC** kept for `CanonicalSynth`, `IteratorSynth` and
-  the `Being` class. It is covered and type-checked, but it is not where new
-  work should go.
+- **`legacy/`**, whose size **Figures** gives, is kept for
+  `CanonicalSynth`, `IteratorSynth` and the `Being` class. It is covered
+  and type-checked, but it is not where new work should go.
 
 ## No longer true
 

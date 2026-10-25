@@ -8,33 +8,41 @@ release, with the wrong test count already committed. Issue #70 asks for
 the practice of keeping it current; a practice that depends on someone
 remembering is the thing that keeps failing.
 
-Every figure in that file comes from running something. So this runs
-them and compares, and the release gate refuses to publish a file that
-disagrees with the package it describes.
+So the figures the package can measure about itself are one table in
+ASSESSMENT.md, between two markers, and this script writes it. They were
+once quoted through the prose and checked by regular expressions over
+the sentences holding them, on every push: that kept them true, and made
+every change that added a test or a line also a change to that file, and
+a reflowed sentence a check that silently stopped running. The table is
+written whole, the prose refers to it rather than restating it, and the
+release gate checks it, so every released copy is measured from its
+release.
+
+What prose still quotes changes only when something meaningful does: the
+version each of the three living documents stamps itself with, in
+ASSESSMENT.md, RECONCILIATION.md and DISCREPANCIES.md -- all three said
+1.4.0 at 1.7.0, with every number around them correct, because a stamp
+was the one figure nothing read -- and the reconciliation register's
+counts, wherever they are quoted. Those are checked on every push.
 
 Usage
 -----
 ::
 
-    python tools/assessment_figures.py           # report any drift
-    python tools/assessment_figures.py --write   # correct it
-    python tools/assessment_figures.py --fast    # skip the slow measures
+    python tools/assessment_figures.py                 # report any drift
+    python tools/assessment_figures.py --write         # correct it
+    python tools/assessment_figures.py --fast          # quoted figures
+    python tools/assessment_figures.py --write --fast  # correct those
 
-``--fast`` skips the three figures that need pytest, coverage and ruff
-to run, and checks only the ones an AST scan can settle. The others take
-about a minute between them.
+``--fast`` measures nothing: it checks the quoted figures, which is what CI
+runs on every push. The table needs the whole suite to run under coverage,
+and ruff, which take a few minutes between them.
 
-It also checks the version each of the three living documents stamps
-itself with, in ASSESSMENT.md, RECONCILIATION.md and DISCREPANCIES.md.
-All three still said 1.4.0 at 1.7.0, with every number around them
-correct: the stamp was the one figure nothing read.
-
-What is deliberately not checked: the wall-clock time in the test-suite
-row, which is a property of the machine rather than of the package; the
-history in the opening paragraphs, which is about how the file went
-wrong once and must not be rewritten to match the present; and the
-measurement dates, which are written rather than checked, for the reason
-`stamp_the_date` gives.
+What is deliberately not checked: the measurement date, which is written
+rather than checked, since a date that is not today is not drift but a
+table nothing has had to correct since; and the history in the opening
+paragraphs of ASSESSMENT.md, which is about how the file went wrong once
+and must not be rewritten to match the present.
 """
 
 from __future__ import annotations
@@ -54,45 +62,23 @@ RECONCILIATION = ROOT / "RECONCILIATION.md"
 DISCREPANCIES = ROOT / "DISCREPANCIES.md"
 ZENODO = ROOT / ".zenodo.json"
 
+#: The lines the table sits between. The first says who writes it.
+BEGIN = ("<!-- BEGIN FIGURES: written by `python tools/assessment_figures.py "
+         "--write`; change the script, not the table. -->")
+END = "<!-- END FIGURES -->"
+
 
 def declared_version():
     """The version in pyproject.toml, which is the one that counts.
 
     `tools/release.py` says the same of it, and refuses to publish while
-    CITATION.cff or the changelog disagrees. The living documents stamp a
-    version too, and nothing read theirs.
+    CITATION.cff or the changelog disagrees.
     """
     match = re.search(r"^version = '([^']+)'",
                       (ROOT / "pyproject.toml").read_text(), re.MULTILINE)
     if not match:
         raise SystemExit("no version found in pyproject.toml")
     return match.group(1)
-
-
-def stamp_the_date(text):
-    """Set ASSESSMENT.md's measurement date to today.
-
-    Written, never checked. A date that is not today is not drift: it is
-    a file nothing has had to correct since. So there is nothing here to
-    fail on, and the only claim worth keeping true is that the date names
-    a run that happened -- which is why only a full run writes it.
-    `--fast` leaves the pytest, coverage and ruff rows unmeasured, and a
-    run that did not measure them cannot say the file was measured today.
-
-    It stops when the stamp is not there. Every other write here is
-    guarded by a check that has already found its anchor; this one is
-    not, so without this it would quietly rewrite nothing and report a
-    file it had corrected.
-    """
-    stamped, written = re.subn(r"(?<=Last measured \*\*)\d{4}-\d\d-\d\d",
-                               datetime.date.today().isoformat(), text)
-    if written != 1:
-        raise SystemExit(
-            "the measurement date is not where this script looks for it. "
-            "ASSESSMENT.md has been rewritten around it; fix the pattern "
-            "in tools/assessment_figures.py rather than dropping the "
-            "stamp.")
-    return stamped
 
 
 def package_files():
@@ -153,10 +139,11 @@ def scan():
                     public += 1
                     documented += bool(ast.get_docstring(node))
 
-    return register() | {
+    return {
         "modules": len(package_files()),
         "package_loc": loc(package_files()),
         "tests_loc": loc(sorted((ROOT / "tests").glob("**/*.py"))),
+        "examples": len(sorted((ROOT / "examples").glob("*.py"))),
         "api_names": len(music.__all__),
         "annotated": annotated,
         "functions": total,
@@ -184,13 +171,16 @@ def measured_by_running():
     if not count:
         raise SystemExit("could not read the collection:\n"
                          + collected.stdout[-2000:])
+    # The docstring examples are the items collected from the package
+    # itself rather than from tests/.
+    doctests = len(re.findall(r"^music/\S+::", collected.stdout, re.M))
 
     tests = subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", "--cov=music",
+        [sys.executable, "-m", "pytest", "-q", "--cov=music", "--cov-branch",
          "--cov-report=term"],
         cwd=ROOT, capture_output=True, text=True)
     passed = re.search(r"(\d+) passed", tests.stdout)
-    total_line = re.search(r"^TOTAL\s+(\d+)\s+(\d+)\s+(\d+)%",
+    total_line = re.search(r"^TOTAL\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)%",
                            tests.stdout, re.M)
     if not (passed and total_line):
         raise SystemExit("could not read the test run:\n"
@@ -200,8 +190,7 @@ def measured_by_running():
         [sys.executable, "-m", "ruff", "check", "--select", "ALL", "music"],
         cwd=ROOT, capture_output=True, text=True)
     found = re.search(r"Found (\d+) error", lint.stdout)
-    # The three largest kinds, which the file names beside the total and
-    # which drifted by hand while the total was measured.
+    # The three largest kinds, which the table names beside the total.
     statistics = subprocess.run(
         [sys.executable, "-m", "ruff", "check", "--select", "ALL",
          "--statistics", "music"],
@@ -211,10 +200,13 @@ def measured_by_running():
 
     return {
         "tests": int(count.group(1)),
+        "doctests": doctests,
         "passed": int(passed.group(1)),
         "statements": int(total_line.group(1)),
         "missed": int(total_line.group(2)),
-        "coverage_pct": int(total_line.group(3)),
+        "branches": int(total_line.group(3)),
+        "partial": int(total_line.group(4)),
+        "coverage_pct": int(total_line.group(5)),
         "ruff_all": int(found.group(1)) if found else 0,
         "ruff_quotes": kinds.get("Q000", 0),
         "ruff_untyped_arguments": kinds.get("ANN001", 0),
@@ -226,73 +218,90 @@ def thousands(n):
     return f"{n:,}"
 
 
-def expectations(figures):
-    """Each figure, as (label, regex, wanted text, file).
+def table(figures, version, date):
+    """The figures, as the block ASSESSMENT.md carries between markers."""
+    f, t = figures, thousands
+    rows = [
+        ("Package", f"{f['modules']} modules, {t(f['package_loc'])} lines"),
+        ("Public API", f"{f['api_names']} names"),
+        ("Tests", f"{t(f['tests'])} collected by `pytest`, in "
+                  f"{t(f['tests_loc'])} lines"),
+        ("Docstring examples", f"{f['doctests']} docstrings, each run as a "
+                               f"doctest"),
+        ("Examples", f"{f['examples']} scripts, every one run by "
+                     f"`tools/run_examples.py`"),
+        ("Line and branch coverage",
+         f"{f['coverage_pct']} % of {t(f['statements'])} statements and "
+         f"{t(f['branches'])} branches: {f['missed']} statements missed, "
+         f"{f['partial']} branches taken only one way"),
+        ("Annotation coverage",
+         f"{f['annotated']} / {f['functions']} functions "
+         f"({f['annotated_pct']} %); {f['exported_annotated']} / "
+         f"{f['exported_functions']} exported ({f['exported_pct']} %)"),
+        ("Docstring coverage",
+         f"{f['documented']} / {f['public_defs']} public definitions "
+         f"({f['documented_pct']} %)"),
+        ("Extended lint, `ruff check --select ALL music`",
+         f"{t(f['ruff_all'])} findings, the largest kinds "
+         f"{t(f['ruff_quotes'])} quote-style, "
+         f"{t(f['ruff_untyped_arguments'])} missing argument annotations "
+         f"and {t(f['ruff_untyped_returns'])} missing return annotations"),
+        ("`legacy/`", f"{t(f['legacy_loc'])} lines"),
+    ]
+    return "\n".join(
+        [BEGIN, f"Measured **{date}**, at `music` {version}.", "",
+         "| Figure | Value |", "|---|---|"]
+        + [f"| {label} | {value} |" for label, value in rows]
+        + [END])
 
-    Most are in ASSESSMENT.md. The README carries one too -- the test count
-    in its Contributing section -- which said 1556 for three releases after
-    it stopped being true, because this script only ever looked at one
-    file.
+
+def current_table(text):
+    """The block between the markers in `text`, markers included."""
+    if text.count(BEGIN) != 1 or text.count(END) != 1:
+        raise SystemExit(
+            "ASSESSMENT.md must hold the figures table between its two "
+            "markers exactly once; they are what --write replaces. Put "
+            f"them back rather than writing the table by hand:\n{BEGIN}\n"
+            f"{END}")
+    start = text.index(BEGIN)
+    return text[start:text.index(END, start) + len(END)]
+
+
+def table_date(block):
+    """The measurement date the table carries."""
+    match = re.search(r"Measured \*\*(\d{4}-\d\d-\d\d)\*\*", block)
+    if not match:
+        raise SystemExit("the figures table carries no measurement date")
+    return match.group(1)
+
+
+def table_rows(block):
+    """{label: value} for each row of a figures table."""
+    return dict(re.findall(r"^\| (.+?) \| (.+?) \|$", block, re.M)[1:])
+
+
+def quoted(figures, version):
+    """Each figure prose still quotes, as (label, regex, wanted text, file).
 
     RECONCILIATION.md and DISCREPANCIES.md are here for their version
-    stamp alone. Neither is measured from here -- the reconciliation needs
-    a MASS checkout -- but each is re-established against whatever the
-    package currently is on every push, by `tests/test_mass_reconciliation.py`
-    and by the tests each discrepancy names. So the version they stamp is
-    the current one, and the date they carry is not: that belongs to the
-    run against the checkout, and stays where it is.
-
-    The regexes are anchored on enough surrounding words to miss the
-    opening history, which quotes figures from when this file was wrong
-    and must keep quoting them.
+    stamp. Neither is measured from here -- the reconciliation needs a
+    MASS checkout -- but each is re-established against whatever the
+    package currently is on every push, by
+    `tests/test_mass_reconciliation.py` and by the tests each discrepancy
+    names. So the version they stamp is the current one, and the date
+    they carry is not: that belongs to the run against the checkout, and
+    stays where it is.
     """
-    version = declared_version()
-    wanted = [
-        ("version stamp", r"(?<=`music` )\d+\.\d+\.\d+(?=: \d+ modules)",
-         version),
+    exact, divergent, broken, total = (
+        str(figures[key]) for key in ("mass_exact", "mass_divergent",
+                                      "mass_broken", "mass_total"))
+    return [
         ("version stamp, RECONCILIATION.md",
          r"(?<=`music` )\d+\.\d+\.\d+(?=\s+on every push)",
          version, RECONCILIATION),
         ("version stamp, DISCREPANCIES.md",
          r"(?<=`music` )\d+\.\d+\.\d+(?=\s+on every push)",
          version, DISCREPANCIES),
-        ("modules", r"(?<=: )\d+(?= modules,)", str(figures["modules"])),
-        ("package LOC", r"(?<=modules, )[\d,]+(?= LOC package)",
-         thousands(figures["package_loc"])),
-        ("tests LOC", r"(?<=LOC package \+ )[\d,]+(?= LOC tests)",
-         thousands(figures["tests_loc"])),
-        ("public API names", r"(?<=LOC tests, )\d+(?= names)",
-         str(figures["api_names"])),
-        ("annotation coverage",
-         r"(?<=AST scan \| \*\*)\d+ / \d+ functions \(\d+ %\)",
-         f"{figures['annotated']} / {figures['functions']} functions "
-         f"({figures['annotated_pct']} %)"),
-        ("exported annotation coverage",
-         r"(?<=%\)\*\*; )\d+ / \d+ exported \(\d+ %\)",
-         f"{figures['exported_annotated']} / "
-         f"{figures['exported_functions']} exported "
-         f"({figures['exported_pct']} %)"),
-        ("docstring coverage",
-         r"(?<=AST scan \| \*\*)\d+ / \d+ public defs \(\d+ %\)",
-         f"{figures['documented']} / {figures['public_defs']} public defs "
-         f"({figures['documented_pct']} %)"),
-        ("annotation coverage, restated",
-         r"(?<=Annotation coverage at )\d+(?= %;)",
-         str(figures["annotated_pct"])),
-        ("annotation coverage, restated again",
-         r"(?<=\*\*Annotation coverage is )\d+(?= %\*\*)",
-         str(figures["annotated_pct"])),
-        ("exported annotation, restated",
-         r"(?<=and )\d+(?= % across the exported API)",
-         str(figures["exported_pct"])),
-        ("legacy LOC", r"(?<=\*\*`legacy/` is )[\d,]+(?= LOC\*\*)",
-         thousands(figures["legacy_loc"])),
-    ]
-    # The reconciliation register, counted, wherever it is quoted.
-    exact, divergent, broken, total = (
-        str(figures[key]) for key in ("mass_exact", "mass_divergent",
-                                      "mass_broken", "mass_total"))
-    wanted += [
         ("register summary, sample-exact",
          r"(?<=\*\*)\d+(?= sample-exact, \d+ divergent)", exact,
          RECONCILIATION),
@@ -302,13 +311,15 @@ def expectations(figures):
          r"(?<=divergent, )\d+(?= where the reference does not run\.)",
          broken, RECONCILIATION),
         ("MASS sample-exact",
-         r"(?<=\| \*\*)\d+(?= of \d+ routines sample-exact)", exact),
-        ("MASS routines", r"(?<= of )\d+(?= routines sample-exact)", total),
+         r"(?<=\| \*\*)\d+(?= of \d+ routines sample-exact)", exact,
+         ASSESSMENT),
+        ("MASS routines", r"(?<= of )\d+(?= routines sample-exact)", total,
+         ASSESSMENT),
         ("MASS divergent", r"(?<=sample-exact\*\*; )\d+(?= divergent)",
-         divergent),
+         divergent, ASSESSMENT),
         ("MASS not runnable",
          r"(?<=stated reason, )\d+(?= where the reference does not run)",
-         broken),
+         broken, ASSESSMENT),
         ("README MASS sample-exact",
          r"(?<=routine by routine — )\d+(?= of \d+ are reproduced)", exact,
          README),
@@ -328,54 +339,21 @@ def expectations(figures):
          r"(?<=and in )\d+(?= the reference itself does not run)", broken,
          ZENODO),
     ]
-    if "tests" in figures:
-        wanted += [
-            ("test count", r"(?<=\| \*\*)\d+(?= tests\*\*)",
-             str(figures["tests"])),
-            ("README test count",
-             r"(?<=pytest {39}# )[\d,]+(?= tests, 100% line and branch)",
-             thousands(figures["tests"]), README),
-            ("coverage", r"(?<=\| \*\*)\d+ %(?=\*\* \([\d,]+ stmts)",
-             f"{figures['coverage_pct']} %"),
-            ("statements", r"(?<=\*\* \()[\d,]+(?= stmts)",
-             thousands(figures["statements"])),
-            ("statements missed", r"(?<= stmts, )\d+(?= missed\))",
-             str(figures["missed"])),
-            ("extended lint",
-             r"(?<=`ruff check --select ALL music` \| )[\d,]+(?= findings)",
-             thousands(figures["ruff_all"])),
-            ("extended lint, restated",
-             r"(?<=extended lint set reports )[\d,]+(?= findings\*\*)",
-             thousands(figures["ruff_all"])),
-            ("extended lint, quote style",
-             r"(?<=stylistic: )[\d,]+(?= quote-style)",
-             thousands(figures["ruff_quotes"])),
-            ("extended lint, argument annotations",
-             r"(?<=quote-style, )[\d,]+(?= missing argument)",
-             thousands(figures["ruff_untyped_arguments"])),
-            ("extended lint, return annotations",
-             r"(?<=missing argument annotations, )[\d,]+(?= missing)",
-             thousands(figures["ruff_untyped_returns"])),
-        ]
-    # Most figures live in ASSESSMENT.md; a few name their own file.
-    return [entry if len(entry) == 4 else (*entry, ASSESSMENT)
-            for entry in wanted]
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write", action="store_true",
-                        help="correct ASSESSMENT.md rather than reporting")
+                        help="correct the files rather than reporting")
     parser.add_argument("--fast", action="store_true",
-                        help="skip the figures that need pytest and ruff")
+                        help="check the quoted figures alone, measuring "
+                             "nothing")
     args = parser.parse_args(argv)
 
-    figures = scan()
-    if not args.fast:
-        figures |= measured_by_running()
-
-    checks = expectations(figures)
+    version = declared_version()
+    checks = quoted(register(), version)
     texts = {path: path.read_text() for _l, _p, _w, path in checks}
+    texts.setdefault(ASSESSMENT, ASSESSMENT.read_text())
     drifted = []
     for label, pattern, want, path in checks:
         found = re.findall(pattern, texts[path])
@@ -391,15 +369,32 @@ def main(argv=None):
         if args.write:
             texts[path] = re.sub(pattern, want, texts[path])
 
+    checked = len(checks)
+    if not args.fast:
+        block = current_table(texts[ASSESSMENT])
+        date = (datetime.date.today().isoformat() if args.write
+                else table_date(block))
+        fresh = table(scan() | measured_by_running(), version, date)
+        have, want = table_rows(block), table_rows(fresh)
+        for label in sorted(set(have) | set(want)):
+            if have.get(label) != want.get(label):
+                drifted.append((f"table, {label}", have.get(label),
+                                want.get(label)))
+        stamped = re.search(r"at `music` (\S+)\.", block)
+        if not stamped or stamped.group(1) != version:
+            drifted.append(("table, version",
+                            stamped.group(1) if stamped else None, version))
+        if args.write:
+            texts[ASSESSMENT] = texts[ASSESSMENT].replace(block, fresh)
+        checked += len(want) + 1
+
     if args.write:
-        if not args.fast:
-            texts[ASSESSMENT] = stamp_the_date(texts[ASSESSMENT])
         for path, text in texts.items():
             path.write_text(text)
 
     if not drifted:
         files = ", ".join(sorted({path.name for *_x, path in checks}))
-        print(f"{files} agree with the package, on {len(checks)} figures.")
+        print(f"{files} agree with the package, on {checked} figures.")
         return 0
 
     for label, have, want in drifted:

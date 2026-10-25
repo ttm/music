@@ -116,6 +116,13 @@ Old names keep working and warn: see **Deprecated**.
   of 1.11.0's did, and some of every release's since 1.1.0. Code spans
   are held out as placeholders now, and a test converts every section of
   the changelog.
+- **ASSESSMENT.md's measured figures are one table, written at release.**
+  They were quoted through its prose and checked by regular expressions
+  on every push, so every change that added a test or a line was also a
+  change to that file. `tools/assessment_figures.py --write` writes the
+  table whole and the release gate checks it; on every push, `--fast`
+  checks only what prose still quotes, the version stamps and the
+  reconciliation register's counts.
 
 ## [1.11.0] - 2026-10-19
 

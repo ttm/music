@@ -518,12 +518,12 @@ pip install -e '.[dev,docs]'
 ```
 
 ```console
-pytest                                       # 6,859 tests, 100% line and branch coverage
+pytest                                       # the suite, at 100% line and branch coverage
 mypy music                                   # type check
 ruff check music tests examples tools conftest.py  # lint, at PEP 8's 79 columns
 sphinx-build -b html -W docs docs/_build/html
 python tools/run_examples.py                 # run every example
-python tools/assessment_figures.py           # the docs' figures vs the package
+python tools/assessment_figures.py --fast    # the figures the docs quote
 python -m build --wheel
 python tools/check_wheel.py --wheel dist/*.whl # installed artifact, outside the checkout
 ```
@@ -541,7 +541,10 @@ documentation warnings as errors.
 three examples once passed every package check. `assessment_figures.py`
 is there because the numbers in
 `ASSESSMENT.md` and this file went stale four times in two days when
-keeping them current was a habit rather than a check.
+keeping them current was a habit rather than a check. Its measured
+figures are one table in `ASSESSMENT.md`, written and checked at release;
+on every push `--fast` checks what prose quotes, the version stamps and
+the reconciliation register's counts.
 
 Four more run at release time rather than on every push, being slower or
 needing something the runner does not have:

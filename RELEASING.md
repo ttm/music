@@ -92,10 +92,14 @@ reuses the `SOURCES.txt` it left there rather than re-reading
 `MANIFEST.in`, so a file dropped from the manifest goes on being shipped
 and a build "from scratch" that keeps the egg-info is not from scratch.
 
-The assessment check catches stale figures. They went stale four times in
-two days when updating them depended on someone remembering, once with the
-wrong test count already committed during a release.
-`python tools/assessment_figures.py --write` corrects them.
+The assessment check measures the package again and refuses a figures
+table in `ASSESSMENT.md` that disagrees with it. The table is written here,
+at release, rather than kept current by every commit: the figures went
+stale four times in two days when updating them depended on someone
+remembering, once with the wrong test count already committed during a
+release, and checking them on every push made every commit that added a
+test an edit to that file. `python tools/assessment_figures.py --write`
+writes it.
 
 ### Prepare the release
 
@@ -111,9 +115,9 @@ the new heading. Each entry opens with a bold headline, `- **Like this.**`:
 the Zenodo record summarises a release by those headlines alone, so an
 entry without one would be missing from it. A test checks the newest
 section on every push, and the gate checks the release's. Then run `python tools/assessment_figures.py --write`,
-which carries the bump into the version stamped at the top of
-`ASSESSMENT.md`, `RECONCILIATION.md` and `DISCREPANCIES.md` and re-measures
-the figures while it is there. The script will tell you if you missed one:
+which carries the bump into the version stamped in `ASSESSMENT.md`'s
+figures table, `RECONCILIATION.md` and `DISCREPANCIES.md`, and measures the
+table while it is there. The script will tell you if you missed one:
 the gate runs that check too, so a release cannot ship documents naming the
 version before it. All three named 1.4.0 while the package was 1.7.0, which
 is what added the check.

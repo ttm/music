@@ -18,6 +18,6 @@ article states, cite the equation.
 - [ ] `mypy music` and `ruff check music tests examples tools conftest.py` are clean
 - [ ] `sphinx-build -b html -W docs docs/_build/html` builds
 - [ ] `python tools/run_examples.py` runs every example
-- [ ] `python tools/assessment_figures.py` agrees, or `--write` was run
+- [ ] `python tools/assessment_figures.py --fast` agrees; the measured figures are written at release
 - [ ] `CHANGELOG.md` has an entry under `[Unreleased]`
 - [ ] If this closes a known limitation, `ASSESSMENT.md` moved it to **No longer true**

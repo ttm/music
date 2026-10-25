@@ -18,7 +18,7 @@ mypy music                # types, with function bodies inspected
 ruff check ...            # lint, at PEP 8's 79 columns
 sphinx-build -W ...       # docs, with warnings as errors
 python tools/run_examples.py         # every example in examples/
-python tools/assessment_figures.py   # the figures in the docs vs the package
+python tools/assessment_figures.py --fast   # the figures prose quotes
 ```
 
 Lint, types and tests run on **Python 3.10 through 3.14**; a further job
@@ -83,17 +83,23 @@ attached.
 ## Documents that measure themselves
 
 `ASSESSMENT.md` records what the package does *not* do. It is meant to be
-uncomfortable and it is kept current by `tools/assessment_figures.py`, which
-fails when a number in it — or in the README — disagrees with the package.
-The same tool checks the version each of the three living documents stamps
-itself with, `RECONCILIATION.md` and `DISCREPANCIES.md` included. If you
-reword a row rather than a number, `tests/test_assessment_figures.py` is
-what tells you the script can no longer find the figure that row carried.
+uncomfortable, and its figures -- the package's size, its tests, coverage,
+annotation and docstring coverage, the extended lint count -- are one table
+that `tools/assessment_figures.py --write` writes whole. The release gate
+measures it again and refuses a stale one, so you do not need to touch it:
+a change that adds a test or a line no longer has to be a change to that
+file too. Do not restate those numbers in prose; refer to the table.
 
-If your change moves one of those numbers, run:
+What prose does still quote -- the version each of the three living
+documents stamps itself with, and the reconciliation register's counts in
+the README, `RECONCILIATION.md`, `ASSESSMENT.md` and the Zenodo metadata --
+changes only when something meaningful does, and `--fast` checks it on
+every push. If you reword a sentence holding one of those,
+`tests/test_assessment_figures.py` is what tells you the script can no
+longer find it. If your change moves one, run:
 
 ```console
-python tools/assessment_figures.py --write
+python tools/assessment_figures.py --write --fast
 ```
 
 If it closes a known limitation, move the entry to **No longer true** rather

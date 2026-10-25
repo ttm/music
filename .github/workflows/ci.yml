@@ -64,10 +64,11 @@ jobs:
           sudo apt-get install -y espeak-ng
           python -m pip install --upgrade pip
           pip install -e '.[plot,singing,antialias,sstim,structures]'
-      - name: Check ASSESSMENT.md against the package
-        # The figures an AST scan can settle, which is most of them and
-        # costs nothing. The ones needing pytest and ruff are checked by
-        # the release gate, which is when the file is published.
+      - name: Check the figures the documents quote
+        # The version stamps and the reconciliation register's counts,
+        # which change only when something meaningful does. The measured
+        # figures are one table the release gate writes and checks, so an
+        # ordinary push cannot leave it stale.
         run: python tools/assessment_figures.py --fast
 
       - name: Run every example

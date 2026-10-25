@@ -70,7 +70,13 @@ def test_extra_note_functions_shapes():
 
 def test_fit_to_samples_passes_the_vector_through_when_unset():
     vector = np.arange(5.0)
-    assert _fit_to_samples(vector, 0) is vector
+    assert _fit_to_samples(vector, None) is vector
+
+
+def test_fit_to_samples_fits_to_zero_when_asked_for_zero():
+    """Zero is a count, not "unset": the render keeps its shape and
+    loses its samples."""
+    assert _fit_to_samples(np.ones((2, 5)), 0).shape == (2, 0)
 
 
 def test_fit_to_samples_truncates_a_longer_vector():

@@ -1,5 +1,14 @@
 ## [Unreleased]
 
+### Note for anyone upgrading
+
+**Some calls now do something different, so the next version should be a
+major one.** Each change below was a trap, and each is either a fix or
+says so when it is met:
+
+- `number_of_samples=0` is zero samples. It meant "use `duration`", so
+  pass None, the default, for that.
+
 ### Added
 
 - **`set_sample_rate` and `get_sample_rate`: one default rate for every
@@ -15,6 +24,14 @@
 
 ### Fixed
 
+- **A count of zero samples was two seconds of sound.** `note(duration=0)`
+  rendered nothing and `note(number_of_samples=0)` 88,200 samples, as did
+  `adsr`, `fade`, `loud`, `noise`, `tremolo` and every other routine that
+  takes a count, because zero meant "not given". A count computed as zero
+  was laundered into the default on its way through, and this changelog
+  records at least five defects of that kind, each fixed where it was
+  found. None means "not given" now,
+  and the guards that worked around the convention are gone with it.
 - **`sing` returned 44.1 kHz audio whatever rate the caller worked at.**
 
 ### Tests
@@ -23,6 +40,8 @@
   what it renders when handed it, and none may declare one of its own.**
   The second is a scan of the source, so a routine added with
   `sample_rate=44100` fails it.
+- **Every routine that takes a sample count renders nothing for zero, in
+  its own shape,** as the zero-duration sweep already required.
 
 ### Maintenance
 

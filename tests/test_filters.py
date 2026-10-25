@@ -329,7 +329,7 @@ def test_a_stereo_cross_fade_keeps_each_channel_to_itself():
 
 
 @pytest.mark.parametrize("duration, sample_rate", [
-    (0, 44100),        # `fade` reads 0 samples as "unset" and gives 2 s
+    (0, 44100),        # `v[-0:]` is the whole sound, not none of it
     (-5, 44100),
     (500, 44100),      # the default overlap, longer than these sounds
     (5, 96000),        # 480 samples of overlap in a 441-sample sound
@@ -396,3 +396,11 @@ def test_louds_refuses_a_transition_with_no_samples(given):
     with pytest.raises(ValueError, match="at least one sample"):
         louds(trans_devs=(6, -6), alpha=(1, 1), method=("exp", "exp"),
               sample_rate=1000, **given)
+
+
+def test_louds_refuses_an_envelope_of_no_transitions():
+    """Zero counts used to mean "use the durations"; with counts given
+    and none in them there is nothing to build, and numpy said so in its
+    own words."""
+    with pytest.raises(ValueError, match="at least one"):
+        louds(number_of_samples=[])

@@ -717,7 +717,7 @@ def mix_with_offset(
     first_sonic_vector: ArrayLike,
     second_sonic_vector: ArrayLike,
     duration: float = 0,
-    number_of_samples: int = 0,
+    number_of_samples: int | None = None,
     sample_rate: int | None = None,
 ) -> NDArray[np.float64]:
     """Mix two sonic vector by placing the beginning of the second one
@@ -733,8 +733,10 @@ def mix_with_offset(
         The offset of the second sound in seconds: how far after the
         start of the first the second begins. Negative starts the second
         sound that many seconds before the first one ends.
-    number_of_samples : int
+    number_of_samples : int or None
         The offset in samples, taken instead of ``duration`` when given.
+        Zero is an offset of zero samples; None, the default, reads
+        ``duration`` instead.
     sample_rate : int or None
         The sample rate in Hertz. None, the default, is the rate
         :func:`music.get_sample_rate` returns.
@@ -777,7 +779,7 @@ def mix_with_offset(
                               ['first_sonic_vector', 'second_sonic_vector'])
     dur = duration
 
-    if not number_of_samples:  # sample in s1 where s2[0] is added
+    if number_of_samples is None:  # sample in s1 where s2[0] is added
         ns = dur * sample_rate
     else:
         ns = number_of_samples

@@ -23,7 +23,7 @@ def render_oversampled(
         renderer: Callable[..., ArrayLike], *,
         duration: float = 2.0,
         sample_rate: int | None = None,
-        number_of_samples: int = 0,
+        number_of_samples: int | None = None,
         factor: int = 4,
         **parameters: Any) -> NDArray[np.float64]:
     """Render at a higher sampling rate, low-pass, then downsample.
@@ -39,12 +39,14 @@ def render_oversampled(
         A sound generator. It is called once at the oversampled rate.
         Supply nonlinear operations *inside* it, before decimation.
     duration : float
-        Output duration in seconds, used when `number_of_samples=0`.
+        Output duration in seconds, used when `number_of_samples` is not
+        given.
     sample_rate : int or None
         Requested output sampling rate in Hz.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
-    number_of_samples : int
-        Exact output sample count, overriding duration when nonzero.
+    number_of_samples : int or None
+        Exact output sample count, overriding duration when given; zero
+        is no samples.
     factor : int
         Oversampling multiplier, an integer from 2 to 16.
     **parameters
@@ -92,13 +94,14 @@ def render_oversampled(
     if (not isinstance(factor, int) or isinstance(factor, bool)
             or not 2 <= factor <= 16):
         raise ValueError("factor must be an integer between 2 and 16")
-    if (not isinstance(number_of_samples, int)
+    if number_of_samples is not None and (
+            not isinstance(number_of_samples, int)
             or isinstance(number_of_samples, bool)
             or number_of_samples < 0):
         raise ValueError("number_of_samples must be nonnegative integer")
     if not np.isfinite(duration) or duration < 0:
         raise ValueError("duration must be finite and nonnegative")
-    count = (number_of_samples if number_of_samples
+    count = (number_of_samples if number_of_samples is not None
              else int(duration * sample_rate))
     if count == 0:
         return np.empty(0, dtype=np.float64)

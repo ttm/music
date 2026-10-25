@@ -24,9 +24,10 @@ def _sample_count(duration, number_of_samples, sample_rate):
     """The length to render, in samples.
 
     ``number_of_samples`` wins over ``duration`` when given, which is the
-    convention every synthesis routine in this package follows.
+    convention every synthesis routine in this package follows. Given is
+    anything but None: zero is a count of zero.
     """
-    if number_of_samples:
+    if number_of_samples is not None:
         return int(number_of_samples)
     return int(duration * sample_rate)
 
@@ -34,19 +35,19 @@ def _sample_count(duration, number_of_samples, sample_rate):
 def _nothing(channels):
     """Zero samples, in the shape the routine would otherwise return.
 
-    Every routine here sizes itself with :func:`_sample_count` and then
-    renders with ``note(number_of_samples=count)``, where a count of zero
-    means "not supplied" and gives back the two-second default. So a
-    zero-length request came out of ``binaural_beats`` and
-    ``monaural_beats`` as two seconds of audio, and out of the three that
-    multiply a rendered sound -- a tone, or a bed of noise -- by an
-    envelope built from the same count, as a numpy message about
-    broadcasting. The count was honest; passing it on is
-    what laundered it.
+    A zero or negative count answers with nothing, which is what every
+    synthesis routine here does with a zero duration and what the
+    sequence operations treat as the identity it is.
 
-    A zero duration answers with nothing, which is what every synthesis
-    routine here does and what the sequence operations treat as the
-    identity it is.
+    It was first needed for a worse reason. Every routine here sizes
+    itself with :func:`_sample_count` and then renders with
+    ``note(number_of_samples=count)``, where a count of zero meant "not
+    supplied" and gave back the two-second default. So a zero-length
+    request came out of ``binaural_beats`` and ``monaural_beats`` as two
+    seconds of audio, and out of the three that multiply a rendered sound
+    -- a tone, or a bed of noise -- by an envelope built from the same
+    count, as a numpy message about broadcasting. The count was honest;
+    passing it on is what laundered it. Zero means zero everywhere now.
     """
     return np.zeros((channels, 0)) if channels > 1 else np.array([])
 
@@ -69,7 +70,7 @@ def _oscillator(waveform_table, freq, count, sample_rate):
 def binaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
                    duration: float = 2.0,
                    waveform_table: ArrayLike = WAVEFORM_SINE,
-                   number_of_samples: int = 0,
+                   number_of_samples: int | None = None,
                    sample_rate: int | None = None) -> NDArray[np.float64]:
     """Synthesize a binaural beat: ``sstim-v:techBinauralBeats``.
 
@@ -91,9 +92,9 @@ def binaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
         The duration in seconds.
     waveform_table : array_like
         The table the carriers are looked up in.
-    number_of_samples : integer
+    number_of_samples : integer or None
         The number of samples of the sound, taken instead of
-        ``duration`` when it is given.
+        ``duration`` when it is given; zero is no samples.
     sample_rate : integer or None
         The sampling frequency in Hertz.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -156,7 +157,7 @@ def binaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
 def monaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
                    duration: float = 2.0,
                    waveform_table: ArrayLike = WAVEFORM_SINE,
-                   number_of_samples: int = 0,
+                   number_of_samples: int | None = None,
                    sample_rate: int | None = None) -> NDArray[np.float64]:
     """Synthesize a monaural beat: ``sstim-v:techMonauralBeats``.
 
@@ -176,9 +177,9 @@ def monaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
         The duration in seconds.
     waveform_table : array_like
         The table the two tones are looked up in.
-    number_of_samples : integer
+    number_of_samples : integer or None
         The number of samples of the sound, taken instead of
-        ``duration`` when it is given.
+        ``duration`` when it is given; zero is no samples.
     sample_rate : integer or None
         The sampling frequency in Hertz.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -235,7 +236,7 @@ def isochronic_tones(carrier_freq: float = 200.0, pulse_rate: float = 10.0,
                      duty_cycle: float = 0.5, duration: float = 2.0,
                      ramp_duration: float = 0.0,
                      waveform_table: ArrayLike = WAVEFORM_SINE,
-                     number_of_samples: int = 0,
+                     number_of_samples: int | None = None,
                      sample_rate: int | None = None) -> NDArray[np.float64]:
     """Synthesize an isochronic tone train: ``sstim-v:techIsochronicTones``.
 
@@ -264,9 +265,9 @@ def isochronic_tones(carrier_freq: float = 200.0, pulse_rate: float = 10.0,
         pulses touch, and the ramps still meet at each boundary.
     waveform_table : array_like
         The table the tone is looked up in.
-    number_of_samples : integer
+    number_of_samples : integer or None
         The number of samples of the sound, taken instead of
-        ``duration`` when it is given.
+        ``duration`` when it is given; zero is no samples.
     sample_rate : integer or None
         The sampling frequency in Hertz.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -356,7 +357,7 @@ def amplitude_modulation(
         modulation_depth: float = 1.0, duration: float = 2.0,
         waveform_table: ArrayLike = WAVEFORM_SINE,
         modulation_waveform_table: ArrayLike = WAVEFORM_SINE,
-        number_of_samples: int = 0,
+        number_of_samples: int | None = None,
         sample_rate: int | None = None) -> NDArray[np.float64]:
     """Sinusoidally modulate a carrier: ``sstim-v:techAmplitudeModulation``.
 
@@ -382,9 +383,9 @@ def amplitude_modulation(
     modulation_waveform_table : array_like
         The table the modulator is looked up in, so the modulation need
         not be sinusoidal.
-    number_of_samples : integer
+    number_of_samples : integer or None
         The number of samples of the sound, taken instead of
-        ``duration`` when it is given.
+        ``duration`` when it is given; zero is no samples.
     sample_rate : integer or None
         The sampling frequency in Hertz.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -458,7 +459,7 @@ def frequency_modulation(
         frequency_deviation: float = 20.0, duration: float = 2.0,
         waveform_table: ArrayLike = WAVEFORM_SINE,
         modulation_waveform_table: ArrayLike = WAVEFORM_SINE,
-        number_of_samples: int = 0,
+        number_of_samples: int | None = None,
         sample_rate: int | None = None) -> NDArray[np.float64]:
     """Sweep a carrier's pitch: ``sstim-v:techFrequencyModulation``.
 
@@ -485,9 +486,9 @@ def frequency_modulation(
         The table the carrier is looked up in.
     modulation_waveform_table : array_like
         The table the modulator is looked up in.
-    number_of_samples : integer
+    number_of_samples : integer or None
         The number of samples of the sound, taken instead of
-        ``duration`` when it is given.
+        ``duration`` when it is given; zero is no samples.
     sample_rate : integer or None
         The sampling frequency in Hertz.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -560,7 +561,7 @@ def modulated_noise(noise_type: str | float = 'pink',
                     modulation_depth: float = 1.0, duration: float = 2.0,
                     min_freq: float = 15.0, max_freq: float = 15000.0,
                     modulation_waveform_table: ArrayLike = WAVEFORM_SINE,
-                    number_of_samples: int = 0,
+                    number_of_samples: int | None = None,
                     sample_rate: int | None = None,
                     seed: int | None = None) -> NDArray[np.float64]:
     """Modulate a band of noise: ``sstim-v:techBroadbandNoise``.
@@ -598,9 +599,9 @@ def modulated_noise(noise_type: str | float = 'pink',
     modulation_waveform_table : array_like
         The table the modulator is looked up in, so the modulation need
         not be sinusoidal.
-    number_of_samples : integer
+    number_of_samples : integer or None
         The number of samples of the sound, taken instead of
-        ``duration`` when it is given.
+        ``duration`` when it is given; zero is no samples.
     sample_rate : integer or None
         The sampling frequency in Hertz.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -693,7 +694,7 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
                    sonic_vector: ArrayLike | None = None,
                    waveform_table: ArrayLike = WAVEFORM_SINE,
                    zeta: float = 0.215, air_temp: float = 20.0,
-                   number_of_samples: int = 0,
+                   number_of_samples: int | None = None,
                    sample_rate: int | None = None) -> NDArray[np.float64]:
     """Orbit a source around the listener: ``sstim-v:techSpatialAuditory``.
 
@@ -739,9 +740,9 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
     air_temp : scalar
         The temperature in Celsius used for calculating the speed of
         sound.
-    number_of_samples : integer
+    number_of_samples : integer or None
         The number of samples of the sound, taken instead of
-        ``duration`` when it is given.
+        ``duration`` when it is given; zero is no samples.
     sample_rate : integer or None
         The sampling frequency in Hertz.
         None, the default, is the rate :func:`music.get_sample_rate` returns.

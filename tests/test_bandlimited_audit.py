@@ -361,7 +361,7 @@ def test_the_frame_bound_takes_exactly_fifty_million():
 
 def test_a_band_limited_note_defaults_to_two_seconds_of_220_hz_sine():
     assert np.array_equal(music.bandlimited_note(), music.bandlimited_note(
-        220., duration=2., waveform="sine", number_of_samples=0,
+        220., duration=2., waveform="sine", number_of_samples=None,
         sample_rate=44100, table_size=16384, rolloff_hz=0.))
     assert music.bandlimited_note().shape == (88200,)
     assert not np.array_equal(music.bandlimited_note(),

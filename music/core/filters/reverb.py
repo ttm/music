@@ -111,17 +111,17 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     # The noise needs the rate as well as the band: given only
     # max_freq=sample_rate / 2, it built that band at 44.1 kHz, so at
     # 8 kHz the tail held 95% of its energy below 680 Hz.
-    # `noise` reads number_of_samples=0 as "not given" and returns two
-    # seconds, so a response that is all first period builds its empty
-    # second period here; asking for it failed with a broadcast error.
+    # A response that is all first period has an empty second one, which
+    # `noise` renders as no samples, drawing nothing from the random
+    # state. While it read zero samples as "not given" it returned two
+    # seconds there, and the multiplication below failed to broadcast.
     # The band's floor is noise's own 15 Hz, held at the Nyquist frequency
     # for a rate too low to reach it: noise refuses a band upside down,
     # and at 20 Hz this one would be, for a floor the caller never set.
     tail = lambda_r - lambda1
-    noise_ = (noise(noise_type, min_freq=min(15, sample_rate / 2),
-                    max_freq=sample_rate / 2, number_of_samples=tail,
-                    sample_rate=sample_rate)
-              if tail else np.array([]))
+    noise_ = noise(noise_type, min_freq=min(15, sample_rate / 2),
+                   max_freq=sample_rate / 2, number_of_samples=tail,
+                   sample_rate=sample_rate)
     r2 = noise_ * a[lambda1:lambda_r]
 
     # Eq. 78 Impulse response of the reverberation

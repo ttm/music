@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-19**,
-`music` 1.11.0: 60 modules, 17,229 LOC package + 27,164 LOC tests, 131 names
+`music` 1.11.0: 60 modules, 17,240 LOC package + 27,236 LOC tests, 131 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -82,6 +82,7 @@ figures described above are automatically compared with the checkout.
 | Filter stability | `tests/test_artifacts.py` | every design's poles inside the unit circle across its whole parameter range |
 | Degenerate parameters | `tests/test_degenerate.py` | **148** (routine, parameter) pairs set to zero: each works or is refused with a `ValueError` |
 | Zero durations | `tests/test_degenerate.py` | every routine that takes a duration renders nothing for a zero one, in the shape it would otherwise have |
+| Zero samples | `tests/test_degenerate.py` | every routine that takes a sample count renders nothing for a count of zero, likewise |
 | Length, rate and pitch | `tests/test_properties.py` | **24 of 26** timed routines render exactly `duration * sample_rate` at four rates; the other two are registered |
 | Composition | `tests/test_properties.py` | shapers commute, mixing associates, designed filters are linear; pieces survive a write and a read |
 | Theory and structures | `tests/test_theory_properties.py` | conversions invert, interval names round-trip, the modes are one pattern rotated, a peal on `n` bells is `n!` rows one adjacent swap apart |
@@ -423,8 +424,9 @@ either documented in the code or tracked in the issue list.
   message, and two rendered **two seconds of audio**. The two are the
   interesting ones -- every routine in `music.stimulation` sizes itself
   correctly and then renders with `note(number_of_samples=count)`, where a
-  count of zero means "not supplied", so an honest zero was laundered into
-  the default on the way past.
+  count of zero meant "not supplied", so an honest zero was laundered into
+  the default on the way past. A count of zero is zero samples now, which
+  `tests/test_degenerate.py` sweeps as it sweeps the zero duration.
 
 - **An offset below one sample is discarded rather than rounded.**
   `mix_with_offset` takes seconds and delays by `int(seconds * rate)`, so
@@ -526,6 +528,8 @@ worse than the code.
   defaults to the rate `get_sample_rate` returns, which `set_sample_rate`
   changes, and `tests/test_sample_rate.py` holds every export to it and
   refuses a routine that declares a rate of its own.
+- **A count of zero samples was two seconds of sound,** in every routine
+  that takes one, while a zero duration was nothing. Zero is zero now.
 
 - **Three parameter combinations escaped the 1.8.0 suite.** The
   September 2026 review found shared stereo normalization exceeding full

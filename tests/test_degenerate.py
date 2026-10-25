@@ -47,9 +47,10 @@ from test_artifacts import (CONTROL_SIGNALS, DC_LIMIT, DC_WHEN_ZEROED,
 from test_public_api import ZERO_ARG_EXPORTS, _callable_with_defaults
 
 #: Parameters the sweep leaves alone.  `sample_rate` at zero is a question
-#: about arithmetic rather than about sound; `number_of_samples` and
-#: `sonic_vector` at zero mean "not supplied" throughout this package, so
-#: setting them to zero is asking for the default rather than for an edge.
+#: about arithmetic rather than about sound; `sonic_vector` at zero means
+#: "not supplied" throughout this package. `number_of_samples` at zero is
+#: an edge, and its own sweep is below: it defaults to None, which the
+#: sweep here does not read as a number.
 NOT_AN_EDGE = {"sample_rate", "number_of_samples", "sonic_vector"}
 
 
@@ -361,6 +362,60 @@ def test_a_zero_duration_renders_nothing(name):
     assert rendered.ndim == full.ndim, (
         f"{name}(duration=0) has {rendered.ndim} dimensions where a real "
         f"render has {full.ndim}; an empty stereo sound is (2, 0)")
+
+
+# ---------------------------------------------------------------------
+# What a count of zero samples answers with
+# ---------------------------------------------------------------------
+
+#: The routines whose `number_of_samples` is one count per part rather
+#: than a count, so that zero is not a value they take.
+COUNTS_PER_PART = {
+    "louds": "one count for each transition",
+    "tremolos": "one row of counts for each line of tremolos",
+}
+
+
+def _takes_a_count(name):
+    function = _callable_with_defaults(name)
+    return "number_of_samples" in inspect.signature(function).parameters
+
+
+COUNTED = sorted(name for name in ZERO_ARG_EXPORTS
+                 if _takes_a_count(name) and name not in COUNTS_PER_PART)
+
+
+def test_the_count_sweep_finds_the_routines_that_take_one():
+    assert len(COUNTED) >= 25
+    assert {"note", "adsr", "noise", "binaural_beats"} <= set(COUNTED)
+
+
+@pytest.mark.parametrize("name", COUNTED)
+def test_zero_samples_render_nothing(name):
+    """As a zero duration does, and in the same shape.
+
+    Zero used to mean "not given" here: `note(number_of_samples=0)` was
+    two seconds of note, while `note(duration=0)` was nothing. A count
+    computed as zero upstream was laundered into the default on its way
+    through, which is how two of the stimuli answered a zero duration
+    with two seconds of sound -- and every routine that handed a count
+    to another had to guard it, which five of them, at least, did not.
+    None is "not given" now, and zero is zero.
+    """
+    function = _callable_with_defaults(name)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        rendered = np.asarray(function(number_of_samples=0), dtype=float)
+    assert rendered.size == 0, (
+        f"{name}(number_of_samples=0) rendered {rendered.shape}")
+    full = np.asarray(function(number_of_samples=10), dtype=float)
+    assert rendered.ndim == full.ndim
+
+
+@pytest.mark.parametrize("name", sorted(COUNTS_PER_PART))
+def test_the_routines_taking_a_count_per_part_are_still_exports(name):
+    """So the register cannot outlive what it excuses."""
+    assert _takes_a_count(name)
 
 
 @pytest.mark.parametrize("name", sorted(NOT_A_ZERO_LENGTH_RENDER))

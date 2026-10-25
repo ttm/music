@@ -37,7 +37,8 @@ def test_one_sample_keeps_its_doppler_pitch_and_starting_gain(stereo,
     table = np.sin(2 * np.pi * np.arange(table_length) / table_length)
     actual = music.note_with_doppler(
         freq=freq, duration=99 if explicit_count else 1 / sample_rate,
-        number_of_samples=int(explicit_count), sample_rate=sample_rate,
+        number_of_samples=1 if explicit_count else None,
+        sample_rate=sample_rate,
         x=(3, 6), y=(4, 8), stereo=stereo, waveform_table=table,
     )
     ears = np.array([-0.215 / 2, 0.215 / 2] if stereo else [0])
@@ -156,7 +157,7 @@ def test_explicit_sample_count_sets_movement_time_independently_of_duration(
     short = music.note_with_doppler(duration=0.0001, **params)
     long = music.note_with_doppler(duration=99, **params)
     duration_driven = music.note_with_doppler(
-        duration=0.2, **{**params, "number_of_samples": 0},
+        duration=0.2, **{**params, "number_of_samples": None},
     )
     np.testing.assert_array_equal(short, long)
     np.testing.assert_array_equal(short, duration_driven)

@@ -271,8 +271,10 @@ def test_frequency_modulation_sweeps_the_carrier_by_the_deviation():
 # --------------------------------------------------------------------------
 
 def test_number_of_samples_is_taken_instead_of_duration():
-    assert _sample_count(2, 0, 100) == 200
+    assert _sample_count(2, None, 100) == 200
     assert _sample_count(2, 55, 100) == 55
+    # Zero is a count of zero, not "not given".
+    assert _sample_count(2, 0, 100) == 0
 
 
 @pytest.mark.parametrize("routine", [

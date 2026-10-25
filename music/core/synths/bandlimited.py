@@ -40,7 +40,7 @@ def _filtered_table(kind: str, freq: float, sample_rate: int,
 
 def bandlimited_note(
         freq: float = 220.0, duration: float = 2.0,
-        waveform: str = "sine", number_of_samples: int = 0,
+        waveform: str = "sine", number_of_samples: int | None = None,
         sample_rate: int | None = None, table_size: int = 16384,
         rolloff_hz: float = 0.0) -> NDArray[np.float64]:
     """Render a static-pitch periodic note with prefiltered harmonics.
@@ -50,12 +50,13 @@ def bandlimited_note(
     freq : float
         Positive fundamental in Hz, strictly below Nyquist.
     duration : float
-        Seconds, ignored when `number_of_samples` is nonzero.
+        Seconds, ignored when `number_of_samples` is given.
     waveform : {'sine', 'sawtooth', 'square', 'triangle'}
         A primary waveform. Arbitrary arrays are not accepted because
         their spectrum and source-pitch semantics are unknown.
-    number_of_samples : int
-        Overrides `duration` when positive, matching `music.note`.
+    number_of_samples : int or None
+        Overrides `duration` when given, matching `music.note`; zero is
+        no samples.
     sample_rate : int or None
         Samples per second.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -98,15 +99,16 @@ def bandlimited_note(
         raise ValueError("sample_rate must be positive")
     if not (0 < freq < sample_rate / 2):
         raise ValueError("freq must be positive and below Nyquist")
-    if number_of_samples < 0:
+    if number_of_samples is not None and number_of_samples < 0:
         raise ValueError("number_of_samples cannot be negative")
-    if not number_of_samples and (not np.isfinite(duration) or duration < 0):
+    if number_of_samples is None and (not np.isfinite(duration)
+                                      or duration < 0):
         raise ValueError("duration must be finite and nonnegative")
     if rolloff_hz < 0 or not np.isfinite(rolloff_hz):
         raise ValueError("rolloff_hz must be finite and nonnegative")
     if table_size < 4:
         raise ValueError("table_size must be at least 4")
-    count = (int(number_of_samples) if number_of_samples
+    count = (int(number_of_samples) if number_of_samples is not None
              else int(duration * sample_rate))
     if not count:
         return np.empty(0, dtype=np.float64)

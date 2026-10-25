@@ -8,7 +8,7 @@ from ...utils import (resolve_stereo, mix_with_offset,
 
 
 def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
-         number_of_samples=0, sonic_vector=0, sample_rate=None):
+         number_of_samples=None, sonic_vector=0, sample_rate=None):
     """
     A fade in or out.
 
@@ -34,8 +34,9 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
     perc : scalar
         The percentage of the fade that is linear to ensure it reaches zero.
         It has no effect if method="linear".
-    number_of_samples : integer
-        The number of samples of the fade. If supplied, duration is ignored.
+    number_of_samples : integer or None
+        The number of samples of the fade. If given, duration is ignored,
+        and zero is a fade of no samples.
     sonic_vector : array_like
         Samples for the fade to be applied to. If supplied, duration and
         number_of_samples are ignored.
@@ -100,7 +101,7 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
         if len(sonic_vector.shape) == 2:
             return resolve_stereo(fade, locals())
         n = len(sonic_vector)
-    elif number_of_samples:
+    elif number_of_samples is not None:
         n = number_of_samples
     else:
         n = int(sample_rate * duration)
@@ -108,12 +109,8 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
     # each channel's: a name bound before it would arrive as an argument.
     linear = _transition_is_linear(method)
     if n < 1:
-        # Both branches below hand `n` to `loud`, where a
-        # number_of_samples of zero means "not supplied" and gives back
-        # two seconds. The exponential branch was guarded when its split
-        # was fixed; this catches the linear one, which the zero-duration
-        # sweep never reached because it only ever calls the default
-        # method.
+        # No samples to fade. A negative count is no samples too, and the
+        # split below would find no last sample to join its parts at.
         return np.array([])
     if linear:
         if fade_out:
@@ -123,28 +120,25 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
     else:
         n0 = int(n*perc/100)
         n1 = n - n0
-        # `loud` reads number_of_samples=0 as "use the default duration",
-        # so an empty part has to be built here rather than asked for. At
-        # perc=100 the whole fade is the linear part, and asking for zero
-        # exponential samples returned two seconds of them: a fade over
-        # half a second came back 110,250 samples long instead of 22,050,
-        # which is the default length added to the one requested. The n0
-        # side was already guarded; this is the other one.
+        # Either part may be empty: at perc=100 the whole fade is the
+        # linear part, and at a small perc on a short fade there is none.
+        # Asking `loud` for zero samples of either used to return two
+        # seconds of them, since zero meant "not given": a fade over half
+        # a second came back 110,250 samples long instead of 22,050.
         if fade_out:
-            ai1 = (loud(trans_dev=db, alpha=alpha, number_of_samples=n1)
-                   if n1 else np.array([]))
+            ai1 = loud(trans_dev=db, alpha=alpha, number_of_samples=n1)
             # Where the linear part picks up. With no exponential part it
             # starts at full amplitude, which is what perc=100 means.
             joins_at = ai1[-1] if n1 else 1.0
-            ai0 = (loud(method="linear", trans_dev=0,
-                        number_of_samples=n0) * joins_at if n0 else [])
+            ai0 = loud(method="linear", trans_dev=0,
+                       number_of_samples=n0) * joins_at
             ai = np.hstack((ai1, ai0))
         else:
-            ai1 = (loud(trans_dev=db, to=0, alpha=alpha,
-                        number_of_samples=n1) if n1 else np.array([]))
+            ai1 = loud(trans_dev=db, to=0, alpha=alpha,
+                       number_of_samples=n1)
             joins_at = ai1[0] if n1 else 1.0
-            ai0 = (loud(method="linear", to=0, trans_dev=0,
-                        number_of_samples=n0) * joins_at if n0 else [])
+            ai0 = loud(method="linear", to=0, trans_dev=0,
+                       number_of_samples=n0) * joins_at
             ai = np.hstack((ai0, ai1))
     if sonic_vector is not None:
         return ai*sonic_vector
@@ -229,11 +223,10 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
         return s
     shortest = min(len(sonic_vector_1), len(sonic_vector_2))
     if ns < 1:
-        # `fade` reads number_of_samples=0 as "not supplied" and hands back
-        # two seconds, and `v[-0:]` is the whole of v rather than none of
-        # it, so a duration of zero multiplied a whole sound by an envelope
-        # 88,200 samples long. Both ends of that are a broadcast failure
-        # naming sample counts, which says nothing about the duration.
+        # `v[-0:]` is the whole of v rather than none of it, so a duration
+        # of no samples multiplied a whole sound by an empty fade: a
+        # broadcast failure naming sample counts, which says nothing about
+        # the duration.
         raise ValueError(
             f"duration ({duration} ms) must be a positive number of "
             f"samples at {sample_rate} Hz; got {ns}")

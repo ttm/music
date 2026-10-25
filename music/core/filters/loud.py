@@ -7,7 +7,7 @@ from ...utils import _transition_is_linear, as_sonic_vector
 
 
 def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
-         number_of_samples=0, sonic_vector=0, sample_rate=None):
+         number_of_samples=None, sonic_vector=0, sample_rate=None):
     """
     An envelope for a linear or exponential transition of amplitude.
 
@@ -31,9 +31,10 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
         "lin" or "linear" for a linear transition of amplitude; "exp" or
         "exponential" for an exponential transition of amplitude (linear
         loudness).
-    number_of_samples : integer
+    number_of_samples : integer or None
         The number of samples of the envelope.
-        If supplied, duration is ignored.
+        If given, duration is ignored, and zero is an envelope of no
+        samples.
     sonic_vector : array_like
         Samples for the envelope to be applied to.
         If supplied, duration and
@@ -90,7 +91,7 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
         n = len(sonic_vector)
-    elif number_of_samples:
+    elif number_of_samples is not None:
         n = number_of_samples
     else:
         n = int(sample_rate * duration)
@@ -125,8 +126,8 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
 
 
 def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
-          method=("exp", "exp", "exp"), number_of_samples=0, sonic_vector=0,
-          sample_rate=None):
+          method=("exp", "exp", "exp"), number_of_samples=None,
+          sonic_vector=0, sample_rate=None):
     """
     An envelope with linear or exponential transitions of amplitude.
 
@@ -147,9 +148,9 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
         Methods for each transition.
         "exp" for exponential transitions of amplitude (linear loudness).
         "linear" for linear transitions of amplitude.
-    number_of_samples : iterable
+    number_of_samples : iterable or None
         The number of samples of each transition.
-        If supplied, durations is ignored.
+        If given, durations is ignored.
     sonic_vector : array_like
         Samples for the envelope to be applied to.
         If supplied, durations or number_of_samples is given, the final sound
@@ -172,7 +173,7 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
     Raises
     ------
     ValueError
-        If a transition spans fewer than one sample.
+        If there are no transitions, or one spans fewer than one sample.
 
     See Also
     --------
@@ -201,14 +202,16 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
     # each alpha became the deviation and each deviation a duration that
     # the count then overrode, so `trans_devs` was never read there.
     sample_rate = resolve_rate(sample_rate)
-    counts = (number_of_samples if number_of_samples else
+    counts = (number_of_samples if number_of_samples is not None else
               [int(sample_rate * dur) for dur in durations])
+    if not len(counts):
+        raise ValueError("an envelope of transitions needs at least one")
     s = []
     fact = 1
     for i, count in enumerate(counts):
         if count < 1:
-            # `loud` reads zero samples as "not given", and an empty
-            # transition has no last value to carry into the next one.
+            # An empty transition has no last value to carry into the
+            # next one.
             raise ValueError(
                 f"each transition must span at least one sample; "
                 f"transition {i} has {count}")

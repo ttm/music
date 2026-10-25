@@ -307,8 +307,10 @@ class StimulationSession:
         """
         if callable(phase.stimulus):
             if length == 0:
-                # In synthesis routines zero often means "use the default
-                # duration", so it cannot be forwarded as a sample count.
+                # The package's routines render no samples for a count of
+                # zero, but a callable from elsewhere may still read zero
+                # as "use the default duration", as they once did, so a
+                # phase of no samples is not asked for at all.
                 return np.zeros(0)
             rendered = phase.stimulus(number_of_samples=length,
                                       sample_rate=self.sample_rate,

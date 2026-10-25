@@ -30,7 +30,7 @@ def _require_a_ratio(start_freq, end_freq, linear_option=False):
 
 def note(freq: float = 220, duration: float = 2,
          waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
-         number_of_samples: int = 0,
+         number_of_samples: int | None = None,
          sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     Synthesize a basic musical note.
@@ -43,9 +43,9 @@ def note(freq: float = 220, duration: float = 2,
         The duration of the note in seconds.
     waveform_table : array_like
         The table with the waveform to synthesize the sound.
-    number_of_samples : integer
+    number_of_samples : integer or None
         The number of samples in the sound.
-        If not 0, duration is ignored.
+        If given, duration is ignored, and zero is no samples.
     sample_rate : integer or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -86,7 +86,7 @@ def note(freq: float = 220, duration: float = 2,
     """
     sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
-    if not number_of_samples:
+    if number_of_samples is None:
         number_of_samples = int(duration * sample_rate)
     samples = np.arange(number_of_samples)
     waveform_table_length = len(waveform_table)
@@ -99,7 +99,7 @@ def note(freq: float = 220, duration: float = 2,
 
 def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
                       x=(-10, 10), y=(1, 1), stereo=True, zeta=0.215,
-                      air_temp=20, number_of_samples=0, sample_rate=None):
+                      air_temp=20, number_of_samples=None, sample_rate=None):
     """
     A simple note with a transition of localization and resulting Doppler
     effect.
@@ -125,9 +125,10 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     air_temp : scalar
         The air temperature in Celsius.
         (Used to calculate the acoustic velocity.)
-    number_of_samples : integer
-        The number of source samples; if nonzero, duration is ignored.
-        Stereo output additionally includes the initial delay padding.
+    number_of_samples : integer or None
+        The number of source samples; if given, duration is ignored, and
+        zero is no samples. Stereo output additionally includes the
+        initial delay padding.
     sample_rate : integer or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -163,7 +164,7 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     """
     sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
-    if not number_of_samples:
+    if number_of_samples is None:
         number_of_samples = int(duration * sample_rate)
     if number_of_samples < 1:
         # Zero samples is zero samples, with this routine's own shape
@@ -227,7 +228,7 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
                  max_fm_deviation: float = 2,
                  waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
                  fm_waveform_table: ArrayLike = WAVEFORM_SINE,
-                 number_of_samples: int = 0,
+                 number_of_samples: int | None = None,
                  sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     Synthesize a musical note with FM synthesis.
@@ -249,9 +250,9 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
         The table with the waveform for the carrier.
     fm_waveform_table : array_like
         The table with the waveform for the modulator.
-    number_of_samples : integer
+    number_of_samples : integer or None
         The number of samples in the sound.
-        If supplied, duration is ignored.
+        If given, duration is ignored, and zero is no samples.
     sample_rate : integer or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -297,7 +298,7 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
     sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
     fm_waveform_table = np.array(fm_waveform_table)
-    if number_of_samples:
+    if number_of_samples is not None:
         lambda_fm = number_of_samples
     else:
         lambda_fm = int(sample_rate * duration)
@@ -325,7 +326,7 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
 def note_with_phase(freq: float = 220, duration: float = 2,
                     phase: float = 0,
                     waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
-                    number_of_samples: int = 0,
+                    number_of_samples: int | None = None,
                     sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     Synthesize a basic musical note with a phase.
@@ -343,9 +344,9 @@ def note_with_phase(freq: float = 220, duration: float = 2,
         The phase of the wave in radians.
     waveform_table : array_like
         The table with the waveform to synthesize the sound.
-    number_of_samples : integer
+    number_of_samples : integer or None
         The number of samples in the sound.
-        If not 0, duration is ignored.
+        If given, duration is ignored, and zero is no samples.
     sample_rate : integer or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -388,7 +389,7 @@ def note_with_phase(freq: float = 220, duration: float = 2,
     """
     sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
-    if not number_of_samples:
+    if number_of_samples is None:
         number_of_samples = int(duration * sample_rate)
     samples = np.arange(number_of_samples)
     waveform_table_length = len(waveform_table)
@@ -402,7 +403,8 @@ def note_with_phase(freq: float = 220, duration: float = 2,
 def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
                         duration: float = 2, alpha: float = 1,
                         waveform_table: ArrayLike = WAVEFORM_SINE,
-                        method: str = "exp", number_of_samples: int = 0,
+                        method: str = "exp",
+                        number_of_samples: int | None = None,
                         sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     A note with a pitch transition: a glissando.
@@ -424,9 +426,9 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
         "exp" or "exponential" for an exponential transition of frequency
         (linear pitch); "lin" or "linear" for a linear transition of
         frequency.
-    number_of_samples : integer
+    number_of_samples : integer or None
         The number of samples of the sound.
-        If supplied, duration is not used.
+        If given, duration is not used, and zero is no samples.
     sample_rate : integer or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -468,7 +470,7 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
     """
     sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
-    if number_of_samples:
+    if number_of_samples is not None:
         lambda_p = number_of_samples
     else:
         lambda_p = int(sample_rate * duration)
@@ -498,7 +500,7 @@ def note_with_glissando_vibrato(
         alpha_vibrato: float = 1,
         waveform_table: ArrayLike = WAVEFORM_SINE,
         vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
-        number_of_samples: int = 0,
+        number_of_samples: int | None = None,
         sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     A note with a pitch transition (a glissando) and a vibrato.
@@ -524,9 +526,9 @@ def note_with_glissando_vibrato(
         The table with the waveform to synthesize the sound.
     vibrato_waveform_table : array_like
         The table with the waveform for the vibrato oscillatory pattern.
-    number_of_samples : integer
+    number_of_samples : integer or None
         The number of samples of the sound.
-        If supplied, duration is not used.
+        If given, duration is not used, and zero is no samples.
     sample_rate : integer or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -558,7 +560,7 @@ def note_with_glissando_vibrato(
     _require_a_ratio(start_freq, end_freq)
     waveform_table = np.array(waveform_table)
     vibrato_waveform_table = np.array(vibrato_waveform_table)
-    if number_of_samples:
+    if number_of_samples is not None:
         lambda_pv = number_of_samples
     else:
         lambda_pv = int(sample_rate * duration)
@@ -625,9 +627,10 @@ def _fit_to_samples(sonic_vector, number_of_samples):
     ignored it, so callers passing it got a sound of another length.
 
     A stereo result is fitted per channel, the fit running along the last
-    axis in either case.
+    axis in either case. None leaves the render as it is; zero is a render
+    of no samples, in its own shape.
     """
-    if not number_of_samples:
+    if number_of_samples is None:
         return sonic_vector
     length = sonic_vector.shape[-1]
     if number_of_samples <= length:
@@ -658,7 +661,8 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
                                             WAVEFORM_SINE, WAVEFORM_SINE,
                                             WAVEFORM_SINE)),
                                        stereo=True, zeta=0.215, air_temp=20,
-                                       number_of_samples=0, sample_rate=None):
+                                       number_of_samples=None,
+                                       sample_rate=None):
     """
     A sound with arbitrary meta-vibratos, transitions of frequency and
     localization.
@@ -703,8 +707,8 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     air_temp : scalar
         The air temperature in Celsius.
         (Used to calculate the acoustic velocity.)
-    number_of_samples : scalar
-        If nonzero, truncate or zero-pad the complete render to this
+    number_of_samples : scalar or None
+        If given, truncate or zero-pad the complete render to this
         length, including the initial interaural delay.
     sample_rate : scalar or None
         The sample rate.
@@ -964,7 +968,7 @@ def note_with_two_vibratos_glissando(
         alpha: float = 1, alphav1: float = 1, alphav2: float = 1,
         waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
         tabv1: ArrayLike = WAVEFORM_SINE, tabv2: ArrayLike = WAVEFORM_SINE,
-        number_of_samples: int = 0,
+        number_of_samples: int | None = None,
         sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     A note with a glissando and a vibrato that also has a secondary
@@ -1002,9 +1006,9 @@ def note_with_two_vibratos_glissando(
     tabv2 : array_like
         The table with the waveform for the
         secondary pattern of the vibrato.
-    number_of_samples : scalar
+    number_of_samples : scalar or None
         The number of samples of the sound.
-        If supplied, duration is not used.
+        If given, duration is not used, and zero is no samples.
     sample_rate : scalar or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -1042,7 +1046,7 @@ def note_with_two_vibratos_glissando(
     waveform_table = np.array(waveform_table)
     tabv1 = np.array(tabv1)
     tabv2 = np.array(tabv2)
-    if number_of_samples:
+    if number_of_samples is not None:
         lambda_pvv = number_of_samples
     else:
         lambda_pvv = int(sample_rate * duration)
@@ -1101,7 +1105,7 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
                                                     WAVEFORM_SINE,
                                                     WAVEFORM_SINE,
                                                     WAVEFORM_SINE)),
-                                  number_of_samples=0, sample_rate=None):
+                                  number_of_samples=None, sample_rate=None):
     """
     A note with an arbitrary sequence of pitch transition and a meta-vibrato.
 
@@ -1132,8 +1136,8 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
         The tables with the waveforms to synthesize the sound
         and for the oscillatory patterns of the vibratos.
         All the tables for f should have the same size.
-    number_of_samples : scalar
-        If nonzero, truncate or zero-pad the complete render to this length.
+    number_of_samples : scalar or None
+        If given, truncate or zero-pad the complete render to this length.
     sample_rate : scalar or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -1234,7 +1238,7 @@ def note_with_vibrato(
         max_pitch_dev: float = 2,
         waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
         vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
-        alpha: float = 1, number_of_samples: int = 0,
+        alpha: float = 1, number_of_samples: int | None = None,
         sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     Synthesize a musical note with a vibrato.
@@ -1259,9 +1263,9 @@ def note_with_vibrato(
     alpha : scalar
         An index to distort the vibrato [1].
         If alpha != 1, the vibrato is not of linear pitch.
-    number_of_samples : integer
+    number_of_samples : integer or None
         The number of samples in the sound.
-        If supplied, duration is ignored.
+        If given, duration is ignored, and zero is no samples.
     sample_rate : integer or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -1306,7 +1310,7 @@ def note_with_vibrato(
     sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
     vibrato_waveform_table = np.array(vibrato_waveform_table)
-    if number_of_samples:
+    if number_of_samples is not None:
         lambda_v = number_of_samples
     else:
         lambda_v = int(sample_rate * duration)
@@ -1342,7 +1346,7 @@ def note_with_two_vibratos(
         waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
         vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
         sec_vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
-        number_of_samples: int = 0,
+        number_of_samples: int | None = None,
         sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     A note with a vibrato that also has a secondary oscillatory pattern.
@@ -1374,9 +1378,9 @@ def note_with_two_vibratos(
     sec_vibrato_waveform_table : array_like
         The table with the waveform for the
         secondary pattern of the vibrato.
-    number_of_samples : scalar
+    number_of_samples : scalar or None
         The number of samples of the sound.
-        If supplied, duration is not used.
+        If given, duration is not used, and zero is no samples.
     sample_rate : scalar or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -1411,7 +1415,7 @@ def note_with_two_vibratos(
     waveform_table = np.array(waveform_table)
     vibrato_waveform_table = np.array(vibrato_waveform_table)
     sec_vibrato_waveform_table = np.array(sec_vibrato_waveform_table)
-    if number_of_samples:
+    if number_of_samples is not None:
         lambda_vv = number_of_samples
     else:
         lambda_vv = int(sample_rate * duration)
@@ -1514,9 +1518,10 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
             "notes_per_second sets how long each note of the trill lasts "
             f"and must be positive; got {notes_per_second}")
     if notes_per_second > sample_rate:
-        # A note shorter than a sample rounded to zero samples, which
-        # `note` reads as "not given": a millisecond at 50,000 notes a
-        # second came back as twelve seconds of two-second notes.
+        # A note shorter than a sample rounds to no samples, so there is
+        # no trill to render. While `note` read zero samples as "not
+        # given", a millisecond at 50,000 notes a second came back as
+        # twelve seconds of two-second notes.
         raise ValueError(
             f"each note of the trill must span at least one sample; "
             f"{notes_per_second} notes a second at {sample_rate} Hz do not")

@@ -9,7 +9,7 @@ from ..._rate import resolve_rate
 
 def noise(noise_type: str | float = "brown", duration: float = 2,
           min_freq: float = 15, max_freq: float = 15000,
-          number_of_samples: int = 0,
+          number_of_samples: int | None = None,
           sample_rate: int | None = None,
           seed: int | None = None) -> NDArray[np.float64]:
     """
@@ -35,8 +35,9 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
     max_freq : scalar in [0, fs/2]
         The highest frequency allowed, kept too if a component falls
         exactly on it. It should be > fmin.
-    number_of_samples : integer
-        The number of samples of the resulting sonic vector.
+    number_of_samples : integer or None
+        The number of samples of the resulting sonic vector. If given,
+        duration is ignored, and zero is no samples.
     sample_rate : integer or None
         The sample rate to use.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -130,7 +131,7 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
             not isinstance(seed, (int, np.integer)) or isinstance(seed, bool)
             or not 0 <= seed < 2**64):
         raise ValueError("seed must be a nonnegative uint64 integer")
-    if number_of_samples:
+    if number_of_samples is not None:
         length = number_of_samples
     else:
         length = int(duration * sample_rate)

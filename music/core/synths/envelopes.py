@@ -7,7 +7,7 @@ from ..._rate import resolve_rate
 
 
 def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
-       number_of_samples=0, sonic_vector=0, sample_rate=None):
+       number_of_samples=None, sonic_vector=0, sample_rate=None):
     """
     Synthesize an AM envelope or apply it to a sound.
 
@@ -24,9 +24,9 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
         The maximum deviation of amplitude of the AM.
     waveform_table : array_like
         The table with the waveform for the AM oscillatory pattern.
-    number_of_samples : integer
-        The number of samples of the envelope. If supplied, duration is
-        ignored.
+    number_of_samples : integer or None
+        The number of samples of the envelope. If given, duration is
+        ignored, and zero is an envelope of no samples.
     sonic_vector : array_like
         Samples for the modulation to be applied to. If supplied, duration
         and number_of_samples are ignored.
@@ -86,7 +86,7 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
         lambda_am = len(sonic_vector)
-    elif number_of_samples:
+    elif number_of_samples is not None:
         lambda_am = number_of_samples
     else:
         lambda_am = np.floor(sample_rate * duration)
@@ -104,7 +104,7 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
 
 
 def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
-            waveform_table=WAVEFORM_SINE, number_of_samples=0,
+            waveform_table=WAVEFORM_SINE, number_of_samples=None,
             sonic_vector=0, sample_rate=None):
     """
     Synthesize a tremolo envelope or apply it to a sound.
@@ -124,9 +124,9 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
         An index to distort the tremolo pattern [1].
     waveform_table : array_like
         The table with the waveform for the tremolo oscillatory pattern.
-    number_of_samples : integer
-        The number of samples of the envelope. If supplied, duration is
-        ignored.
+    number_of_samples : integer or None
+        The number of samples of the envelope. If given, duration is
+        ignored, and zero is an envelope of no samples.
     sonic_vector : array_like
         Samples for the tremolo to be applied to. If supplied, duration and
         number_of_samples are ignored.
@@ -183,7 +183,7 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
         lambda_tremolo = len(sonic_vector)
-    elif number_of_samples:
+    elif number_of_samples is not None:
         lambda_tremolo = number_of_samples
     else:
         lambda_tremolo = np.floor(sample_rate * duration)
@@ -216,7 +216,7 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
              waveform_tables=((WAVEFORM_SINE, WAVEFORM_SINE, WAVEFORM_SINE),
                               (WAVEFORM_TRIANGULAR, WAVEFORM_TRIANGULAR,
                                WAVEFORM_TRIANGULAR, WAVEFORM_SINE)),
-             number_of_samples=0, sonic_vector=0, sample_rate=None):
+             number_of_samples=None, sonic_vector=0, sample_rate=None):
     """
     An envelope with multiple tremolos.
 
@@ -233,8 +233,9 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
         Indexes for distortion of each tremolo [1].
     waveform_tables : iterable of iterable of array_likes
         Tables for lookup for each tremolo.
-    number_of_samples : iterable of iterable of scalars
-        The number of samples or each tremolo.
+    number_of_samples : iterable of iterable of scalars, or None
+        The number of samples of each tremolo. If given, durations is
+        ignored.
     sonic_vector : array_like
         The sound to which apply the tremolos. If supplied, the tremolo lines
         are applied to the sound and missing samples are completed by zeros
@@ -280,7 +281,7 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
         for row in waveform_tables
     ]
     t_: list = []
-    if number_of_samples:
+    if number_of_samples is not None:
         for i, ns in enumerate(number_of_samples):
             t_.append([])
             for j, ns_ in enumerate(ns):

@@ -10,7 +10,7 @@ from ...utils import _transition_is_linear, as_sonic_vector
 def adsr(envelope_duration=2, attack_duration=20,
          decay_duration=20, sustain_level=-5,
          release_duration=50, transition="exp", alpha=1,
-         db_dev=-80, to_zero=1, number_of_samples=0, sonic_vector=0,
+         db_dev=-80, to_zero=1, number_of_samples=None, sonic_vector=0,
          sample_rate=None):
     """
     Synthesize an ADSR envelope.
@@ -48,9 +48,9 @@ def adsr(envelope_duration=2, attack_duration=20,
         Attack and reaching the value of zero at the end of the Release. If it
         is an array_like, it should hold two values, one for Attack and
         another for Release. It's ignored if trans="linear".
-    number_of_samples : integer
-        The number of samples of the envelope. If supplied,
-        envelope_duration is ignored.
+    number_of_samples : integer or None
+        The number of samples of the envelope. If given, envelope_duration
+        is ignored, and zero is an envelope of no samples.
     sonic_vector : array_like
         Samples for the ADSR envelope to be applied to. If supplied,
         envelope_duration and number_of_samples are ignored.
@@ -105,7 +105,7 @@ def adsr(envelope_duration=2, attack_duration=20,
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
         lambda_adsr = len(sonic_vector)
-    elif number_of_samples:
+    elif number_of_samples is not None:
         lambda_adsr = number_of_samples
     else:
         lambda_adsr = int(envelope_duration * sample_rate)
@@ -123,9 +123,10 @@ def adsr(envelope_duration=2, attack_duration=20,
         lambda_d = int(lambda_d * ratio)
         lambda_r = int(lambda_r * ratio)
 
-    # A stage of zero length is built explicitly: fade() and loud() treat
-    # number_of_samples=0 as "unset" and fall back to their own default
-    # duration, which would stretch the envelope past the sound.
+    # An attack or release of no samples is built explicitly, because its
+    # share of `to_zero` is divided by its duration: an attack of 0 ms
+    # divides by zero, and one too short to round to a sample asks `fade`
+    # for a linear share past 100 %.
     #
     # `to_zero` and the stage durations are both in milliseconds, so their
     # ratio is a fraction; `fade` reads `perc` as a percentage. Passing the
@@ -142,11 +143,8 @@ def adsr(envelope_duration=2, attack_duration=20,
     else:
         attack = np.array([])
 
-    if lambda_d:
-        decay = loud(trans_dev=sustain_level, method=transition,
-                     alpha=alpha, number_of_samples=lambda_d)
-    else:
-        decay = np.array([])
+    decay = loud(trans_dev=sustain_level, method=transition,
+                 alpha=alpha, number_of_samples=lambda_d)
 
     a_s = 10 ** (sustain_level / 20.)
     sustain = np.ones(lambda_adsr - (lambda_a + lambda_r + lambda_d)) * a_s
@@ -210,7 +208,7 @@ def adsr_vibrato(note_dict={}, adsr_dict={}):
 
 def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
                 sustain_level=-5, release_duration=50, transition="exp",
-                alpha=1, db_dev=-80, to_zero=1, number_of_samples=0,
+                alpha=1, db_dev=-80, to_zero=1, number_of_samples=None,
                 sonic_vector=0, sample_rate=None):
     """
     A shorthand to make an ADSR envelope for a stereo sound.
@@ -249,9 +247,9 @@ def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
         the Attack and reaching zero at the end of the Release. An
         array_like should hold two values, for Attack and Release.
         Ignored if ``transition="linear"``.
-    number_of_samples : integer
-        The number of samples of the envelope. If supplied, ``duration``
-        is ignored.
+    number_of_samples : integer or None
+        The number of samples of the envelope. If given, ``duration``
+        is ignored, and zero is an envelope of no samples.
     sonic_vector : array_like
         A ``(2, nsamples)`` stereo sound for the envelope to be applied
         to. If supplied, ``duration`` and ``number_of_samples`` are

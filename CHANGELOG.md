@@ -47,6 +47,9 @@ Old names keep working and warn: see **Deprecated**.
 - **`cross_fade` faded the caller's arrays,** the one routine here that
   changed what it was given, so crossfading the same two sounds twice
   faded each twice. It works on copies, and takes any array-like.
+- **`adsr` refused a stereo sound with a numpy broadcast error.** It took
+  the two channels for the sound's length and built a two-sample
+  envelope; it now shapes every channel alike, as `fade` does.
 - **`sing` returned 44.1 kHz audio whatever rate the caller worked at.**
 
 ### Deprecated

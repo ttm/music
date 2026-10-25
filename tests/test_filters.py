@@ -425,3 +425,14 @@ def test_a_cross_fade_takes_any_array_like():
     as_lists = cross_fade([1.0] * 441, [2.0] * 441, duration_ms=5)
     np.testing.assert_array_equal(
         as_lists, cross_fade(np.ones(441), 2 * np.ones(441), duration_ms=5))
+
+
+def test_adsr_shapes_every_channel_of_a_stereo_sound_alike():
+    """It took a stereo sound's two channels for its length, built a
+    two-sample envelope, and left numpy to say it could not broadcast."""
+    stereo = np.vstack((music.note(220, 0.5), music.note(330, 0.5)))
+    shaped = adsr(sonic_vector=stereo)
+    np.testing.assert_array_equal(
+        shaped, stereo * adsr(number_of_samples=stereo.shape[1]))
+    np.testing.assert_array_equal(shaped,
+                                  music.adsr_stereo(sonic_vector=stereo))

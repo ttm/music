@@ -58,8 +58,9 @@ def adsr(envelope_duration=2, attack_ms=20,
         The number of samples of the envelope. If given, envelope_duration
         is ignored, and zero is an envelope of no samples.
     sonic_vector : array_like
-        Samples for the ADSR envelope to be applied to. If supplied,
-        envelope_duration and number_of_samples are ignored.
+        Samples for the ADSR envelope to be applied to: mono, or of shape
+        ``(nchannels, nsamples)``, every channel shaped alike. If
+        supplied, envelope_duration and number_of_samples are ignored.
     sample_rate : integer or None
         The sample rate. None, the default, is the rate
         :func:`music.get_sample_rate` returns.
@@ -102,6 +103,9 @@ def adsr(envelope_duration=2, attack_ms=20,
     ...                       for i, j in zip([6, 15, 100], [2, 2, 20])])
     >>> envelope = adsr(envelope_duration=440, attack_ms=10e3,
     ...                 decay_ms=0, release_ms=5e3)
+    >>> stereo = localize(note(duration=1))
+    >>> adsr(sonic_vector=stereo).shape == stereo.shape   # each channel
+    True
 
     Notes
     -----
@@ -122,7 +126,10 @@ def adsr(envelope_duration=2, attack_ms=20,
     _transition_is_linear(transition, 'transition')
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
-        lambda_adsr = len(sonic_vector)
+        # The length of a channel. len() counted a stereo sound's two
+        # channels as its length, built a two-sample envelope and left
+        # numpy to say it could not broadcast it.
+        lambda_adsr = sonic_vector.shape[-1]
     elif number_of_samples is not None:
         lambda_adsr = number_of_samples
     else:

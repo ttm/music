@@ -11,6 +11,17 @@ output worth reading is the list of survivors rather than the percentage.
 [Issue #113](https://github.com/ttm/music/issues/113) tracks the broader
 work; `tools/mutation_audit.py --list-areas` lists what has been done.
 
+**The table describes the code as it was on each date, which is not the
+code after 1.11.0.** The default sample rate, the zero sample count, the
+parameters renamed for their unit, the writers' `normalize` and the lazy
+sympy import changed sources in every area but `theory`, `tables` and
+`hrtf` after it was measured, so the survivor IDs below no longer name
+the current code's mutants. Three modules were added that no area
+includes: `music/_rate.py`, `music/_deprecation.py` and
+`music/structures/_sympy.py`. Line and branch coverage of all of it is
+100 %; until those fifteen areas are run again, and the three modules
+given one, that is the only claim made of the changed code.
+
 | Area | Sources | Measured | Mutations | Detected | Surviving | Reviewed |
 |---|---|---|---:|---:|---:|---|
 | `export` | `core/functions.py`, `core/io.py`, `stimulation/session.py` | 2026-09-16 | 767 | 698 | 69 | all |

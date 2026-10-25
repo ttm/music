@@ -289,6 +289,16 @@ either documented in the code or tracked in the issue list.
   files and their selected tests. Expanding the audit remains
   issue #113.
 
+  **They describe the code before the release after 1.11.0.** The
+  default sample rate, the zero sample count, the renamed parameters,
+  the writers' `normalize` and the lazy sympy changed modules in most of
+  the eighteen areas after they were measured, and added three that no
+  area includes: `music/_rate.py`, `music/_deprecation.py` and
+  `music/structures/_sympy.py`. Line and branch coverage of all of it is
+  100 %, which says every line ran and not that a wrong one would fail;
+  until the areas are measured again, the survivor lists in
+  MUTATION_AUDIT.md are for code that has since changed.
+
 - **The click measure is relative, so it is blind in fast passages.** A
   step counts as a click when it stands eight times over the median step
   of the block around it, which means how large a click must be depends

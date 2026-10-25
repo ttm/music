@@ -35,6 +35,7 @@ from numpy.typing import NDArray
 from .core.synths.envelopes import tremolo
 from .core.synths.notes import note, note_with_vibrato
 from .utils import horizontal_stack
+from ._rate import resolve_rate
 
 __all__ = ['Bonds', 'proportional', 'inversely_proportional', 'stepped']
 
@@ -234,7 +235,7 @@ class Bonds:
                 for name, bond in self.relations.items()}
 
     def note(self, freq: float = 220.0, duration: float = 2.0,
-             sample_rate: int = 44100) -> NDArray[np.float64]:
+             sample_rate: int | None = None) -> NDArray[np.float64]:
         """One note, with every bond applied to it.
 
         A bound vibrato is rendered through
@@ -249,8 +250,10 @@ class Bonds:
             of.
         duration : scalar
             Its duration in seconds.
-        sample_rate : integer
+        sample_rate : integer or None
             The sample rate.
+            None, the default, is the rate :func:`music.get_sample_rate`
+            returns.
 
         Returns
         -------
@@ -263,6 +266,7 @@ class Bonds:
         >>> np.array_equal(plain, note(freq=440, duration=0.1))
         True
         """
+        sample_rate = resolve_rate(sample_rate)
         values = self.characteristics(freq)
         vibrato: dict[str, Any] = {
             key: values[key] for key in ('vibrato_freq', 'max_pitch_dev')
@@ -287,7 +291,7 @@ class Bonds:
 
     def render(self, freqs: Sequence[float],
                duration: float | Sequence[float] = 2.0,
-               sample_rate: int = 44100) -> NDArray[np.float64]:
+               sample_rate: int | None = None) -> NDArray[np.float64]:
         """A sequence of notes, each bound to its own frequency.
 
         Parameters
@@ -296,8 +300,10 @@ class Bonds:
             The frequencies, in order.
         duration : scalar or sequence of scalars
             One duration for every note, or one per note.
-        sample_rate : integer
+        sample_rate : integer or None
             The sample rate.
+            None, the default, is the rate :func:`music.get_sample_rate`
+            returns.
 
         Returns
         -------
@@ -318,6 +324,7 @@ class Bonds:
         >>> len(language.render([220, 440], duration=[0.1, 0.3]))
         17640
         """
+        sample_rate = resolve_rate(sample_rate)
         freqs = list(freqs)
         if not freqs:
             raise ValueError('render needs at least one frequency')

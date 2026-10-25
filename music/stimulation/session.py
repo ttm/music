@@ -34,6 +34,7 @@ from numpy.typing import ArrayLike, NDArray
 
 from ..core.io import write_wav_mono, write_wav_stereo
 from ..utils import convert_to_stereo
+from .._rate import get_sample_rate
 
 __all__ = ['StimulationSession', 'StimulusPhase']
 
@@ -142,7 +143,9 @@ class StimulationSession:
     ----------
     sample_rate : integer
         The sampling frequency in Hertz, passed to every callable
-        stimulus so the whole session is rendered at one rate.
+        stimulus so the whole session is rendered at one rate. It
+        defaults to :func:`music.get_sample_rate`'s rate when the session
+        is made.
     end_ramp : scalar
         The fade to silence at the end of the session, in seconds. Like
         the fade in at the start -- the first phase's ``ramp`` -- it is
@@ -172,7 +175,7 @@ class StimulationSession:
                       musical version of the same idea.
     """
 
-    sample_rate: int = 44100
+    sample_rate: int = field(default_factory=get_sample_rate)
     end_ramp: float = 0.0
     ramp_shape: str = 'equal_power'
     phases: List[StimulusPhase] = field(default_factory=list)

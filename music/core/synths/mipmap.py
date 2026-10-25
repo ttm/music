@@ -23,6 +23,7 @@ import math
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
+from ..._rate import resolve_rate
 
 _MAX_BLOCK_SAMPLES = 5_000_000
 #: How many partials each table holds: every count to 16, then four to an
@@ -134,17 +135,20 @@ class MipmapOscillator:
 
     Parameters
     ----------
-    sample_rate : int
-        Samples per second, from 8,000 to 192,000.
+    sample_rate : int or None
+        Samples per second, from 8,000 to 192,000. None, the default, is
+        the rate :func:`music.get_sample_rate` returns when the
+        oscillator is made.
     waveform : {'sawtooth', 'square', 'triangle'}
         The waveform read.
     phase_cycles : float
         Where in its cycle the first sample falls, from 0 up to 1.
     """
 
-    def __init__(self, *, sample_rate: int = 44100,
+    def __init__(self, *, sample_rate: int | None = None,
                  waveform: str = "sawtooth",
                  phase_cycles: float = 0.0) -> None:
+        sample_rate = resolve_rate(sample_rate)
         if (not isinstance(sample_rate, int) or isinstance(sample_rate, bool)
                 or not 8000 <= sample_rate <= 192000):
             raise ValueError("sample_rate must be 8000 to 192000 Hz")
@@ -211,7 +215,7 @@ class MipmapOscillator:
 
 
 def mipmap_frequency_path(
-        frequencies: ArrayLike, *, sample_rate: int = 44100,
+        frequencies: ArrayLike, *, sample_rate: int | None = None,
         waveform: str = "sawtooth",
         phase_cycles: float = 0.0) -> NDArray[np.float64]:
     """Render a single block from mipmapped tables.
@@ -224,8 +228,9 @@ def mipmap_frequency_path(
     frequencies : array_like
         One instantaneous frequency in Hz per sample, each positive,
         finite and below the Nyquist frequency.
-    sample_rate : int
+    sample_rate : int or None
         Samples per second, from 8,000 to 192,000.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
     waveform : {'sawtooth', 'square', 'triangle'}
         The waveform read.
     phase_cycles : float
@@ -236,6 +241,7 @@ def mipmap_frequency_path(
     ndarray
         One float64 sample per frequency.
     """
+    sample_rate = resolve_rate(sample_rate)
     return MipmapOscillator(
         sample_rate=sample_rate, waveform=waveform,
         phase_cycles=phase_cycles).render(frequencies)

@@ -4,12 +4,13 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from ..synths.noises import noise
 from ...utils import as_sonic_vector
+from ..._rate import resolve_rate
 
 
 def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
            decay: float = -50, noise_type: str | float = "brown",
            sonic_vector: ArrayLike = 0,
-           sample_rate: int = 44100) -> NDArray[np.float64]:
+           sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     Apply an artificial reverberation or return the impulse response.
 
@@ -26,8 +27,9 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
         noises(ntype=scalar).
     sonic_vector : array_like
         An optional one dimensional array for the reverberation to be applied.
-    sample_rate : scalar
+    sample_rate : scalar or None
         The sampling frequency.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Raises
     ------
@@ -71,6 +73,7 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     >>> len(wet) > 44100                # longer than the note by its tail
     True
     """
+    sample_rate = resolve_rate(sample_rate)
     if sample_rate <= 0:
         raise ValueError(f"sample_rate must be positive; got {sample_rate}")
     if first_phase_duration < 0:

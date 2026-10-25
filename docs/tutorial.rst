@@ -25,6 +25,16 @@ A first sound
 [-1, 1]. Frequency is in hertz, duration in seconds. To hear it without
 writing a file, use :func:`music.play_audio`.
 
+44.1 kHz is the default rate, not a fixed one. Every routine takes a
+``sample_rate``, and every one defaults it to the same rate, which
+:func:`music.set_sample_rate` changes -- on its own line for the rest of a
+script, or in a ``with`` statement for one block:
+
+.. code-block:: python
+
+   with music.set_sample_rate(48000):
+       b = music.note(freq=440, duration=1.5)   # 72,000 samples
+
 Should you prefer to think in samples rather than seconds, every synthesis
 routine takes ``number_of_samples`` instead, and it wins over ``duration``:
 

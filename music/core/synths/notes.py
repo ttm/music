@@ -4,6 +4,7 @@ from numpy.typing import ArrayLike, NDArray
 from ...utils import (WAVEFORM_SINE, WAVEFORM_TRIANGULAR,
                       _integrate_phase, _signed_power, _transition_is_linear)
 from ..filters.adsr import adsr
+from ..._rate import resolve_rate
 
 
 def _require_a_ratio(start_freq, end_freq, linear_option=False):
@@ -30,7 +31,7 @@ def _require_a_ratio(start_freq, end_freq, linear_option=False):
 def note(freq: float = 220, duration: float = 2,
          waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
          number_of_samples: int = 0,
-         sample_rate: int = 44100) -> NDArray[np.float64]:
+         sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     Synthesize a basic musical note.
 
@@ -45,8 +46,9 @@ def note(freq: float = 220, duration: float = 2,
     number_of_samples : integer
         The number of samples in the sound.
         If not 0, duration is ignored.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -82,6 +84,7 @@ def note(freq: float = 220, duration: float = 2,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
     if not number_of_samples:
         number_of_samples = int(duration * sample_rate)
@@ -96,7 +99,7 @@ def note(freq: float = 220, duration: float = 2,
 
 def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
                       x=(-10, 10), y=(1, 1), stereo=True, zeta=0.215,
-                      air_temp=20, number_of_samples=0, sample_rate=44100):
+                      air_temp=20, number_of_samples=0, sample_rate=None):
     """
     A simple note with a transition of localization and resulting Doppler
     effect.
@@ -125,8 +128,9 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     number_of_samples : integer
         The number of source samples; if nonzero, duration is ignored.
         Stereo output additionally includes the initial delay padding.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -157,6 +161,7 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
     if not number_of_samples:
         number_of_samples = int(duration * sample_rate)
@@ -223,7 +228,7 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
                  waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
                  fm_waveform_table: ArrayLike = WAVEFORM_SINE,
                  number_of_samples: int = 0,
-                 sample_rate: int = 44100) -> NDArray[np.float64]:
+                 sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     Synthesize a musical note with FM synthesis.
 
@@ -247,8 +252,9 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
     number_of_samples : integer
         The number of samples in the sound.
         If supplied, duration is ignored.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -288,6 +294,7 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
     fm_waveform_table = np.array(fm_waveform_table)
     if number_of_samples:
@@ -319,7 +326,7 @@ def note_with_phase(freq: float = 220, duration: float = 2,
                     phase: float = 0,
                     waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
                     number_of_samples: int = 0,
-                    sample_rate: int = 44100) -> NDArray[np.float64]:
+                    sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     Synthesize a basic musical note with a phase.
 
@@ -339,8 +346,9 @@ def note_with_phase(freq: float = 220, duration: float = 2,
     number_of_samples : integer
         The number of samples in the sound.
         If not 0, duration is ignored.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -378,6 +386,7 @@ def note_with_phase(freq: float = 220, duration: float = 2,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
     if not number_of_samples:
         number_of_samples = int(duration * sample_rate)
@@ -394,7 +403,7 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
                         duration: float = 2, alpha: float = 1,
                         waveform_table: ArrayLike = WAVEFORM_SINE,
                         method: str = "exp", number_of_samples: int = 0,
-                        sample_rate: int = 44100) -> NDArray[np.float64]:
+                        sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     A note with a pitch transition: a glissando.
 
@@ -418,8 +427,9 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
     number_of_samples : integer
         The number of samples of the sound.
         If supplied, duration is not used.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -456,6 +466,7 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
     >>> write_wav_mono(s)  # writes a file with glissandi
 
     """
+    sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
     if number_of_samples:
         lambda_p = number_of_samples
@@ -488,7 +499,7 @@ def note_with_glissando_vibrato(
         waveform_table: ArrayLike = WAVEFORM_SINE,
         vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
         number_of_samples: int = 0,
-        sample_rate: int = 44100) -> NDArray[np.float64]:
+        sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     A note with a pitch transition (a glissando) and a vibrato.
 
@@ -516,8 +527,9 @@ def note_with_glissando_vibrato(
     number_of_samples : integer
         The number of samples of the sound.
         If supplied, duration is not used.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -542,6 +554,7 @@ def note_with_glissando_vibrato(
     >>> write_wav_mono(s)  # writes a file with glissandi and vibratos
 
     """
+    sample_rate = resolve_rate(sample_rate)
     _require_a_ratio(start_freq, end_freq)
     waveform_table = np.array(waveform_table)
     vibrato_waveform_table = np.array(vibrato_waveform_table)
@@ -645,7 +658,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
                                             WAVEFORM_SINE, WAVEFORM_SINE,
                                             WAVEFORM_SINE)),
                                        stereo=True, zeta=0.215, air_temp=20,
-                                       number_of_samples=0, sample_rate=44100):
+                                       number_of_samples=0, sample_rate=None):
     """
     A sound with arbitrary meta-vibratos, transitions of frequency and
     localization.
@@ -693,8 +706,9 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     number_of_samples : scalar
         If nonzero, truncate or zero-pad the complete render to this
         length, including the initial interaural delay.
-    sample_rate : scalar
+    sample_rate : scalar or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -747,6 +761,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
     waveform_tables = tuple(tuple(np.asarray(table, dtype=float)
                                   for table in row)
                             for row in waveform_tables)
@@ -950,7 +965,7 @@ def note_with_two_vibratos_glissando(
         waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
         tabv1: ArrayLike = WAVEFORM_SINE, tabv2: ArrayLike = WAVEFORM_SINE,
         number_of_samples: int = 0,
-        sample_rate: int = 44100) -> NDArray[np.float64]:
+        sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     A note with a glissando and a vibrato that also has a secondary
     oscillatory pattern.
@@ -990,8 +1005,9 @@ def note_with_two_vibratos_glissando(
     number_of_samples : scalar
         The number of samples of the sound.
         If supplied, duration is not used.
-    sample_rate : scalar
+    sample_rate : scalar or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -1021,6 +1037,7 @@ def note_with_two_vibratos_glissando(
     >>> write_wav_mono(s)
 
     """
+    sample_rate = resolve_rate(sample_rate)
     _require_a_ratio(start_freq, end_freq)
     waveform_table = np.array(waveform_table)
     tabv1 = np.array(tabv1)
@@ -1084,7 +1101,7 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
                                                     WAVEFORM_SINE,
                                                     WAVEFORM_SINE,
                                                     WAVEFORM_SINE)),
-                                  number_of_samples=0, sample_rate=44100):
+                                  number_of_samples=0, sample_rate=None):
     """
     A note with an arbitrary sequence of pitch transition and a meta-vibrato.
 
@@ -1117,8 +1134,9 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
         All the tables for f should have the same size.
     number_of_samples : scalar
         If nonzero, truncate or zero-pad the complete render to this length.
-    sample_rate : scalar
+    sample_rate : scalar or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -1148,6 +1166,7 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
     >>> write_wav_mono(note_with_vibratos_glissandos())
 
     """
+    sample_rate = resolve_rate(sample_rate)
     waveform_tables = tuple(tuple(np.asarray(table) for table in row)
                             for row in waveform_tables)
     # pitch transition contributions
@@ -1216,7 +1235,7 @@ def note_with_vibrato(
         waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
         vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
         alpha: float = 1, number_of_samples: int = 0,
-        sample_rate: int = 44100) -> NDArray[np.float64]:
+        sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     Synthesize a musical note with a vibrato.
 
@@ -1243,8 +1262,9 @@ def note_with_vibrato(
     number_of_samples : integer
         The number of samples in the sound.
         If supplied, duration is ignored.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -1283,6 +1303,7 @@ def note_with_vibrato(
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
     vibrato_waveform_table = np.array(vibrato_waveform_table)
     if number_of_samples:
@@ -1322,7 +1343,7 @@ def note_with_two_vibratos(
         vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
         sec_vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
         number_of_samples: int = 0,
-        sample_rate: int = 44100) -> NDArray[np.float64]:
+        sample_rate: int | None = None) -> NDArray[np.float64]:
     """
     A note with a vibrato that also has a secondary oscillatory pattern.
 
@@ -1356,8 +1377,9 @@ def note_with_two_vibratos(
     number_of_samples : scalar
         The number of samples of the sound.
         If supplied, duration is not used.
-    sample_rate : scalar
+    sample_rate : scalar or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -1385,6 +1407,7 @@ def note_with_two_vibratos(
     >>> write_wav_mono(s)  # writes a file with two vibratos
 
     """
+    sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
     vibrato_waveform_table = np.array(vibrato_waveform_table)
     sec_vibrato_waveform_table = np.array(sec_vibrato_waveform_table)
@@ -1420,7 +1443,7 @@ def note_with_two_vibratos(
 
 
 def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
-          sample_rate=44100):
+          sample_rate=None):
     """
     Makes a trill.
 
@@ -1439,10 +1462,11 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
         of a second or longer.
     duration : scalar
         The maximum duration of the trill in seconds.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate. Each note is shaped by :func:`adsr` with its
         default attack, decay and sustain and a 10 ms release, all timed
         at this rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     See Also
     --------
@@ -1479,6 +1503,7 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
     # These were 44100 rather than sample_rate, which is declared,
     # documented, and passed to note() below: a trill asked for at 22050
     # rendered two seconds of audio for every one it was asked for, at

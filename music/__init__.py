@@ -9,6 +9,7 @@ try:
 except _NotFound:  # pragma: no cover - running from a checkout
     __version__ = "0.0.0.dev0"
 
+from ._rate import get_sample_rate, set_sample_rate
 from .utils import (
     WAVEFORM_SAWTOOTH,
     WAVEFORM_SINE,
@@ -178,6 +179,8 @@ def __dir__() -> list[str]:
 
 __all__ = [
     'Bonds',
+    'get_sample_rate',
+    'set_sample_rate',
     'ELEVATIONS',
     'KEMAR_URL',
     'available_azimuths',

@@ -161,6 +161,18 @@ pip install -e music
 Every routine returns a numpy array of PCM samples, so results compose with
 each other and with anything else you can express in numpy.
 
+### Sample rate
+
+Every routine works at 44,100 Hz unless told otherwise. Rather than pass
+`sample_rate` to each call, set it once -- for the rest of a script, or in
+a `with` statement for one block; a rate given to a routine still wins:
+
+```python
+music.set_sample_rate(48000)
+with music.set_sample_rate(96000):
+    high = music.note(440, duration=1)    # 96,000 samples
+```
+
 ### Notes and envelopes
 
 ```python

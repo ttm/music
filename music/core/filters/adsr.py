@@ -3,6 +3,7 @@
 import numpy as np
 from .fade import fade
 from .loud import loud
+from ..._rate import resolve_rate
 from ...utils import _transition_is_linear, as_sonic_vector
 
 
@@ -10,7 +11,7 @@ def adsr(envelope_duration=2, attack_duration=20,
          decay_duration=20, sustain_level=-5,
          release_duration=50, transition="exp", alpha=1,
          db_dev=-80, to_zero=1, number_of_samples=0, sonic_vector=0,
-         sample_rate=44100):
+         sample_rate=None):
     """
     Synthesize an ADSR envelope.
 
@@ -53,8 +54,9 @@ def adsr(envelope_duration=2, attack_duration=20,
     sonic_vector : array_like
         Samples for the ADSR envelope to be applied to. If supplied,
         envelope_duration and number_of_samples are ignored.
-    sample_rate : integer
-        The sample rate.
+    sample_rate : integer or None
+        The sample rate. None, the default, is the rate
+        :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -98,6 +100,7 @@ def adsr(envelope_duration=2, attack_duration=20,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
     _transition_is_linear(transition, 'transition')
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
@@ -208,7 +211,7 @@ def adsr_vibrato(note_dict={}, adsr_dict={}):
 def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
                 sustain_level=-5, release_duration=50, transition="exp",
                 alpha=1, db_dev=-80, to_zero=1, number_of_samples=0,
-                sonic_vector=0, sample_rate=44100):
+                sonic_vector=0, sample_rate=None):
     """
     A shorthand to make an ADSR envelope for a stereo sound.
 
@@ -253,8 +256,9 @@ def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
         A ``(2, nsamples)`` stereo sound for the envelope to be applied
         to. If supplied, ``duration`` and ``number_of_samples`` are
         ignored.
-    sample_rate : integer
-        The sample rate.
+    sample_rate : integer or None
+        The sample rate. None, the default, is the rate
+        :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -273,6 +277,7 @@ def adsr_stereo(duration=2, attack_duration=20, decay_duration=20,
     2
 
     """
+    sample_rate = resolve_rate(sample_rate)
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
         sonic_vector1 = sonic_vector[0]

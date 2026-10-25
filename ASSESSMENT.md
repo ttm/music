@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-19**,
-`music` 1.11.0: 59 modules, 16,905 LOC package + 26,923 LOC tests, 129 names
+`music` 1.11.0: 60 modules, 17,229 LOC package + 27,164 LOC tests, 131 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -64,8 +64,8 @@ figures described above are automatically compared with the checkout.
 | Type check | `mypy music` | **clean**, 59 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
 | Lint, extended rule set | `ruff check --select ALL music` | 2,980 findings |
-| Annotation coverage | AST scan | **198 / 338 functions (59 %)**; 65 / 98 exported (66 %) |
-| Docstring coverage | AST scan | **231 / 237 public defs (97 %)** |
+| Annotation coverage | AST scan | **204 / 345 functions (59 %)**; 67 / 100 exported (67 %) |
+| Docstring coverage | AST scan | **234 / 240 public defs (98 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
 | MASS reconciliation | `tools/mass_reconcile.py` | **22 of 35 routines sample-exact**; 9 divergent with a stated reason, 4 where the reference does not run |
@@ -73,6 +73,7 @@ figures described above are automatically compared with the checkout.
 | Docstring examples | `pytest --doctest-modules` | **62 examples run**, 1 skipped |
 | Examples | `python tools/run_examples.py` | **16 pass**, 0 skipped |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
+| Sample rate | `tests/test_sample_rate.py` | every export that takes a rate renders at the default rate exactly what it renders when handed it, and none declares a rate of its own |
 | Rendering artifacts | `tests/test_artifacts.py` | every render swept for clicks and DC offset; the steps that remain are registered with a reason, and the measures' blind spots are measured |
 | Aliasing | `tests/test_artifacts.py` | a sine strays **1.2e-08** of its energy off the harmonics at any frequency; a sawtooth strays **24 %** at 10 kHz |
 | Band-limited oscillators | `tools/benchmark_spectral_aliasing.py`, `tools/benchmark_oscillators.py` | `bandlimited_note`'s sawtooth strays **1.2e-16** at 10 kHz; at 10,001 Hz and 48 kHz, PolyBLEP's sawtooth **0.68 %** and square **0.73 %**, the mipmapped tables' sawtooth **1.3e-14**, and **9.3e-9** at 110 Hz |
@@ -487,7 +488,7 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 59 %**, and 66 % across the exported API. The
+- **Annotation coverage is 59 %**, and 67 % across the exported API. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones
@@ -508,7 +509,7 @@ either documented in the code or tracked in the issue list.
   now says so, and a test pins it, so implementing the three laws is a
   deliberate change rather than a discovery. The same routine's legs are
   fixed -- see the changelog.
-- **`legacy/` is 1,221 LOC** kept for `CanonicalSynth`, `IteratorSynth` and
+- **`legacy/` is 1,223 LOC** kept for `CanonicalSynth`, `IteratorSynth` and
   the `Being` class. It is covered and type-checked, but it is not where new
   work should go.
 
@@ -517,6 +518,14 @@ either documented in the code or tracked in the issue list.
 Items the previous version of this file listed as open, since closed. The
 CHANGELOG carries the detail; this is only so the record does not read as
 worse than the code.
+
+- **Every routine defaulted its sample rate to 44,100 on its own.** A
+  caller at any other rate had to pass it to every call, and a call that
+  did not ran at 44.1 kHz without a word: the package did it to itself in
+  the writers' fades, `cross_fade` and `reverb`. Every `sample_rate` now
+  defaults to the rate `get_sample_rate` returns, which `set_sample_rate`
+  changes, and `tests/test_sample_rate.py` holds every export to it and
+  refuses a routine that declares a rate of its own.
 
 - **Three parameter combinations escaped the 1.8.0 suite.** The
   September 2026 review found shared stereo normalization exceeding full

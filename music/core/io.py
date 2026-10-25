@@ -7,6 +7,7 @@ from typing import Any, Sequence
 import numpy as np
 import soundfile as sf
 from numpy.typing import ArrayLike, NDArray
+from .._rate import resolve_rate
 from .functions import normalize_mono, normalize_stereo
 from .filters.adsr import adsr, adsr_stereo
 
@@ -165,7 +166,7 @@ def read_audio(filename: str) -> NDArray[np.float64]:
 def write_wav_mono(
     sonic_vector: ArrayLike | None = None,
     filename: str = "asound.wav",
-    sample_rate: int = 44100,
+    sample_rate: int | None = None,
     fades: Sequence[int] | int = 0,
     bit_depth: int = 16,
     remove_bias: bool = True,
@@ -184,8 +185,9 @@ def write_wav_mono(
         between -1 and 1. Defaults to about two seconds of uniform noise.
     filename : string
         The filename to use for the file to be written.
-    sample_rate : scalar
-        The sample frequency.
+    sample_rate : scalar or None
+        The sample frequency. None, the default, is the rate
+        :func:`music.get_sample_rate` returns.
     fades : iterable or scalar
         Milliseconds of fade in and fade out (to avoid clicks), either as a
         pair or as a single value applied to both ends.
@@ -211,6 +213,7 @@ def write_wav_mono(
     (22050,)
     >>> write_wav_mono(note(), "faded.wav", fades=(50, 200))   # ms in, ms out
     """
+    sample_rate = resolve_rate(sample_rate)
     # Reject a bad depth, and a container that cannot hold it, before
     # doing the work of rendering anything.
     audio_format = _audio_format(filename)
@@ -230,7 +233,7 @@ def write_wav_mono(
 def write_wav_stereo(
     sonic_vector: ArrayLike | None = None,
     filename: str = "asound.wav",
-    sample_rate: int = 44100,
+    sample_rate: int | None = None,
     fades: Sequence[int] | int = 0,
     bit_depth: int = 16,
     remove_bias: bool = True,
@@ -248,8 +251,9 @@ def write_wav_stereo(
         Defaults to about two seconds of uniform noise.
     filename : string
         The filename to use for the file to be written.
-    sample_rate : scalar
-        The sample frequency.
+    sample_rate : scalar or None
+        The sample frequency. None, the default, is the rate
+        :func:`music.get_sample_rate` returns.
     fades : iterable or scalar
         Milliseconds of fade in and fade out (to avoid clicks), either as a
         pair or as a single value applied to both ends.
@@ -277,6 +281,7 @@ def write_wav_stereo(
     >>> read_wav("placed.wav").shape[0]
     2
     """
+    sample_rate = resolve_rate(sample_rate)
     audio_format = _audio_format(filename)
     subtype = _subtype(bit_depth, audio_format)
     if sonic_vector is None:
@@ -300,7 +305,7 @@ read_wav = read_audio
 def write_audio(
     sonic_vector: ArrayLike | None = None,
     filename: str = "asound.wav",
-    sample_rate: int = 44100,
+    sample_rate: int | None = None,
     fades: Sequence[int] | int = 0,
     bit_depth: int = 16,
     remove_bias: bool = True,
@@ -319,8 +324,9 @@ def write_audio(
         uniform noise, as the two writers below do.
     filename : string
         The path to write. ``.wav`` and ``.flac`` are understood.
-    sample_rate : scalar
-        The sample frequency.
+    sample_rate : scalar or None
+        The sample frequency. None, the default, is the rate
+        :func:`music.get_sample_rate` returns.
     fades : iterable or scalar
         Milliseconds of fade in and fade out, either as a pair or as a
         single value applied to both ends.
@@ -378,7 +384,7 @@ def write_audio(
 
 def play_audio(
     sonic_vector: ArrayLike,
-    sample_rate: int = 44100,
+    sample_rate: int | None = None,
     normalize: bool = True,
 ) -> None:
     """Play a sonic vector using the :mod:`sounddevice` library.
@@ -388,8 +394,9 @@ def play_audio(
     sonic_vector : array_like
         Samples to be played.  Mono arrays should have shape ``(n,)`` and
         stereo arrays ``(2, n)``.
-    sample_rate : int, optional
-        Playback sample rate.  Defaults to ``44100``.
+    sample_rate : int or None, optional
+        Playback sample rate. None, the default, is the rate
+        :func:`music.get_sample_rate` returns.
     normalize : bool, optional
         If ``True`` (default), normalize ``sonic_vector`` before playback using
         :func:`normalize_mono` or :func:`normalize_stereo`.
@@ -403,7 +410,7 @@ def play_audio(
     --------
     >>> play_audio(note(freq=440, duration=0.5))   # doctest: +SKIP
     """
-
+    sample_rate = resolve_rate(sample_rate)
     try:
         import sounddevice as sd  # type: ignore
     except Exception:  # pragma: no cover - fallback when sounddevice missing

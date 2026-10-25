@@ -1,5 +1,29 @@
 ## [Unreleased]
 
+### Added
+
+- **`set_sample_rate` and `get_sample_rate`: one default rate for every
+  routine.** Every routine that takes a `sample_rate` defaulted it to
+  44,100 on its own, so a caller at any other rate had to pass it to every
+  call, and one that did not ran at 44.1 kHz without a word -- the package
+  shipped that defect three times, in the writers' fades, `cross_fade` and
+  `reverb`. Each now defaults to None, the rate `get_sample_rate` returns;
+  `set_sample_rate(48000)` changes it for the rest of a thread or task,
+  and `with set_sample_rate(48000):` for a block. A `Sequencer`, a
+  `StimulationSession` and the oscillators keep the rate in effect when
+  they are made, and `sing` resamples its line to it.
+
+### Fixed
+
+- **`sing` returned 44.1 kHz audio whatever rate the caller worked at.**
+
+### Tests
+
+- **Every routine that takes a rate renders at the default rate exactly
+  what it renders when handed it, and none may declare one of its own.**
+  The second is a scan of the source, so a routine added with
+  `sample_rate=44100` fails it.
+
 ### Maintenance
 
 - **The Zenodo record's release notes keep the bold of a headline that

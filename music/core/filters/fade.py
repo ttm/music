@@ -2,12 +2,13 @@
 
 import numpy as np
 from .loud import loud
+from ..._rate import resolve_rate
 from ...utils import (resolve_stereo, mix_with_offset,
                       as_sonic_vector, _transition_is_linear)
 
 
 def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
-         number_of_samples=0, sonic_vector=0, sample_rate=44100):
+         number_of_samples=0, sonic_vector=0, sample_rate=None):
     """
     A fade in or out.
 
@@ -38,9 +39,10 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
     sonic_vector : array_like
         Samples for the fade to be applied to. If supplied, duration and
         number_of_samples are ignored.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate. Only used if number_of_samples and sonic_vector are
-        not supplied.
+        not supplied. None, the default, is the rate
+        :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -88,6 +90,7 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
     if not 0 <= perc <= 100:
         raise ValueError(
             "perc is the percentage of the fade that is linear and must lie "
@@ -149,7 +152,7 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
 
 
 def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
-               sample_rate=44100):
+               sample_rate=None):
     """
     Cross fade two sounds over `duration` milliseconds.
 
@@ -168,8 +171,9 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
     method : string
         The fade shape, as :func:`fade` takes it: "lin" or "linear", "exp"
         or "exponential".
-    sample_rate : integer
-        The sample rate in Hertz.
+    sample_rate : integer or None
+        The sample rate in Hertz. None, the default, is the rate
+        :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -211,6 +215,7 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration=500, method='lin',
     >>> len(joined) / 44100    # the overlap is 200 ms of the two seconds
     1.8
     """
+    sample_rate = resolve_rate(sample_rate)
     ns = int(duration * sample_rate / 1000)
     if len(sonic_vector_1.shape) != len(sonic_vector_2.shape):
         raise ValueError('sonic_vector_1 and sonic_vector_2 must have '

@@ -7,6 +7,7 @@ from ..core.filters.localization import _localize_positions
 from ..core.synths.noises import noise
 from ..core.synths.notes import note
 from ..utils import WAVEFORM_SINE, _integrate_phase
+from .._rate import resolve_rate
 
 __all__ = [
     'amplitude_modulation',
@@ -69,7 +70,7 @@ def binaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
                    duration: float = 2.0,
                    waveform_table: ArrayLike = WAVEFORM_SINE,
                    number_of_samples: int = 0,
-                   sample_rate: int = 44100) -> NDArray[np.float64]:
+                   sample_rate: int | None = None) -> NDArray[np.float64]:
     """Synthesize a binaural beat: ``sstim-v:techBinauralBeats``.
 
     Two sine tones at slightly different frequencies presented
@@ -93,8 +94,9 @@ def binaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
     number_of_samples : integer
         The number of samples of the sound, taken instead of
         ``duration`` when it is given.
-    sample_rate : integer
+    sample_rate : integer or None
         The sampling frequency in Hertz.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -138,6 +140,7 @@ def binaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
            https://w3id.org/sstim/vocab#techBinauralBeats
 
     """
+    sample_rate = resolve_rate(sample_rate)
     count = _sample_count(duration, number_of_samples, sample_rate)
     if count < 1:
         return _nothing(2)
@@ -154,7 +157,7 @@ def monaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
                    duration: float = 2.0,
                    waveform_table: ArrayLike = WAVEFORM_SINE,
                    number_of_samples: int = 0,
-                   sample_rate: int = 44100) -> NDArray[np.float64]:
+                   sample_rate: int | None = None) -> NDArray[np.float64]:
     """Synthesize a monaural beat: ``sstim-v:techMonauralBeats``.
 
     Two close-frequency tones summed in a single channel, producing a
@@ -176,8 +179,9 @@ def monaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
     number_of_samples : integer
         The number of samples of the sound, taken instead of
         ``duration`` when it is given.
-    sample_rate : integer
+    sample_rate : integer or None
         The sampling frequency in Hertz.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -214,6 +218,7 @@ def monaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
            https://w3id.org/sstim/vocab#techMonauralBeats
 
     """
+    sample_rate = resolve_rate(sample_rate)
     count = _sample_count(duration, number_of_samples, sample_rate)
     if count < 1:
         return _nothing(1)
@@ -231,7 +236,7 @@ def isochronic_tones(carrier_freq: float = 200.0, pulse_rate: float = 10.0,
                      ramp_duration: float = 0.0,
                      waveform_table: ArrayLike = WAVEFORM_SINE,
                      number_of_samples: int = 0,
-                     sample_rate: int = 44100) -> NDArray[np.float64]:
+                     sample_rate: int | None = None) -> NDArray[np.float64]:
     """Synthesize an isochronic tone train: ``sstim-v:techIsochronicTones``.
 
     A single tone switched on and off at evenly spaced intervals -- a
@@ -262,8 +267,9 @@ def isochronic_tones(carrier_freq: float = 200.0, pulse_rate: float = 10.0,
     number_of_samples : integer
         The number of samples of the sound, taken instead of
         ``duration`` when it is given.
-    sample_rate : integer
+    sample_rate : integer or None
         The sampling frequency in Hertz.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -312,6 +318,7 @@ def isochronic_tones(carrier_freq: float = 200.0, pulse_rate: float = 10.0,
            https://w3id.org/sstim/vocab#techIsochronicTones
 
     """
+    sample_rate = resolve_rate(sample_rate)
     if pulse_rate <= 0:
         raise ValueError(
             f"pulse_rate must be positive, got {pulse_rate}")
@@ -350,7 +357,7 @@ def amplitude_modulation(
         waveform_table: ArrayLike = WAVEFORM_SINE,
         modulation_waveform_table: ArrayLike = WAVEFORM_SINE,
         number_of_samples: int = 0,
-        sample_rate: int = 44100) -> NDArray[np.float64]:
+        sample_rate: int | None = None) -> NDArray[np.float64]:
     """Sinusoidally modulate a carrier: ``sstim-v:techAmplitudeModulation``.
 
     A carrier tone whose amplitude is sinusoidally modulated at a target
@@ -378,8 +385,9 @@ def amplitude_modulation(
     number_of_samples : integer
         The number of samples of the sound, taken instead of
         ``duration`` when it is given.
-    sample_rate : integer
+    sample_rate : integer or None
         The sampling frequency in Hertz.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -423,6 +431,7 @@ def amplitude_modulation(
            https://w3id.org/sstim/vocab#techAmplitudeModulation
 
     """
+    sample_rate = resolve_rate(sample_rate)
     if not 0 <= modulation_depth <= 1:
         raise ValueError(
             f"modulation_depth must be in [0, 1], got {modulation_depth}")
@@ -450,7 +459,7 @@ def frequency_modulation(
         waveform_table: ArrayLike = WAVEFORM_SINE,
         modulation_waveform_table: ArrayLike = WAVEFORM_SINE,
         number_of_samples: int = 0,
-        sample_rate: int = 44100) -> NDArray[np.float64]:
+        sample_rate: int | None = None) -> NDArray[np.float64]:
     """Sweep a carrier's pitch: ``sstim-v:techFrequencyModulation``.
 
     A tone whose pitch sweeps over time. SSTIM types this as a generic
@@ -479,8 +488,9 @@ def frequency_modulation(
     number_of_samples : integer
         The number of samples of the sound, taken instead of
         ``duration`` when it is given.
-    sample_rate : integer
+    sample_rate : integer or None
         The sampling frequency in Hertz.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -526,6 +536,7 @@ def frequency_modulation(
            https://w3id.org/sstim/vocab#techFrequencyModulation
 
     """
+    sample_rate = resolve_rate(sample_rate)
     if modulation_freq < 0:
         raise ValueError(
             f"modulation_freq cannot be negative, got {modulation_freq}")
@@ -550,7 +561,7 @@ def modulated_noise(noise_type: str | float = 'pink',
                     min_freq: float = 15.0, max_freq: float = 15000.0,
                     modulation_waveform_table: ArrayLike = WAVEFORM_SINE,
                     number_of_samples: int = 0,
-                    sample_rate: int = 44100,
+                    sample_rate: int | None = None,
                     seed: int | None = None) -> NDArray[np.float64]:
     """Modulate a band of noise: ``sstim-v:techBroadbandNoise``.
 
@@ -590,8 +601,9 @@ def modulated_noise(noise_type: str | float = 'pink',
     number_of_samples : integer
         The number of samples of the sound, taken instead of
         ``duration`` when it is given.
-    sample_rate : integer
+    sample_rate : integer or None
         The sampling frequency in Hertz.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
     seed : integer or None
         Optional deterministic local random seed. With None, the
         historical NumPy-global random behavior is preserved.
@@ -654,6 +666,7 @@ def modulated_noise(noise_type: str | float = 'pink',
            https://w3id.org/sstim/vocab#techAmplitudeModulation
 
     """
+    sample_rate = resolve_rate(sample_rate)
     if not 0 <= modulation_depth <= 1:
         raise ValueError(
             f"modulation_depth must be in [0, 1], got {modulation_depth}")
@@ -681,7 +694,7 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
                    waveform_table: ArrayLike = WAVEFORM_SINE,
                    zeta: float = 0.215, air_temp: float = 20.0,
                    number_of_samples: int = 0,
-                   sample_rate: int = 44100) -> NDArray[np.float64]:
+                   sample_rate: int | None = None) -> NDArray[np.float64]:
     """Orbit a source around the listener: ``sstim-v:techSpatialAuditory``.
 
     A sound whose apparent position sweeps back and forth between two
@@ -729,8 +742,9 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
     number_of_samples : integer
         The number of samples of the sound, taken instead of
         ``duration`` when it is given.
-    sample_rate : integer
+    sample_rate : integer or None
         The sampling frequency in Hertz.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -789,6 +803,7 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
            https://w3id.org/sstim/vocab#techSpatialAuditory
 
     """
+    sample_rate = resolve_rate(sample_rate)
     if motion_rate < 0:
         raise ValueError(
             f"motion_rate cannot be negative, got {motion_rate}")

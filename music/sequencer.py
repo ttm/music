@@ -12,6 +12,7 @@ from .core.filters.adsr import adsr
 from .core.filters.localization import localize
 from .utils import convert_to_stereo
 from .core.io import write_wav_mono, write_wav_stereo
+from ._rate import get_sample_rate
 
 
 @dataclass
@@ -35,7 +36,9 @@ class Sequencer:
     ----------
     sample_rate : integer
         The sampling frequency in Hertz, used for every note rendered
-        and for turning each event's start time into a sample offset.
+        and for turning each event's start time into a sample offset. It
+        defaults to :func:`music.get_sample_rate`'s rate when the
+        sequencer is made.
     events : list of NoteEvent
         The scheduled notes. Normally built with :meth:`add_note` rather
         than passed in, and rendered in order of their start times
@@ -62,7 +65,7 @@ class Sequencer:
     >>> seq.write("chord.wav")
     """
 
-    sample_rate: int = 44100
+    sample_rate: int = field(default_factory=get_sample_rate)
     events: List[NoteEvent] = field(default_factory=list)
 
     def __post_init__(self) -> None:

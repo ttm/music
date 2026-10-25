@@ -5,10 +5,11 @@ import warnings
 from numpy.typing import ArrayLike, NDArray
 from music.core.synths.notes import note, note_with_phase
 from music.utils import WAVEFORM_SINE
+from ..._rate import resolve_rate
 
 
 def localize(sonic_vector=None, theta=None, distance=0, x=.1, y=.01,
-             zeta=0.215, air_temp=20, sample_rate=44100):
+             zeta=0.215, air_temp=20, sample_rate=None):
     """
     Make a mono sound stereo and localize it by a very naive method.
 
@@ -34,8 +35,9 @@ def localize(sonic_vector=None, theta=None, distance=0, x=.1, y=.01,
         The distance between the ears in meters.
     air_temp : scalar
         The temperature in Celsius used for calculating the speed of sound.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -93,6 +95,7 @@ def localize(sonic_vector=None, theta=None, distance=0, x=.1, y=.01,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
     if sonic_vector is None:
         # At the rate being localized to, or the default note is the wrong
         # length and pitch there.
@@ -232,7 +235,7 @@ def _localize_positions(sonic_vector, xpos, ypos, zeta, air_temp,
 
 
 def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
-                    zeta=0.215, air_temp=20, sample_rate=44100):
+                    zeta=0.215, air_temp=20, sample_rate=None):
     """
     Localize a sound along a straight path between two angles.
 
@@ -256,8 +259,9 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
         The distance between the ears in meters.
     air_temp : scalar
         The temperature in Celsius used for calculating the speed of sound.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -320,6 +324,7 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
     if sonic_vector is None:
         sonic_vector = note(sample_rate=sample_rate)
     sonic_vector = np.asarray(sonic_vector, dtype=np.float64)
@@ -344,7 +349,7 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
 
 
 def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
-              air_temp=20, method="ifft", sample_rate=44100):
+              air_temp=20, method="ifft", sample_rate=None):
     """
     Make a mono sound stereo and localize it by experimental methods.
 
@@ -379,8 +384,9 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
         the bins holding all but the last 1% of the energy, counted from
         the lowest frequency up; it is slow, and its output is longer than
         the input by the largest interaural delay.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Raises
     ------
@@ -441,6 +447,7 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
     if method not in ("ifft", "brute"):
         raise ValueError("The only methods implemented are ifft and brute")
     if sonic_vector is None:
@@ -641,7 +648,7 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
 def localize_hrtf(sonic_vector: ArrayLike,
                   left_hrir: ArrayLike,
                   right_hrir: ArrayLike,
-                  sample_rate: int = 44100) -> NDArray[np.float64]:
+                  sample_rate: int | None = None) -> NDArray[np.float64]:
     """Place a mono sound with a measured pair of impulse responses.
 
     A head-related transfer function is the filtering a particular head,
@@ -669,11 +676,12 @@ def localize_hrtf(sonic_vector: ArrayLike,
         direction the source is to come from. They need not be the same
         length as each other; the difference between them across the two
         ears is what carries the direction.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate. It has to be the rate the responses were measured
         at, and nothing here can check that, so it is taken on trust. It is
         accepted for symmetry with the other routines; a convolution needs
         no rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -717,6 +725,7 @@ def localize_hrtf(sonic_vector: ArrayLike,
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
     """
+    sample_rate = resolve_rate(sample_rate)
     samples = np.asarray(sonic_vector, dtype=np.float64)
     if samples.ndim != 1:
         raise ValueError(

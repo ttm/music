@@ -2,11 +2,12 @@
 
 import numpy as np
 
+from ..._rate import resolve_rate
 from ...utils import _transition_is_linear, as_sonic_vector
 
 
 def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
-         number_of_samples=0, sonic_vector=0, sample_rate=44100):
+         number_of_samples=0, sonic_vector=0, sample_rate=None):
     """
     An envelope for a linear or exponential transition of amplitude.
 
@@ -37,10 +38,11 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
         Samples for the envelope to be applied to.
         If supplied, duration and
         number_of_samples are ignored.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate.
         Only used if number_of_samples and sonic_vector are not
-        supplied.
+        supplied. None, the default, is the rate
+        :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -84,6 +86,7 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
         n = len(sonic_vector)
@@ -123,7 +126,7 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
 
 def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
           method=("exp", "exp", "exp"), number_of_samples=0, sonic_vector=0,
-          sample_rate=44100):
+          sample_rate=None):
     """
     An envelope with linear or exponential transitions of amplitude.
 
@@ -154,9 +157,10 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
         (or number_of_samples) and missing samples are replaced with silence
         (if sonic_vector is shorter) or with a constant value (if durations or
         number_of_samples yield shorter sequences).
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate.
-        Only used if number_of_samples is not supplied.
+        Only used if number_of_samples is not supplied. None, the
+        default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -196,6 +200,7 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
     # The counts branch passed its arguments by position one place over:
     # each alpha became the deviation and each deviation a duration that
     # the count then overrode, so `trans_devs` was never read there.
+    sample_rate = resolve_rate(sample_rate)
     counts = (number_of_samples if number_of_samples else
               [int(sample_rate * dur) for dur in durations])
     s = []

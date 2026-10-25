@@ -16,12 +16,13 @@ from typing import Any
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
+from ..._rate import resolve_rate
 
 
 def render_oversampled(
         renderer: Callable[..., ArrayLike], *,
         duration: float = 2.0,
-        sample_rate: int = 44100,
+        sample_rate: int | None = None,
         number_of_samples: int = 0,
         factor: int = 4,
         **parameters: Any) -> NDArray[np.float64]:
@@ -39,8 +40,9 @@ def render_oversampled(
         Supply nonlinear operations *inside* it, before decimation.
     duration : float
         Output duration in seconds, used when `number_of_samples=0`.
-    sample_rate : int
+    sample_rate : int or None
         Requested output sampling rate in Hz.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
     number_of_samples : int
         Exact output sample count, overriding duration when nonzero.
     factor : int
@@ -83,6 +85,7 @@ def render_oversampled(
     >>> signal.shape
     (960,)
     """
+    sample_rate = resolve_rate(sample_rate)
     if (not isinstance(sample_rate, int) or isinstance(sample_rate, bool)
             or sample_rate <= 0):
         raise ValueError("sample_rate must be a positive integer")

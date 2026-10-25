@@ -10,6 +10,8 @@ from typing import Any, cast
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
+from ._rate import resolve_rate
+
 LAMBDA_TILDE = 1024 * 16
 
 
@@ -716,7 +718,7 @@ def mix_with_offset(
     second_sonic_vector: ArrayLike,
     duration: float = 0,
     number_of_samples: int = 0,
-    sample_rate: int = 44100,
+    sample_rate: int | None = None,
 ) -> NDArray[np.float64]:
     """Mix two sonic vector by placing the beginning of the second one
     a specified number of seconds after the first one.
@@ -733,8 +735,9 @@ def mix_with_offset(
         sound that many seconds before the first one ends.
     number_of_samples : int
         The offset in samples, taken instead of ``duration`` when given.
-    sample_rate : int
-        The sample rate in Hertz.
+    sample_rate : int or None
+        The sample rate in Hertz. None, the default, is the rate
+        :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -764,6 +767,7 @@ def mix_with_offset(
     >>> len(late) / 44100      # the second note starts half a second in
     1.5
     """
+    sample_rate = resolve_rate(sample_rate)
     first_sonic_vector = np.array(first_sonic_vector)
     second_sonic_vector = np.array(second_sonic_vector)
     if 2 in [len(first_sonic_vector.shape), len(second_sonic_vector.shape)]:
@@ -819,6 +823,7 @@ def mix_many_with_offsets(*args: ArrayLike) -> NDArray[np.float64]:
         A sequence of sonic vectors, each a sequence of PCM samples, or
         a sequence alternating the sonic vectors and their offsets in
         seconds. A vector with no scalar after it is mixed at offset 0.
+        The seconds are counted at :func:`music.get_sample_rate`'s rate.
 
     Returns
     -------
@@ -877,7 +882,7 @@ mix_with_offset_ = mix_many_with_offsets
 
 
 def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
-                    method=('lin', 'circ', 'exp'), sample_rate=44100,
+                    method=('lin', 'circ', 'exp'), sample_rate=None,
                     sonic_vector=None):
     """Applies pan transitions to a sonic vector.
 
@@ -890,8 +895,9 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
         List of durations for each transition, by default [2,2,2]
     method : list, optional
         List of pan transition methods, by default ['lin','circ','exp']
-    sample_rate : int, optional
-        Sample rate of the audio, by default 44100
+    sample_rate : int or None, optional
+        Sample rate of the audio. None, the default, is the rate
+        :func:`music.get_sample_rate` returns.
     sonic_vector : ndarray, optional
         A mono or stereo sound to pan. Without one, the two envelopes
         themselves are returned.
@@ -959,6 +965,7 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
     >>> result = pan_transitions(p, d, method, sonic_vector=sonic_vector)
     """
 
+    sample_rate = resolve_rate(sample_rate)
     pp_ = p[0]
     t0_ = []
     t1_ = []
@@ -996,7 +1003,7 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
     return t
 
 
-def mix_many(sonic_vectors, end=False, offset=0, sample_rate=44100):
+def mix_many(sonic_vectors, end=False, offset=0, sample_rate=None):
     """Mix sonic vectors of arbitrary lengths.
 
     The operation consists in summing sample by sample [1].
@@ -1013,8 +1020,9 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=44100):
     offset : list of scalars
         A list of the offsets for each sonic vectors
         in seconds.
-    sample_rate : integer
-        The sample rate. Only used if offset is supplied.
+    sample_rate : integer or None
+        The sample rate. Only used if offset is supplied. None, the
+        default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -1037,6 +1045,7 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=44100):
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
     sonic_vectors = [np.asarray(s) for s in sonic_vectors]
 
     if offset:
@@ -1156,7 +1165,7 @@ def _guess_role(description, pcm_samples=1000):
     return guesses
 
 
-def profile(adict, sample_rate=44100):
+def profile(adict, sample_rate=None):
     """Summarize a namespace of variables.
 
     Sorts the names by what they hold, measures every array in it, and
@@ -1170,8 +1179,9 @@ def profile(adict, sample_rate=44100):
     adict : dict
         The namespace to describe, mapping names to values -- typically
         ``locals()`` or ``vars()`` from a piece of synthesis code.
-    sample_rate : scalar
-        The sample rate the durations are reckoned at.
+    sample_rate : scalar or None
+        The sample rate the durations are reckoned at. None, the default,
+        is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -1225,6 +1235,7 @@ def profile(adict, sample_rate=44100):
     >>> [reading for reading, _reason in summary['guesses']['s']]
     ['pcm samples']
     """
+    sample_rate = resolve_rate(sample_rate)
     types: dict = {'scalar': [], 'collections': [], 'other': []}
     analyses: dict = {'ndarray': {}}
     guesses: dict = {}

@@ -13,8 +13,10 @@ from contextlib import contextmanager
 from fractions import Fraction
 from pathlib import Path
 from numbers import Real
+import numpy as np
 import soundfile as sf
 from music.core import normalize_mono, normalize_stereo
+from .._rate import get_sample_rate
 from .psola import syllables
 from .paths import (ENGINE_MARKER, cache_dir, engine_dir, is_engine,
                     require_system_dependencies)
@@ -28,6 +30,10 @@ _VOICE = re.compile(r'[A-Za-z0-9_-]+(\+[A-Za-z0-9_-]+)?')
 
 #: The singers :func:`sing` can use, the default first.
 BACKENDS = ('psola', 'ecantorix')
+
+#: The rate both singers render at. :func:`sing` hands its line back at
+#: :func:`music.get_sample_rate`'s rate, resampling when that is another.
+RATE = 44100
 
 #: The voices from the engine's extras that ``effect`` may name, and the
 #: file each loads. ``flint`` is an earlier spelling of ``flite``.
@@ -109,11 +115,16 @@ def sing(text="Mar-ry had a litt-le lamb",
     Returns
     -------
     ndarray
-        The sung line, normalized, at 44,100 Hz: mono, or ``(2, nsamples)``
-        for the ``tremolo`` and ``melt`` effects, which render in stereo
-        and ring a second past the line. eCantorix's used to come back as
-        ``(nsamples, 2)``, as the file holds them, and be normalized as
-        one channel.
+        The sung line, normalized, at :func:`music.get_sample_rate`'s rate:
+        mono, or ``(2, nsamples)`` for the ``tremolo`` and ``melt``
+        effects, which render in stereo and ring a second past the line.
+        eCantorix's used to come back as ``(nsamples, 2)``, as the file
+        holds them, and be normalized as one channel.
+
+        Both singers render at 44,100 Hz, and this was returned as they
+        rendered it whatever rate the caller worked at, so a line mixed
+        into a piece at 48 kHz came out 9 % fast and a semitone and a half
+        sharp. At any other rate it is now resampled, by FFT.
 
     Raises
     ------
@@ -175,10 +186,10 @@ def sing(text="Mar-ry had a litt-le lamb",
         # The notes the score could be written with, as eCantorix's are,
         # so that the two backends refuse the same melodies.
         translate_to_abc(notes, durs, reference)
-        return psola.sing(text, notes, durs, M=M, L=L, Q=Q,
-                          reference=reference, lang=lang,
-                          transpose=transpose,
-                          effect=EFFECTS[effect] if effect else None)
+        return _at_the_default_rate(psola.sing(
+            text, notes, durs, M=M, L=L, Q=Q, reference=reference,
+            lang=lang, transpose=transpose,
+            effect=EFFECTS[effect] if effect else None))
     engine = engine_dir()
     cache = cache_dir()
     if not is_engine(engine):
@@ -243,13 +254,46 @@ def sing(text="Mar-ry had a litt-le lamb",
                 f'said:\n{_tail(result.stdout, result.stderr)}')
 
         samples, sample_rate = sf.read(str(rendered), dtype='float64')
-    if sample_rate != 44100:
+    if sample_rate != RATE:
         raise RuntimeError(
-            f'expected the engine to render at 44100 Hz, got {sample_rate}'
+            f'expected the engine to render at {RATE} Hz, got {sample_rate}'
         )
     if samples.ndim == 2:
-        return normalize_stereo(samples.T)
-    return normalize_mono(samples)
+        return _at_the_default_rate(normalize_stereo(samples.T))
+    return _at_the_default_rate(normalize_mono(samples))
+
+
+def _at_the_default_rate(line):
+    """`line`, sung at :data:`RATE`, at :func:`music.get_sample_rate`'s.
+
+    Resampled by FFT, which is band-limited interpolation: the spectrum
+    below both Nyquist frequencies is kept as it was and nothing above
+    the lower one is made. The line is padded with silence first, to a
+    length the two rates divide exactly, so its two ends do not wrap into
+    each other and the resampled length is the original's in seconds.
+    Scaled back to a peak of 1 afterwards, as both singers return it:
+    interpolating between samples can reach past the peak they held.
+    """
+    rate = get_sample_rate()
+    if rate == RATE or line.shape[-1] == 0:
+        return line
+    common = math.gcd(RATE, rate)
+    step, scaled_step = RATE // common, rate // common
+    count = round(line.shape[-1] * rate / RATE)
+    blocks = -(-(line.shape[-1] + 4096) // step)
+    spectrum = np.fft.rfft(line, blocks * step, axis=-1)
+    if rate > RATE and (blocks * step) % 2 == 0:
+        # The old Nyquist bin stood for both its frequency and its
+        # negative; in a longer spectrum those are two bins, each half.
+        spectrum[..., -1] *= 0.5
+    kept = min(spectrum.shape[-1], blocks * scaled_step // 2 + 1)
+    resized = np.zeros(line.shape[:-1] + (blocks * scaled_step // 2 + 1,),
+                       dtype=complex)
+    resized[..., :kept] = spectrum[..., :kept]
+    resampled = np.fft.irfft(resized, blocks * scaled_step,
+                             axis=-1)[..., :count]
+    peak = np.abs(resampled).max()
+    return resampled / peak if peak else resampled
 
 
 def _require_flite(lang):

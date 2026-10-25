@@ -64,6 +64,7 @@ from numpy.typing import NDArray
 from rdflib import Graph
 from rdflib.namespace import RDF
 
+from ... import _rate
 from .. import stimuli
 from ..session import StimulationSession
 from ._capabilities import SESSION_ALONE, SstimCapability, inspect_sstim
@@ -145,8 +146,9 @@ PlannedSession
         For a stimulus: seconds. Defaults to the generator's.
     sample_rate : int, optional
         For a stimulus: samples per second, from 8,000 to 192,000.
-        Defaults to the generator's. SSTIM has no term for it, so it is
-        written in the package's.
+        Defaults to the rate the generator would render at,
+        :func:`music.get_sample_rate`'s. SSTIM has no term for it, so it
+        is written in the package's.
     **parameters
         For a stimulus: its arguments, but for its length, rate, source
         sound and tables, which are not numbers a description holds. A
@@ -209,7 +211,7 @@ PlannedSession
     return stimulus_graph(checked(
         name, parameters,
         defaults["duration"].default if duration is None else duration,
-        defaults["sample_rate"].default if sample_rate is None
+        _rate.get_sample_rate() if sample_rate is None
         else sample_rate), base)
 
 

@@ -90,7 +90,9 @@ class CanonicalSynth:
         if "tables" not in dir(s):
             s.tables = M.legacy.tables.Basic()
         if "samplerate" not in dir(s):
-            s.samplerate = 44100
+            # The rate in effect when the synth is made, as a Sequencer
+            # and a StimulationSession take it: 44,100 unless set.
+            s.samplerate = M.get_sample_rate()
         s.synthSetup()
         s.adsrSetup()
 

@@ -4,12 +4,13 @@ from numbers import Real
 import numpy as np
 from numpy.typing import NDArray
 import music
+from ..._rate import resolve_rate
 
 
 def noise(noise_type: str | float = "brown", duration: float = 2,
           min_freq: float = 15, max_freq: float = 15000,
           number_of_samples: int = 0,
-          sample_rate: int = 44100,
+          sample_rate: int | None = None,
           seed: int | None = None) -> NDArray[np.float64]:
     """
     Return a colored or user-refined noise.
@@ -36,8 +37,9 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
         exactly on it. It should be > fmin.
     number_of_samples : integer
         The number of samples of the resulting sonic vector.
-    sample_rate : integer
-        The sample rate to use, by default 44100.
+    sample_rate : integer or None
+        The sample rate to use.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
     seed : integer or None
         Optional deterministic seed for local random phases. Default None
         preserves legacy use of NumPy's global random state.
@@ -85,6 +87,7 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
     >>> darker = noise("brown", duration=0.5)   # -6 dB per octave
     >>> tilted = noise(-9, duration=0.5)        # or any slope you name
     """
+    sample_rate = resolve_rate(sample_rate)
     prog: float
     if noise_type == "white":
         prog = 0
@@ -197,7 +200,7 @@ def _band(low, high, length, sample_rate):
 
 
 def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
-                   sample_rate: int = 44100) -> NDArray[np.float64]:
+                   sample_rate: int | None = None) -> NDArray[np.float64]:
     """Synth gaussian noise
 
     Parameters
@@ -218,8 +221,9 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
         read as the positive part of itself.
     duration : int, optional
         How long in seconds will the noise be, by default 2
-    sample_rate : int, optional
-        The sample rate to use, by default 44100
+    sample_rate : int or None, optional
+        The sample rate to use.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -254,6 +258,7 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
     >>> gaussian_noise(duration=0.3).shape       # a fractional duration
     (13230,)
     """
+    sample_rate = resolve_rate(sample_rate)
 
     # int(): the length indexes arrays and sets a sample count, so a
     # fractional duration raised TypeError out of np.random.uniform
@@ -315,15 +320,16 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
 
 
 def silence(duration: float = 1.0,
-            sample_rate: int = 44100) -> NDArray[np.float64]:
+            sample_rate: int | None = None) -> NDArray[np.float64]:
     """Generate a silence of specified length.
 
     Parameters
     ----------
     duration : int, optional
         How many seconds will silence last, by default 1
-    sample_rate : int, optional
-        The sample rate to use, by default 44100
+    sample_rate : int or None, optional
+        The sample rate to use.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -340,5 +346,6 @@ def silence(duration: float = 1.0,
     (11025, 0.0)
     >>> phrase = horizontal_stack(note(220, 0.2), silence(0.1), note(330, 0.2))
     """
+    sample_rate = resolve_rate(sample_rate)
 
     return np.zeros(max(0, int(duration * sample_rate)))

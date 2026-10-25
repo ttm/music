@@ -19,6 +19,7 @@ References
 """
 import numpy as np
 from numpy.typing import NDArray
+from ..._rate import resolve_rate
 
 __all__ = ['fraction_of', 'low_pass', 'high_pass', 'band_pass', 'band_reject']
 
@@ -35,15 +36,16 @@ def _check(name: str, value: float) -> float:
     return value
 
 
-def fraction_of(freq: float, sample_rate: int = 44100) -> float:
+def fraction_of(freq: float, sample_rate: int | None = None) -> float:
     """A frequency in Hertz, as the fraction of the sample rate a design wants.
 
     Parameters
     ----------
     freq : scalar
         The frequency in Hertz.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate the filter will run at.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -62,6 +64,7 @@ def fraction_of(freq: float, sample_rate: int = 44100) -> float:
     0.1
     >>> a, b = low_pass(fraction_of(1000))
     """
+    sample_rate = resolve_rate(sample_rate)
     if freq <= 0:
         raise ValueError(f'freq must be positive; got {freq}')
     if sample_rate <= 0:

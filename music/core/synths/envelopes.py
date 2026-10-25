@@ -3,10 +3,11 @@
 import numpy as np
 from music.utils import (WAVEFORM_SINE, WAVEFORM_TRIANGULAR,
                          as_sonic_vector, _signed_power)
+from ..._rate import resolve_rate
 
 
 def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
-       number_of_samples=0, sonic_vector=0, sample_rate=44100):
+       number_of_samples=0, sonic_vector=0, sample_rate=None):
     """
     Synthesize an AM envelope or apply it to a sound.
 
@@ -29,8 +30,9 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     sonic_vector : array_like
         Samples for the modulation to be applied to. If supplied, duration
         and number_of_samples are ignored.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -78,6 +80,7 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
 
     waveform_table = np.array(waveform_table)
     sonic_vector = as_sonic_vector(sonic_vector)
@@ -102,7 +105,7 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
 
 def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
             waveform_table=WAVEFORM_SINE, number_of_samples=0,
-            sonic_vector=0, sample_rate=44100):
+            sonic_vector=0, sample_rate=None):
     """
     Synthesize a tremolo envelope or apply it to a sound.
 
@@ -127,8 +130,9 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     sonic_vector : array_like
         Samples for the tremolo to be applied to. If supplied, duration and
         number_of_samples are ignored.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -173,6 +177,7 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    sample_rate = resolve_rate(sample_rate)
 
     waveform_table = np.array(waveform_table)
     sonic_vector = as_sonic_vector(sonic_vector)
@@ -211,7 +216,7 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
              waveform_tables=((WAVEFORM_SINE, WAVEFORM_SINE, WAVEFORM_SINE),
                               (WAVEFORM_TRIANGULAR, WAVEFORM_TRIANGULAR,
                                WAVEFORM_TRIANGULAR, WAVEFORM_SINE)),
-             number_of_samples=0, sonic_vector=0, sample_rate=44100):
+             number_of_samples=0, sonic_vector=0, sample_rate=None):
     """
     An envelope with multiple tremolos.
 
@@ -235,8 +240,9 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
         are applied to the sound and missing samples are completed by zeros
         (if sonic_vector is smaller then the lengthiest tremolo) or ones
         (is sonic_vector is larger).
-    sample_rate : integer
-        The sample rate
+    sample_rate : integer or None
+        The sample rate.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -268,6 +274,7 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
 
 
     """
+    sample_rate = resolve_rate(sample_rate)
     waveform_tables = [
         [np.array(wt) for wt in row]
         for row in waveform_tables

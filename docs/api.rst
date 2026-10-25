@@ -6,6 +6,21 @@ regardless of which submodule defines it.
 
 .. currentmodule:: music
 
+Sample rate
+-----------
+
+Every routine that takes a ``sample_rate`` defaults it to None, which means
+the rate ``get_sample_rate`` returns: 44,100 Hz unless ``set_sample_rate``
+has changed it, for the rest of a script or, in a ``with`` statement, for
+one block. A rate given to a routine always wins.
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   get_sample_rate
+   set_sample_rate
+
 Synthesis
 ---------
 

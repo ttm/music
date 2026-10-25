@@ -59,6 +59,23 @@ def _no_network(request, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _default_sample_rate():
+    """Start every test at 44,100 Hz, and undo whatever rate it set.
+
+    ``set_sample_rate`` called on its own line lasts for the rest of the
+    thread, and the suite runs in one: a test, or a docstring example,
+    that set it and did not put it back would move every test after it to
+    another rate, and they would fail, or pass, for a reason none of them
+    names.
+    """
+    from music._rate import DEFAULT_SAMPLE_RATE, _rate
+
+    token = _rate.set(DEFAULT_SAMPLE_RATE)
+    yield
+    _rate.reset(token)
+
+
+@pytest.fixture(autouse=True)
 def _doctest_namespace(request, doctest_namespace, tmp_path):
     """Give every docstring example the namespace a reader would have.
 

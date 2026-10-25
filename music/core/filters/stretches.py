@@ -2,9 +2,10 @@
 
 import numpy as np
 from music.utils import horizontal_stack
+from ..._rate import resolve_rate
 
 
-def stretches(x, durations=(1, 4, 8, 12), sample_rate=44100):
+def stretches(x, durations=(1, 4, 8, 12), sample_rate=None):
     """
     Makes a sequence of squeezes of the fragment in x.
 
@@ -16,9 +17,10 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=44100):
         of the second channel.
     durations : iterable of numbers
         Durations in seconds for each repeat of x.
-    sample_rate : integer
+    sample_rate : integer or None
         The sample rate in Hertz, used to read the length of ``x`` as a
         duration and so to work out how much each repeat is squeezed.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
 
     Returns
     -------
@@ -53,6 +55,7 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=44100):
     PS: not clear if this function is already useful.
 
     """
+    sample_rate = resolve_rate(sample_rate)
     x = np.array(x)
     if x.ndim not in (1, 2) or (x.ndim == 2 and x.shape[0] != 2):
         raise ValueError(

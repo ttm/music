@@ -17,6 +17,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from ...utils import waveform_table
+from ..._rate import resolve_rate
 
 
 @lru_cache(maxsize=128)
@@ -40,7 +41,7 @@ def _filtered_table(kind: str, freq: float, sample_rate: int,
 def bandlimited_note(
         freq: float = 220.0, duration: float = 2.0,
         waveform: str = "sine", number_of_samples: int = 0,
-        sample_rate: int = 44100, table_size: int = 16384,
+        sample_rate: int | None = None, table_size: int = 16384,
         rolloff_hz: float = 0.0) -> NDArray[np.float64]:
     """Render a static-pitch periodic note with prefiltered harmonics.
 
@@ -55,8 +56,9 @@ def bandlimited_note(
         their spectrum and source-pitch semantics are unknown.
     number_of_samples : int
         Overrides `duration` when positive, matching `music.note`.
-    sample_rate : int
+    sample_rate : int or None
         Samples per second.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
     table_size : int
         Resolution of the periodic prefiltered table (at least 4).
     rolloff_hz : float
@@ -91,6 +93,7 @@ def bandlimited_note(
     >>> x.shape
     (441,)
     """
+    sample_rate = resolve_rate(sample_rate)
     if sample_rate <= 0:
         raise ValueError("sample_rate must be positive")
     if not (0 < freq < sample_rate / 2):

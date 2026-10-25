@@ -9,10 +9,11 @@ sidebands caused by rapid modulation or abrupt changes in the pitch path.
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
+from ..._rate import resolve_rate
 
 
 def bandlimited_frequency_path(
-        frequencies: ArrayLike, *, sample_rate: int = 44100,
+        frequencies: ArrayLike, *, sample_rate: int | None = None,
         waveform: str = "sawtooth", transition: float = 0.15,
         max_harmonics: int = 256) -> NDArray[np.float64]:
     """Synthesize a variable-pitch sine, sawtooth, square or triangle.
@@ -22,8 +23,9 @@ def bandlimited_frequency_path(
     frequencies : array_like
         One finite, positive instantaneous fundamental frequency in Hz
         per output sample. Every value must be strictly below Nyquist.
-    sample_rate : int
+    sample_rate : int or None
         Output sample rate in Hz.
+        None, the default, is the rate :func:`music.get_sample_rate` returns.
     waveform : {'sine', 'sawtooth', 'square', 'triangle'}
         The periodic harmonic series used for synthesis.
     transition : float
@@ -62,6 +64,7 @@ def bandlimited_frequency_path(
     >>> bandlimited_frequency_path(hz, sample_rate=48000).shape
     (480,)
     """
+    sample_rate = resolve_rate(sample_rate)
     fs = sample_rate
     if not isinstance(fs, int) or isinstance(fs, bool) or fs <= 0:
         raise ValueError("sample_rate must be a positive integer")

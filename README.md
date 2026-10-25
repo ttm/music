@@ -176,7 +176,9 @@ samples, rate = music.read_audio("in.wav", return_sample_rate=True)
 
 `read_audio` gives a file's rate when asked, and warns when the file is at
 a rate other than the default and you did not ask, since played back at
-the default it would be at the wrong pitch.
+the default it would be at the wrong pitch. The writers normalize to full
+scale unless told `normalize=False`, which keeps the levels a piece was
+rendered at across the files it is written to.
 
 ### Notes and envelopes
 

@@ -1,7 +1,7 @@
 # Quality assessment and known limitations
 
 *A living record, not a point-in-time audit. Last measured **2026-10-19**,
-`music` 1.11.0: 61 modules, 17,437 LOC package + 27,463 LOC tests, 131 names
+`music` 1.11.0: 61 modules, 17,503 LOC package + 27,522 LOC tests, 131 names
 in the public API.*
 
 The first version of this file graded the repository once, in August 2026,
@@ -64,7 +64,7 @@ figures described above are automatically compared with the checkout.
 | Type check | `mypy music` | **clean**, 59 files |
 | Lint | `ruff check music tests examples tools conftest.py` | **clean** |
 | Lint, extended rule set | `ruff check --select ALL music` | 2,980 findings |
-| Annotation coverage | AST scan | **208 / 350 functions (59 %)**; 68 / 102 exported (67 %) |
+| Annotation coverage | AST scan | **209 / 351 functions (60 %)**; 68 / 102 exported (67 %) |
 | Docstring coverage | AST scan | **236 / 245 public defs (96 %)** |
 | Docstring/signature agreement | `tests/test_docstring_signature.py` | every documented parameter exists, in signature order |
 | Docstring cross-references | `tests/test_docstring_references.py` | every name a See Also or an example points at exists |
@@ -103,7 +103,7 @@ produced.
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; Linux CI across Python 3.10–3.14 including a job pinned to the declared lower bounds; installed-wheel checks on Linux, macOS and Windows with Python 3.12 |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |
-| **Needs work** | Annotation coverage at 59 %; the `legacy/` subpackage |
+| **Needs work** | Annotation coverage at 60 %; the `legacy/` subpackage |
 
 ## Known limitations
 
@@ -365,14 +365,16 @@ either documented in the code or tracked in the issue list.
   without interpolation; that falls 20 dB with each tenfold smaller
   deviation, to the -79 dB the carrier's own table leaves.
 
-- **Writing normalizes, so a file's level is not the render's level.**
-  `write_wav_mono` runs `normalize_mono` over everything it is given: a
-  passage at a hundredth of full scale and one at twenty-six times it both
-  arrive at exactly full scale. The docstring says so. The consequence it
-  does not say is that **a piece written a phrase at a time is a piece
-  whose dynamics are gone** -- each phrase comes back at the same peak,
-  and nothing warns. Stack the phrases and write once, or scale by hand.
-  Both tested.
+- **Writing normalizes unless told not to, so by default a file's level
+  is not the render's level.** `write_wav_mono` runs `normalize_mono` over
+  everything it is given: a passage at a hundredth of full scale and one
+  at twenty-six times it both arrive at exactly full scale, so **a piece
+  written a phrase at a time with the defaults is a piece whose dynamics
+  are gone** -- each phrase comes back at the same peak. Stack the
+  phrases and write once, or pass `normalize=False`, which writes the
+  samples as they are and refuses one reaching past full scale rather
+  than clipping it. Before that option, scaling by hand could not help:
+  the writer undid it. All three tested.
 
 - **The round-trip figures are not the ones the textbook formula gives,
   and the reason is the waveform rather than the file.** `6.02b + 1.76`
@@ -491,7 +493,7 @@ either documented in the code or tracked in the issue list.
 
 ### Debt that is not breakage
 
-- **Annotation coverage is 59 %**, and 67 % across the exported API. The
+- **Annotation coverage is 60 %**, and 67 % across the exported API. The
   package type-checks cleanly with bodies inspected, so this is missing
   documentation of intent rather than missing safety. What remains is not
   a matter of typing time: the functions still unannotated are the ones

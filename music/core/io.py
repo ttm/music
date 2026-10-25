@@ -3,7 +3,7 @@
 import logging
 import pathlib
 import warnings
-from typing import Any, Literal, Sequence, overload
+from typing import Any, Callable, Literal, Sequence, overload
 
 import numpy as np
 import soundfile as sf
@@ -113,6 +113,29 @@ def _quantize(samples: NDArray[np.float64], bit_depth: int) -> NDArray[Any]:
     return scaled.astype(np.int16 if bit_depth <= 16 else np.int32)
 
 
+def _as_given(samples: ArrayLike) -> NDArray[np.float64]:
+    """The samples a writer told not to normalize puts in the file.
+
+    Refused rather than clipped when they reach past full scale: a file
+    clipped quietly is the level problem ``normalize=False`` exists to
+    avoid, moved somewhere harder to hear.
+    """
+    result = np.array(samples, dtype=np.float64)
+    if result.size == 0:
+        raise ValueError(
+            "there is nothing here to write: the sonic vector is empty. A "
+            "zero duration renders zero samples throughout this package, "
+            "so an empty array reaching a file means a duration computed "
+            "as zero somewhere upstream.")
+    peak = float(np.max(np.abs(result)))
+    if peak > 1:
+        raise ValueError(
+            f"the sound reaches {peak:g}, past the full scale of 1 a file "
+            f"can hold, and normalize=False writes it as it is: scale it "
+            f"into [-1, 1] first, or let the writer normalize it")
+    return result
+
+
 @overload
 def read_audio(filename: str,
                return_sample_rate: Literal[False] = False
@@ -204,6 +227,7 @@ def write_wav_mono(
     fades_ms: Sequence[int] | int = 0,
     bit_depth: int = 16,
     remove_bias: bool = True,
+    normalize: bool = True,
     **renamed: Any,
 ) -> None:
     """Writes a mono WAV file for a numpy array.
@@ -215,9 +239,10 @@ def write_wav_mono(
     Parameters
     ----------
     sonic_vector : array_like, optional
-        The PCM samples to be written as a WAV sound file. The samples are
-        always normalized by normalize_mono(sonic_vector) to have samples
-        between -1 and 1. Defaults to about two seconds of uniform noise.
+        The PCM samples to be written as a WAV sound file. Unless
+        ``normalize`` is False they are normalized by
+        normalize_mono(sonic_vector) to have samples between -1 and 1.
+        Defaults to about two seconds of uniform noise.
     filename : string
         The filename to use for the file to be written.
     sample_rate : scalar or None
@@ -231,10 +256,23 @@ def write_wav_mono(
         32 for WAV, and 8, 16 or 24 for FLAC, which has no 32-bit form.
         Any other value raises ValueError.
     remove_bias : boolean
-        Whether to remove or not the bias (or offset)
+        Whether to remove or not the bias (or offset). Part of
+        normalizing, so it has no effect when ``normalize`` is False.
+    normalize : boolean
+        Normalize to full scale, as by default, or write the samples as
+        they are. Normalizing makes every file peak at full scale, so a
+        piece written a phrase to a file loses its dynamics; False keeps
+        them, and refuses a sound reaching past [-1, 1].
     **renamed
         ``fades``, the name ``fades_ms`` had before it said its unit.
         Still accepted, with a :class:`DeprecationWarning`.
+
+    Raises
+    ------
+    ValueError
+        If the extension or bit depth is not one this package writes, the
+        sound is empty, or, with ``normalize=False``, it reaches past
+        [-1, 1].
 
     See Also
     --------
@@ -250,6 +288,7 @@ def write_wav_mono(
     >>> read_audio("tone.wav").shape
     (22050,)
     >>> write_wav_mono(note(), "faded.wav", fades_ms=(50, 200))  # in, out
+    >>> write_wav_mono(0.1 * note(), "quiet.wav", normalize=False)
     """
     sample_rate = resolve_rate(sample_rate)
     fades_ms = renamed_arguments('write_wav_mono', renamed,
@@ -260,7 +299,8 @@ def write_wav_mono(
     subtype = _subtype(bit_depth, audio_format)
     if sonic_vector is None:
         sonic_vector = np.random.uniform(-1, 1, size=100000)
-    result = normalize_mono(sonic_vector, remove_bias)
+    result = (normalize_mono(sonic_vector, remove_bias) if normalize
+              else _as_given(sonic_vector))
     if np.any(fades_ms):
         f0, f1 = _fade_pair(fades_ms)
         result = adsr(attack_ms=f0, sustain_level=0, release_ms=f1,
@@ -277,6 +317,7 @@ def write_wav_stereo(
     bit_depth: int = 16,
     remove_bias: bool = True,
     normalize_separately: bool = False,
+    normalize: bool = True,
     **renamed: Any,
 ) -> None:
     """Write a stereo WAV files for a numpy array.
@@ -284,9 +325,10 @@ def write_wav_stereo(
     Parameters
     ----------
     sonic_vector : array_like, optional
-        The PCM samples to be written as a WAV sound file. The samples are
-        always normalized by normalize_stereo(sonic_vector) to have samples
-        between -1 and 1 and remove the offset.
+        The PCM samples to be written as a WAV sound file. Unless
+        ``normalize`` is False they are normalized by
+        normalize_stereo(sonic_vector) to have samples between -1 and 1
+        and remove the offset.
         Use array of shape (nchannels, nsamples).
         Defaults to about two seconds of uniform noise.
     filename : string
@@ -302,13 +344,27 @@ def write_wav_stereo(
         32 for WAV, and 8, 16 or 24 for FLAC, which has no 32-bit form.
         Any other value raises ValueError.
     remove_bias : boolean
-        Whether to remove or not the bias (or offset)
+        Whether to remove or not the bias (or offset). Part of
+        normalizing, so it has no effect when ``normalize`` is False.
     normalize_separately : boolean
         Set to True if each channel should be normalized separately.
         If False (default), the arrays will be rescaled in the same proportion.
+        Part of normalizing, so it has no effect when ``normalize`` is False.
+    normalize : boolean
+        Normalize to full scale, as by default, or write the samples as
+        they are. Normalizing makes every file peak at full scale, so a
+        piece written a phrase to a file loses its dynamics; False keeps
+        them, and refuses a sound reaching past [-1, 1].
     **renamed
         ``fades``, the name ``fades_ms`` had before it said its unit.
         Still accepted, with a :class:`DeprecationWarning`.
+
+    Raises
+    ------
+    ValueError
+        If the extension or bit depth is not one this package writes, the
+        sound is empty, or, with ``normalize=False``, it reaches past
+        [-1, 1].
 
     See Also
     --------
@@ -331,8 +387,9 @@ def write_wav_stereo(
     subtype = _subtype(bit_depth, audio_format)
     if sonic_vector is None:
         sonic_vector = np.random.uniform(-1, 1, size=(2, 100000))
-    result = normalize_stereo(sonic_vector, remove_bias,
-                              normalize_separately)
+    result = (normalize_stereo(sonic_vector, remove_bias,
+                               normalize_separately) if normalize
+              else _as_given(sonic_vector))
     if np.any(fades_ms):
         f0, f1 = _fade_pair(fades_ms)
         result = adsr_stereo(attack_ms=f0, sustain_level=0, release_ms=f1,
@@ -353,6 +410,7 @@ def write_audio(
     fades_ms: Sequence[int] | int = 0,
     bit_depth: int = 16,
     remove_bias: bool = True,
+    normalize: bool = True,
     **renamed: Any,
 ) -> None:
     """Write a sound to a file, mono or stereo, WAV or FLAC.
@@ -379,7 +437,11 @@ def write_audio(
         Bits per sample: 8, 16, 24 or 32 for WAV, and 8, 16 or 24 for
         FLAC, which has no 32-bit form.
     remove_bias : boolean
-        Whether to remove the bias, or offset.
+        Whether to remove the bias, or offset. Part of normalizing, so it
+        has no effect when ``normalize`` is False.
+    normalize : boolean
+        Normalize to full scale, as by default, or write the samples as
+        they are, refusing a sound that reaches past [-1, 1].
     **renamed
         ``fades``, the name ``fades_ms`` had before it said its unit.
         Still accepted, with a :class:`DeprecationWarning`.
@@ -392,8 +454,9 @@ def write_audio(
     Raises
     ------
     ValueError
-        If the extension is not one this package writes, or the bit
-        depth is not one the chosen container can hold.
+        If the extension is not one this package writes, the bit depth
+        is not one the chosen container can hold, the sound is empty,
+        or, with ``normalize=False``, it reaches past [-1, 1].
 
     Notes
     -----
@@ -422,6 +485,9 @@ def write_audio(
     """
     fades_ms = renamed_arguments('write_audio', renamed,
                                  fades='fades_ms').get('fades_ms', fades_ms)
+    # Called by keyword alone, so the two writers' differing positions
+    # past remove_bias do not matter here.
+    write: Callable[..., None]
     if sonic_vector is None:
         write = write_wav_mono
     else:
@@ -429,7 +495,7 @@ def write_audio(
                  else write_wav_mono)
     write(sonic_vector=sonic_vector, filename=filename,
           sample_rate=sample_rate, fades_ms=fades_ms, bit_depth=bit_depth,
-          remove_bias=remove_bias)
+          remove_bias=remove_bias, normalize=normalize)
 
 
 def play_audio(

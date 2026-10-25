@@ -44,8 +44,8 @@ specialized routines when an experiment requires them.
      - Optional espeak-ng/PSOLA dependencies; intelligibility is variable.
    * - Read or write files
      - :func:`music.read_audio`, :func:`music.write_audio`
-     - Writers normalize levels; preserve mix relationships by writing
-       once rather than normalizing every phrase separately. Ask
+     - Writers normalize levels unless given ``normalize=False``; preserve
+       mix relationships by writing once, or by not normalizing. Ask
        ``read_audio`` for a file's rate with ``return_sample_rate=True``.
 
 Changing pitch, nonlinear effects and hard gates

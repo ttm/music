@@ -31,6 +31,10 @@ Old names keep working and warn: see **Deprecated**.
   came out at 44.1 kHz, 9 % long and a semitone and a half flat, and
   nothing said so. Without the rate it now warns when the file's is not
   the default.
+- **The writers take `normalize=False`, and write the level they are
+  given.** Every file arrived at full scale, so a piece written a phrase
+  to a file lost its dynamics, and scaling by hand first was undone by the
+  writer. A sound reaching past full scale is refused rather than clipped.
 
 ### Changed
 

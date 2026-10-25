@@ -188,7 +188,6 @@ Input and output
    :nosignatures:
 
    read_audio
-   read_wav
    write_audio
    write_wav_mono
    write_wav_stereo
@@ -292,12 +291,10 @@ Combining sonic vectors
 
    horizontal_stack
    mix
-   mix2
    mix_many
    mix_many_with_offsets
    mix_stereo
    mix_with_offset
-   mix_with_offset_
    convert_to_stereo
    resolve_stereo
    pan_transitions
@@ -380,3 +377,18 @@ making more music.
    Being
    CanonicalSynth
    IteratorSynth
+
+Deprecated names
+----------------
+
+Second names for routines that have better ones. Each still works, warns
+with a ``DeprecationWarning`` naming its replacement, and will be removed
+in a major release.
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   mix2
+   mix_with_offset_
+   read_wav

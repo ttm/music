@@ -151,9 +151,17 @@ def test_resolve_stereo_does_not_replace_the_callers_arguments():
     np.testing.assert_array_equal(arguments["sonic_vector"], [1.0, 2.0, 3.0])
 
 
-def test_the_old_mixer_names_still_resolve():
+def test_the_old_mixer_names_still_work_and_say_what_replaced_them():
     """`mix2` and `mix_with_offset_` said nothing about what they did or
     how they differed from `mix_with_offset`. Both were renamed, and both
-    stay bound so that existing callers keep working."""
-    assert music.mix2 is music.mix_many
-    assert music.mix_with_offset_ is music.mix_many_with_offsets
+    stay bound so that existing callers keep working -- now warning that
+    the name they use is going."""
+    first, second = music.note(220, 0.1), music.note(330, 0.05)
+    with pytest.warns(DeprecationWarning, match=r"music\.mix_many\b"):
+        mixed = music.mix2([first, second])
+    np.testing.assert_array_equal(mixed, music.mix_many([first, second]))
+    with pytest.warns(DeprecationWarning,
+                      match=r"music\.mix_many_with_offsets"):
+        offset = music.mix_with_offset_(first, 0.02, second)
+    np.testing.assert_array_equal(
+        offset, music.mix_many_with_offsets(first, 0.02, second))

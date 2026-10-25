@@ -7,6 +7,7 @@ from typing import Any, Sequence
 import numpy as np
 import soundfile as sf
 from numpy.typing import ArrayLike, NDArray
+from .._deprecation import alias
 from .._rate import resolve_rate
 from .functions import normalize_mono, normalize_stereo
 from .filters.adsr import adsr, adsr_stereo
@@ -209,7 +210,7 @@ def write_wav_mono(
     Examples
     --------
     >>> write_wav_mono(note(freq=440, duration=0.5), "tone.wav")
-    >>> read_wav("tone.wav").shape
+    >>> read_audio("tone.wav").shape
     (22050,)
     >>> write_wav_mono(note(), "faded.wav", fades=(50, 200))   # ms in, ms out
     """
@@ -278,7 +279,7 @@ def write_wav_stereo(
     >>> placed = localize(note(freq=440, duration=0.5), theta=30,
     ...                   distance=1)
     >>> write_wav_stereo(placed, "placed.wav")
-    >>> read_wav("placed.wav").shape[0]
+    >>> read_audio("placed.wav").shape[0]
     2
     """
     sample_rate = resolve_rate(sample_rate)
@@ -297,9 +298,9 @@ def write_wav_stereo(
              format=audio_format, subtype=subtype)
 
 
-#: The name :func:`read_audio` had before it read anything but WAV. Kept
-#: bound so existing callers work.
-read_wav = read_audio
+#: The name :func:`read_audio` had before it read anything but WAV. It
+#: still works, and warns.
+read_wav = alias(read_audio, 'read_wav')
 
 
 def write_audio(

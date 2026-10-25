@@ -551,7 +551,7 @@ def test_write_produces_a_readable_wav(tmp_path, stimulus, channels):
     path = tmp_path / 'session.wav'
     session.write(str(path))
     assert path.exists()
-    data = np.asarray(music.read_wav(str(path)))
+    data = np.asarray(music.read_audio(str(path)))
     assert (2 if data.ndim == 2 else 1) == channels
 
 

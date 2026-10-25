@@ -302,7 +302,7 @@ def test_a_composed_piece_survives_being_written_and_read(tmp_path):
           for freq in (440, 550, 660)])
     path = tmp_path / "piece.wav"
     music.write_wav_mono(piece, str(path))
-    back = music.read_wav(str(path))
+    back = music.read_audio(str(path))
 
     assert len(back) == len(piece)
     assert np.corrcoef(piece, back)[0, 1] > 0.9999
@@ -316,7 +316,7 @@ def test_a_stereo_chain_survives_being_written_and_read(tmp_path):
         dtype=float)
     path = tmp_path / "placed.wav"
     music.write_wav_stereo(placed, str(path))
-    back = np.asarray(music.read_wav(str(path)), dtype=float)
+    back = np.asarray(music.read_audio(str(path)), dtype=float)
 
     assert back.shape == placed.shape
     for channel in range(2):

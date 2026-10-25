@@ -23,7 +23,7 @@ def test_read_wav_16bit(tmp_path):
     path = tmp_path / "s16.wav"
     data = np.array([0, 1000, -1000], dtype=np.int16)
     sf.write(str(path), data, 8000, subtype="PCM_16")
-    out = music.read_wav(str(path))
+    out = music.read_audio(str(path))
     assert np.allclose(out, data.astype(np.float64) / (2 ** 15))
 
 
@@ -31,7 +31,7 @@ def test_read_wav_32bit(tmp_path):
     path = tmp_path / "s32.wav"
     data = np.array([0, 100000, -100000], dtype=np.int32)
     sf.write(str(path), data, 8000, subtype="PCM_32")
-    out = music.read_wav(str(path))
+    out = music.read_audio(str(path))
     assert np.allclose(out, data.astype(np.float64) / (2 ** 31))
 
 

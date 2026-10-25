@@ -9,6 +9,8 @@ says so when it is met:
 - `number_of_samples=0` is zero samples. It meant "use `duration`", so
   pass None, the default, for that.
 
+Old names keep working and warn: see **Deprecated**.
+
 ### Added
 
 - **`set_sample_rate` and `get_sample_rate`: one default rate for every
@@ -34,6 +36,14 @@ says so when it is met:
   and the guards that worked around the convention are gone with it.
 - **`sing` returned 44.1 kHz audio whatever rate the caller worked at.**
 
+### Deprecated
+
+- **`mix2`, `mix_with_offset_` and `read_wav`,** second names for
+  `mix_many`, `mix_many_with_offsets` and `read_audio`. They still work,
+  and warn. CONTRIBUTING.md states the policy: a retired name keeps
+  working, warning, for at least a minor release, and goes only in a major
+  one.
+
 ### Tests
 
 - **Every routine that takes a rate renders at the default rate exactly
@@ -42,6 +52,8 @@ says so when it is met:
   `sample_rate=44100` fails it.
 - **Every routine that takes a sample count renders nothing for zero, in
   its own shape,** as the zero-duration sweep already required.
+- **Each deprecated name still works and warns where it is used, and no
+  export uses one itself.**
 
 ### Maintenance
 

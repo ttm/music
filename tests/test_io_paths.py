@@ -38,9 +38,9 @@ def test_a_scalar_fade_is_applied_at_both_ends(stereo, tmp_path):
     writer = music.write_wav_stereo if stereo else music.write_wav_mono
 
     writer(signal, filename=str(path), fades=20)
-    faded = music.read_wav(str(path))
+    faded = music.read_audio(str(path))
     writer(signal, filename=str(path), fades=0)
-    plain = music.read_wav(str(path))
+    plain = music.read_audio(str(path))
     assert faded.shape == signal.shape
 
     channel = (lambda a: a[0]) if stereo else (lambda a: a)
@@ -153,7 +153,7 @@ def test_the_writers_render_noise_when_given_nothing(writer, channels,
     path = tmp_path / "default.wav"
     writer(filename=str(path))
 
-    restored = music.read_wav(str(path))
+    restored = music.read_audio(str(path))
     assert (restored.ndim == 1 if channels == 1 else restored.shape[0] == 2)
     assert restored.size > 0
     assert np.std(restored) > 0.1
@@ -203,7 +203,7 @@ def test_a_float_wav_is_scaled_by_its_own_peak(subtype, tmp_path):
     sf.write(str(path), np.array([0.0, 0.25, -0.5], dtype=np.float32), 8000,
              subtype=subtype)
 
-    out = music.read_wav(str(path))
+    out = music.read_audio(str(path))
 
     assert out.max() == pytest.approx(0.5)
     assert out.min() == pytest.approx(-1.0)
@@ -214,7 +214,7 @@ def test_an_all_zero_float_wav_does_not_divide_by_zero(tmp_path):
     sf.write(str(path), np.zeros(8, dtype=np.float32), 8000,
              subtype="FLOAT")
 
-    assert np.array_equal(music.read_wav(str(path)), np.zeros(8))
+    assert np.array_equal(music.read_audio(str(path)), np.zeros(8))
 
 
 def test_an_encoding_the_reader_does_not_support_is_reported(tmp_path):
@@ -229,7 +229,7 @@ def test_an_encoding_the_reader_does_not_support_is_reported(tmp_path):
              subtype="IMA_ADPCM")
 
     with pytest.raises(ValueError, match="unsupported WAV encoding"):
-        music.read_wav(str(path))
+        music.read_audio(str(path))
 
 
 # --------------------------------------------------------------------------

@@ -100,6 +100,23 @@ If it closes a known limitation, move the entry to **No longer true** rather
 than deleting it. The record reading worse than the code is a smaller problem
 than the record being wrong.
 
+## Retiring a name
+
+A public name -- a routine, an alias, a parameter -- is retired in two
+steps, never one. First it keeps working under its old spelling and warns
+with a `DeprecationWarning` naming what replaced it, through
+`music._deprecation`: `alias` for a second name of a routine, and
+`renamed_arguments` for a parameter. It stays that way for at least one
+minor release. Then it is removed, and only in a major release, with the
+changelog saying so under **Note for anyone upgrading**.
+
+Neither helper is a decorator, deliberately. The mutation audit cannot
+reach a decorated function, so a routine whose parameter is renamed takes
+its old names through `**renamed` and asks `renamed_arguments` what was
+given; the docstring documents `**renamed` and what it accepts.
+`tests/test_deprecation.py` checks that each old name still works and
+warns where it is used, and that no export uses one itself.
+
 ## Style
 
 - Docstrings are [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html),

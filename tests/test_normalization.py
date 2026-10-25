@@ -197,6 +197,6 @@ def test_the_stereo_writer_accepts_a_mono_vector(tmp_path):
     path = tmp_path / "mono_in.wav"
     music.write_wav_stereo(tone, filename=str(path))
 
-    restored = music.read_wav(str(path))
+    restored = music.read_audio(str(path))
     assert restored.shape[0] == 2
     assert np.allclose(restored[0], restored[1])

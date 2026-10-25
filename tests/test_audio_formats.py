@@ -133,9 +133,12 @@ def test_the_stereo_writers_still_take_flac(tmp_path):
     assert sf.info(str(path)).format == "FLAC"
 
 
-def test_read_wav_is_still_bound_and_reads_flac_too(tmp_path):
-    """The old name kept working, and got more capable rather than less."""
+def test_read_wav_still_reads_flac_and_says_it_is_the_old_name(tmp_path):
+    """The old name kept working, and got more capable rather than less;
+    now it also says what it is called."""
     path = tmp_path / "t.flac"
     music.write_audio(music.note(duration=0.05), str(path))
-    assert music.read_wav is music.read_audio
-    assert music.read_wav(str(path)).ndim == 1
+    with pytest.warns(DeprecationWarning, match=r"music\.read_audio"):
+        samples = music.read_wav(str(path))
+    assert samples.ndim == 1
+    np.testing.assert_array_equal(samples, music.read_audio(str(path)))

@@ -205,7 +205,7 @@ def test_wav_round_trip_stays_within_one_quantisation_step(bit_depth,
     path = tmp_path / f"rt{bit_depth}.wav"
 
     music.write_wav_mono(signal, filename=str(path), bit_depth=bit_depth)
-    restored = music.read_wav(str(path))
+    restored = music.read_audio(str(path))
 
     step = 1.0 / 2 ** (bit_depth - 1)
     assert restored.shape == stored.shape
@@ -215,7 +215,7 @@ def test_wav_round_trip_stays_within_one_quantisation_step(bit_depth,
 @pytest.mark.parametrize("bit_depth", [8, 16, 24, 32])
 def test_wav_round_trip_is_unity_gain(bit_depth, tmp_path):
     """Exactly representable levels must come back unchanged: the writer's
-    scale and read_wav's divisor have to agree.
+    scale and read_audio's divisor have to agree.
 
     These levels are symmetric with zero mean and unit peak, so the writer's
     normalization is the identity on them and any difference is the
@@ -227,7 +227,7 @@ def test_wav_round_trip_is_unity_gain(bit_depth, tmp_path):
 
     path = tmp_path / f"levels{bit_depth}.wav"
     music.write_wav_mono(levels, filename=str(path), bit_depth=bit_depth)
-    restored = music.read_wav(str(path))
+    restored = music.read_audio(str(path))
 
     assert np.array_equal(restored[:4], levels[:4])
 
@@ -250,7 +250,7 @@ def test_stereo_wav_round_trip_preserves_channel_balance(tmp_path):
     path = tmp_path / "balance.wav"
 
     music.write_wav_stereo(stereo, filename=str(path), bit_depth=16)
-    restored = music.read_wav(str(path))
+    restored = music.read_audio(str(path))
 
     ratio = np.abs(restored[0]).max() / np.abs(restored[1]).max()
     assert ratio == pytest.approx(2.0, rel=0.01)

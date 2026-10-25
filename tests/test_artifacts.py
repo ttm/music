@@ -646,7 +646,7 @@ def test_writing_normalizes_whatever_it_is_handed(tmp_path, peak):
     """
     path = tmp_path / "level.wav"
     music.write_wav_mono(peak * music.note(440, 0.2), str(path))
-    assert np.abs(music.read_wav(str(path))).max() == pytest.approx(
+    assert np.abs(music.read_audio(str(path))).max() == pytest.approx(
         1.0, abs=1e-4)
 
 
@@ -663,7 +663,7 @@ def test_two_passages_written_separately_lose_their_relative_level(tmp_path):
     for index, passage in enumerate((loud, quiet)):
         path = tmp_path / f"passage{index}.wav"
         music.write_wav_mono(passage, str(path))
-        peaks.append(float(np.abs(music.read_wav(str(path))).max()))
+        peaks.append(float(np.abs(music.read_audio(str(path))).max()))
 
     assert peaks[0] == pytest.approx(peaks[1], abs=1e-4), (
         "a passage at a twentieth of the other's level came back at a "
@@ -673,7 +673,7 @@ def test_two_passages_written_separately_lose_their_relative_level(tmp_path):
     together = music.horizontal_stack(loud, quiet)
     path = tmp_path / "together.wav"
     music.write_wav_mono(together, str(path))
-    both = music.read_wav(str(path))
+    both = music.read_audio(str(path))
     half = len(loud)
     assert np.abs(both[half:]).max() < 0.1 * np.abs(both[:half]).max(), (
         "written in one pass, the quiet phrase should still be quiet")
@@ -731,7 +731,7 @@ def test_the_round_trip_is_as_quiet_as_this_format_gets(tmp_path,
     written = normalize_mono(rendered, True)
     path = tmp_path / f"depth{bit_depth}.wav"
     music.write_wav_mono(rendered, str(path), bit_depth=bit_depth)
-    back = music.read_wav(str(path))
+    back = music.read_audio(str(path))
 
     length = min(len(written), len(back))
     error = back[:length] - written[:length]

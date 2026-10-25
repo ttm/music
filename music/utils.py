@@ -10,6 +10,7 @@ from typing import Any, cast
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
+from ._deprecation import alias
 from ._rate import resolve_rate
 
 LAMBDA_TILDE = 1024 * 16
@@ -879,8 +880,8 @@ def mix_many_with_offsets(*args: ArrayLike) -> NDArray[np.float64]:
 
 
 #: The name this had before it was renamed for saying, in the name, how it
-#: differs from ``mix_with_offset``. Kept bound so existing callers work.
-mix_with_offset_ = mix_many_with_offsets
+#: differs from ``mix_with_offset``. It still works, and warns.
+mix_with_offset_ = alias(mix_many_with_offsets, 'mix_with_offset_')
 
 
 def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
@@ -1072,8 +1073,8 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=None):
 
 
 #: The name this had while it was the second mixer rather than the general
-#: one. Kept bound so existing callers work.
-mix2 = mix_many
+#: one. It still works, and warns.
+mix2 = alias(mix_many, 'mix2')
 
 
 def _describe_array(array, sample_rate, blocks=16):

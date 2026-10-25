@@ -496,11 +496,11 @@ def build_cases(ns: dict) -> list[Case]:
                     'signature declares decay, so R raises NameError on every '
                     'call and has never run'),
         # ---- mixing and rhythm --------------------------------------------
-        Case('mix2', 'mix2',
+        Case('mix2', 'mix_many',
              lambda: ns['mix2']([mono, mono * 0.5], end=False, offset=0,
                                 fs=FS),
-             lambda: music.mix2([mono, mono * 0.5], end=False, offset=0,
-                                sample_rate=FS),
+             lambda: music.mix_many([mono, mono * 0.5], end=False, offset=0,
+                                    sample_rate=FS),
              notes="compared without an offset: the reference's offset "
                    'branch zero-pads by the whole offset sequence rather '
                    "than by each vector's own offset, and raises for any "

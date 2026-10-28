@@ -39,6 +39,10 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
         sample: the response begins with the direct sound, so it has at
         least that.
 
+        If ``sonic_vector`` is not one-dimensional: numpy said "object too
+        deep for desired array". Reverberate each channel, or mix them
+        down first.
+
     Returns
     -------
     result : numpy.ndarray
@@ -76,6 +80,12 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     sample_rate = resolve_rate(sample_rate)
     if sample_rate <= 0:
         raise ValueError(f"sample_rate must be positive; got {sample_rate}")
+    samples = as_sonic_vector(sonic_vector)
+    if samples is not None and samples.ndim != 1:
+        raise ValueError(
+            f"reverb reverberates a mono sound; got an array of shape "
+            f"{samples.shape}. Reverberate each channel, or mix them down "
+            f"first")
     if first_phase_duration < 0:
         raise ValueError(
             "first_phase_duration must be non-negative; "
@@ -127,7 +137,6 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     # Eq. 78 Impulse response of the reverberation
     result = np.hstack((r1, r2))
     result[0] = 1.
-    samples = as_sonic_vector(sonic_vector)
     if samples is not None:
         # asarray rather than the bare convolve: numpy's stubs on the
         # oldest supported version type the result as floating[Any]

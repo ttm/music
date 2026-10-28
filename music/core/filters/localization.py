@@ -44,6 +44,13 @@ def localize(sonic_vector=None, theta=None, distance=0, x=.1, y=.01,
     s : ndarray
         A (2, nsamples) shaped array with the PCM samples of the stereo sound.
 
+    Raises
+    ------
+    ValueError
+        If `sonic_vector` is not one-dimensional. A stereo sound reached
+        numpy as a message about array dimensions; the routine places one
+        source, so mix the channels down first.
+
     See Also
     --------
     reverb : A reverberator.
@@ -102,6 +109,10 @@ def localize(sonic_vector=None, theta=None, distance=0, x=.1, y=.01,
         sonic_vector = note(sample_rate=sample_rate)
     # A list could not be scaled by the intensity ratio below.
     sonic_vector = np.asarray(sonic_vector, dtype=np.float64)
+    if sonic_vector.ndim != 1:
+        raise ValueError(
+            f"localize places a mono sound; got an array of shape "
+            f"{sonic_vector.shape}. Mix the channels down first")
     # None, not zero, is what leaves the angle out: zero is the right
     # ear's side, and reading it as "not given" put the source at x and y.
     if theta is not None:
@@ -269,6 +280,13 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
         A (2, nsamples) array with the PCM samples of the stereo sound, the
         same length as `sonic_vector`.
 
+    Raises
+    ------
+    ValueError
+        If `sonic_vector` is not one-dimensional. A stereo sound reached
+        numpy as a broadcast error; the routine moves one source, so mix
+        the channels down first.
+
     See Also
     --------
     localize : the same cues for a fixed position.
@@ -328,6 +346,10 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
     if sonic_vector is None:
         sonic_vector = note(sample_rate=sample_rate)
     sonic_vector = np.asarray(sonic_vector, dtype=np.float64)
+    if sonic_vector.ndim != 1:
+        raise ValueError(
+            f"localize_linear moves a mono sound; got an array of shape "
+            f"{sonic_vector.shape}. Mix the channels down first")
     lambda_l = len(sonic_vector)
     if lambda_l == 0:
         return np.zeros((2, 0))
@@ -395,6 +417,10 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
         two implemented, and a misspelling would otherwise fall through
         to whichever branch happened to be last.
 
+        If `sonic_vector` is not one-dimensional. A stereo sound came back
+        as four channels of nothing in particular, with no error at all;
+        the routine places one source, so mix the channels down first.
+
     Returns
     -------
     s : ndarray
@@ -452,6 +478,11 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
         raise ValueError("The only methods implemented are ifft and brute")
     if sonic_vector is None:
         sonic_vector = note(sample_rate=sample_rate)
+    sonic_vector = np.asarray(sonic_vector, dtype=np.float64)
+    if sonic_vector.ndim != 1:
+        raise ValueError(
+            f"localize2 places a mono sound; got an array of shape "
+            f"{sonic_vector.shape}. Mix the channels down first")
     if len(sonic_vector) == 0:
         # Nothing to place, as the other localizers answer it; the FFT
         # below refused zero points.

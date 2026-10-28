@@ -39,6 +39,8 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
         Samples for the envelope to be applied to.
         If supplied, duration and
         number_of_samples are ignored.
+        Mono, or of shape ``(nchannels, nsamples)``, every channel
+        shaped alike.
     sample_rate : integer or None
         The sample rate.
         Only used if number_of_samples and sonic_vector are not
@@ -90,7 +92,7 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
     sample_rate = resolve_rate(sample_rate)
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
-        n = len(sonic_vector)
+        n = sonic_vector.shape[-1]
     elif number_of_samples is not None:
         n = number_of_samples
     else:
@@ -158,6 +160,8 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
         (or number_of_samples) and missing samples are replaced with silence
         (if sonic_vector is shorter) or with a constant value (if durations or
         number_of_samples yield shorter sequences).
+        Mono, or of shape ``(nchannels, nsamples)``, every channel
+        shaped alike.
     sample_rate : integer or None
         The sample rate.
         Only used if number_of_samples is not supplied. None, the
@@ -222,10 +226,13 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
     e = np.hstack(s)
 
     if sonic_vector is not None:
-        if len(e) < len(sonic_vector):
-            e = np.hstack((e, np.ones(len(sonic_vector) - len(e)) * e[-1]))
-        if len(e) > len(sonic_vector):
-            sonic_vector = np.hstack((
-                sonic_vector, np.zeros(len(e) - len(sonic_vector))))
+        length = sonic_vector.shape[-1]
+        if len(e) < length:
+            e = np.hstack((e, np.ones(length - len(e)) * e[-1]))
+        if len(e) > length:
+            sonic_vector = np.concatenate(
+                (sonic_vector,
+                 np.zeros(sonic_vector.shape[:-1] + (len(e) - length,))),
+                axis=-1)
         return sonic_vector * e
     return e

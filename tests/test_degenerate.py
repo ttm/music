@@ -559,3 +559,55 @@ def test_a_registered_bias_is_still_there(name, parameter):
                           dtype=float)
     assert dc_offset(rendered) >= DC_LIMIT, (
         f"{name}({parameter}=0) no longer carries a bias; delete the entry.")
+
+
+# ---------------------------------------------------------------------
+# What a stereo sound answers with
+# ---------------------------------------------------------------------
+
+def _takes_a_sound(name):
+    function = _callable_with_defaults(name)
+    return "sonic_vector" in inspect.signature(function).parameters
+
+
+SOUND_TAKERS = sorted(name for name in ZERO_ARG_EXPORTS
+                      if _takes_a_sound(name))
+STEREO = np.vstack((music.note(220, 0.1), 0.5 * music.note(330, 0.1)))
+
+
+def test_the_stereo_sweep_finds_the_routines_that_take_a_sound():
+    assert {"adsr", "fade", "tremolo", "reverb", "localize"} \
+        <= set(SOUND_TAKERS)
+
+
+@pytest.mark.parametrize("name", SOUND_TAKERS)
+def test_a_stereo_sound_is_shaped_or_refused_clearly(name):
+    """Five envelopes failed on a stereo sound with numpy's words about
+    broadcasting, reverb said "object too deep for desired array", and
+    localize2 answered with four channels of nothing in particular --
+    while fade and adsr shaped the same sound without complaint. A routine
+    that takes a sound shapes every one of its channels, or says that it
+    takes one."""
+    function = _callable_with_defaults(name)
+    np.random.seed(0)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            rendered = np.asarray(function(sonic_vector=STEREO), dtype=float)
+    except ValueError as error:
+        assert _was_raised_deliberately(error), (
+            f"{name} failed on a stereo sound where numpy gave up: "
+            f"{error}")
+        return
+    assert rendered.ndim == 2 and rendered.shape[0] == 2, (
+        f"{name} took a stereo sound and gave back {rendered.shape}")
+
+
+@pytest.mark.parametrize("name", ["am", "loud", "louds", "tremolo",
+                                  "tremolos"])
+def test_an_envelope_shapes_each_channel_as_it_would_alone(name):
+    function = getattr(music, name)
+    both = function(sonic_vector=STEREO)
+    for channel in range(2):
+        np.testing.assert_array_equal(
+            both[channel], function(sonic_vector=STEREO[channel]))

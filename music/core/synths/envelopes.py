@@ -30,6 +30,8 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     sonic_vector : array_like
         Samples for the modulation to be applied to. If supplied, duration
         and number_of_samples are ignored.
+        Mono, or of shape ``(nchannels, nsamples)``, every channel
+        shaped alike.
     sample_rate : integer or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -85,7 +87,8 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     waveform_table = np.array(waveform_table)
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
-        lambda_am = len(sonic_vector)
+        # A channel's length: len() counted a stereo sound's channels.
+        lambda_am = sonic_vector.shape[-1]
     elif number_of_samples is not None:
         lambda_am = number_of_samples
     else:
@@ -130,6 +133,8 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     sonic_vector : array_like
         Samples for the tremolo to be applied to. If supplied, duration and
         number_of_samples are ignored.
+        Mono, or of shape ``(nchannels, nsamples)``, every channel
+        shaped alike.
     sample_rate : integer or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -182,7 +187,7 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     waveform_table = np.array(waveform_table)
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
-        lambda_tremolo = len(sonic_vector)
+        lambda_tremolo = sonic_vector.shape[-1]
     elif number_of_samples is not None:
         lambda_tremolo = number_of_samples
     else:
@@ -241,6 +246,8 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
         are applied to the sound and missing samples are completed by zeros
         (if sonic_vector is smaller then the lengthiest tremolo) or ones
         (is sonic_vector is larger).
+        Mono, or of shape ``(nchannels, nsamples)``, every channel
+        shaped alike.
     sample_rate : integer or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -301,17 +308,22 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
     sonic_vector = as_sonic_vector(sonic_vector)
     amax = 0
     if sonic_vector is not None:
-        amax = len(sonic_vector)
+        amax = sonic_vector.shape[-1]
     for i in range(len(t_)):
         t_[i] = np.hstack(t_[i])
         amax = max(amax, len(t_[i]))
     for i in range(len(t_)):
         if len(t_[i]) < amax:
             t_[i] = np.hstack((t_[i], np.ones(amax - len(t_[i])) * t_[i][-1]))
-    if sonic_vector is not None:
-        if len(sonic_vector) < amax:
-            sonic_vector = np.hstack((sonic_vector,
-                                      np.zeros(amax - len(sonic_vector))))
-        t_.append(sonic_vector)
     s = np.prod(t_, axis=0)
+    if sonic_vector is not None:
+        # Padded along its last axis and multiplied by the lines' product,
+        # so that every channel of a stereo sound is shaped by one envelope:
+        # stacking the sound among the lines needed it one-dimensional.
+        missing = amax - sonic_vector.shape[-1]
+        if missing:
+            sonic_vector = np.concatenate(
+                (sonic_vector, np.zeros(sonic_vector.shape[:-1] + (missing,))),
+                axis=-1)
+        s = s * sonic_vector
     return s

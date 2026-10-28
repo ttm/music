@@ -91,6 +91,14 @@ Old names keep working and warn: see **Deprecated**.
   the documentation offered: a sequence reached numpy as a broadcast
   error. A sequence of another length is refused, and a scalar renders
   exactly as before.
+- **Every envelope shapes a stereo sound, and what places one sound
+  refuses two.** `am`, `loud`, `louds`, `tremolo` and `tremolos` failed on
+  a stereo sound with numpy's words about broadcasting, while `fade` and
+  `adsr` shaped it; every channel is shaped alike now. `reverb`,
+  `localize`, `localize2` and `localize_linear` take one sound and say
+  so: `localize2` answered a stereo one with four channels of nothing in
+  particular, and no error at all. A sweep holds every routine that takes
+  a sound to one answer or the other.
 
 ### Deprecated
 

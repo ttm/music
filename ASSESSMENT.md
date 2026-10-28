@@ -532,13 +532,6 @@ either documented in the code or tracked in the issue list.
   configured set — `E`, `W`, `F` — is clean. The
   gap between the two is a deliberate choice about which rules earn their
   noise, not an oversight.
-- **`pan_transitions` accepts a `method` it does not read.** The
-  signature offers 'lin', 'circ' and 'exp', and the docstring explains
-  what each would do to a cross-fade; the body interpolates linearly
-  whatever it is given, so all three render the same ramp. The docstring
-  now says so, and a test pins it, so implementing the three laws is a
-  deliberate change rather than a discovery. The same routine's legs are
-  fixed -- see the changelog.
 - **`legacy/`**, whose size **Figures** gives, is kept for
   `CanonicalSynth`, `IteratorSynth` and the `Being` class. It is covered
   and type-checked, but it is not where new work should go.

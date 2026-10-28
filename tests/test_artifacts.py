@@ -502,22 +502,97 @@ def test_pan_transitions_with_no_transitions_holds_the_final_point():
     np.testing.assert_array_equal(panned, [[.3] * 4, [.7] * 4])
 
 
-def test_pan_transitions_ignores_the_method_it_is_given():
-    """A known limitation, pinned so that fixing it is a decision.
+def _pan_law(law, a, b, x):
+    """The amplitude `pan_transitions`' Notes give for a law, a to b."""
+    angle = np.pi * x / 2
+    return {"lin": a * (1 - x) + b * x,
+            "circ": np.sqrt((a * np.cos(angle)) ** 2
+                            + (b * np.sin(angle)) ** 2),
+            "exp": a * (b / a) ** x}[law]
 
-    The signature offers 'lin', 'circ' and 'exp', the docstring explains
-    what each would do, and the body interpolates linearly whatever it is
-    given: `method` is never read. Implementing the three laws is a
-    feature rather than a fix, so this records the state of things and
-    fails when someone implements them, which is the point at which the
-    docstring and ASSESSMENT.md need to change too.
-    """
-    rendered = [np.asarray(music.pan_transitions(p=((0, 1), (1, 0)), d=(1,),
-                                                 method=(method,)),
-                           dtype=float)
-                for method in ("lin", "circ", "exp")]
-    assert np.array_equal(rendered[0], rendered[1])
-    assert np.array_equal(rendered[0], rendered[2])
+
+@pytest.mark.parametrize("law", ["lin", "circ", "exp"])
+def test_each_pan_law_moves_a_channel_as_the_notes_say(law):
+    """`method` was accepted and not read until 2.0.0, so 'circ' and
+    'exp' rendered the linear ramp; a test here pinned that."""
+    x = np.arange(1000) / 1000
+    rendered = music.pan_transitions(p=((.8, .2), (.2, .8)), d=(1,),
+                                     method=law, sample_rate=1000)
+    np.testing.assert_allclose(rendered[0], _pan_law(law, .8, .2, x),
+                               rtol=1e-12)
+    np.testing.assert_allclose(rendered[1], _pan_law(law, .2, .8, x),
+                               rtol=1e-12)
+
+
+def test_a_pan_by_circ_keeps_its_power_and_by_lin_its_amplitude():
+    def across(law):
+        return music.pan_transitions(p=((1, 0), (0, 1)), d=(1,), method=law,
+                                     sample_rate=1000)
+
+    np.testing.assert_allclose((across("circ") ** 2).sum(axis=0), 1,
+                               rtol=1e-12)
+    np.testing.assert_allclose(across("lin").sum(axis=0), 1, rtol=1e-12)
+    assert (across("lin") ** 2).sum(axis=0)[500] == pytest.approx(.5)
+
+
+def test_a_pan_by_exp_to_or_from_silence_is_the_exponential_fade():
+    rendered = music.pan_transitions(p=((.5, 0), (0, .5)), d=(1,),
+                                     method="exp", sample_rate=1000)
+    np.testing.assert_array_equal(
+        rendered, .5 * np.vstack((music.fade(number_of_samples=1000),
+                                  music.fade(fade_out=False,
+                                             number_of_samples=1000))))
+    silent = music.pan_transitions(p=((0, 1), (0, 1)), d=(1,), method="exp",
+                                   sample_rate=1000)
+    np.testing.assert_array_equal(silent, [[0] * 1000, [1] * 1000])
+
+
+def test_one_pan_law_is_the_law_of_every_transition():
+    points = ((1, 0), (0, 1), (1, 0))
+
+    def pan(p, method):
+        return music.pan_transitions(p=p, d=(1,) * (len(p) - 1),
+                                     method=method, sample_rate=100)
+
+    np.testing.assert_array_equal(pan(points, "circ"),
+                                  pan(points, ("circ", "circ")))
+    np.testing.assert_array_equal(
+        pan(points, ("lin", "exp")),
+        np.hstack((pan(points[:2], "lin"), pan(points[1:], "exp"))))
+
+
+def test_what_comes_past_the_last_pan_transition_is_not_read():
+    """A three-point pan on the default durations, (2, 2, 2), works."""
+    rendered = music.pan_transitions(p=((1, 0), (0, 1)), d=(1, 5),
+                                     method=("circ", "sideways"),
+                                     sample_rate=100)
+    np.testing.assert_array_equal(
+        rendered, music.pan_transitions(p=((1, 0), (0, 1)), d=(1,),
+                                        method="circ", sample_rate=100))
+
+
+@pytest.mark.parametrize("arguments,message", [
+    ({"d": (2, 2)}, "one of its durations for each transition between the "
+                    "4 positions, 3; got 2"),
+    ({"method": ("lin", "circ")}, "one of its methods for each transition "
+                                  "between the 4 positions, 3; got 2"),
+    ({"method": "cosine"}, "a pan transition is 'lin', 'circ' or 'exp'; "
+                           "got 'cosine'"),
+    ({"p": ((1, 0), (-1, 1)), "d": (1,), "method": "circ"},
+     "'circ' is a law of a channel's power and loudness, which have no "
+     "sign, so it cannot move between (1, 0) and (-1, 1)"),
+    ({"p": ((1, 0), (1, -1)), "d": (1,), "method": "exp"}, "no sign"),
+])
+def test_pan_transitions_refuses_what_it_cannot_render(arguments, message):
+    with pytest.raises(ValueError, match=re.escape(message)):
+        music.pan_transitions(**arguments)
+
+
+def test_a_linear_pan_may_invert_a_channel():
+    rendered = music.pan_transitions(p=((1, 0), (-1, 1)), d=(1,),
+                                     sample_rate=4)
+    np.testing.assert_array_equal(rendered, [[1, .5, 0, -.5], [0, .25, .5,
+                                                                .75]])
 
 
 # ---------------------------------------------------------------------

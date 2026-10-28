@@ -17,6 +17,10 @@ says so when it is met:
   `pip install 'music[play]'` installs, rather than logging and returning.
 - `read_audio` warns when a file's rate is not the default and the rate
   was not asked for.
+- `pan_transitions` moves by the `method` it is given, which it did not
+  read: a call that passed 'circ' or 'exp' rendered linear ramps and now
+  renders the law it named. The default is now 'lin', which a call that
+  passed none got, so it renders as before.
 
 Old names keep working and warn: see **Deprecated**.
 
@@ -62,6 +66,14 @@ Old names keep working and warn: see **Deprecated**.
   else.** colorama's `init()` ran when the peals were imported and
   replaced `sys.stdout` for the whole process with a wrapper that strips
   colour from anything not sent to a terminal.
+- **`pan_transitions` moves by the law it is given.** 'lin' is linear in
+  amplitude, 'circ' keeps the power of a pan across, by cos and sin, and
+  'exp' is linear in decibels, to or from silence by `fade`'s exponential
+  fade; each was accepted and rendered as 'lin', and a test pinned it so
+  that implementing them would be a decision. One name is now the law of
+  every transition, and fewer durations or methods than transitions, an
+  unknown method, and a negative amplitude for 'circ' or 'exp' are
+  refused rather than met by an `IndexError` or a NaN.
 
 ### Fixed
 

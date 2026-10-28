@@ -922,8 +922,7 @@ mix_with_offset_ = alias(mix_many_with_offsets, 'mix_with_offset_')
 
 
 def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
-                    method=('lin', 'circ', 'exp'), sample_rate=None,
-                    sonic_vector=None):
+                    method='lin', sample_rate=None, sonic_vector=None):
     """Applies pan transitions to a sonic vector.
 
     Parameters
@@ -932,9 +931,13 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
         List of pan positions, where each tuple represents the amplitude
         envelope of each channel, by default [(1,1),(1,0),(0,1),(1,1)]
     d : list, optional
-        List of durations for each transition, by default [2,2,2]
-    method : list, optional
-        List of pan transition methods, by default ['lin','circ','exp']
+        The duration of each transition in seconds, by default [2,2,2].
+        Durations past the last transition are not read.
+    method : str or list, optional
+        How each transition moves: 'lin', 'circ' or 'exp', described
+        below. One name is the law of every transition, and a list holds
+        one for each, by default 'lin'. Names past the last transition
+        are not read.
     sample_rate : int or None, optional
         Sample rate of the audio. None, the default, is the rate
         :func:`music.get_sample_rate` returns.
@@ -949,34 +952,37 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
         them: as long as the sound, holding the last position past the
         end of the transitions.
 
+    Raises
+    ------
+    ValueError
+        If there are fewer durations or methods than transitions, or a
+        method is not one of the three. A short list used to reach an
+        ``IndexError`` from inside the routine.
+
+        If a transition by 'circ' or 'exp' starts or ends at a negative
+        amplitude: they are laws of a channel's power and loudness, which
+        have no sign.
+
     Notes
     -----
-    Each pan transition i starts and ends amplitude envelope
-    of channel c in p[i][c] and p[i+1][c].
+    Each pan transition i takes the amplitude of channel c from p[i][c]
+    toward p[i+1][c], which the next transition starts at, by the law
+    method[i]. Over progress x from 0 toward 1, from amplitude a to b::
 
-    ``method`` is accepted and not read. The three laws below say what
-    each would do; the body interpolates linearly whatever it is given,
-    so 'lin', 'circ' and 'exp' all render the same ramp.
-    ``tests/test_artifacts.py`` pins that, so implementing them is a
-    deliberate change rather than a surprise.
+        'lin', linear in amplitude:
+            a*(1 - x) + b*x
+        'circ', linear in power along a quarter circle:
+            sqrt((a*cos(pi*x/2))**2 + (b*sin(pi*x/2))**2)
+        'exp', linear in decibels:
+            a*(b/a)**x
 
-    Consider only one of such fades
-    to understand the pan transition methods::
-
-        'lin' fades linearly in and out:
-            x*k_i+y*(1-k_i)
-            or
-            s1_i*x_i +s2_i*(1-x_i) = (s1-s2)*x_i + s_2
-        'circ' keeps amplitude one using
-            cos(x)**2 + sin(y)**2 = 1
-        'exp' makes the cross_fade using exponentials.
-
-    'exp' entails linear loudness variation for each channel,
-    but total loudness is not preserved because
-    final amplitude's ambit is not preserved.
-    'lin' and 'circ', on the other hand, preserve total loudness
-    but does not provide a linear variation of loudness for
-    each sound on the cross-fade.
+    'exp' to or from silence, where decibels run out, is :func:`fade`'s
+    exponential fade: 80 dB of it, then a linear one percent to silence.
+    Across (1, 0) to (0, 1), 'lin' keeps the sum of the channels'
+    amplitudes and lets their power dip 3 dB halfway; 'circ' keeps their
+    power, since cos(x)**2 + sin(x)**2 = 1; 'exp' changes each channel's
+    loudness at a steady rate and keeps neither. Until 2.0.0 ``method``
+    was not read, and every transition was 'lin'.
 
     For now, each channel's signal are kept from mixing.
     One immediate possibility is to maintain the expected
@@ -1006,6 +1012,23 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
     """
 
     sample_rate = resolve_rate(sample_rate)
+    transitions = len(p) - 1
+    laws = [method] * transitions if isinstance(method, str) else method
+    for name, given in (("durations", d), ("methods", laws)):
+        if len(given) < transitions:
+            raise ValueError(
+                f"pan_transitions takes one of its {name} for each "
+                f"transition between the {len(p)} positions, {transitions}; "
+                f"got {len(given)}")
+    for i, law in enumerate(laws[:transitions]):
+        if law not in ("lin", "circ", "exp"):
+            raise ValueError(f"a pan transition is 'lin', 'circ' or 'exp'; "
+                             f"got {law!r}")
+        if law != "lin" and min(*p[i], *p[i + 1]) < 0:
+            raise ValueError(
+                f"'{law}' is a law of a channel's power and loudness, which "
+                f"have no sign, so it cannot move between {tuple(p[i])} and "
+                f"{tuple(p[i + 1])}")
     pp_ = p[0]
     t0_ = []
     t1_ = []
@@ -1015,10 +1038,8 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
         # so 1.1 s of panning was a sample longer than 1.1 s of note.
         di = int(d[i] * sample_rate)
         di_ = np.arange(di) / di
-        t0 = pp_[0] * (1 - di_) + pp[0] * di_
-        t1 = pp_[1] * (1 - di_) + pp[1] * di_
-        t0_.append(t0)
-        t1_.append(t1)
+        t0_.append(_pan_leg(pp_[0], pp[0], di_, laws[i]))
+        t1_.append(_pan_leg(pp_[1], pp[1], di_, laws[i]))
         # Each leg starts where the one before it ended. Without this the
         # loop interpolated every leg from p[0], so the third leg of the
         # defaults ran (1,1) -> (1,1) instead of (0,1) -> (1,1): a channel
@@ -1041,6 +1062,27 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
             t = np.hstack((t, np.repeat(final, length - t.shape[1], axis=1)))
         return sonic_vector * t[:, :length]
     return t
+
+
+def _pan_leg(start, end, progress, law):
+    """One channel's amplitude from `start` toward `end`, by `law`.
+
+    See :func:`pan_transitions`, whose Notes give the three laws.
+    """
+    if law == "lin":
+        return start * (1 - progress) + end * progress
+    if law == "circ":
+        angle = progress * np.pi / 2
+        return np.sqrt((start * np.cos(angle)) ** 2
+                       + (end * np.sin(angle)) ** 2)
+    if start and end:
+        return start * (end / start) ** progress
+    if start == end:
+        return np.zeros(len(progress))
+    # Imported here: the fades are built on this module.
+    from .core.filters.fade import fade
+    ramp = fade(fade_out=not end, number_of_samples=len(progress))
+    return (start or end) * ramp
 
 
 def mix_many(sonic_vectors, end=False, offset=0, sample_rate=None):

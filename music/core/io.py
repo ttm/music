@@ -2,13 +2,13 @@
 
 import logging
 import pathlib
-import warnings
 from typing import Any, Callable, Literal, Sequence, overload
 
 import numpy as np
 import soundfile as sf
 from numpy.typing import ArrayLike, NDArray
 from .._deprecation import alias, renamed_arguments
+from .._warn import warn
 from .._rate import get_sample_rate, resolve_rate
 from .functions import normalize_mono, normalize_stereo
 from .filters.adsr import adsr, adsr_stereo
@@ -211,12 +211,11 @@ def read_audio(filename, return_sample_rate=False):
     if return_sample_rate:
         return samples, sample_rate
     if sample_rate != get_sample_rate():
-        warnings.warn(
+        warn(
             f"{filename} is at {sample_rate} Hz, and routines not told "
             f"otherwise work at {get_sample_rate()} Hz, so this sound would "
             f"come back at the wrong pitch and length: read it with "
-            f"return_sample_rate=True, or set_sample_rate({sample_rate})",
-            stacklevel=2)
+            f"return_sample_rate=True, or set_sample_rate({sample_rate})")
     return samples
 
 

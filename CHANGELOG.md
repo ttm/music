@@ -107,6 +107,15 @@ Old names keep working and warn: see **Deprecated**.
   between the ears, reached numpy as an array of negative length. Both
   are refused, and a sweep holds every numeric parameter below zero to
   working or being refused, as another already does at zero.
+- **Warnings named a line inside the package, so each was shown once.**
+  Python shows a warning with the line it names, once for each line.
+  `convert_to_stereo`'s warning of channels past two, `localize2`'s of
+  the brute-force method and `PlainChanges`' of hunts that change nothing
+  each named their own line, whoever called, and `read_audio`'s of a
+  file's rate named `read_wav`'s when called through it: the first
+  caller saw the warning and every caller after did not. Each now names
+  the first line outside the package, the caller's, however deep the
+  call, and a test takes every route to each one.
 
 ### Deprecated
 
@@ -127,8 +136,8 @@ Old names keep working and warn: see **Deprecated**.
   `sample_rate=44100` fails it.
 - **Every routine that takes a sample count renders nothing for zero, in
   its own shape,** as the zero-duration sweep already required.
-- **Each deprecated name still works and warns where it is used, and no
-  export uses one itself.**
+- **Each deprecated name still works and warns, and no export uses one
+  itself.**
 
 ### Maintenance
 

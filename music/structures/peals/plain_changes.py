@@ -7,8 +7,8 @@ References
        http://www.gutenberg.org/files/18567/18567-h/18567-h.htm
 """
 
-import warnings
 
+from ..._warn import warn
 from .._sympy import combinatorics
 
 
@@ -57,9 +57,8 @@ class PlainChanges:
 
         """
         if hunts is not None:
-            warnings.warn(
-                "PlainChanges does not read hunts; the hunts are laid out "
-                "by nhunts", stacklevel=2)
+            warn("PlainChanges does not read hunts; the hunts are laid "
+                 "out by nhunts")
         self.domain = None
         self.acted_peals = None
         hunts = self.initialize_hunts(nelements, nhunts)
@@ -141,7 +140,7 @@ class PlainChanges:
                 f"there must be fewer hunts than elements; got {nhunts} "
                 f"for {nelements}. The last hunt needs a bell to pass")
         elif nhunts > saturating:
-            warnings.warn(
+            warn(
                 f"peals are the same if there are {nhunts - saturating} "
                 "hunts less")
         hunts_dict = {}

@@ -23,8 +23,9 @@ from __future__ import annotations
 
 import functools
 import inspect
-import warnings
 from typing import Any, Callable, TypeVar
+
+from ._warn import warn
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -41,9 +42,8 @@ def alias(function: F, old_name: str) -> F:
 
     @functools.wraps(function)
     def deprecated(*args: Any, **kwargs: Any) -> Any:
-        warnings.warn(f"music.{old_name} is deprecated; call {new}, which "
-                      f"it is another name for", DeprecationWarning,
-                      stacklevel=2)
+        warn(f"music.{old_name} is deprecated; call {new}, which it is "
+             f"another name for", DeprecationWarning)
         return function(*args, **kwargs)
 
     deprecated.__name__ = deprecated.__qualname__ = old_name
@@ -86,8 +86,8 @@ def renamed_arguments(routine: str, given: dict[str, Any],
             raise TypeError(
                 f"{routine}() got an unexpected keyword argument {old!r}")
         new = renames[old]
-        warnings.warn(f"{routine}()'s {old!r} is now {new!r}, which says "
-                      f"its unit; {old!r} still works but is deprecated",
-                      DeprecationWarning, stacklevel=3)
+        warn(f"{routine}()'s {old!r} is now {new!r}, which says its "
+             f"unit; {old!r} still works but is deprecated",
+             DeprecationWarning)
         values[new] = value
     return values

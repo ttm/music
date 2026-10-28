@@ -84,7 +84,8 @@ are settled by the tests and tools each row names.
 | Examples | `python tools/run_examples.py` | **every one runs** |
 | Public API | `tests/test_public_api.py` | every export callable on its own defaults |
 | Sample rate | `tests/test_sample_rate.py` | every export that takes a rate renders at the default rate exactly what it renders when handed it, and none declares a rate of its own |
-| Deprecated names | `tests/test_deprecation.py` | each still works and warns where it is used; no export uses one itself |
+| Deprecated names | `tests/test_deprecation.py` | each still works and warns; no export uses one itself |
+| Warnings | `tests/test_warnings.py` | every route to each of the package's warnings names the caller's line, and the package warns only through the helper that finds it |
 | Rendering artifacts | `tests/test_artifacts.py` | every render swept for clicks and DC offset; the steps that remain are registered with a reason, and the measures' blind spots are measured |
 | Aliasing | `tests/test_artifacts.py` | a sine strays **1.2e-08** of its energy off the harmonics at any frequency; a sawtooth strays **24 %** at 10 kHz |
 | Band-limited oscillators | `tools/benchmark_spectral_aliasing.py`, `tools/benchmark_oscillators.py` | `bandlimited_note`'s sawtooth strays **1.2e-16** at 10 kHz; at 10,001 Hz and 48 kHz, PolyBLEP's sawtooth **0.68 %** and square **0.73 %**, the mipmapped tables' sawtooth **1.3e-14**, and **9.3e-9** at 110 Hz |

@@ -121,7 +121,16 @@ reach a decorated function, so a routine whose parameter is renamed takes
 its old names through `**renamed` and asks `renamed_arguments` what was
 given; the docstring documents `**renamed` and what it accepts.
 `tests/test_deprecation.py` checks that each old name still works and
-warns where it is used, and that no export uses one itself.
+warns, and that no export uses one itself.
+
+## Warnings
+
+Warn through `music._warn.warn`, never `warnings.warn`. Python shows a
+warning with the line it names, once for each line, and `stacklevel`
+names a line by counting frames, which is right for one route in only;
+`warn` names the first line outside the package, the caller's, however
+deep the call. `tests/test_warnings.py` takes every route to each of the
+package's warnings, and fails if any other module calls `warnings.warn`.
 
 ## Style
 

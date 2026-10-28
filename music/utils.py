@@ -3,7 +3,6 @@
 import logging
 import os
 import sys
-import warnings
 from pathlib import Path
 from typing import Any, cast
 
@@ -12,6 +11,7 @@ from numpy.typing import ArrayLike, NDArray
 
 from ._deprecation import alias
 from ._rate import resolve_rate
+from ._warn import warn
 
 LAMBDA_TILDE = 1024 * 16
 
@@ -592,7 +592,7 @@ def convert_to_stereo(sound_vector: ArrayLike) -> NDArray[np.float64]:
     elif sound_array.shape[0] > 2:
         # If the input vector has more than two channels, keep only the first
         # two (left and right) and sum the rest to both left and right channels
-        warnings.warn(
+        warn(
             'Keeping first two channels in left and right. '
             'The rest will be added to both left and right.')
         stereo_sound = np.array((sound_array[0], sound_array[1]))

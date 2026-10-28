@@ -1,11 +1,11 @@
 """Stereo localization filters and related helpers."""
 
 import numpy as np
-import warnings
 from numpy.typing import ArrayLike, NDArray
 from music.core.synths.notes import note, note_with_phase
 from music.utils import WAVEFORM_SINE, _require_ears
 from ..._rate import resolve_rate
+from ..._warn import warn
 
 
 def localize(sonic_vector=None, theta=None, distance=0, x=.1, y=.01,
@@ -607,7 +607,7 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
     # No false exit: the method is validated on the way in, so by here it
     # is "ifft" or "brute", and "ifft" was taken by the branch above.
     elif method == "brute":  # pragma: no branch
-        warnings.warn("This can take a long time...")
+        warn("This can take a long time...")
         for i in range(ncoeffs):
             if i == 0:
                 continue

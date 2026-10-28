@@ -88,13 +88,6 @@ def test_a_keyword_that_is_neither_name_is_still_a_type_error(routine):
         getattr(music, routine)(**required, atack_ms=5)
 
 
-def test_a_warning_names_the_line_that_used_the_old_name():
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        music.adsr(attack_duration=10)
-    assert [warning.filename for warning in caught] == [__file__]
-
-
 def test_renamed_arguments_maps_only_what_was_given():
     with pytest.warns(DeprecationWarning):
         assert renamed_arguments("f", {"a": 1}, a="b", c="d") == {"b": 1}
@@ -114,14 +107,6 @@ def test_an_alias_takes_what_its_replacement_takes(old, new):
     assert alias.__name__ == old
     assert inspect.getdoc(alias).startswith(
         f"Deprecated: another name for :func:`music.{new}`")
-
-
-def test_an_alias_warns_where_it_is_called():
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        music.mix2([music.note(duration=0.01)])
-    assert [warning.filename for warning in caught] == [__file__]
-    assert issubclass(caught[0].category, DeprecationWarning)
 
 
 @pytest.mark.parametrize("name", ZERO_ARG_EXPORTS)

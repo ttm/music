@@ -601,11 +601,12 @@ def note_with_glissando_vibrato(
     if alpha != 1 or alpha_vibrato != 1:
         f = start_freq * (end_freq / start_freq) ** \
             _bent(samples / intervals, alpha) * 2. ** \
-            _signed_power(tv * max_pitch_dev / 12, alpha_vibrato)
+            _signed_power(tv * max_pitch_dev / 12, alpha_vibrato,
+                          'alpha_vibrato')
     else:
         f = start_freq * (end_freq / start_freq) ** \
             (samples / intervals) * 2. ** \
-            _signed_power(tv * max_pitch_dev / 12, alpha)
+            _signed_power(tv * max_pitch_dev / 12, alpha, 'alpha')
     length = len(waveform_table)
     gamma = _integrate_phase(f * length / sample_rate, length).astype(np.int64)
     s = waveform_table[gamma % length]
@@ -837,7 +838,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
             tv = waveform_tables[i + 1][j][gammav % lv]
             if alpha[i + 1][j] != 0:
                 f = 2. ** _signed_power(tv * max_pitch_devs[i][j] / 12,
-                                        alpha[i + 1][j])
+                                        alpha[i + 1][j], 'alpha')
             else:
                 f = 2. ** (tv * max_pitch_devs[i][j] / 12)
             segments.append(f)
@@ -1122,8 +1123,9 @@ def note_with_two_vibratos_glissando(
     if alpha != 1 or alphav1 != 1 or alphav2 != 1:
         f = start_freq * (end_freq / start_freq) ** \
             _bent(samples / intervals, alpha) * 2. ** \
-            _signed_power(tv1 * max_pitch_dev / 12, alphav1) * 2. ** \
-            _signed_power(tv2 * secondary_max_pitch_dev / 12, alphav2)
+            _signed_power(tv1 * max_pitch_dev / 12, alphav1, 'alphav1') \
+            * 2. ** _signed_power(tv2 * secondary_max_pitch_dev / 12,
+                                  alphav2, 'alphav2')
     else:
         f = start_freq * (end_freq / start_freq) ** \
             (samples / intervals) * 2. ** \
@@ -1255,7 +1257,7 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
             if alpha[i + 1][j] != 0:
                 f = 2. ** _signed_power(
                     tv * vibratos_max_pitch_devs[i][j] / 12,
-                    alpha[i + 1][j])
+                    alpha[i + 1][j], 'alpha')
             else:
                 f = 2. ** (tv * vibratos_max_pitch_devs[i][j] / 12)
             segments.append(f)
@@ -1386,7 +1388,8 @@ def note_with_vibrato(
     if alpha == 1:
         f = freq * 2. ** (t_v * max_pitch_dev / 12)
     else:
-        f = freq * 2. ** _signed_power(t_v * max_pitch_dev / 12, alpha)
+        f = freq * 2. ** _signed_power(t_v * max_pitch_dev / 12, alpha,
+                                       'alpha')
     waveform_table_length = len(waveform_table)
     # shift in table between each sample
     d_gamma = f * (waveform_table_length / sample_rate)
@@ -1506,8 +1509,8 @@ def note_with_two_vibratos(
     tv2 = sec_vibrato_waveform_table[gammav2 % lv2]
 
     if alphav1 != 1 or alphav2 != 1:
-        f = freq * 2. ** _signed_power(tv1 * nu1 / 12, alphav1) * 2. ** \
-            _signed_power(tv2 * nu2 / 12, alphav2)
+        f = freq * 2. ** _signed_power(tv1 * nu1 / 12, alphav1, 'alphav1') \
+            * 2. ** _signed_power(tv2 * nu2 / 12, alphav2, 'alphav2')
     else:
         f = freq * 2. ** (tv1 * nu1 / 12) * 2. ** (tv2 * nu2 / 12)
     length = len(waveform_table)

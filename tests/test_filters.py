@@ -472,6 +472,29 @@ def test_adsr_refuses_values_for_the_wrong_number_of_stages(given):
         adsr(**given)
 
 
+@pytest.mark.parametrize("stage", ["attack_ms", "decay_ms", "release_ms",
+                                   "to_zero_ms"])
+def test_adsr_refuses_a_stage_shorter_than_nothing(stage):
+    """A negative attack, release or to-zero was refused by `fade`, in
+    words about a `perc` the caller never gave, and a negative decay made
+    the envelope longer than it was asked to be."""
+    with pytest.raises(ValueError, match=rf"^{stage} is a duration and "
+                                         rf"cannot be negative; got -5$"):
+        adsr(**{stage: -5})
+
+
+def test_a_to_zero_longer_than_its_stage_is_the_whole_stage():
+    """`fade` refused a linear share past 100 %, even for a linear
+    transition, which does not read `to_zero_ms` at all."""
+    np.testing.assert_array_equal(adsr(attack_ms=1, release_ms=2,
+                                       to_zero_ms=(3, 4)),
+                                  adsr(attack_ms=1, release_ms=2,
+                                       to_zero_ms=(1, 2)))
+    np.testing.assert_array_equal(
+        adsr(transition="linear", attack_ms=1, to_zero_ms=3),
+        adsr(transition="linear", attack_ms=1))
+
+
 def test_adsr_stereo_takes_the_per_stage_values_too():
     mono = adsr(alpha=(2, 0.5, 3), to_zero_ms=(5, 10))
     np.testing.assert_array_equal(

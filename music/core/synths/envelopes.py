@@ -215,7 +215,7 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     # boosted. `_signed_power` hands back an index of 1 untouched, so the
     # undistorted tremolo is bit for bit what it was. The article gives no
     # `alpha` for the tremolo at all; see DISCREPANCIES.md.
-    t = 10. ** _signed_power(table_amp * max_db_dev / 20, alpha)
+    t = 10. ** _signed_power(table_amp * max_db_dev / 20, alpha, 'alpha')
     if sonic_vector is not None:
         return t * sonic_vector
     return t

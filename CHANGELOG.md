@@ -128,6 +128,14 @@ Old names keep working and warn: see **Deprecated**.
   caller saw the warning and every caller after did not. Each now names
   the first line outside the package, the caller's, however deep the
   call, and a test takes every route to each one.
+- **A refusal names what it refuses.** `adsr` given a negative attack,
+  release or `to_zero_ms` was refused by `fade` in words about a `perc`
+  its caller never gave; a negative decay made the envelope longer than
+  it was asked to be; and a `to_zero_ms` longer than its stage was
+  refused even for a linear transition, which does not read it. `adsr`
+  now refuses a negative duration by name, and a to-zero longer than its
+  stage is the whole stage. A negative vibrato or tremolo index was
+  refused without saying which: `alphav1` or `alphav2`.
 
 ### Deprecated
 

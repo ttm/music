@@ -73,8 +73,8 @@ def adsr(envelope_duration=2, attack_ms=20,
     to_zero_ms : scalar or array_like
         The duration in milliseconds for linearly departing from zero in the
         Attack and reaching the value of zero at the end of the Release. One
-        value for both, or two: for the Attack and the Release. Ignored if
-        transition="linear".
+        value for both, or two: for the Attack and the Release. Longer than
+        its stage, it is the whole stage. Ignored if transition="linear".
     number_of_samples : integer or None
         The number of samples of the envelope. If given, envelope_duration
         is ignored, and zero is an envelope of no samples.
@@ -109,12 +109,17 @@ def adsr(envelope_duration=2, attack_ms=20,
         `to_zero_ms` other than one or two. The per-stage forms were
         documented since MASS and implemented in neither it nor here, so
         a sequence reached numpy as a broadcast error.
-    TypeError
-        If a keyword is neither a parameter nor one of the old names.
 
         If `alpha` is negative and the transition exponential: it bends
         a transition from zero, where a negative power has no finite
         value, and the envelope came back holding infinity.
+
+        If a duration in milliseconds is negative. A negative attack,
+        release or `to_zero_ms` was refused by :func:`fade` in words
+        about a percentage, and a negative decay made the envelope
+        longer than it was asked to be.
+    TypeError
+        If a keyword is neither a parameter nor one of the old names.
 
     See Also
     --------
@@ -158,6 +163,16 @@ def adsr(envelope_duration=2, attack_ms=20,
     alpha_a, alpha_d, alpha_r = _per_stage(alpha, 3, 'alpha')
     db_a, db_r = _per_stage(db_dev, 2, 'db_dev')
     to_zero_a, to_zero_r = _per_stage(to_zero_ms, 2, 'to_zero_ms')
+    # A negative stage reached `fade` as a negative percentage, refused in
+    # words about `perc`, which the caller never gave; a negative decay
+    # shrank the stages' sum, and the sustain filled the envelope past the
+    # length asked for.
+    for name, value in (('attack_ms', attack_ms), ('decay_ms', decay_ms),
+                        ('release_ms', release_ms),
+                        ('to_zero_ms', to_zero_a), ('to_zero_ms', to_zero_r)):
+        if value < 0:
+            raise ValueError(
+                f"{name} is a duration and cannot be negative; got {value}")
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
         # The length of a channel. len() counted a stereo sound's two
@@ -184,8 +199,9 @@ def adsr(envelope_duration=2, attack_ms=20,
 
     # An attack or release of no samples is built explicitly, because its
     # share of `to_zero_ms` is divided by its duration: an attack of 0 ms
-    # divides by zero, and one too short to round to a sample asks `fade`
-    # for a linear share past 100 %.
+    # divides by zero. A share past 100 % -- a `to_zero_ms` longer than
+    # its stage -- is the whole stage: `fade` refused it, in words about
+    # `perc`, even for a linear transition, which reads no `to_zero_ms`.
     #
     # `to_zero_ms` and the stage durations are both in milliseconds, so
     # their ratio is a fraction; `fade` reads `perc` as a percentage.
@@ -197,7 +213,7 @@ def adsr(envelope_duration=2, attack_ms=20,
     # RECONCILIATION.md.
     if lambda_a:
         attack = fade(fade_out=0, method=transition, alpha=alpha_a, db=db_a,
-                      perc=100 * to_zero_a / attack_ms,
+                      perc=min(100, 100 * to_zero_a / attack_ms),
                       number_of_samples=lambda_a)
     else:
         attack = np.array([])
@@ -210,7 +226,7 @@ def adsr(envelope_duration=2, attack_ms=20,
 
     if lambda_r:
         release = fade(method=transition, alpha=alpha_r, db=db_r,
-                       perc=100 * to_zero_r / release_ms,
+                       perc=min(100, 100 * to_zero_r / release_ms),
                        number_of_samples=lambda_r) * a_s
     else:
         release = np.array([])
@@ -304,8 +320,8 @@ def adsr_stereo(duration=2, attack_ms=20, decay_ms=20,
     to_zero_ms : scalar or array_like
         The duration in milliseconds for linearly departing from zero in
         the Attack and reaching zero at the end of the Release. One value
-        for both, or two: for the Attack and the Release. Ignored if
-        ``transition="linear"``.
+        for both, or two: for the Attack and the Release. Longer than its
+        stage, it is the whole stage. Ignored if ``transition="linear"``.
     number_of_samples : integer or None
         The number of samples of the envelope. If given, ``duration``
         is ignored, and zero is an envelope of no samples.
@@ -330,8 +346,9 @@ def adsr_stereo(duration=2, attack_ms=20, decay_ms=20,
     Raises
     ------
     ValueError
-        As :func:`adsr` raises it: a `transition` it does not know, or a
-        per-stage value with the wrong number of stages.
+        As :func:`adsr` raises it: a `transition` it does not know, a
+        per-stage value with the wrong number of stages, a negative
+        `alpha` for an exponential transition, or a negative duration.
     TypeError
         If a keyword is neither a parameter nor one of the old names.
 

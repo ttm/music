@@ -33,6 +33,7 @@ something anyone can act on.
 """
 
 import inspect
+import os
 import pathlib
 import re
 import traceback
@@ -45,6 +46,9 @@ import music
 from test_artifacts import (CONTROL_SIGNALS, DC_LIMIT, DC_WHEN_ZEROED,
                            dc_offset)
 from test_public_api import ZERO_ARG_EXPORTS, _callable_with_defaults
+
+#: Where the package's own frames come from.
+PACKAGE = os.path.dirname(music.__file__) + os.sep
 
 #: Parameters the sweep leaves alone.  `sample_rate` at zero is a question
 #: about arithmetic rather than about sound; `sonic_vector` at zero means
@@ -131,16 +135,19 @@ def _was_raised_deliberately(error):
     What separates the two is where the exception was raised. A refusal
     this package means is a `raise ValueError` on the frame that raised;
     numpy's comes from an arithmetic line that was trying to do something
-    else.
+    else -- or from numpy's own `raise ValueError`, which `linspace` has
+    for a negative count, so the frame must also be the package's.
     """
     frame = traceback.extract_tb(error.__traceback__)[-1]
-    return "raise ValueError" in (frame.line or "")
+    return ("raise ValueError" in (frame.line or "")
+            and frame.filename.startswith(PACKAGE))
 
 
 @pytest.mark.parametrize("name,parameter", EDGES,
                          ids=lambda value: str(value))
 def test_a_parameter_at_zero_works_or_is_refused_clearly(name, parameter):
-    """One of two answers, and nothing else."""
+    """One of two answers, and nothing else: a render, or a refusal by
+    the package naming the parameter it refuses."""
     function = _callable_with_defaults(name)
     try:
         with warnings.catch_warnings():
@@ -155,6 +162,9 @@ def test_a_parameter_at_zero_works_or_is_refused_clearly(name, parameter):
             f":{traceback.extract_tb(refusal.__traceback__)[-1].lineno}, "
             f"which is arithmetic giving up rather than a refusal: "
             f"{refusal}")
+        assert parameter in str(refusal), (
+            f"{name}({parameter}=0) was refused without naming "
+            f"{parameter}: {refusal}")
         return
     except Exception as unexpected:  # pragma: no cover - the failure path
         pytest.fail(
@@ -650,5 +660,10 @@ def test_a_parameter_below_zero_works_or_is_refused_clearly(name, parameter):
         assert _was_raised_deliberately(error), (
             f"{name}({parameter}={value}) failed where numpy gave up: "
             f"{error}")
+        # adsr's negative attack was refused by `fade`, in words about a
+        # `perc` its caller never gave.
+        assert parameter in str(error), (
+            f"{name}({parameter}={value}) was refused without naming "
+            f"{parameter}: {error}")
         return
     assert _finite(rendered), f"{name}({parameter}={value}) is not finite"

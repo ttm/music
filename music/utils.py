@@ -630,7 +630,7 @@ def _transition_is_linear(method: str, name: str = 'method') -> bool:
         f"got {method!r}")
 
 
-def _signed_power(values, index):
+def _signed_power(values, index, name):
     """Raise an oscillatory pattern to a distortion index, keeping its sign.
 
     The article's distortion index applies to ``(i/(Lambda-1))**alpha``, a
@@ -655,12 +655,14 @@ def _signed_power(values, index):
 
     A negative index is refused: the oscillation passes through zero,
     where a negative power has no finite value, and it came back as
-    infinity behind a warning.
+    infinity behind a warning. `name` is the parameter that gave it, for
+    the refusal to name.
     """
     if index < 0:
         raise ValueError(
-            f"a distortion index bends an oscillation through zero, where a "
-            f"negative power has no finite value; got {index}")
+            f"{name} is a distortion index, which bends an oscillation "
+            f"through zero, where a negative power has no finite value; got "
+            f"{index}")
     if index == 1:
         return values
     return np.sign(values) * np.abs(values) ** index

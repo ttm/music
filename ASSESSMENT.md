@@ -91,7 +91,7 @@ are settled by the tests and tools each row names.
 | Oversampling | `tools/attribute_aliasing.py`, `tools/benchmark_dynamic_aliasing.py` | at 48 kHz, 4x takes the folded power of a wide FM from **-19 to -123 dB** of its signal, and of an abrupt gate from **-15 to -30 dB**; predicted from each signal's closed-form lines to within **0.2 dB** of the package's renders |
 | Round-trip noise | `tests/test_artifacts.py` | **48 dB** at 8-bit, **121** at 16, **145** at 24, against what was written |
 | Filter stability | `tests/test_artifacts.py` | every design's poles inside the unit circle across its whole parameter range |
-| Degenerate parameters | `tests/test_degenerate.py` | **148** (routine, parameter) pairs set to zero: each works or is refused with a `ValueError` |
+| Degenerate parameters | `tests/test_degenerate.py` | **148** (routine, parameter) pairs set to zero, and below it: each works or is refused with a `ValueError` |
 | Zero durations | `tests/test_degenerate.py` | every routine that takes a duration renders nothing for a zero one, in the shape it would otherwise have |
 | Zero samples | `tests/test_degenerate.py` | every routine that takes a sample count renders nothing for a count of zero, likewise |
 | Length, rate and pitch | `tests/test_properties.py` | **24 of 26** timed routines render exactly `duration * sample_rate` at four rates; the other two are registered |

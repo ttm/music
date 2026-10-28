@@ -63,6 +63,10 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
         Names were once matched by substring, so ``"explicit"`` was
         exponential; they are now the ones :func:`loud` takes.
 
+        If `alpha` is negative and the transition exponential: it bends
+        a transition from zero, where a negative power has no finite
+        value, and the envelope came back holding infinity.
+
     See Also
     --------
     adsr : An ADSR envelope.

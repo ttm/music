@@ -611,3 +611,44 @@ def test_an_envelope_shapes_each_channel_as_it_would_alone(name):
     for channel in range(2):
         np.testing.assert_array_equal(
             both[channel], function(sonic_vector=STEREO[channel]))
+
+
+# ---------------------------------------------------------------------
+# What a parameter below zero answers with
+# ---------------------------------------------------------------------
+
+def _finite(rendered):
+    """Whether every numeric part of `rendered` is finite."""
+    for part in rendered if isinstance(rendered, tuple) else (rendered,):
+        if callable(part):
+            continue
+        try:
+            array = np.asarray(part, dtype=float)
+        except (TypeError, ValueError):
+            continue
+        if not np.isfinite(array).all():
+            return False
+    return True
+
+
+@pytest.mark.parametrize("name,parameter", EDGES,
+                         ids=lambda value: str(value))
+def test_a_parameter_below_zero_works_or_is_refused_clearly(name, parameter):
+    """The zero sweep's neighbour, over the same pairs. A negative
+    `alpha` raised zero to a negative power: every glissando, vibrato,
+    tremolo and exponential transition came back holding infinity behind
+    a warning. A negative `zeta`, the distance between the ears, reached
+    numpy as an array of negative length."""
+    function = _callable_with_defaults(name)
+    value = -abs(inspect.signature(function).parameters[parameter].default)
+    np.random.seed(0)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            rendered = function(**{parameter: value})
+    except ValueError as error:
+        assert _was_raised_deliberately(error), (
+            f"{name}({parameter}={value}) failed where numpy gave up: "
+            f"{error}")
+        return
+    assert _finite(rendered), f"{name}({parameter}={value}) is not finite"

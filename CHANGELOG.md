@@ -99,6 +99,14 @@ Old names keep working and warn: see **Deprecated**.
   so: `localize2` answered a stereo one with four channels of nothing in
   particular, and no error at all. A sweep holds every routine that takes
   a sound to one answer or the other.
+- **A negative exponent or ear distance is refused, not rendered as
+  infinity.** A negative `alpha` -- the index that bends a transition, a
+  vibrato or a tremolo -- raised zero to a negative power, and every
+  glissando, vibrato, tremolo and exponential transition given one came
+  back holding infinity behind a warning. A negative `zeta`, the distance
+  between the ears, reached numpy as an array of negative length. Both
+  are refused, and a sweep holds every numeric parameter below zero to
+  working or being refused, as another already does at zero.
 
 ### Deprecated
 

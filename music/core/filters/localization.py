@@ -4,7 +4,7 @@ import numpy as np
 import warnings
 from numpy.typing import ArrayLike, NDArray
 from music.core.synths.notes import note, note_with_phase
-from music.utils import WAVEFORM_SINE
+from music.utils import WAVEFORM_SINE, _require_ears
 from ..._rate import resolve_rate
 
 
@@ -50,6 +50,10 @@ def localize(sonic_vector=None, theta=None, distance=0, x=.1, y=.01,
         If `sonic_vector` is not one-dimensional. A stereo sound reached
         numpy as a message about array dimensions; the routine places one
         source, so mix the channels down first.
+
+        If `zeta` is negative: it is the distance between the ears, and
+        below zero the interaural delay reached numpy as an array of
+        negative length.
 
     See Also
     --------
@@ -102,6 +106,7 @@ def localize(sonic_vector=None, theta=None, distance=0, x=.1, y=.01,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    _require_ears(zeta)
     sample_rate = resolve_rate(sample_rate)
     if sonic_vector is None:
         # At the rate being localized to, or the default note is the wrong
@@ -287,6 +292,10 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
         numpy as a broadcast error; the routine moves one source, so mix
         the channels down first.
 
+        If `zeta` is negative: it is the distance between the ears, and
+        below zero the interaural delay reached numpy as an array of
+        negative length.
+
     See Also
     --------
     localize : the same cues for a fixed position.
@@ -342,6 +351,7 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    _require_ears(zeta)
     sample_rate = resolve_rate(sample_rate)
     if sonic_vector is None:
         sonic_vector = note(sample_rate=sample_rate)
@@ -421,6 +431,10 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
         as four channels of nothing in particular, with no error at all;
         the routine places one source, so mix the channels down first.
 
+        If `zeta` is negative: it is the distance between the ears, and
+        below zero the interaural delay reached numpy as an array of
+        negative length.
+
     Returns
     -------
     s : ndarray
@@ -473,6 +487,7 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    _require_ears(zeta)
     sample_rate = resolve_rate(sample_rate)
     if method not in ("ifft", "brute"):
         raise ValueError("The only methods implemented are ifft and brute")

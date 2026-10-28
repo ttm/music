@@ -6,7 +6,7 @@ from numpy.typing import ArrayLike, NDArray
 from ..core.filters.localization import _localize_positions
 from ..core.synths.noises import noise
 from ..core.synths.notes import note
-from ..utils import WAVEFORM_SINE, _integrate_phase
+from ..utils import WAVEFORM_SINE, _integrate_phase, _require_ears
 from .._rate import resolve_rate
 
 __all__ = [
@@ -762,6 +762,10 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
         its position already, and moving one failed inside the
         localization with a message about broadcasting.
 
+        If `zeta` is negative: it is the distance between the ears, and
+        below zero the interaural delay reached numpy as an array of
+        negative length.
+
     Notes
     -----
     **The motion is physically present**: the cues are in the signal,
@@ -804,6 +808,7 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
            https://w3id.org/sstim/vocab#techSpatialAuditory
 
     """
+    _require_ears(zeta)
     sample_rate = resolve_rate(sample_rate)
     if motion_rate < 0:
         raise ValueError(

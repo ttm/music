@@ -112,6 +112,10 @@ def adsr(envelope_duration=2, attack_ms=20,
     TypeError
         If a keyword is neither a parameter nor one of the old names.
 
+        If `alpha` is negative and the transition exponential: it bends
+        a transition from zero, where a negative power has no finite
+        value, and the envelope came back holding infinity.
+
     See Also
     --------
     tremolo : An oscillation of loudness.

@@ -146,6 +146,13 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
         If sonic_vector is input, t is the sonic vector with the tremolo
         applied to it.
 
+    Raises
+    ------
+    ValueError
+        If `alpha` is negative: it bends a tremolo through zero,
+        where a negative power has no finite value, and the render
+        came back holding infinity behind a warning.
+
     See Also
     --------
     note_with_vibrato : A musical note with an oscillation of pitch.

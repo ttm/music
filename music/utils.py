@@ -652,10 +652,47 @@ def _signed_power(values, index):
     dependence on how a particular NumPy build rounds ``power``.
 
     See DISCREPANCIES.md for what the article does and does not say here.
+
+    A negative index is refused: the oscillation passes through zero,
+    where a negative power has no finite value, and it came back as
+    infinity behind a warning.
     """
+    if index < 0:
+        raise ValueError(
+            f"a distortion index bends an oscillation through zero, where a "
+            f"negative power has no finite value; got {index}")
     if index == 1:
         return values
     return np.sign(values) * np.abs(values) ** index
+
+
+def _bent(progress, alpha):
+    """`progress`, a ramp from 0 to 1, raised to the index `alpha`.
+
+    The article's ``(i/(Lambda-1))**alpha``, which makes a transition
+    slower or faster. The ramp starts at zero, where a negative power has
+    no finite value: every glissando and every exponential transition
+    given a negative `alpha` came back holding infinity behind a warning,
+    so it is refused.
+    """
+    if alpha < 0:
+        raise ValueError(
+            f"alpha bends a transition from zero, where a negative power "
+            f"has no finite value; got {alpha}")
+    return progress ** alpha
+
+
+def _require_ears(zeta):
+    """Refuse a negative distance between the ears.
+
+    Zero is a head with coincident ears, which renders the two channels
+    alike. Below zero, the interaural delay came out negative and reached
+    numpy as an array of negative length.
+    """
+    if zeta < 0:
+        raise ValueError(
+            f"zeta is the distance between the ears, in meters, and cannot "
+            f"be negative; got {zeta}")
 
 
 def _integrate_phase(increments, length, block=16384):

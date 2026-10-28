@@ -2,7 +2,8 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from ...utils import (WAVEFORM_SINE, WAVEFORM_TRIANGULAR,
-                      _integrate_phase, _signed_power, _transition_is_linear)
+                      _bent, _integrate_phase, _require_ears,
+                      _signed_power, _transition_is_linear)
 from ..filters.adsr import adsr
 from ..._rate import resolve_rate
 
@@ -138,6 +139,13 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     s : ndarray
         The PCM samples of the resulting sound.
 
+    Raises
+    ------
+    ValueError
+        If `zeta` is negative: it is the distance between the ears, and
+        below zero the interaural delay reached numpy as an array of
+        negative length.
+
     See Also
     --------
     note_with_vibrato_seq_localization : a note with arbitrary vibratos,
@@ -162,6 +170,7 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    _require_ears(zeta)
     sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
     if number_of_samples is None:
@@ -451,6 +460,10 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
         Also if `method` is not one of the four names above. Anything but
         ``"exp"`` used to sweep linearly, ``"exponential"`` included.
 
+        If `alpha` is negative: it bends a transition through zero,
+        where a negative power has no finite value, and the render
+        came back holding infinity behind a warning.
+
     See Also
     --------
     note : A basic musical note without vibrato or pitch transition.
@@ -481,7 +494,7 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
         _require_a_ratio(start_freq, end_freq, linear_option=True)
         if alpha != 1:
             f = start_freq * (end_freq / start_freq) ** \
-                ((samples / intervals) ** alpha)
+                _bent(samples / intervals, alpha)
         else:
             f = start_freq * (end_freq / start_freq) ** \
                 (samples / intervals)
@@ -538,6 +551,17 @@ def note_with_glissando_vibrato(
     s : ndarray
         A numpy array where each value is a PCM sample of the sound.
 
+    Raises
+    ------
+    ValueError
+        If `alpha` is negative: it bends a transition through zero,
+        where a negative power has no finite value, and the render
+        came back holding infinity behind a warning.
+
+        If `alpha_vibrato` is negative: it bends a vibrato through zero,
+        where a negative power has no finite value, and the render
+        came back holding infinity behind a warning.
+
     See Also
     --------
     note_with_glissando : A glissando.
@@ -576,7 +600,7 @@ def note_with_glissando_vibrato(
     intervals = max(lambda_pv - 1, 1)
     if alpha != 1 or alpha_vibrato != 1:
         f = start_freq * (end_freq / start_freq) ** \
-            ((samples / intervals) ** alpha) * 2. ** \
+            _bent(samples / intervals, alpha) * 2. ** \
             _signed_power(tv * max_pitch_dev / 12, alpha_vibrato)
     else:
         f = start_freq * (end_freq / start_freq) ** \
@@ -728,6 +752,14 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         none of the four names above. Anything but 'exp' used to move
         linearly, 'exponential' included.
 
+        If `alpha` is negative: it bends a transition or vibrato through zero,
+        where a negative power has no finite value, and the render
+        came back holding infinity behind a warning.
+
+        If `zeta` is negative: it is the distance between the ears, and
+        below zero the interaural delay reached numpy as an array of
+        negative length.
+
     See Also
     --------
     note_with_glissando_vibrato : A note with a glissando and a vibrato.
@@ -765,6 +797,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
+    _require_ears(zeta)
     sample_rate = resolve_rate(sample_rate)
     waveform_tables = tuple(tuple(np.asarray(table, dtype=float)
                                   for table in row)
@@ -784,7 +817,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         # A single sample sits at the start; it has no interval to divide by.
         intervals = max(lambda_ - 1, 1)
         if alpha[0][i] != 1:
-            f = f1 * (f2 / f1) ** ((samples / intervals) ** alpha[0][i])
+            f = f1 * (f2 / f1) ** _bent(samples / intervals, alpha[0][i])
         else:
             f = f1 * (f2 / f1) ** (samples / intervals)
         pitch_parts.append(f)
@@ -1018,6 +1051,21 @@ def note_with_two_vibratos_glissando(
     s : ndarray
         A numpy array where each value is a PCM sample of the sound.
 
+    Raises
+    ------
+    ValueError
+        If `alpha` is negative: it bends a transition through zero,
+        where a negative power has no finite value, and the render
+        came back holding infinity behind a warning.
+
+        If `alphav1` is negative: it bends a vibrato through zero,
+        where a negative power has no finite value, and the render
+        came back holding infinity behind a warning.
+
+        If `alphav2` is negative: it bends a vibrato through zero,
+        where a negative power has no finite value, and the render
+        came back holding infinity behind a warning.
+
     See Also
     --------
     note_with_glissando_vibrato : A note with a glissando and a vibrato.
@@ -1073,7 +1121,7 @@ def note_with_two_vibratos_glissando(
     intervals = max(lambda_pvv - 1, 1)
     if alpha != 1 or alphav1 != 1 or alphav2 != 1:
         f = start_freq * (end_freq / start_freq) ** \
-            ((samples / intervals) ** alpha) * 2. ** \
+            _bent(samples / intervals, alpha) * 2. ** \
             _signed_power(tv1 * max_pitch_dev / 12, alphav1) * 2. ** \
             _signed_power(tv2 * secondary_max_pitch_dev / 12, alphav2)
     else:
@@ -1152,6 +1200,10 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
     ValueError
         If a pitch endpoint is not positive.
 
+        If `alpha` is negative: it bends a transition or vibrato through zero,
+        where a negative power has no finite value, and the render
+        came back holding infinity behind a warning.
+
     See Also
     --------
     note_with_glissando_vibrato : A note with a glissando and a vibrato.
@@ -1182,7 +1234,7 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
         _require_a_ratio(f1, f2)
         intervals = max(lambda_ - 1, 1)
         if alpha[0][i] != 1:
-            f = f1 * (f2 / f1) ** ((samples / intervals) ** alpha[0][i])
+            f = f1 * (f2 / f1) ** _bent(samples / intervals, alpha[0][i])
         else:
             f = f1 * (f2 / f1) ** (samples / intervals)
         f_.append(f)
@@ -1274,6 +1326,13 @@ def note_with_vibrato(
     -------
     result : ndarray
         A numpy array where each value is a PCM sample of the note.
+
+    Raises
+    ------
+    ValueError
+        If `alpha` is negative: it bends a vibrato through zero,
+        where a negative power has no finite value, and the render
+        came back holding infinity behind a warning.
 
     See Also
     --------
@@ -1389,6 +1448,17 @@ def note_with_two_vibratos(
     -------
     s : ndarray
         A numpy array where each value is a PCM sample of the sound.
+
+    Raises
+    ------
+    ValueError
+        If `alphav1` is negative: it bends a vibrato through zero,
+        where a negative power has no finite value, and the render
+        came back holding infinity behind a warning.
+
+        If `alphav2` is negative: it bends a vibrato through zero,
+        where a negative power has no finite value, and the render
+        came back holding infinity behind a warning.
 
     See Also
     --------

@@ -3,7 +3,7 @@
 import numpy as np
 
 from ..._rate import resolve_rate
-from ...utils import _transition_is_linear, as_sonic_vector
+from ...utils import _bent, _transition_is_linear, as_sonic_vector
 
 
 def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
@@ -60,6 +60,10 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
         If `method` is not ``'lin'``, ``'linear'``, ``'exp'`` or
         ``'exponential'``.
 
+        If `alpha` is negative and the transition exponential: it bends
+        a transition from zero, where a negative power has no finite
+        value, and the envelope came back holding infinity.
+
     See Also
     --------
     louds : An envelope with an arbitrary number of transitions.
@@ -113,12 +117,12 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
     else:
         if to:
             if alpha != 1:
-                samples_ = (samples / n_) ** alpha
+                samples_ = _bent(samples / n_, alpha)
             else:
                 samples_ = (samples / n_)
         else:
             if alpha != 1:
-                samples_ = ((n_ - samples) / n_) ** alpha
+                samples_ = _bent((n_ - samples) / n_, alpha)
             else:
                 samples_ = ((n_ - samples) / n_)
         e = 10 ** (samples_ * trans_dev / 20)

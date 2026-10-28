@@ -436,3 +436,44 @@ def test_adsr_shapes_every_channel_of_a_stereo_sound_alike():
         shaped, stereo * adsr(number_of_samples=stereo.shape[1]))
     np.testing.assert_array_equal(shaped,
                                   music.adsr_stereo(sonic_vector=stereo))
+
+
+def _stage_lengths(*milliseconds, sample_rate=44100):
+    """Samples per stage, as adsr counts them."""
+    return [int(ms * sample_rate * 0.001) for ms in milliseconds]
+
+
+def test_each_stage_of_adsr_can_take_its_own_curve():
+    """The per-stage forms the docstring has offered since MASS, which
+    neither MASS nor this package implemented: a sequence reached numpy as
+    a broadcast error. Each stage now renders as the scalar call giving
+    that stage's values does."""
+    mixed = adsr(alpha=(2, 0.5, 3), db_dev=(-60, -40), to_zero_ms=(5, 10))
+    a, d, r = _stage_lengths(20, 20, 50)
+    np.testing.assert_allclose(
+        mixed[:a], adsr(alpha=2, db_dev=-60, to_zero_ms=5)[:a], rtol=1e-12)
+    np.testing.assert_allclose(mixed[a:a + d], adsr(alpha=0.5)[a:a + d],
+                               rtol=1e-12)
+    np.testing.assert_allclose(
+        mixed[-r:], adsr(alpha=3, db_dev=-40, to_zero_ms=10)[-r:],
+        rtol=1e-12)
+
+
+def test_one_value_in_a_sequence_is_the_scalar():
+    np.testing.assert_allclose(adsr(alpha=[2], db_dev=(-60,)),
+                               adsr(alpha=2, db_dev=-60), rtol=1e-12)
+
+
+@pytest.mark.parametrize("given", [{"alpha": (1, 2)}, {"alpha": [1, 2, 3, 4]},
+                                   {"db_dev": (-80, -60, -40)},
+                                   {"to_zero_ms": ()}])
+def test_adsr_refuses_values_for_the_wrong_number_of_stages(given):
+    with pytest.raises(ValueError, match="one value for every stage"):
+        adsr(**given)
+
+
+def test_adsr_stereo_takes_the_per_stage_values_too():
+    mono = adsr(alpha=(2, 0.5, 3), to_zero_ms=(5, 10))
+    np.testing.assert_array_equal(
+        music.adsr_stereo(alpha=(2, 0.5, 3), to_zero_ms=(5, 10)),
+        np.vstack((mono, mono)))

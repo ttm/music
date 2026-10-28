@@ -84,6 +84,13 @@ Old names keep working and warn: see **Deprecated**.
   logged a warning and returned without it. It now says what to install,
   and what is missing when it is PortAudio.
 - **`sing` returned 44.1 kHz audio whatever rate the caller worked at.**
+- **`adsr` takes a value for each of its stages, as its docstring has
+  said since MASS.** `alpha` may be three values, for the attack, the
+  decay and the release, and `db_dev` and `to_zero_ms` two, for the attack
+  and the release. Neither MASS nor this package implemented the forms
+  the documentation offered: a sequence reached numpy as a broadcast
+  error. A sequence of another length is refused, and a scalar renders
+  exactly as before.
 
 ### Deprecated
 

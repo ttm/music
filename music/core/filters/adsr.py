@@ -13,6 +13,27 @@ _RENAMED = {'attack_duration': 'attack_ms', 'decay_duration': 'decay_ms',
             'release_duration': 'release_ms', 'to_zero': 'to_zero_ms'}
 
 
+def _per_stage(value, stages, name):
+    """`value` for each of `stages` stages: one value for all, or one each.
+
+    The docstring has offered both forms since MASS, whose reference
+    passed whatever it was given straight through, so a sequence reached
+    numpy as a broadcast error there and here alike. A scalar is handed
+    back as it was given, which keeps every scalar envelope -- every row
+    of RECONCILIATION.md -- bit for bit what it was.
+    """
+    if np.ndim(value) == 0:
+        return (value,) * stages
+    values = np.asarray(value, dtype=np.float64).ravel()
+    if values.size == 1:
+        return (float(values[0]),) * stages
+    if values.size != stages:
+        raise ValueError(
+            f"{name} takes one value for every stage, or {stages}, one for "
+            f"each; got {values.size}")
+    return tuple(float(v) for v in values)
+
+
 def adsr(envelope_duration=2, attack_ms=20,
          decay_ms=20, sustain_level=-5,
          release_ms=50, transition="exp", alpha=1,
@@ -42,18 +63,18 @@ def adsr(envelope_duration=2, attack_ms=20,
         (linear loudness); "lin" or "linear" for linear transitions of
         amplitude.
     alpha : scalar or array_like
-        An index to make the exponential fade slower or faster [1]. Ignored it
-        transitions="linear" or alpha=1. If it is an array_like, it should
-        hold three values to be used in Attack, Decay and Release.
+        An index to make the exponential fade slower or faster [1]. Ignored if
+        transition="linear" or alpha=1. One value for every stage, or three:
+        for the Attack, the Decay and the Release.
     db_dev : scalar or array_like
         The decibels deviation to reach before using a linear fade to reach
-        zero amplitude. If it is an array_like, it should hold two values, one
-        for Attack and another for Release. Ignored if trans="linear".
+        zero amplitude. One value for both, or two: for the Attack and the
+        Release. Ignored if transition="linear".
     to_zero_ms : scalar or array_like
         The duration in milliseconds for linearly departing from zero in the
-        Attack and reaching the value of zero at the end of the Release. If it
-        is an array_like, it should hold two values, one for Attack and
-        another for Release. It's ignored if trans="linear".
+        Attack and reaching the value of zero at the end of the Release. One
+        value for both, or two: for the Attack and the Release. Ignored if
+        transition="linear".
     number_of_samples : integer or None
         The number of samples of the envelope. If given, envelope_duration
         is ignored, and zero is an envelope of no samples.
@@ -83,6 +104,11 @@ def adsr(envelope_duration=2, attack_ms=20,
         If `transition` is not one of the four names above. It is checked
         here because a stage of zero length never reaches :func:`fade` or
         :func:`loud`, so an envelope of no stages accepted any name.
+
+        If `alpha` holds other than one or three values, or `db_dev` or
+        `to_zero_ms` other than one or two. The per-stage forms were
+        documented since MASS and implemented in neither it nor here, so
+        a sequence reached numpy as a broadcast error.
     TypeError
         If a keyword is neither a parameter nor one of the old names.
 
@@ -106,6 +132,7 @@ def adsr(envelope_duration=2, attack_ms=20,
     >>> stereo = localize(note(duration=1))
     >>> adsr(sonic_vector=stereo).shape == stereo.shape   # each channel
     True
+    >>> soft_attack = adsr(alpha=(3, 1, 1), to_zero_ms=(5, 1))  # per stage
 
     Notes
     -----
@@ -124,6 +151,9 @@ def adsr(envelope_duration=2, attack_ms=20,
     release_ms = given.get('release_ms', release_ms)
     to_zero_ms = given.get('to_zero_ms', to_zero_ms)
     _transition_is_linear(transition, 'transition')
+    alpha_a, alpha_d, alpha_r = _per_stage(alpha, 3, 'alpha')
+    db_a, db_r = _per_stage(db_dev, 2, 'db_dev')
+    to_zero_a, to_zero_r = _per_stage(to_zero_ms, 2, 'to_zero_ms')
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
         # The length of a channel. len() counted a stereo sound's two
@@ -162,21 +192,21 @@ def adsr(envelope_duration=2, attack_ms=20,
     # end. This is why `AD` and `ADS` are no longer sample-exact rows in
     # RECONCILIATION.md.
     if lambda_a:
-        attack = fade(fade_out=0, method=transition, alpha=alpha, db=db_dev,
-                      perc=100 * to_zero_ms / attack_ms,
+        attack = fade(fade_out=0, method=transition, alpha=alpha_a, db=db_a,
+                      perc=100 * to_zero_a / attack_ms,
                       number_of_samples=lambda_a)
     else:
         attack = np.array([])
 
     decay = loud(trans_dev=sustain_level, method=transition,
-                 alpha=alpha, number_of_samples=lambda_d)
+                 alpha=alpha_d, number_of_samples=lambda_d)
 
     a_s = 10 ** (sustain_level / 20.)
     sustain = np.ones(lambda_adsr - (lambda_a + lambda_r + lambda_d)) * a_s
 
     if lambda_r:
-        release = fade(method=transition, alpha=alpha, db=db_dev,
-                       perc=100 * to_zero_ms / release_ms,
+        release = fade(method=transition, alpha=alpha_r, db=db_r,
+                       perc=100 * to_zero_r / release_ms,
                        number_of_samples=lambda_r) * a_s
     else:
         release = np.array([])
@@ -261,17 +291,17 @@ def adsr_stereo(duration=2, attack_ms=20, decay_ms=20,
         amplitude.
     alpha : scalar or array_like
         An index to make the exponential fade slower or faster. Ignored
-        if ``transition="linear"`` or ``alpha=1``. An array_like should
-        hold three values, for Attack, Decay and Release.
+        if ``transition="linear"`` or ``alpha=1``. One value for every
+        stage, or three: for the Attack, the Decay and the Release.
     db_dev : scalar or array_like
         The decibels deviation to reach before using a linear fade to
-        reach zero amplitude. An array_like should hold two values, for
-        Attack and Release. Ignored if ``transition="linear"``.
+        reach zero amplitude. One value for both, or two: for the Attack
+        and the Release. Ignored if ``transition="linear"``.
     to_zero_ms : scalar or array_like
         The duration in milliseconds for linearly departing from zero in
-        the Attack and reaching zero at the end of the Release. An
-        array_like should hold two values, for Attack and Release.
-        Ignored if ``transition="linear"``.
+        the Attack and reaching zero at the end of the Release. One value
+        for both, or two: for the Attack and the Release. Ignored if
+        ``transition="linear"``.
     number_of_samples : integer or None
         The number of samples of the envelope. If given, ``duration``
         is ignored, and zero is an envelope of no samples.
@@ -295,6 +325,9 @@ def adsr_stereo(duration=2, attack_ms=20, decay_ms=20,
 
     Raises
     ------
+    ValueError
+        As :func:`adsr` raises it: a `transition` it does not know, or a
+        per-stage value with the wrong number of stages.
     TypeError
         If a keyword is neither a parameter nor one of the old names.
 

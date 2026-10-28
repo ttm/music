@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import music
-from music._deprecation import renamed_arguments
+from music._deprecation import alias, renamed_arguments
 from test_public_api import ZERO_ARG_EXPORTS, _callable_with_defaults
 
 #: Each routine whose parameters were renamed, with the arguments it is
@@ -95,6 +95,29 @@ def test_renamed_arguments_maps_only_what_was_given():
     with pytest.raises(TypeError,
                        match=r"f\(\) got an unexpected keyword argument 'x'"):
         renamed_arguments("f", {"x": 1}, a="b")
+
+
+def test_alias_names_documents_and_warns():
+    """The package makes its aliases as it loads, which is before the
+    mutation audit switches a mutant in, so this one is made here."""
+    def documented(value):
+        """Its own documentation."""
+        return value
+
+    old = alias(documented, "old")
+    assert old.__name__ == old.__qualname__ == "old"
+    assert old.__doc__ == (
+        "Deprecated: another name for :func:`music.documented`, which to "
+        "call instead.\n\nIt warns when called and will be removed in a "
+        "major release. What follows is :func:`music.documented`'s own "
+        "documentation.\n\nIts own documentation.")
+    with pytest.warns(DeprecationWarning,
+                      match=r"^music\.old is deprecated; call "
+                            r"music\.documented, which it is another name "
+                            r"for$"):
+        assert old(2) == 2
+    assert alias(lambda: None, "bare").__doc__.endswith(
+        "own documentation.\n\n")
 
 
 @pytest.mark.parametrize("old,new", [("mix2", "mix_many"),

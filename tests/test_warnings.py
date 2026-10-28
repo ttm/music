@@ -8,6 +8,7 @@ to `convert_to_stereo`, `PlainChanges` calling `initialize_hunts`, and
 the warning was shown once, there, and hidden from every caller after.
 """
 
+import dis
 from pathlib import Path
 
 import numpy as np
@@ -49,8 +50,10 @@ ROUTES = {
 def test_a_warning_names_the_line_that_called_the_package(route, tmp_path,
                                                           recwarn):
     ROUTES[route](tmp_path)
+    lines = {line for _, line in dis.findlinestarts(ROUTES[route].__code__)}
     assert recwarn.list
-    assert {warning.filename for warning in recwarn} == {__file__}
+    assert [(warning.filename, warning.lineno in lines)
+            for warning in recwarn] == [(__file__, True)] * len(recwarn)
 
 
 def test_the_package_warns_only_through_its_helper():

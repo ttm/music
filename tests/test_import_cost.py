@@ -81,14 +81,34 @@ def test_without_sympy_building_a_structure_says_what_to_install():
         "except ImportError as exc:\n    print(exc)")
 
 
-def test_the_install_hint_is_given_in_this_process_too(monkeypatch):
-    """The subprocess tests above run where coverage cannot see them."""
-    for name in [name for name in sys.modules
-                 if name.startswith('sympy.')]:
-        monkeypatch.delitem(sys.modules, name)
-    monkeypatch.setitem(sys.modules, 'sympy', None)
-    with pytest.raises(ImportError, match=r"music\[structures\]"):
+@pytest.mark.parametrize("missing", ["not installed", "None in sys.modules"])
+def test_the_install_hint_is_given_in_this_process_too(monkeypatch, missing):
+    """The subprocess tests above run where coverage cannot see them.
+
+    Python names `sympy` as the module it could not find when sympy is
+    not installed, and `sympy.combinatorics` when a None in sys.modules
+    stands in for it.
+    """
+    if missing == "not installed":
+        real_import = builtins.__import__
+
+        def absent(name, *args, **kwargs):
+            if name.startswith('sympy'):
+                raise ModuleNotFoundError("No module named 'sympy'",
+                                          name='sympy')
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, '__import__', absent)
+    else:
+        for name in [name for name in sys.modules
+                     if name.startswith('sympy.')]:
+            monkeypatch.delitem(sys.modules, name)
+        monkeypatch.setitem(sys.modules, 'sympy', None)
+    with pytest.raises(ImportError) as raised:
         _sympy.combinatorics()
+    assert str(raised.value) == (
+        "the permutations and peals are built from sympy's permutation "
+        "groups: pip install 'music[structures]'")
 
 
 def test_a_sympy_that_is_there_and_broken_is_not_reported_as_missing(

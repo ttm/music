@@ -75,6 +75,11 @@ def test_a_rate_that_is_not_a_positive_whole_number_is_refused(rate):
     assert music.get_sample_rate() == 44100
 
 
+def test_one_sample_a_second_is_a_rate():
+    with music.set_sample_rate(1) as rate:
+        assert rate == music.get_sample_rate() == 1
+
+
 def test_a_numpy_integer_is_a_whole_number():
     with music.set_sample_rate(np.int64(RATE)) as rate:
         assert type(rate) is int

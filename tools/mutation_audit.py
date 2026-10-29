@@ -836,13 +836,19 @@ def main():
     # accepts it. `trill` accumulates samples in a while loop, so four of
     # its mutants run forever rather than returning a wrong answer, and
     # counting those as an incomplete run would fail every audit of that
-    # file. The categories below are the ones that really leave a mutant
-    # without a verdict.
+    # file. A mutant that crashes the interpreter is detected too: the
+    # singing resampler sizes its FFTs by arithmetic that, mutated, asks
+    # numpy for buffers it dies allocating. The categories below are the
+    # ones that really leave a mutant without a verdict.
     undecided = sum(value for key, value in stats.items()
-                    if key not in ('killed', 'survived', 'total', 'timeout'))
+                    if key not in ('killed', 'survived', 'total', 'timeout',
+                                   'segfault'))
     if stats.get('timeout'):
         print(f"{stats['timeout']} mutant(s) timed out; a mutant that hangs "
               f"is detected, not surviving")
+    if stats.get('segfault'):
+        print(f"{stats['segfault']} mutant(s) crashed the interpreter; a "
+              f"mutant that crashes is detected, not surviving")
     return 1 if undecided else 0
 
 

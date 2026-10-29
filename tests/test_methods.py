@@ -228,7 +228,10 @@ def _methods_taking_arguments():
                 continue
             for attribute, member in vars(base).items():
                 function = getattr(member, "__func__", member)
-                if (not attribute.startswith("_") and callable(function)
+                # isascii: the mutation audit keeps each method's mutants
+                # on its class, named with a "ǁ", which no method has.
+                if (not attribute.startswith("_") and attribute.isascii()
+                        and callable(function)
                         and not inspect.isclass(function)
                         and _arguments(function, required=False)):
                     yield f"{name}.{attribute}"

@@ -469,8 +469,20 @@ def test_one_value_in_a_sequence_is_the_scalar():
                                    {"db_dev": (-80, -60, -40)},
                                    {"to_zero_ms": ()}])
 def test_adsr_refuses_values_for_the_wrong_number_of_stages(given):
-    with pytest.raises(ValueError, match="one value for every stage"):
+    """By the name of the parameter given, which a match on the rest of
+    the words let go missing."""
+    with pytest.raises(ValueError, match=rf"^{list(given)[0]} takes one "
+                                         rf"value for every stage"):
         adsr(**given)
+
+
+@pytest.mark.parametrize("given", [(0, -5)])
+def test_adsr_refuses_a_release_to_zero_shorter_than_nothing(given):
+    """The release's to-zero alone: given to both stages, the attack's
+    was refused first, and this one never reached."""
+    with pytest.raises(ValueError, match=r"^to_zero_ms is a duration and "
+                                         r"cannot be negative; got -5\.0$"):
+        adsr(to_zero_ms=given)
 
 
 @pytest.mark.parametrize("stage", ["attack_ms", "decay_ms", "release_ms",
@@ -514,3 +526,21 @@ def test_a_seed_draws_the_same_room_and_leaves_numpy_alone():
     np.testing.assert_array_equal(np.random.get_state()[1], state[1])
     with pytest.raises(ValueError, match="seed must be a nonnegative"):
         music.reverb(seed=1.5)
+
+
+def test_a_cross_fade_takes_whole_numbers_as_samples():
+    """The copies it fades in place are floats; copies of whole numbers in
+    their own type could not hold a fade."""
+    first, second = list(range(1, 11)), list(range(10, 0, -1))
+    np.testing.assert_array_equal(
+        music.cross_fade(first, second, duration_ms=0.1),
+        music.cross_fade(np.array(first, dtype=float),
+                         np.array(second, dtype=float), duration_ms=0.1))
+
+
+def test_a_negative_tremolo_index_is_refused_by_its_name():
+    """The sweep below zero asks that a refusal contain the name, which
+    "XXalphaXX" does too."""
+    with pytest.raises(ValueError, match="^alpha is a distortion index"):
+        music.tremolo(alpha=-1)
+

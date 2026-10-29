@@ -14,6 +14,7 @@ routine that declares a rate of its own again.
 
 import ast
 import inspect
+import math
 import pathlib
 import threading
 
@@ -238,6 +239,55 @@ def test_a_sung_line_is_resampled_to_the_default_rate(rate, extra):
     assert np.abs(resampled).max() == pytest.approx(1)
 
 
+def _interpolated(line, rate):
+    """`line`, at 44,100 Hz, at `rate`, by trigonometric interpolation over
+    the length `_at_the_default_rate` pads it to: the kernel summed in
+    time, one cosine at a time, rather than the spectrum cut by FFT.
+
+    Every frequency below both Nyquist frequencies is kept whole. At the
+    lower one, when it is a bin of its own, half of it is kept when
+    lengthening -- it was its frequency and its negative at once -- and
+    all of it when shortening, for the same reason.
+    """
+    common = math.gcd(44100, rate)
+    blocks = -(-(len(line) + 4096) // (44100 // common))
+    length, scaled = blocks * 44100 // common, blocks * rate // common
+    count = round(len(line) * rate / 44100)
+    angle = 2 * np.pi * (np.arange(count)[:, None] * length / scaled
+                         - np.arange(len(line))[None, :]) / length
+    shorter = min(length, scaled)
+    kernel = np.ones_like(angle)
+    for k in range(1, (shorter - 1) // 2 + 1):
+        kernel += 2 * np.cos(k * angle)
+    if shorter % 2 == 0:
+        kernel += (1 if scaled > length else 2) * np.cos(shorter // 2 * angle)
+    interpolated = kernel @ line
+    return interpolated / np.abs(interpolated).max()
+
+
+@pytest.mark.parametrize("rate,samples", [
+    (48000, 200),    # longer, at an even length: its Nyquist bin splits
+    (48000, 150),    # longer, at an odd one, where there is none
+    (22050, 200),    # shorter, to an even length: the new last bin joins
+    (22050, 201),    # shorter, to an odd one
+    (11025, 199),
+    (8000, 200),
+])
+def test_resampling_keeps_every_frequency_both_rates_hold(rate, samples):
+    """White noise, which has a frequency at each Nyquist frequency.
+
+    A sine at 440 Hz, which the test above resamples, has nothing near
+    either, so the bins there could have been halved, doubled or dropped
+    without it noticing -- and a component at the new Nyquist frequency
+    did come out at half its amplitude when the line was shortened.
+    """
+    line = np.random.default_rng(samples).standard_normal(samples)
+    with music.set_sample_rate(rate):
+        resampled = perform._at_the_default_rate(line)
+    np.testing.assert_allclose(resampled, _interpolated(line, rate),
+                               atol=1e-9)
+
+
 def test_a_stereo_line_is_resampled_channel_by_channel():
     line = np.vstack((_sine(440, 0.2, 44100), _sine(660, 0.2, 44100)))
     with music.set_sample_rate(48000):
@@ -248,6 +298,17 @@ def test_a_stereo_line_is_resampled_channel_by_channel():
 def test_an_empty_line_stays_empty():
     with music.set_sample_rate(48000):
         assert perform._at_the_default_rate(np.zeros((2, 0))).shape == (2, 0)
+
+
+def test_the_psola_tremolo_is_at_the_singers_rate_whatever_the_default():
+    """A line is sung at 44,100 Hz and resampled at the end, so its
+    tremolo is at 44,100 Hz too, whichever rate is the default."""
+    from music.singing import psola
+
+    samples = np.ones(44100)
+    expected = psola._trembling(samples)
+    with music.set_sample_rate(48000):
+        np.testing.assert_array_equal(psola._trembling(samples), expected)
 
 
 def test_sing_hands_its_line_back_at_the_default_rate(monkeypatch):

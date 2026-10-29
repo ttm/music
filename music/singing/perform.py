@@ -281,17 +281,22 @@ def _at_the_default_rate(line):
     step, scaled_step = RATE // common, rate // common
     count = round(line.shape[-1] * rate / RATE)
     blocks = -(-(line.shape[-1] + 4096) // step)
-    spectrum = np.fft.rfft(line, blocks * step, axis=-1)
-    if rate > RATE and (blocks * step) % 2 == 0:
-        # The old Nyquist bin stood for both its frequency and its
-        # negative; in a longer spectrum those are two bins, each half.
-        spectrum[..., -1] *= 0.5
-    kept = min(spectrum.shape[-1], blocks * scaled_step // 2 + 1)
-    resized = np.zeros(line.shape[:-1] + (blocks * scaled_step // 2 + 1,),
+    length, scaled_length = blocks * step, blocks * scaled_step
+    spectrum = np.fft.rfft(line, length, axis=-1)
+    resized = np.zeros(line.shape[:-1] + (scaled_length // 2 + 1,),
                        dtype=complex)
+    kept = min(spectrum.shape[-1], resized.shape[-1])
     resized[..., :kept] = spectrum[..., :kept]
-    resampled = np.fft.irfft(resized, blocks * scaled_step,
-                             axis=-1)[..., :count]
+    # The last bin of a spectrum of even length is its Nyquist frequency,
+    # which stands for itself and its negative at once. Lengthened, that
+    # frequency is two bins, each half of it; shortened, the new last bin
+    # stands for the two that were there, its frequency and its negative,
+    # and a component there came out at half its amplitude.
+    if rate > RATE and length % 2 == 0:
+        resized[..., kept - 1] *= 0.5
+    elif rate < RATE and scaled_length % 2 == 0:
+        resized[..., -1] *= 2
+    resampled = np.fft.irfft(resized, scaled_length, axis=-1)[..., :count]
     peak = np.abs(resampled).max()
     return resampled / peak if peak else resampled
 

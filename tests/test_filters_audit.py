@@ -197,7 +197,13 @@ def test_reverb_asks_for_noise_through_its_sample_rate_nyquist(monkeypatch):
         "max_freq": 4000,
         "number_of_samples": 64,
         "sample_rate": 8000,
+        "seed": None,
     })]
+    # A seeded room seeds its noise from its own generator.
+    module.reverb(duration=0.01, first_phase_duration=0.002,
+                  noise_type="white", sample_rate=8000, seed=3)
+    seed = calls[-1][1]["seed"]
+    assert isinstance(seed, int) and 0 <= seed < 2 ** 63
 
 
 def test_reverb_uses_the_quadratic_probability_for_first_period_hits(

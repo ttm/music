@@ -130,8 +130,11 @@ def test_a_sympy_that_is_there_and_broken_is_not_reported_as_missing(
 
 def test_print_peal_says_what_to_install_without_its_colours(monkeypatch):
     monkeypatch.setitem(sys.modules, 'termcolor', None)
-    with pytest.raises(ImportError, match=r"music\[structures\]"):
+    with pytest.raises(ImportError) as raised:
         music.print_peal([[0, 1]])
+    assert str(raised.value) == (
+        "print_peal colours its bells with termcolor and colorama: "
+        "pip install 'music[structures]'")
 
 
 def test_printing_a_peal_leaves_standard_output_alone():

@@ -8,14 +8,20 @@ one namespace for the page, as a reader working down it would run them.
 A block that needs an extra the environment lacks is left out: SciPy for
 `render_oversampled`, and RDFLib for the whole SSTIM page. The SSTIM page
 reads a fixture by its path in the repository, so the scratch directory
-holds a copy at that path.
+holds a copy at that path. And it validates a description, which fetches
+SSTIM's release from the network the first time: the suite does not use
+the network, so a validator that passes stands in, and the page's own
+steps around it run. Conformance itself is checked where ``SSTIM_LIVE=1``
+lets the network be used, in `test_sstim_stimuli.py`.
 """
 
 import importlib.util
 import pathlib
 import re
 import shutil
+import sys
 import textwrap
+from types import SimpleNamespace
 
 import pytest
 
@@ -44,8 +50,11 @@ def test_the_page_has_the_blocks_this_test_thinks_it_has(page):
 
 @pytest.mark.parametrize("page", sorted(PAGES))
 def test_every_block_on_the_page_runs(page, tmp_path, monkeypatch):
-    if page == "sstim.rst" and not _has("rdflib"):
-        pytest.skip("the SSTIM page needs the sstim extra")
+    if page == "sstim.rst":
+        if not _has("rdflib"):
+            pytest.skip("the SSTIM page needs the sstim extra")
+        monkeypatch.setitem(sys.modules, "sstim", SimpleNamespace(
+            validate=lambda graph, **options: SimpleNamespace(ok=True)))
     fixture = pathlib.Path("tests") / "fixtures"
     shutil.copytree(pathlib.Path(__file__).parent / "fixtures",
                     tmp_path / fixture)

@@ -96,3 +96,37 @@ def test_the_doctest_blocks_produce_the_output_they_claim():
                                   f"tutorial-session-{index}", None, 0)
         runner.run(test)
     assert runner.failures == 0, f"{runner.failures} doctest failure(s)"
+
+
+def _cycles(sound):
+    """Where each rising zero crossing of `sound` falls, interpolated, and
+    the frequency of each cycle between two of them, at 44,100 Hz."""
+    import numpy as np
+
+    negative = np.signbit(sound)
+    crossings = np.where(~negative[1:] & negative[:-1])[0]
+    exact = crossings + sound[crossings] / (sound[crossings]
+                                            - sound[crossings + 1])
+    return exact, 44100 / np.diff(exact)
+
+
+def test_the_figures_the_tutorial_quotes_are_what_its_code_measures():
+    """Its prose quotes three measurements of the blocks beside it, and
+    nothing checked them: the glissando's midpoint said 441 Hz, where the
+    code measures 440.1."""
+    import numpy as np
+
+    import music
+
+    text = " ".join(TUTORIAL.read_text().split())
+    _, vibrato = _cycles(music.note_with_vibrato(
+        freq=440, duration=2, vibrato_freq=5, max_pitch_dev=2))
+    assert f"``{vibrato.min():.1f} .. {vibrato.max():.1f} Hz``" in text
+    distinct = len(np.unique(np.round(vibrato, 1)))
+    assert f"takes {distinct} distinct values, to a tenth of a hertz" in text
+
+    sweep = music.note_with_glissando(220, 880, duration=2, method="exp")
+    edges, glissando = _cycles(sweep)
+    halfway = glissando[np.searchsorted(edges, len(sweep) / 2) - 1]
+    assert f"it is at {halfway:.1f} Hz" in text
+

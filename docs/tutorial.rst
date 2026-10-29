@@ -181,9 +181,9 @@ interpolated zero crossings:
 
 which prints ``392.0 .. 493.9 Hz``. The model says the extremes should be
 440·2\ :sup:`±2/12`, which is 392.0 and 493.9 Hz. The rendered audio
-agrees to the last digit shown, and takes 617 distinct values along the
-way — it is not stepping between a handful of pitches, it is a continuous
-curve sampled at the audio rate.
+agrees to the last digit shown, and takes 617 distinct values, to a tenth
+of a hertz, along the way — it is not stepping between a handful of
+pitches, it is a continuous curve sampled at the audio rate.
 
 The same is true of a glissando. An exponential sweep from 220 Hz to
 880 Hz should pass through the geometric mean at its midpoint:
@@ -192,8 +192,8 @@ The same is true of a glissando. An exponential sweep from 220 Hz to
 
    g = music.note_with_glissando(220, 880, duration=2, method="exp")
 
-Measured at the halfway sample, it is at 441 Hz; the geometric mean of 220
-and 880 is 440.
+Measured over the cycle the halfway sample falls in, it is at 440.1 Hz; the
+geometric mean of 220 and 880 is 440.
 
 :func:`music.note_with_fm` (frequency modulation) and
 :func:`music.note_with_doppler` (a source moving past the listener, which
@@ -477,8 +477,8 @@ Nothing here is new; it is the pieces above composed:
        for freq in (392, 440, 493.88, 587.33)])
 
    # a quiet bed of pink noise underneath it, of exactly the same length
-   bed = music.loud(sonic_vector=music.noise("pink",
-                                             len(voice) / 44100)) * 0.05
+   bed = music.loud(sonic_vector=music.noise(
+       "pink", number_of_samples=len(voice))) * 0.05
 
    # mix them, then sweep the result across the stereo field
    piece = music.localize_linear(music.mix(voice, bed),

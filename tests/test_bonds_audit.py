@@ -94,6 +94,19 @@ def test_a_render_fades_each_note_at_its_own_rate():
         bonds.render([220], fades_ms=(5,))
 
 
+def test_a_render_fades_by_twenty_milliseconds_and_at_one_end_alone():
+    """The default the docstring gives, and a fade at one end only, which
+    must not skip the fades for the end that has none."""
+    bonds = Bonds(vibrato_freq=5)
+    np.testing.assert_array_equal(bonds.render([220, 277], duration=0.3),
+                                  bonds.render([220, 277], duration=0.3,
+                                               fades_ms=20))
+    np.testing.assert_array_equal(
+        bonds.render([220], duration=0.3, fades_ms=(0, 20)),
+        music.adsr(sonic_vector=bonds.note(220, duration=0.3),
+                   attack_ms=0, sustain_level=0, release_ms=20))
+
+
 def test_a_render_of_nothing_says_so():
     with pytest.raises(ValueError, match="^freqs is empty, and render needs "
                        "at least one frequency$"):

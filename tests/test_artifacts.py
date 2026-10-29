@@ -402,6 +402,23 @@ def test_the_scale_the_readme_renders_does_not_click(tmp_path, monkeypatch):
     assert not clicks(music.horizontal_stack(*namespace["scale"]))
 
 
+@pytest.mark.parametrize("example, written", [
+    ("chromatic_scale", "chromatic_scale.wav"),
+    ("penta_effects", "penta_effects.wav"),
+])
+def test_the_examples_that_join_notes_do_not_click(example, written,
+                                                   tmp_path, monkeypatch):
+    """They joined raw notes, nine clicks in the scale and 205 in the
+    pentatonic effects, under a README that opens by saying why that
+    clicks. Each note is shaped before the join now."""
+    import runpy
+
+    monkeypatch.chdir(tmp_path)
+    runpy.run_path(str(pathlib.Path(__file__).parent.parent / "examples"
+                       / f"{example}.py"))
+    assert not clicks(music.read_audio(str(tmp_path / written)))
+
+
 def test_the_melody_the_tutorial_renders_does_not_click(tmp_path,
                                                         monkeypatch):
     """The same, for the tutorial's first sequence of notes.

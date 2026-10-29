@@ -23,7 +23,11 @@ sonic_vector = []
 for note in scale:
     sound = music.core.synths.note(freq=note,
                                    duration=0.4)
-    sonic_vector.append(sound)
+    # Each note shaped before the notes are joined: a note ends wherever
+    # its phase lands and the next opens at the bottom of its table, so
+    # raw notes joined end to end click. The envelope runs each to
+    # silence at both ends.
+    sonic_vector.append(music.adsr(sonic_vector=sound))
 
 stack = music.utils.horizontal_stack(*sonic_vector)
 

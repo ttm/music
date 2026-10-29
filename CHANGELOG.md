@@ -240,6 +240,10 @@ Old names keep working and warn: see **Deprecated**.
   pointed at another file; `legacy` holds three synthesizer classes, not
   only pieces; and `penta_effects` glides each note up 30 Hz where the
   README said "with pitch".
+- **`chromatic_scale` and `penta_effects` shape each note before joining
+  them,** as the README's own scale does. They joined raw notes, nine
+  clicks in the one and 205 in the other, under a README that opens by
+  saying why that clicks; a test now runs both and counts none.
 - **The Zenodo record's release notes keep the bold of a headline that
   opens with code.** The sync converted bold piece by piece between code
   spans, so a headline that is bold around one, as the one on

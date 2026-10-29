@@ -226,11 +226,15 @@ Old names keep working and warn: see **Deprecated**.
 - **Every two numeric parameters of an export move together,** to zero
   or a thousandth of their defaults, where the sweeps had moved one at a
   time. That found `bandlimited_note`'s fractional `table_size`.
-- **Every code block in the README runs,** in order and in one
-  namespace, as the tutorial's do; only the first had been run, for the
-  clicks between its notes. The singing block is left to CI's singing
-  job, and the KEMAR measurements, which the suite does not fetch, are
-  two short responses.
+- **Every code block in the README and in the documentation's pages
+  runs,** in order and in one namespace a page, as the tutorial's do;
+  only the README's first had been run, for the clicks between its
+  notes, and the fifteen in the band-limited and SSTIM guides and on the
+  front page not at all. The singing block is left to CI's singing job,
+  and the KEMAR measurements, which the suite does not fetch, are two
+  short responses.
+- **Every docstring keeps its sections in numpydoc's order,** which
+  forty-three did not, the Examples mostly before the Notes.
 
 ### Maintenance
 

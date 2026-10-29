@@ -150,3 +150,33 @@ def test_a_routine_that_raises_says_so(name):
     doc = inspect.getdoc(obj) or ''
     assert _section(doc, 'Raises') is not None, (
         f'{name} raises ValueError and documents no Raises section')
+
+
+#: numpydoc's order for the sections it knows.
+SECTION_ORDER = ("Parameters", "Attributes", "Methods", "Returns", "Yields",
+                 "Receives", "Other Parameters", "Raises", "Warns",
+                 "Warnings", "See Also", "Notes", "References", "Examples")
+
+
+def test_every_docstring_has_its_sections_in_numpydocs_order():
+    """Forty-three had another order, the Examples mostly before the
+    Notes. numpydoc renders the reference in its own order whatever the
+    source says, so only help() and the source showed it, and nothing
+    kept a new docstring from adding to them."""
+    import ast
+    import pathlib
+    import re
+
+    out_of_order = []
+    for path in sorted(pathlib.Path(music.__file__).parent.rglob("*.py")):
+        for node in ast.walk(ast.parse(path.read_text())):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef,
+                                     ast.ClassDef)):
+                continue
+            doc = ast.get_docstring(node) or ""
+            ranks = [SECTION_ORDER.index(title) for title in re.findall(
+                r"^([A-Z][A-Za-z ]+)\n-{3,}$", doc, re.M)
+                if title in SECTION_ORDER]
+            if ranks != sorted(ranks):
+                out_of_order.append(f"{path.name}:{node.lineno} {node.name}")
+    assert not out_of_order

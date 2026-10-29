@@ -42,8 +42,8 @@ matter assert the *samples* against the equation the routine documents.
 That is not an aspiration; it is the existing practice, and there is a lot of
 it to read before writing more:
 
-- [`RECONCILIATION.md`](RECONCILIATION.md) compares every routine with the
-  MASS reference implementation, sample for sample.
+- [`RECONCILIATION.md`](RECONCILIATION.md) compares each routine the MASS
+  reference implements with this package's, sample for sample.
 - [`tests/test_article.py`](tests/test_article.py) checks routines against the
   article's numbered equations, citing each by its LaTeX label.
 - [`DISCREPANCIES.md`](DISCREPANCIES.md) records where the article, the
@@ -56,7 +56,9 @@ tell you what is already covered.
 ## Examples are tests
 
 `--doctest-modules` is on, so every `>>>` in a docstring is executed. An
-example that does not run fails the build.
+example that does not run fails the build. So does a code block in the
+README or in a page of the documentation: the tests run every one, in
+order, as a reader working down the page would.
 
 This matters more than it sounds. Six of the thirty examples added most
 recently were wrong when first written, because they were guesses about what a
@@ -135,7 +137,9 @@ package's warnings, and fails if any other module calls `warnings.warn`.
 ## Style
 
 - Docstrings are [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html),
-  and `sphinx-build -W` fails on ones it cannot parse.
+  and `sphinx-build -W` fails on ones it cannot parse. Their sections come
+  in numpydoc's order -- Parameters, Returns, Raises, See Also, Notes,
+  References, Examples -- which a test checks.
 - Code follows [PEP 8](https://peps.python.org/pep-0008/), 79 columns.
 - Comments explain *why*, not *what*. A comment that restates the line above it
   is noise; a comment recording why an obvious approach was rejected is the

@@ -97,7 +97,8 @@ def normalize_stereo(sonic_vector: ArrayLike, remove_bias: bool = True,
     normalize_sep : boolean
         Set to True if each channel should be normalized separately.
         If False (default), the arrays will be rescaled in the same proportion
-        (preserves loudness proportion).
+        (preserves loudness proportion). A channel that does not move is
+        silence either way.
 
     Returns
     -------
@@ -152,14 +153,17 @@ def normalize_stereo(sonic_vector: ArrayLike, remove_bias: bool = True,
                 max(sv_normalized.max(), -sv_normalized.min())
             )
     else:
-        amplitude_ch_1 = sv_copy[0].max() - sv_copy[0].min()
-        amplitude_ch_2 = sv_copy[1].max() - sv_copy[1].min()
         if normalize_sep:
-            sv_copy[0] = _scaled(sv_copy[0] - sv_copy[0].min(),
-                                 amplitude_ch_1)
-            sv_copy[1] = _scaled(sv_copy[1] - sv_copy[1].min(),
-                                 amplitude_ch_2)
-            sv_normalized = sv_copy * 2 - 1
+            for channel in (0, 1):
+                values = sv_copy[channel]
+                spread = values.max() - values.min()
+                # A channel that does not move is silence, as a sound that
+                # does not move is to normalize_mono. Mapped onto [-1, 1]
+                # it sat at -1: a silent channel became a full-scale
+                # offset.
+                sv_copy[channel] = ((values - values.min()) / spread * 2 - 1
+                                    if spread else 0)
+            sv_normalized = sv_copy
         else:
             # A shared affine map needs the combined range: individually
             # narrow channels can still have widely separated offsets.

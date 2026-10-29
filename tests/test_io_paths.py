@@ -228,7 +228,21 @@ def test_an_encoding_the_reader_does_not_support_is_reported(tmp_path):
     sf.write(str(path), np.zeros(64, dtype=np.int16), 8000,
              subtype="IMA_ADPCM")
 
-    with pytest.raises(ValueError, match="unsupported WAV encoding"):
+    with pytest.raises(ValueError, match="unsupported WAV encoding: .* is "
+                                         "IMA_ADPCM, which has no full "
+                                         "scale"):
+        music.read_audio(str(path))
+
+
+@pytest.mark.skipif("OGG" not in sf.available_formats(),
+                    reason="this libsndfile writes no Ogg")
+def test_an_encoding_with_no_full_scale_is_named_with_its_container(
+        tmp_path):
+    """It was called a WAV encoding whatever the file was."""
+    path = tmp_path / "odd.ogg"
+    sf.write(str(path), np.zeros(4410), 44100, format="OGG",
+             subtype="VORBIS")
+    with pytest.raises(ValueError, match="unsupported OGG encoding"):
         music.read_audio(str(path))
 
 

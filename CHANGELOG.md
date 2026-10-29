@@ -21,6 +21,8 @@ says so when it is met:
   read: a call that passed 'circ' or 'exp' rendered linear ramps and now
   renders the law it named. The default is now 'lin', which a call that
   passed none got, so it renders as before.
+- `mix_stereo(sound)` returns the sound in stereo. Since a cleanup in
+  2024 it returned it mixed with itself, at twice its amplitude.
 
 Old names keep working and warn: see **Deprecated**.
 
@@ -152,6 +154,34 @@ Old names keep working and warn: see **Deprecated**.
 - **`bandlimited_note` refuses a fractional `table_size`,** which reached
   numpy's FFT as a `TypeError`, and takes a whole one written as a
   float, which did too.
+- **`mix_stereo` given one sound returned it doubled.** Its second sound
+  defaulted to an empty one, padded to the first's length, until a
+  cleanup in 2024 made the default `None` and put the first sound in its
+  place; a test then pinned the doubling. One sound comes back as it
+  was, in stereo.
+- **`mix_many` mixes stereo sounds.** It measured each with `len()`,
+  which counts a stereo sound's channels, so stereo sounds of different
+  lengths, or one with a mono sound, failed in numpy, and an empty list
+  in Python's `max()`; `horizontal_stack()` with nothing failed in
+  numpy. Mono sounds join stereo ones in both channels, offsets and
+  padding run along the samples, and no sounds are no samples.
+- **`normalize_stereo` turned a silent channel into a full-scale
+  offset** when it normalized the channels apart without removing their
+  bias: mapped onto [-1, 1] by its own range, which is none, the channel
+  sat at -1. It stays silent.
+- **What the converters could not convert is refused.**
+  `rhythm_to_durations` divided by zero for a frequency of zero or a
+  tuplet whose parts came to nothing, returned a negative duration as
+  negative seconds, and dropped a tuplet given its span alone, with the
+  time it spans. `amp_to_db` gave NaN for a negative ratio behind
+  numpy's warning, and gives minus infinity for zero without one.
+  `convert_to_stereo` failed on a number as an `IndexError` and took a
+  third axis for channels.
+- **The writers refuse fades they cannot apply.** One value in a
+  sequence for `fades_ms` failed as an `IndexError`, a third was
+  ignored, and a negative one was refused in words about an `attack_ms`
+  the caller never gave. `read_audio` called an encoding it cannot read
+  a WAV encoding, whatever the file was.
 
 ### Deprecated
 

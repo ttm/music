@@ -140,3 +140,16 @@ def test_full_scale_itself_is_written(tmp_path):
     music.write_wav_mono(np.array([-1.0, 0.0, 1.0]), path, normalize=False)
     np.testing.assert_allclose(music.read_audio(path), [-1, 0, 1],
                                atol=2 ** -15)
+
+
+@pytest.mark.parametrize("fades", [-5, (10,), (10, 20, 30), (10, -20)])
+@pytest.mark.parametrize("writer", ["write_wav_mono", "write_wav_stereo",
+                                    "write_audio"])
+def test_the_writers_refuse_fades_they_cannot_apply(tmp_path, writer,
+                                                    fades):
+    """One value in a sequence failed as an IndexError, a third was
+    ignored, and a negative one was refused in words about an `attack_ms`
+    nobody gave."""
+    with pytest.raises(ValueError, match="fades_ms is milliseconds of fade"):
+        getattr(music, writer)(music.note(duration=0.1),
+                               str(tmp_path / "faded.wav"), fades_ms=fades)

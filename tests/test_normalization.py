@@ -110,6 +110,15 @@ def test_stereo_without_bias_removal_separately():
 
 
 @pytest.mark.parametrize("remove_bias", [True, False])
+def test_a_silent_channel_stays_silent_when_normalized_apart(remove_bias):
+    """Mapped onto [-1, 1] by its own range, which is none, a silent
+    channel sat at -1: a full-scale offset where there was nothing."""
+    out = normalize_stereo([[0.3, 0.3, 0.3], [0.0, 1.0, 2.0]],
+                           remove_bias=remove_bias, normalize_sep=True)
+    np.testing.assert_array_equal(out, [[0, 0, 0], [-1, 0, 1]])
+
+
+@pytest.mark.parametrize("remove_bias", [True, False])
 @pytest.mark.parametrize("normalize_sep", [True, False])
 def test_stereo_always_lands_inside_full_scale(remove_bias, normalize_sep):
     rng = np.random.default_rng(0)

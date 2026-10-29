@@ -74,7 +74,7 @@ def test_convert_to_stereo_sums_integer_pcm_without_overflow():
 def test_mix_stereo_sums_integer_pcm_without_overflow():
     mono = np.array([20000, -20000], dtype=np.int16)
 
-    converted = utils.mix_stereo(mono)
+    converted = utils.mix_stereo(mono, mono)
 
     assert converted.dtype == np.float64
     np.testing.assert_array_equal(
@@ -471,3 +471,22 @@ def test_a_single_channel_row_becomes_two_channels():
     row = np.array([[.1, .2, .3]])
     np.testing.assert_array_equal(utils.convert_to_stereo(row),
                                   [[.1, .2, .3], [.1, .2, .3]])
+
+
+def test_a_ratio_of_zero_is_minus_infinity_decibels_and_a_negative_none():
+    """Zero came back as minus infinity behind numpy's warning about a
+    logarithm of zero, and a negative ratio as NaN behind another."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert utils.amp_to_db(0) == -np.inf
+    for ratio in (-1, np.array([1, -1])):
+        with pytest.raises(ValueError, match="never negative"):
+            utils.amp_to_db(ratio)
+
+
+@pytest.mark.parametrize("shape", [(), (2, 2, 3)])
+def test_convert_to_stereo_refuses_what_is_not_a_sound(shape):
+    """A number failed as an IndexError, and a third axis was taken for
+    channels."""
+    with pytest.raises(ValueError, match="convert_to_stereo takes a mono"):
+        utils.convert_to_stereo(np.zeros(shape))

@@ -207,9 +207,27 @@ def test_rhythm_refuses_a_negative_total_duration():
         rhythm_to_durations(durations=[1], total_duration=-1)
 
 
-def test_rhythm_refuses_frequencies_that_cancel_to_no_duration():
-    with pytest.raises(ValueError, match="frequencies cannot distribute"):
-        rhythm_to_durations(freqs=[1, -1], total_duration=4)
+@pytest.mark.parametrize("freqs", [[1, -1], [4, 0], [[2, 3, 0]]])
+def test_rhythm_refuses_a_frequency_that_is_not_positive(freqs):
+    """[1, -1] cancelled to no duration, which was refused; a zero
+    failed dividing by zero."""
+    with pytest.raises(ValueError,
+                       match="an entry of freqs must be positive"):
+        rhythm_to_durations(freqs=freqs, total_duration=4)
+
+
+@pytest.mark.parametrize("durations,refusal", [
+    ([1, -1], "an entry of durations must be zero or more"),
+    ([4, [2, 0, 0]], "the parts of a tuplet in durations come to nothing"),
+    ([4, [2]], r"a tuplet in durations is its span and the parts it is "
+               r"divided into; got \[2\]"),
+])
+def test_rhythm_refuses_what_has_no_duration_to_give(durations, refusal):
+    """Parts summing to zero failed dividing by zero, a negative
+    duration came back negative, and a cell of its span alone was dropped
+    with the time it spans."""
+    with pytest.raises(ValueError, match=refusal):
+        rhythm_to_durations(durations=durations)
 
 
 def test_empty_rhythms_stay_empty_when_total_duration_is_given():

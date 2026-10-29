@@ -150,6 +150,7 @@ def horizontal_stack(*arrays: ArrayLike) -> NDArray[np.float64]:
     -------
     ndarray
         A numpy array representing the horizontal stack of input arrays.
+        No arrays stack to no samples.
 
     Examples
     --------
@@ -161,6 +162,11 @@ def horizontal_stack(*arrays: ArrayLike) -> NDArray[np.float64]:
     >>> stacked_array.shape
     (2, 9)
     """
+    if not arrays:
+        # Nothing to stack is nothing, as a sound of no samples is; numpy
+        # said it needed at least one array to concatenate.
+        return np.zeros(0)
+
     # Initialize a flag to indicate whether stereo data is present
     stereo_present = False
 
@@ -229,7 +235,14 @@ def amp_to_db(amplitude_difference: float) -> float:
     -------
     float
         The difference in decibels corresponding to the input difference
-        in amplitude.
+        in amplitude. A ratio of zero is minus infinity decibels.
+
+    Raises
+    ------
+    ValueError
+        If the ratio is negative, which no number of decibels is. It came
+        back as NaN behind numpy's warning, and zero as minus infinity
+        behind another.
 
     Examples
     --------
@@ -237,8 +250,15 @@ def amp_to_db(amplitude_difference: float) -> float:
     6.020599913279624
     >>> float(amp_to_db(0.5))
     -6.020599913279624
+    >>> float(amp_to_db(0))
+    -inf
     """
-    return 20. * np.log10(amplitude_difference)
+    if np.any(np.asarray(amplitude_difference) < 0):
+        raise ValueError(
+            f"amplitude_difference is a ratio of amplitudes, which is never "
+            f"negative; got {amplitude_difference}")
+    with np.errstate(divide='ignore'):
+        return 20. * np.log10(amplitude_difference)
 
 
 def hz_to_midi(hertz_value: float) -> np.float64:
@@ -256,6 +276,10 @@ def hz_to_midi(hertz_value: float) -> np.float64:
     -------
     numpy.float64
         The MIDI note number corresponding to the input frequency value.
+        A frequency of zero or below, which has no pitch, is taken as the
+        smallest positive float, a pitch near -680, far below hearing:
+        an array of frequencies with silent frames at 0 Hz converts
+        without numpy's warning about a logarithm of zero.
 
     Examples
     --------
@@ -282,7 +306,7 @@ def midi_to_hz(midi_value: float) -> float:
     Returns
     -------
     float
-        The frequency value in Hertz corresponding to the input MIDI not
+        The frequency value in Hertz corresponding to the input MIDI note
         number.
 
     Examples
@@ -434,18 +458,17 @@ def mix_stereo(
 ) -> np.ndarray:
     """Mixes two stereo sonic vectors.
 
-    This function mixes two stereo sonic vectors. If only one sonic vector is
-    provided, it is duplicated to create a stereo mix. Optionally, the shorter
-    sonic vector can be padded with zeros to match the length of the longer
-    sonic vector before mixing.
+    This function mixes two stereo sonic vectors. A mono one is put in both
+    channels first, and the shorter is padded with zeros to the length of
+    the longer.
 
     Parameters
     ----------
     first_sonic_vector : ndarray
         The first stereo sonic vector to mix.
     second_sonic_vector : ndarray, optional
-        The second stereo sonic vector to mix, by default None. If not
-        provided, the first sonic vector is duplicated to create a stereo mix.
+        The second stereo sonic vector to mix, by default None: nothing,
+        so the first comes back in stereo as it was.
     end : bool, optional
         If False, both sounds start together and the shorter is padded at
         the end. If True, both sounds end together and the shorter is padded
@@ -460,6 +483,10 @@ def mix_stereo(
     -----
     If `second_sonic_vector` is not provided, the `end` parameter is ignored.
 
+    Given one sound, this returned it mixed with itself, at twice its
+    amplitude: the default was the empty list, padded to the first
+    sound's length, until a cleanup in 2024 made it None and put the first
+    sound in its place.
 
     Examples
     --------
@@ -476,7 +503,7 @@ def mix_stereo(
     if first_sonic_vector.ndim != 2:
         first_sonic_vector = np.array((first_sonic_vector, first_sonic_vector))
     if second_sonic_vector is None:
-        second_sonic_vector = first_sonic_vector
+        second_sonic_vector = np.zeros((2, 0))
     else:
         second_sonic_vector = np.asarray(second_sonic_vector,
                                          dtype=np.float64)
@@ -569,6 +596,12 @@ def convert_to_stereo(sound_vector: ArrayLike) -> NDArray[np.float64]:
         format. The first row corresponds to the left channel, and the second
         row corresponds to the right channel.
 
+    Raises
+    ------
+    ValueError
+        If the sound has no dimensions or more than two: a number failed
+        as an ``IndexError``, and a third axis was taken for channels.
+
     Examples
     --------
     >>> mono_vector = np.array([0.1, 0.2, 0.3, 0.4])
@@ -579,6 +612,10 @@ def convert_to_stereo(sound_vector: ArrayLike) -> NDArray[np.float64]:
     # Keep channel sums in floating-point PCM even when the input is integer
     # data; adding extra channels in an integer dtype can overflow.
     sound_array = np.array(sound_vector, dtype=np.float64)
+    if sound_array.ndim not in (1, 2):
+        raise ValueError(
+            f"convert_to_stereo takes a mono sound, or one sound's "
+            f"channels; got an array of shape {sound_array.shape}")
 
     # Check the shape of the input array
     if len(sound_array.shape) == 1:
@@ -1098,7 +1135,8 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=None):
     Parameters
     ----------
     sonic_vectors : list of sonic_arrays
-        The sonic vectors to be summed.
+        The sonic vectors to be summed, mono or stereo. If any is stereo,
+        each mono one is put in both channels.
     end : boolean
         If True, sync the final samples.
         If False (default) sync the initial samples.
@@ -1113,7 +1151,7 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=None):
     -------
     S : ndarray
         A numpy array where each value is a PCM sample of
-        the resulting sound.
+        the resulting sound. No sounds mix to no samples.
 
     Examples
     --------
@@ -1131,27 +1169,30 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=None):
 
     """
     sample_rate = resolve_rate(sample_rate)
-    sonic_vectors = [np.asarray(s) for s in sonic_vectors]
+    sonic_vectors = [np.asarray(s, dtype=np.float64) for s in sonic_vectors]
+    if not sonic_vectors:
+        # Python's max() said its argument was empty.
+        return np.zeros(0)
+    # Each sound's length is its last axis. len() counted a stereo sound's
+    # channels, so stereo sounds of different lengths, or one with a mono
+    # sound, failed in numpy, and two of one length mixed by accident.
+    if any(s.ndim == 2 for s in sonic_vectors):
+        sonic_vectors = [convert_to_stereo(s) for s in sonic_vectors]
+
+    def padded(sound, samples, before):
+        pad = np.zeros(sound.shape[:-1] + (samples,))
+        return np.concatenate((pad, sound) if before else (sound, pad),
+                              axis=-1)
 
     if offset:
         for i, off in enumerate(offset):
             if off:
-                pad = np.zeros(int(off * sample_rate))
-                sonic_vectors[i] = np.hstack((pad, sonic_vectors[i]))
+                sonic_vectors[i] = padded(sonic_vectors[i],
+                                          int(off * sample_rate), True)
 
-    max_len = max(len(s) for s in sonic_vectors)
-    aligned = []
-    for s in sonic_vectors:
-        pad_len = max_len - len(s)
-        if pad_len:
-            pad = np.zeros(pad_len)
-            if end:
-                s = np.hstack((pad, s))
-            else:
-                s = np.hstack((s, pad))
-        aligned.append(s)
-
-    return np.sum(aligned, axis=0)
+    max_len = max(s.shape[-1] for s in sonic_vectors)
+    return np.sum([padded(s, max_len - s.shape[-1], end)
+                   for s in sonic_vectors], axis=0)
 
 
 #: The name this had while it was the second mixer rather than the general
@@ -1374,6 +1415,12 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
         "not supplied" here, the same as ``bpm`` and ``total_duration``
         being absent, and the routine then divided ``None`` by a sum.
 
+        If an entry of ``durations`` is negative, or of ``freqs`` is not
+        positive, or a cell for a tuplet has no parts or parts that come
+        to nothing. A frequency of zero, and parts summing to zero, failed
+        dividing by zero; a negative duration came back negative; and a
+        cell of its span alone was dropped, its time with it.
+
     Examples
     --------
     >>> dt = [4, 2, 2, 4, 1,1,1,1, 2, 2, 4]
@@ -1437,6 +1484,23 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
 
     """
     durations = tuple(durations)
+    name, entries = (("freqs", tuple(freqs)) if freqs is not None
+                     else ("durations", durations))
+    for entry in entries:
+        cell = (list(entry) if isinstance(entry, (list, tuple, np.ndarray))
+                else None)
+        values = cell if cell is not None else [entry]
+        if cell is not None and len(cell) < 2:
+            raise ValueError(
+                f"a tuplet in {name} is its span and the parts it is "
+                f"divided into; got {cell}")
+        if min(values) < 0 or (name == "freqs" and min(values) == 0):
+            raise ValueError(
+                f"{name} holds {entry}, and an entry of {name} must be "
+                f"{'positive' if name == 'freqs' else 'zero or more'}")
+        if cell is not None and sum(cell[1:]) == 0:
+            raise ValueError(
+                f"the parts of a tuplet in {name} come to nothing: {cell}")
     if total_duration is not None:
         if total_duration < 0:
             raise ValueError("total_duration must not be negative")
@@ -1460,9 +1524,7 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
                      else 1 / i[0] for i in freqs]
             if not durs_:
                 return durs
-            if sum(durs_) == 0:
-                raise ValueError(
-                    "frequencies cannot distribute total_duration evenly")
+            # Positive, each of them, so their sum is too.
             dur = total_duration / sum(durs_)
         for d in freqs:
             if isinstance(d, (list, tuple, np.ndarray)):

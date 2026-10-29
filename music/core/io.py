@@ -76,10 +76,19 @@ def _fade_pair(fades: Sequence[int] | int) -> tuple[int, int]:
 
     A scalar applies the same duration to both ends.  np.ndim is used rather
     than isinstance because numpy integer scalars do not subclass int.
+
+    One value in a sequence failed as an ``IndexError``, a third was
+    ignored, and a negative one was refused by :func:`adsr` in words about
+    an ``attack_ms`` the caller never gave, so they are refused here.
     """
-    if np.ndim(fades) == 0:
-        return int(fades), int(fades)  # type: ignore[arg-type]
-    return int(fades[0]), int(fades[1])  # type: ignore[index]
+    pair: tuple[Any, ...] = ((fades, fades) if np.ndim(fades) == 0
+                             else tuple(fades))  # type: ignore[arg-type]
+    if len(pair) != 2 or min(pair) < 0:
+        raise ValueError(
+            f"fades_ms is milliseconds of fade, one value for both ends or "
+            f"two, the fade in and the fade out, and none negative; got "
+            f"{fades!r}")
+    return int(pair[0]), int(pair[1])
 
 
 def _quantize(samples: NDArray[np.float64], bit_depth: int) -> NDArray[Any]:
@@ -91,16 +100,17 @@ def _quantize(samples: NDArray[np.float64], bit_depth: int) -> NDArray[Any]:
             "sonic_vector contains NaN or infinity, which cannot be written "
             "as PCM samples"
         )
-    # Scale by 2 ** (bit_depth - 1), matching the divisor read_wav uses, so
-    # that writing and reading back is unity gain. Only a sample at exactly
-    # +1.0 needs the clip, the positive range being one value shorter.
+    # Scale by 2 ** (bit_depth - 1), matching the divisor read_audio uses,
+    # so that writing and reading back is unity gain. Only a sample at
+    # exactly +1.0 needs the clip, the positive range being one value
+    # shorter.
     #
-    # This previously scaled by 2 ** (bit_depth - 1) - 1 while read_wav
+    # This previously scaled by 2 ** (bit_depth - 1) - 1 while the reader
     # divided by 2 ** (bit_depth - 1), costing a round trip ~1.5 quantisation
     # steps instead of the half step quantising costs. Fixing the mismatch
-    # means files written now differ from older ones by one LSB of gain; see
-    # "Needs a decision before release" in CHANGELOG.md. The unity-gain
-    # property is pinned by tests/test_fidelity.py.
+    # means files written since 1.1.0 differ from older ones by one LSB of
+    # gain; its entry in CHANGELOG.md says so. The unity-gain property is
+    # pinned by tests/test_fidelity.py.
     full_scale = 2 ** (bit_depth - 1)
     scaled = np.clip(np.round(samples * full_scale), -full_scale,
                      full_scale - 1)
@@ -192,9 +202,13 @@ def read_audio(filename, return_sample_rate=False):
     """
     with sf.SoundFile(str(filename)) as handle:
         subtype = handle.subtype
-        logging.debug("read_wav subtype %s", subtype)
+        logging.debug("read_audio subtype %s", subtype)
         if subtype not in READABLE_SUBTYPES:
-            raise ValueError(f"unsupported WAV encoding: {subtype}")
+            # Whatever the container: this said WAV of a FLAC or an Ogg.
+            raise ValueError(
+                f"unsupported {handle.format} encoding: {filename} is "
+                f"{subtype}, which has no full scale to read it against; "
+                f"this reads {', '.join(sorted(READABLE_SUBTYPES))}")
         # libsndfile divides an integer sample by its own full scale on the
         # way to float, which is the normalization this function used to do
         # by hand, and it does it for 24-bit too.
@@ -271,14 +285,15 @@ def write_wav_mono(
     ValueError
         If the extension or bit depth is not one this package writes, the
         sound is empty, or, with ``normalize=False``, it reaches past
-        [-1, 1].
+        [-1, 1]; or if ``fades_ms`` is neither one value nor two, or is
+        negative.
 
     See Also
     --------
     normalize_mono : Normalizes an array to [-1,1]
-    write_wav_mono : Writes an array with the same arguments and order of
-                     them as soundfile.write.
     write_wav_stereo : Write a stereo file.
+    write_audio : Write mono or stereo, WAV or FLAC, as the array and the
+                  extension say.
 
 
     Examples
@@ -363,7 +378,8 @@ def write_wav_stereo(
     ValueError
         If the extension or bit depth is not one this package writes, the
         sound is empty, or, with ``normalize=False``, it reaches past
-        [-1, 1].
+        [-1, 1]; or if ``fades_ms`` is neither one value nor two, or is
+        negative.
 
     See Also
     --------
@@ -455,7 +471,8 @@ def write_audio(
     ValueError
         If the extension is not one this package writes, the bit depth
         is not one the chosen container can hold, the sound is empty,
-        or, with ``normalize=False``, it reaches past [-1, 1].
+        or, with ``normalize=False``, it reaches past [-1, 1]; or if
+        ``fades_ms`` is neither one value nor two, or is negative.
 
     Notes
     -----

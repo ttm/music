@@ -18,12 +18,12 @@ from music.utils import (mix_many_with_offsets, mix_stereo,
 # --------------------------------------------------------------------------
 
 def test_mix_stereo_promotes_mono_to_both_channels():
+    """Mixed with nothing, as it was before a cleanup in 2024 mixed it
+    with itself, which this test then pinned: each channel doubled."""
     mono = np.array([1.0, 2.0, 3.0])
-    out = mix_stereo(mono)
-    assert out.shape == (2, 3)
-    # Mixed with itself, so each channel is doubled.
-    assert np.allclose(out[0], 2 * mono)
-    assert np.allclose(out[1], 2 * mono)
+    np.testing.assert_array_equal(mix_stereo(mono), [mono, mono])
+    stereo = np.array([mono, -mono])
+    np.testing.assert_array_equal(mix_stereo(stereo), stereo)
 
 
 @pytest.mark.parametrize("end", [False, True])
@@ -165,3 +165,30 @@ def test_the_old_mixer_names_still_work_and_say_what_replaced_them():
         offset = music.mix_with_offset_(first, 0.02, second)
     np.testing.assert_array_equal(
         offset, music.mix_many_with_offsets(first, 0.02, second))
+
+
+def test_no_sounds_mix_or_stack_to_no_samples():
+    """`horizontal_stack()` failed in numpy, and `mix_many([])` in
+    Python's `max()`, where `mix([], [])` and `mix_many_with_offsets()`
+    gave nothing for nothing."""
+    assert music.horizontal_stack().shape == (0,)
+    assert music.mix_many([]).shape == (0,)
+
+
+@pytest.mark.parametrize("end", [False, True])
+def test_mix_many_mixes_stereo_sounds_of_any_length(end):
+    """It measured each sound with len(), which is a stereo sound's
+    channel count: two of different lengths failed in numpy, and so did a
+    mono one with a stereo one."""
+    stereo = np.array([[1., 1., 1., 1.], [2., 2., 2., 2.]])
+    mono = np.array([10., 20.])
+    padded = [0, 0, 10, 20] if end else [10, 20, 0, 0]
+    np.testing.assert_array_equal(music.mix_many([stereo, mono], end=end),
+                                  stereo + np.array([padded, padded]))
+
+
+def test_mix_many_offsets_a_stereo_sound_along_its_samples():
+    stereo = np.array([[1., 1.], [2., 2.]])
+    np.testing.assert_array_equal(
+        music.mix_many([stereo, stereo], offset=[0, 1], sample_rate=1),
+        [[1, 2, 1], [2, 4, 2]])

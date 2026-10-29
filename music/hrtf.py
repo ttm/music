@@ -158,15 +158,15 @@ def setup_hrtf(directory: str | Path | None = None,
     music.singing.setup_engine : the same arrangement, for the singing
                                  engine.
 
-    Examples
-    --------
-    >>> setup_hrtf()                        # doctest: +SKIP
-    PosixPath('.../music/kemar')
-
     Notes
     -----
     About 1.3 MB, fetched once. The measurements are Gardner and Martin's
     and are freely redistributable; this only saves you finding them.
+
+    Examples
+    --------
+    >>> setup_hrtf()                        # doctest: +SKIP
+    PosixPath('.../music/kemar')
     """
     # Only fetching needs any of these, and `import music` should not pay
     # for a feature most callers never reach.
@@ -306,17 +306,17 @@ def hrir(elevation: float = 0, azimuth: float = 90,
     setup_hrtf : fetches the measurements.
     available_azimuths : what was measured at an elevation.
 
-    Examples
-    --------
-    >>> elevation, azimuth, left, right = hrir(0, 90)  # doctest: +SKIP
-    >>> left.shape                                     # doctest: +SKIP
-    (512,)
-
     Notes
     -----
     The measurements are at a fixed distance of 1.4 metres, so they carry
     no distance cue: scale the result yourself for anything nearer or
     further.
+
+    Examples
+    --------
+    >>> elevation, azimuth, left, right = hrir(0, 90)  # doctest: +SKIP
+    >>> left.shape                                     # doctest: +SKIP
+    (512,)
     """
     root = _dataset(directory)
     if not math.isfinite(azimuth):

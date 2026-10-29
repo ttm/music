@@ -127,6 +127,15 @@ def adsr(envelope_duration=2, attack_ms=20,
     loud : A loudness transition.
     fade : A fade in or fade out.
 
+    Notes
+    -----
+    Cite the following article whenever you use this function.
+
+    References
+    ----------
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
     Examples
     --------
     >>> write_wav_mono(note_with_vibrato() * adsr())
@@ -142,15 +151,6 @@ def adsr(envelope_duration=2, attack_ms=20,
     >>> adsr(sonic_vector=stereo).shape == stereo.shape   # each channel
     True
     >>> soft_attack = adsr(alpha=(3, 1, 1), to_zero_ms=(5, 1))  # per stage
-
-    Notes
-    -----
-    Cite the following article whenever you use this function.
-
-    References
-    ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
-           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     sample_rate = resolve_rate(sample_rate)

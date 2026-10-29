@@ -38,6 +38,11 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=None):
         asked for. Also if ``sample_rate`` is not positive, or ``x`` is not
         mono or two-channel stereo.
 
+    Notes
+    -----
+    This function is useful to render musical sequences given any material.
+    PS: not clear if this function is already useful.
+
     Examples
     --------
     >>> asound = horizontal_stack(*[note_with_vibrato(freq=i, vibrato_freq=j)
@@ -48,11 +53,6 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=None):
     ...               durations=[.2, .3] * 10 + [.1, .2, .3, .4] * 8 +
     ...               [.5, 1.5, .5, 1., 5., .5, .25, .25, .5, 1., .5] * 2)
     >>> write_wav_mono(s, 'stretches.wav')
-
-    Notes
-    -----
-    This function is useful to render musical sequences given any material.
-    PS: not clear if this function is already useful.
 
     """
     sample_rate = resolve_rate(sample_rate)

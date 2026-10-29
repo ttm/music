@@ -60,15 +60,6 @@ def localize(sonic_vector=None, theta=None, distance=0, x=.1, y=.01,
     reverb : A reverberator.
     localize2 : a less naive implementation of localization by ITD and IID.
 
-    Examples
-    --------
-    >>> write_wav_stereo(localize())
-    >>> write_wav_stereo(horizontal_stack(*[
-    ...     localize(note_with_vibrato(duration=1), x=i, y=j)
-    ...     for i, j in zip([.1, .7, np.pi - .1, np.pi - .7],
-    ...                     [.1, .1, .1, .1])]))
-
-
     Notes
     -----
     A Head Related Transfer Function would localize more convincingly than
@@ -104,6 +95,14 @@ def localize(sonic_vector=None, theta=None, distance=0, x=.1, y=.01,
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> write_wav_stereo(localize())
+    >>> write_wav_stereo(horizontal_stack(*[
+    ...     localize(note_with_vibrato(duration=1), x=i, y=j)
+    ...     for i, j in zip([.1, .7, np.pi - .1, np.pi - .7],
+    ...                     [.1, .1, .1, .1])]))
 
     """
     _require_ears(zeta)
@@ -302,16 +301,6 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
     music.note_with_doppler : a moving source, synthesized rather than
         filtered, so it also shifts pitch.
 
-    Examples
-    --------
-    >>> write_wav_stereo(localize_linear(note(duration=3)))
-    >>> # a pass from the left to the right and back
-    >>> there_and_back = horizontal_stack(
-    ...     localize_linear(note(), theta1=180, theta2=0),
-    ...     localize_linear(note(), theta1=0, theta2=180))
-    >>> there_and_back.shape[0]  # a stereo pair
-    2
-
     Notes
     -----
     The path is a straight line between the two positions, not an arc, which
@@ -349,6 +338,16 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> write_wav_stereo(localize_linear(note(duration=3)))
+    >>> # a pass from the left to the right and back
+    >>> there_and_back = horizontal_stack(
+    ...     localize_linear(note(), theta1=180, theta2=0),
+    ...     localize_linear(note(), theta1=0, theta2=180))
+    >>> there_and_back.shape[0]  # a stereo pair
+    2
 
     """
     _require_ears(zeta)
@@ -420,6 +419,11 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
 
+    Returns
+    -------
+    s : ndarray
+        A (2, nsamples) shaped array with the PCM samples of the stereo sound.
+
     Raises
     ------
     ValueError
@@ -435,25 +439,11 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
         below zero the interaural delay reached numpy as an array of
         negative length.
 
-    Returns
-    -------
-    s : ndarray
-        A (2, nsamples) shaped array with the PCM samples of the stereo sound.
-
     See Also
     --------
     reverb : A reverberator.
     localize : a more naive and fast implementation of localization by ITD and
                IID.
-
-    Examples
-    --------
-    >>> write_wav_stereo(localize2())
-    >>> # theta=None, or the default angle overrides every position
-    >>> write_wav_stereo(horizontal_stack(*[
-    ...     localize2(note_with_vibrato(duration=1), theta=None, x=i, y=j)
-    ...     for i, j in zip([.1, .7, np.pi - .1, np.pi - .7],
-    ...                     [.1, .1, .1, .1])]))
 
     Notes
     -----
@@ -485,6 +475,15 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> write_wav_stereo(localize2())
+    >>> # theta=None, or the default angle overrides every position
+    >>> write_wav_stereo(horizontal_stack(*[
+    ...     localize2(note_with_vibrato(duration=1), theta=None, x=i, y=j)
+    ...     for i, j in zip([.1, .7, np.pi - .1, np.pi - .7],
+    ...                     [.1, .1, .1, .1])]))
 
     """
     _require_ears(zeta)
@@ -748,14 +747,6 @@ def localize_hrtf(sonic_vector: ArrayLike,
     localize2 : the same cues per frequency band.
     fir : convolution with an impulse response, for one channel.
 
-    Examples
-    --------
-    >>> import numpy as np
-    >>> left, right = np.array([1.0, 0.3]), np.array([0.0, 0.6, 0.2])
-    >>> placed = localize_hrtf(note(duration=0.1), left, right)
-    >>> placed.shape[0]
-    2
-
     Notes
     -----
     An HRTF is measured per listener, and one measured on another head is
@@ -770,6 +761,14 @@ def localize_hrtf(sonic_vector: ArrayLike,
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> left, right = np.array([1.0, 0.3]), np.array([0.0, 0.6, 0.2])
+    >>> placed = localize_hrtf(note(duration=0.1), left, right)
+    >>> placed.shape[0]
+    2
     """
     samples = np.asarray(sonic_vector, dtype=np.float64)
     if samples.ndim != 1:

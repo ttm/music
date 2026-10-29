@@ -71,6 +71,15 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
     adsr : An ADSR envelope.
     tremolo : An oscillation of loudness.
 
+    Notes
+    -----
+    Cite the following article whenever you use this function.
+
+    References
+    ----------
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
     Examples
     --------
     >>> write_wav_mono(note_with_vibrato() * loud())
@@ -82,15 +91,6 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
     ...     loud(trans_dev=i, method=j, sonic_vector=note_with_vibrato())
     ...     for i, j in zip([6, -50, 2.3], ["exp", "exp", "linear"])])
     >>> envelope = loud(duration=10, trans_dev=-80, to=False, alpha=2)
-
-    Notes
-    -----
-    Cite the following article whenever you use this function.
-
-    References
-    ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
-           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     sample_rate = resolve_rate(sample_rate)
@@ -190,10 +190,6 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
     adsr : An ADSR envelope.
     tremolo : An oscillation of loudness.
 
-    Examples
-    --------
-    >>> write_wav_mono(note_with_vibrato(duration=8) * louds())
-
     Notes
     -----
     Cite the following article whenever you use this function.
@@ -202,6 +198,10 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> write_wav_mono(note_with_vibrato(duration=8) * louds())
 
     """
     sonic_vector = as_sonic_vector(sonic_vector)

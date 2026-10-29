@@ -101,6 +101,13 @@ def low_pass(cutoff: float = 0.1) -> tuple[NDArray[np.float64],
     high_pass : the complementary filter, from the same pole.
     fraction_of : converts a frequency in Hertz into a `cutoff`.
 
+    Notes
+    -----
+    One pole, so the roll-off above the cutoff is 6 dB per octave. The
+    article gives it "for didactic purposes and as a reference", and names
+    biquad recipes and Chebyshev coefficients as what to reach for when
+    this is not sharp enough.
+
     Examples
     --------
     >>> a, b = low_pass(cutoff=0.05)
@@ -108,13 +115,6 @@ def low_pass(cutoff: float = 0.1) -> tuple[NDArray[np.float64],
     [0.269597]
     >>> [round(float(v), 6) for v in b]
     [1.0, 0.730403]
-
-    Notes
-    -----
-    One pole, so the roll-off above the cutoff is 6 dB per octave. The
-    article gives it "for didactic purposes and as a reference", and names
-    biquad recipes and Chebyshev coefficients as what to reach for when
-    this is not sharp enough.
     """
     x = np.exp(-2 * np.pi * _check('cutoff', cutoff))
     return np.array([1 - x]), np.array([1.0, x])
@@ -201,18 +201,18 @@ def band_pass(centre: float = 0.1, bandwidth: float = 0.05) \
     --------
     band_reject : the same geometry, keeping what this one discards.
 
-    Examples
-    --------
-    >>> a, b = band_pass(centre=0.1, bandwidth=0.02)
-    >>> len(a), len(b)
-    (3, 3)
-
     Notes
     -----
     The article warns that these two filters amplify rather than attenuate
     when the centre is low and the band wide, and that at high centres they
     spread towards the bass rather than holding their shape. Neither is a
     defect in the coefficients; both are what a two-pole design does.
+
+    Examples
+    --------
+    >>> a, b = band_pass(centre=0.1, bandwidth=0.02)
+    >>> len(a), len(b)
+    (3, 3)
     """
     r, k, cosine = _resonator(centre, bandwidth)
     a = np.array([1 - k, 2 * (k - r) * cosine, r ** 2 - k])

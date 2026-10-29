@@ -154,6 +154,11 @@ def mode_by_rotation(kappa: int = 6) -> tuple[int, ...]:
     --------
     scale : the same modes, by name.
 
+    Notes
+    -----
+    That every mode is one rotation of one pattern is the content of the
+    equation; naming them is bookkeeping on top of it.
+
     Examples
     --------
     >>> mode_by_rotation(6)
@@ -162,11 +167,6 @@ def mode_by_rotation(kappa: int = 6) -> tuple[int, ...]:
     True
     >>> [mode_by_rotation(k)[1] for k in range(3)]
     [2, 1, 2]
-
-    Notes
-    -----
-    That every mode is one rotation of one pattern is the content of the
-    equation; naming them is bookkeeping on top of it.
     """
     degrees = [0]
     for i in range(1, len(DIATONIC_STEPS)):
@@ -203,13 +203,6 @@ def harmonic_series(partials: int = 20) -> tuple[float, ...]:
     --------
     midi_to_hz_interval : turns one of these semitone counts into a ratio.
 
-    Examples
-    --------
-    >>> [round(h, 2) for h in harmonic_series(4)]
-    [0.0, 12.0, 19.02, 24.0]
-    >>> round(harmonic_series(7)[-1], 2)
-    33.69
-
     Notes
     -----
     Every octave is exact -- partials 1, 2, 4, 8 and 16 land on 0, 12, 24,
@@ -217,6 +210,13 @@ def harmonic_series(partials: int = 20) -> tuple[float, ...]:
     of a tempered fifth and the seventh is 31 cents flat of a tempered
     minor seventh, which is the size of the disagreement between this
     series and the tuning of :func:`scale`.
+
+    Examples
+    --------
+    >>> [round(h, 2) for h in harmonic_series(4)]
+    [0.0, 12.0, 19.02, 24.0]
+    >>> round(harmonic_series(7)[-1], 2)
+    33.69
     """
     if partials < 1:
         raise ValueError(f'partials must be at least 1; got {partials}')

@@ -105,6 +105,11 @@ def binaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
         A ``(2, n)`` stereo array: the lower carrier in the left
         channel, the higher in the right.
 
+    See Also
+    --------
+    monaural_beats : the same two tones in one channel, where the beat
+                     is physically present.
+
     Notes
     -----
     **The beat is not in the signal.** SSTIM records this technique as
@@ -121,17 +126,6 @@ def binaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
     different mechanism and a different evidence base. Anything that
     downmixes this output has silently substituted one for the other.
 
-    See Also
-    --------
-    monaural_beats : the same two tones in one channel, where the beat
-                     is physically present.
-
-    Examples
-    --------
-    >>> stimulus = binaural_beats(carrier_freq=200, beat_freq=10)
-    >>> stimulus.shape[0]
-    2
-
     References
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
@@ -139,6 +133,12 @@ def binaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
            (2017)
     .. [2] SSTIM, ``techBinauralBeats``.
            https://w3id.org/sstim/vocab#techBinauralBeats
+
+    Examples
+    --------
+    >>> stimulus = binaural_beats(carrier_freq=200, beat_freq=10)
+    >>> stimulus.shape[0]
+    2
 
     """
     sample_rate = resolve_rate(sample_rate)
@@ -189,6 +189,13 @@ def monaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
     ndarray
         A mono sequence of PCM samples, the mean of the two tones.
 
+    See Also
+    --------
+    binaural_beats : the same two tones one per ear, where the beat is
+                     perceptual only.
+    amplitude_modulation : an envelope imposed on one carrier rather
+                           than arising from two.
+
     Notes
     -----
     **The beat is in the signal.** Unlike :func:`binaural_beats`, the
@@ -197,19 +204,6 @@ def monaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
     spectrum of the rendered audio shows and which survives being played
     through one loudspeaker.
 
-    See Also
-    --------
-    binaural_beats : the same two tones one per ear, where the beat is
-                     perceptual only.
-    amplitude_modulation : an envelope imposed on one carrier rather
-                           than arising from two.
-
-    Examples
-    --------
-    >>> stimulus = monaural_beats(carrier_freq=200, beat_freq=10)
-    >>> stimulus.ndim
-    1
-
     References
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
@@ -217,6 +211,12 @@ def monaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
            (2017)
     .. [2] SSTIM, ``techMonauralBeats``.
            https://w3id.org/sstim/vocab#techMonauralBeats
+
+    Examples
+    --------
+    >>> stimulus = monaural_beats(carrier_freq=200, beat_freq=10)
+    >>> stimulus.ndim
+    1
 
     """
     sample_rate = resolve_rate(sample_rate)
@@ -304,12 +304,6 @@ def isochronic_tones(carrier_freq: float = 200.0, pulse_rate: float = 10.0,
     stimulus is going to be measured or listened to for any length of
     time.
 
-    Examples
-    --------
-    >>> stimulus = isochronic_tones(pulse_rate=10, duty_cycle=0.5)
-    >>> stimulus.ndim
-    1
-
     References
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
@@ -317,6 +311,12 @@ def isochronic_tones(carrier_freq: float = 200.0, pulse_rate: float = 10.0,
            (2017)
     .. [2] SSTIM, ``techIsochronicTones``.
            https://w3id.org/sstim/vocab#techIsochronicTones
+
+    Examples
+    --------
+    >>> stimulus = isochronic_tones(pulse_rate=10, duty_cycle=0.5)
+    >>> stimulus.ndim
+    1
 
     """
     sample_rate = resolve_rate(sample_rate)
@@ -405,23 +405,16 @@ def amplitude_modulation(
         If ``modulation_freq`` is negative, for the reason
         :func:`modulated_noise` gives.
 
-    Notes
-    -----
-    **The modulation is physically present**, and it is the modulation
-    rate rather than the carrier that sets the frequency of the evoked
-    response, which is the whole point of the stimulus.
-
     See Also
     --------
     monaural_beats : an equivalent envelope arising from two tones
                      rather than imposed on one.
 
-    Examples
-    --------
-    >>> stimulus = amplitude_modulation(carrier_freq=200,
-    ...                                 modulation_freq=40)
-    >>> stimulus.ndim
-    1
+    Notes
+    -----
+    **The modulation is physically present**, and it is the modulation
+    rate rather than the carrier that sets the frequency of the evoked
+    response, which is the whole point of the stimulus.
 
     References
     ----------
@@ -430,6 +423,13 @@ def amplitude_modulation(
            (2017)
     .. [2] SSTIM, ``techAmplitudeModulation``.
            https://w3id.org/sstim/vocab#techAmplitudeModulation
+
+    Examples
+    --------
+    >>> stimulus = amplitude_modulation(carrier_freq=200,
+    ...                                 modulation_freq=40)
+    >>> stimulus.ndim
+    1
 
     """
     sample_rate = resolve_rate(sample_rate)
@@ -504,6 +504,13 @@ def frequency_modulation(
         If ``modulation_freq`` is negative, for the reason
         :func:`modulated_noise` gives.
 
+    See Also
+    --------
+    music.note_with_vibrato : the same modulation expressed musically,
+                              in semitones.
+    music.note_with_fm : FM synthesis, where the modulator is at audio
+                         rate and the point is timbre.
+
     Notes
     -----
     **The modulation is physically present.**
@@ -514,20 +521,6 @@ def frequency_modulation(
     and it is why the rendered sound matches the mathematics that
     describes it rather than approximating it.
 
-    See Also
-    --------
-    music.note_with_vibrato : the same modulation expressed musically,
-                              in semitones.
-    music.note_with_fm : FM synthesis, where the modulator is at audio
-                         rate and the point is timbre.
-
-    Examples
-    --------
-    >>> stimulus = frequency_modulation(carrier_freq=200,
-    ...                                 modulation_freq=0.1)
-    >>> stimulus.ndim
-    1
-
     References
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
@@ -535,6 +528,13 @@ def frequency_modulation(
            (2017)
     .. [2] SSTIM, ``techFrequencyModulation``.
            https://w3id.org/sstim/vocab#techFrequencyModulation
+
+    Examples
+    --------
+    >>> stimulus = frequency_modulation(carrier_freq=200,
+    ...                                 modulation_freq=0.1)
+    >>> stimulus.ndim
+    1
 
     """
     sample_rate = resolve_rate(sample_rate)
@@ -631,6 +631,11 @@ def modulated_noise(noise_type: str | float = 'pink',
         is at a sample rate of 30 Hz or less. The band used to render as
         silence.
 
+    See Also
+    --------
+    amplitude_modulation : the same envelope on a pitched carrier.
+    music.noise : the underlying colored noise, unshaped.
+
     Notes
     -----
     **The modulation is physically present** when there is one. With
@@ -645,17 +650,6 @@ def modulated_noise(noise_type: str | float = 'pink',
     :func:`music.noise` describes and the modulation does not repeat a
     single block of samples.
 
-    See Also
-    --------
-    amplitude_modulation : the same envelope on a pitched carrier.
-    music.noise : the underlying colored noise, unshaped.
-
-    Examples
-    --------
-    >>> stimulus = modulated_noise(noise_type='pink', modulation_freq=10)
-    >>> stimulus.ndim
-    1
-
     References
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
@@ -665,6 +659,12 @@ def modulated_noise(noise_type: str | float = 'pink',
            https://w3id.org/sstim/vocab#techBroadbandNoise
     .. [3] SSTIM, ``techAmplitudeModulation``.
            https://w3id.org/sstim/vocab#techAmplitudeModulation
+
+    Examples
+    --------
+    >>> stimulus = modulated_noise(noise_type='pink', modulation_freq=10)
+    >>> stimulus.ndim
+    1
 
     """
     sample_rate = resolve_rate(sample_rate)
@@ -766,6 +766,12 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
         below zero the interaural delay reached numpy as an array of
         negative length.
 
+    See Also
+    --------
+    music.localize_linear : one straight pass, the primitive underneath.
+    music.note_with_doppler : a moving source synthesized rather than
+                              filtered, so it also shifts pitch.
+
     Notes
     -----
     **The motion is physically present**: the cues are in the signal,
@@ -787,18 +793,6 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
     and behind -- renders no movement whatsoever, because those two
     positions differ only in the cue that is missing.
 
-    See Also
-    --------
-    music.localize_linear : one straight pass, the primitive underneath.
-    music.note_with_doppler : a moving source synthesized rather than
-                              filtered, so it also shifts pitch.
-
-    Examples
-    --------
-    >>> stimulus = spatial_motion(carrier_freq=200, motion_rate=0.5)
-    >>> stimulus.shape[0]
-    2
-
     References
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
@@ -806,6 +800,12 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
            (2017)
     .. [2] SSTIM, ``techSpatialAuditory``.
            https://w3id.org/sstim/vocab#techSpatialAuditory
+
+    Examples
+    --------
+    >>> stimulus = spatial_motion(carrier_freq=200, motion_rate=0.5)
+    >>> stimulus.shape[0]
+    2
 
     """
     _require_ears(zeta)

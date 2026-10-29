@@ -261,6 +261,12 @@ def consonance(interval_or_semitones: str | int) -> str:
     --------
     CONSONANCE : the classification, as a table.
 
+    Notes
+    -----
+    A compound interval "is classified in terms of the simple interval
+    between the same notes but in the same octave", so a major ninth is
+    classified as the major second it is an octave above.
+
     Examples
     --------
     >>> consonance("P5")
@@ -269,12 +275,6 @@ def consonance(interval_or_semitones: str | int) -> str:
     'strong dissonance'
     >>> consonance("P4"), consonance("TT")
     ('context dependent', 'context dependent')
-
-    Notes
-    -----
-    A compound interval "is classified in terms of the simple interval
-    between the same notes but in the same octave", so a major ninth is
-    classified as the major second it is an octave above.
     """
     semitones = (interval(interval_or_semitones)
                  if isinstance(interval_or_semitones, str)

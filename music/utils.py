@@ -824,6 +824,12 @@ def mix_with_offset(
     ndarray
         The two sounds summed at that offset, long enough to hold both.
 
+    See Also
+    --------
+    mix_many_with_offsets : the same, for any number of sounds, each
+                            offset from the mix built so far.
+    mix_many : a list of sounds aligned at their starts or their ends.
+
     Notes
     -----
     A negative ``duration`` must satisfy
@@ -833,13 +839,6 @@ def mix_with_offset(
     The description of ``duration`` above was truncated mid-sentence, and
     its last line sat at column zero, so numpydoc read "s1 ends." as a
     parameter of this function and rendered it as one.
-
-    See Also
-    --------
-    mix_many_with_offsets : the same, for any number of sounds, each
-                            offset from the mix built so far.
-    mix_many : a list of sounds aligned at their starts or their ends.
-
 
     Examples
     --------
@@ -1153,11 +1152,6 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=None):
         A numpy array where each value is a PCM sample of
         the resulting sound. No sounds mix to no samples.
 
-    Examples
-    --------
-    >>> mixed = mix_many([note(220, 2), note(440, 1)])
-    >>> write_wav_mono(mixed)  # writes a WAV of the two notes summed
-
     Notes
     -----
     Cite the following article whenever you use this function.
@@ -1166,6 +1160,11 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=None):
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> mixed = mix_many([note(220, 2), note(440, 1)])
+    >>> write_wav_mono(mixed)  # writes a WAV of the two notes summed
 
     """
     sample_rate = resolve_rate(sample_rate)
@@ -1325,6 +1324,11 @@ def profile(adict, sample_rate=None):
         ``d['guesses']`` maps the same names to readings of those
         measurements, each a ``(reading, reason)`` pair.
 
+    See Also
+    --------
+    amp_to_db : the conversion the decibel reading above is about.
+    hz_to_midi : the conversion the pitch reading is about.
+
     Notes
     -----
     The measurements are measurements; the guesses are guesses, which is
@@ -1344,11 +1348,6 @@ def profile(adict, sample_rate=None):
     a commented-out sketch since it was written, and the docstring above
     was a specification rather than a description. It is now the second of
     these.
-
-    See Also
-    --------
-    amp_to_db : the conversion the decibel reading above is about.
-    hz_to_midi : the conversion the pitch reading is about.
 
     Examples
     --------
@@ -1421,17 +1420,6 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
         dividing by zero; a negative duration came back negative; and a
         cell of its span alone was dropped, its time with it.
 
-    Examples
-    --------
-    >>> dt = [4, 2, 2, 4, 1,1,1,1, 2, 2, 4]
-    >>> durs0 = rhythm_to_durations(dt, duration=.25)
-    >>> df = [4, 8, 8, 4, 16, 16, 16, 16, 8, 8, 4]
-    >>> durs0_ = rhythm_to_durations(freqs=df, duration=4)
-    >>> dtut = [4,2,2, [8, 1,1,1], 4, [4, 1,1,.5,.5], 3,1, 3,1, 4]
-    >>> durs1 = rhythm_to_durations(dtut)
-    >>> dtuf2 = [4,8,8, [2, 3,3,3], 4, [4, 3,3,6,6], 16/3, 16, 16/3, 16, 4]
-    >>> durs1_ = rhythm_to_durations(freqs=dtuf2, duration=4)
-
     Notes
     -----
     The durations parameter is considered to be in a temporal notation
@@ -1481,6 +1469,17 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> dt = [4, 2, 2, 4, 1,1,1,1, 2, 2, 4]
+    >>> durs0 = rhythm_to_durations(dt, duration=.25)
+    >>> df = [4, 8, 8, 4, 16, 16, 16, 16, 8, 8, 4]
+    >>> durs0_ = rhythm_to_durations(freqs=df, duration=4)
+    >>> dtut = [4,2,2, [8, 1,1,1], 4, [4, 1,1,.5,.5], 3,1, 3,1, 4]
+    >>> durs1 = rhythm_to_durations(dtut)
+    >>> dtuf2 = [4,8,8, [2, 3,3,3], 4, [4, 3,3,6,6], 16/3, 16, 16/3, 16, 4]
+    >>> durs1_ = rhythm_to_durations(freqs=dtuf2, duration=4)
 
     """
     durations = tuple(durations)

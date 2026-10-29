@@ -45,14 +45,6 @@ class InterestingPermutations:
         permutations come out in, which is the sequence this class
         exists to make meaningful, and not which permutations they are.
 
-    Raises
-    ------
-    ValueError
-        If `nelements` is less than two, or `method` is neither of the
-        two sympy generates by. One element has no swaps, mirrors or
-        second rotation, and failed inside sympy; an unknown method
-        failed there as ``NotImplementedError``.
-
     Methods
     -------
     get_alternating
@@ -68,6 +60,13 @@ class InterestingPermutations:
     get_full_symmetry
         Generates permutations with full symmetry.
 
+    Raises
+    ------
+    ValueError
+        If `nelements` is less than two, or `method` is neither of the
+        two sympy generates by. One element has no swaps, mirrors or
+        second rotation, and failed inside sympy; an unknown method
+        failed there as ``NotImplementedError``.
 
     Examples
     --------

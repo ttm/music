@@ -81,6 +81,12 @@ class PrimaryTables:
     def draw_tables(self):
         """Draw the four waveform tables on one pair of axes.
 
+        Raises
+        ------
+        ImportError
+            If matplotlib is not installed. Install it with
+            ``pip install 'music[plot]'``.
+
         Notes
         -----
         matplotlib is imported here rather than at the top of the module.
@@ -92,12 +98,6 @@ class PrimaryTables:
 
         The examples are marked ``+SKIP``: ``show()`` blocks on a window,
         so a doctest run would hang rather than fail.
-
-        Raises
-        ------
-        ImportError
-            If matplotlib is not installed. Install it with
-            ``pip install 'music[plot]'``.
 
         Examples
         --------

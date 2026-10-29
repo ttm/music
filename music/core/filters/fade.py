@@ -74,6 +74,15 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
     louds : An envelope with an arbitrary number or loudness transitions.
     tremolo : An oscillation of loudness.
 
+    Notes
+    -----
+    Cite the following article whenever you use this function.
+
+    References
+    ----------
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
     Examples
     --------
     >>> write_wav_mono(note_with_vibrato() * fade())
@@ -85,15 +94,6 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
     ...                       for i, j in zip([1, 0, 1],
     ...                                       ["exp", "exp", "linear"])])
     >>> envelope = fade(duration=10, fade_out=0, perc=0.1)
-
-    Notes
-    -----
-    Cite the following article whenever you use this function.
-
-    References
-    ----------
-    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
-           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     """
     sample_rate = resolve_rate(sample_rate)
@@ -198,6 +198,11 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration_ms=500,
     TypeError
         If a keyword is neither a parameter nor the old name.
 
+    See Also
+    --------
+    fade : the fade in or out on its own.
+    music.StimulationSession : crossfades that preserve total duration.
+
     Notes
     -----
     The inputs are left as they were. The fades used to be applied to the
@@ -207,12 +212,6 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration_ms=500,
     The overlap makes the result shorter, which is why
     :class:`music.StimulationSession` does not use this function: a
     protocol's phase durations have to survive its transitions.
-
-    See Also
-    --------
-    fade : the fade in or out on its own.
-    music.StimulationSession : crossfades that preserve total duration.
-
 
     Examples
     --------

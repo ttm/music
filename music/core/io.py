@@ -474,6 +474,13 @@ def write_audio(
         or, with ``normalize=False``, it reaches past [-1, 1]; or if
         ``fades_ms`` is neither one value nor two, or is negative.
 
+    See Also
+    --------
+    write_wav_mono : the mono writer, with the same arguments.
+    write_wav_stereo : the stereo writer, which can also normalize the
+                       channels separately.
+    read_audio : reads back what these write.
+
     Notes
     -----
     FLAC is lossless, so it is a smaller file and not a different sound:
@@ -485,13 +492,6 @@ def write_audio(
     Lossy containers are deliberately not offered. Discarding what a
     listener is unlikely to notice is the one thing a package whose
     subject is fidelity to a mathematical model should not do quietly.
-
-    See Also
-    --------
-    write_wav_mono : the mono writer, with the same arguments.
-    write_wav_stereo : the stereo writer, which can also normalize the
-                       channels separately.
-    read_audio : reads back what these write.
 
     Examples
     --------

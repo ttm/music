@@ -48,19 +48,6 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     note_with_fm : A linear oscillation of fundamental frequency.
     tremolo : A tremolo, an oscillation of loudness.
 
-    Examples
-    --------
-    >>> write_wav_mono(note_with_vibrato() * am())  # a note with AM
-    >>> s = horizontal_stack(
-    ...     *[note_with_vibrato() * am(fm=i, max_amplitude=j)
-    ...      for i, j in zip([60, 150, 100],
-    ... [2, 1, 20])])
-    >>> s = horizontal_stack(
-    ...     *[am(fm=i, max_amplitude=j, sonic_vector=note_with_vibrato())
-    ...      for i, j in zip([60, 150, 100],
-    ... [2, 1, 20])])
-    >>> envelope2 = am(440, 150, 60)  # a lengthy envelope
-
     Notes
     -----
     In the MASS framework implementation, for obtaining a sound with a tremolo
@@ -80,6 +67,19 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> write_wav_mono(note_with_vibrato() * am())  # a note with AM
+    >>> s = horizontal_stack(
+    ...     *[note_with_vibrato() * am(fm=i, max_amplitude=j)
+    ...      for i, j in zip([60, 150, 100],
+    ... [2, 1, 20])])
+    >>> s = horizontal_stack(
+    ...     *[am(fm=i, max_amplitude=j, sonic_vector=note_with_vibrato())
+    ...      for i, j in zip([60, 150, 100],
+    ... [2, 1, 20])])
+    >>> envelope2 = am(440, 150, 60)  # a lengthy envelope
 
     """
     sample_rate = resolve_rate(sample_rate)
@@ -159,18 +159,6 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     note_with_fm : A linear oscillation of fundamental frequency.
     am : A linear oscillation of amplitude.
 
-    Examples
-    --------
-    >>> write_wav_mono(note_with_vibrato() * tremolo())  # a note with tremolo
-    >>> s = horizontal_stack(
-    ...     *[note_with_vibrato() * tremolo(tremolo_freq=i, max_db_dev=j)
-    ...      for i, j in zip([6, 15, 100], [2, 1, 20])])
-    >>> s = horizontal_stack(
-    ...     *[tremolo(tremolo_freq=i, max_db_dev=j,
-    ...              sonic_vector=note_with_vibrato())
-    ...      for i, j in zip([6, 15, 100], [2, 1, 20])])
-    >>> envelope2 = tremolo(440, 1.5, 60)  # a lengthy envelope
-
     Notes
     -----
     In the MASS framework implementation, for obtaining a sound with a tremolo
@@ -187,6 +175,18 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> write_wav_mono(note_with_vibrato() * tremolo())  # a note with tremolo
+    >>> s = horizontal_stack(
+    ...     *[note_with_vibrato() * tremolo(tremolo_freq=i, max_db_dev=j)
+    ...      for i, j in zip([6, 15, 100], [2, 1, 20])])
+    >>> s = horizontal_stack(
+    ...     *[tremolo(tremolo_freq=i, max_db_dev=j,
+    ...              sonic_vector=note_with_vibrato())
+    ...      for i, j in zip([6, 15, 100], [2, 1, 20])])
+    >>> envelope2 = tremolo(440, 1.5, 60)  # a lengthy envelope
 
     """
     sample_rate = resolve_rate(sample_rate)
@@ -274,10 +274,6 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
     adsr : An ADSR envelope.
     tremolo : An oscillation of loudness.
 
-    Examples
-    --------
-    >>> write_wav_mono(note_with_vibrato(duration=8) * louds())
-
     Notes
     -----
     Cite the following article whenever you use this function.
@@ -286,6 +282,10 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> write_wav_mono(note_with_vibrato(duration=8) * louds())
 
 
     """

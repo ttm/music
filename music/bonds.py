@@ -180,6 +180,13 @@ class Bonds:
     note_with_vibrato : what a bound vibrato is applied through.
     tremolo : what a bound tremolo is applied through.
 
+    Notes
+    -----
+    The article gives no functions, and neither does this: what makes a set
+    of bonds musical is a decision about a piece, not a fact about
+    synthesis. What it fixes is that the decision is made once and applies
+    to every note, which is the difference between a bond and a parameter.
+
     Examples
     --------
     >>> language = Bonds(vibrato_freq=proportional(1 / 50),
@@ -191,13 +198,6 @@ class Bonds:
     >>> sound = language.render([220, 440], duration=0.2)
     >>> len(sound)
     17640
-
-    Notes
-    -----
-    The article gives no functions, and neither does this: what makes a set
-    of bonds musical is a decision about a piece, not a fact about
-    synthesis. What it fixes is that the decision is made once and applies
-    to every note, which is the difference between a bond and a parameter.
     """
 
     def __init__(self, **relations) -> None:

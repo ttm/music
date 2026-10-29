@@ -185,6 +185,11 @@ class StimulationSession:
         negative one divided by zero; a negative end ramp was taken as
         none, and any other shape as ``'equal_power'``.
 
+    See Also
+    --------
+    music.Sequencer : notes scheduled at arbitrary offsets, which is the
+                      musical version of the same idea.
+
     Examples
     --------
     >>> import music
@@ -196,11 +201,6 @@ class StimulationSession:
     0.4
     >>> session.render().shape
     (2, 17640)
-
-    See Also
-    --------
-    music.Sequencer : notes scheduled at arbitrary offsets, which is the
-                      musical version of the same idea.
     """
 
     sample_rate: int = field(default_factory=get_sample_rate)

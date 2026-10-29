@@ -61,13 +61,6 @@ def note(freq: float = 220, duration: float = 2,
     note_with_vibrato : A note with vibrato.
     tremolo : A tremolo envelope.
 
-    Examples
-    --------
-    >>> write_wav_mono(note())  # writes a WAV file of a note
-    >>> s = horizontal_stack(*[note(i, j) for i, j in
-    ...                       zip([200, 500, 100], [2, 1, 2])])
-    >>> s2 = note(440, 1.5, waveform_table=WAVEFORM_SAWTOOTH)
-
     Notes
     -----
     In the MASS framework implementation, for a sound with a vibrato (or FM)
@@ -83,6 +76,13 @@ def note(freq: float = 220, duration: float = 2,
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> write_wav_mono(note())  # writes a WAV file of a note
+    >>> s = horizontal_stack(*[note(i, j) for i, j in
+    ...                       zip([200, 500, 100], [2, 1, 2])])
+    >>> s2 = note(440, 1.5, waveform_table=WAVEFORM_SAWTOOTH)
 
     """
     sample_rate = resolve_rate(sample_rate)
@@ -154,11 +154,6 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     note_with_vibratos_glissandos : a note with an arbitrary sequence of pitch
                                     transition and a meta-vibrato.
 
-    Examples
-    --------
-    >>> write_wav_stereo(note_with_doppler())
-    >>> write_wav_mono(tremolo()*note_with_doppler(stereo=False))
-
     Notes
     -----
 
@@ -168,6 +163,11 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> write_wav_stereo(note_with_doppler())
+    >>> write_wav_mono(tremolo()*note_with_doppler(stereo=False))
 
     """
     _require_ears(zeta)
@@ -278,14 +278,6 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
     tremolo : A tremolo, an oscillation of loudness.
     am : A linear oscillation of amplitude (not linear loudness).
 
-    Examples
-    --------
-    >>> write_wav_mono(note_with_fm())  # writes a WAV file of a note
-    >>> sonic_vector = horizontal_stack(
-    ...     *[note_with_fm(i, j) for i, j in zip([200, 500, 100],
-    ... [2, 1, 2])])
-    >>> s2 = note_with_fm(440, 1.5, 600, 10)
-
     Notes
     -----
     In the MASS framework implementation,
@@ -302,6 +294,14 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> write_wav_mono(note_with_fm())  # writes a WAV file of a note
+    >>> sonic_vector = horizontal_stack(
+    ...     *[note_with_fm(i, j) for i, j in zip([200, 500, 100],
+    ... [2, 1, 2])])
+    >>> s2 = note_with_fm(440, 1.5, 600, 10)
 
     """
     sample_rate = resolve_rate(sample_rate)
@@ -371,14 +371,6 @@ def note_with_phase(freq: float = 220, duration: float = 2,
     note_with_vibrato : A note with vibrato.
     tremolo : A tremolo envelope.
 
-    Examples
-    --------
-    >>> write_wav_mono(note_with_phase())  # writes a WAV file of a note
-    >>> s = horizontal_stack(
-    ...     *[note_with_phase(i, j) for i, j in zip([200, 500, 100],
-    ... [2, 1, 2])])
-    >>> s2 = note_with_phase(440, 1.5, waveform_table=WAVEFORM_SAWTOOTH)
-
     Notes
     -----
     In the MASS framework implementation, for a sound with a vibrato (or FM)
@@ -394,6 +386,14 @@ def note_with_phase(freq: float = 220, duration: float = 2,
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> write_wav_mono(note_with_phase())  # writes a WAV file of a note
+    >>> s = horizontal_stack(
+    ...     *[note_with_phase(i, j) for i, j in zip([200, 500, 100],
+    ... [2, 1, 2])])
+    >>> s2 = note_with_phase(440, 1.5, waveform_table=WAVEFORM_SAWTOOTH)
 
     """
     sample_rate = resolve_rate(sample_rate)
@@ -775,10 +775,6 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     fade : fade in and out.
     loud : a transition of loudness.
 
-    Examples
-    --------
-    >>> write_wav_stereo(note_with_vibrato_seq_localization())
-
     Notes
     -----
     Check the functions above for more information about how each feature of
@@ -796,6 +792,10 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> write_wav_stereo(note_with_vibrato_seq_localization())
 
     """
     _require_ears(zeta)
@@ -1343,14 +1343,6 @@ def note_with_vibrato(
     note_with_fm : A linear oscillation of the frequency (not linear pitch).
     am : A linear oscillation of amplitude (not linear loudness).
 
-    Examples
-    --------
-    >>> write_wav_mono(note_with_vibrato())  # writes a WAV file of a note
-    >>> s = horizontal_stack(
-    ...     *[note_with_vibrato(i, j) for i, j in zip([200, 500, 100],
-    ... [2, 1, 2])])
-    >>> s2 = note_with_vibrato(440, 1.5, 6, 1)
-
     Notes
     -----
     In the MASS framework implementation,
@@ -1366,6 +1358,14 @@ def note_with_vibrato(
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> write_wav_mono(note_with_vibrato())  # writes a WAV file of a note
+    >>> s = horizontal_stack(
+    ...     *[note_with_vibrato(i, j) for i, j in zip([200, 500, 100],
+    ... [2, 1, 2])])
+    >>> s2 = note_with_vibrato(440, 1.5, 6, 1)
 
     """
     sample_rate = resolve_rate(sample_rate)
@@ -1548,13 +1548,6 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
         The maximum number of samples, taken instead of `duration` when
         given.
 
-    See Also
-    --------
-    note_with_vibrato : A note with vibrato.
-    note_with_vibratos_glissandos : a note with an arbitrary sequence of pitch
-                                    transition and a meta-vibrato.
-    tremolo : A tremolo envelope.
-
     Returns
     -------
     s : ndarray
@@ -1569,9 +1562,12 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
         divided, and one above the sample rate left notes shorter than a
         sample.
 
-    Examples
+    See Also
     --------
-    >>> write_wav_mono(trill())
+    note_with_vibrato : A note with vibrato.
+    note_with_vibratos_glissandos : a note with an arbitrary sequence of pitch
+                                    transition and a meta-vibrato.
+    tremolo : A tremolo envelope.
 
     Notes
     -----
@@ -1581,6 +1577,10 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
     ----------
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
+    Examples
+    --------
+    >>> write_wav_mono(trill())
 
     """
     sample_rate = resolve_rate(sample_rate)

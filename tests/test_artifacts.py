@@ -599,6 +599,12 @@ def test_what_comes_past_the_last_pan_transition_is_not_read():
      "'circ' is a law of a channel's power and loudness, which have no "
      "sign, so it cannot move between (1, 0) and (-1, 1)"),
     ({"p": ((1, 0), (1, -1)), "d": (1,), "method": "exp"}, "no sign"),
+    # A negative start, and one in a later transition, named by its own
+    # pair: with two points, the pair before and after are the same.
+    ({"p": ((-1, 0), (1, 1)), "d": (1,), "method": "circ"},
+     "cannot move between (-1, 0) and (1, 1)"),
+    ({"p": ((1, 0), (0, 1), (-1, 1)), "d": (1, 1), "method": "circ"},
+     "cannot move between (0, 1) and (-1, 1)"),
 ])
 def test_pan_transitions_refuses_what_it_cannot_render(arguments, message):
     with pytest.raises(ValueError, match=re.escape(message)):

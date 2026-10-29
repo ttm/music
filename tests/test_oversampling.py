@@ -57,6 +57,10 @@ def test_zero_output_skips_generator():
     def not_called(**kwargs):
         raise AssertionError("zero duration should not execute generator")
     assert music.render_oversampled(not_called, duration=0).size == 0
+    # A count of zero samples is zero samples too, which no sweep reached:
+    # this takes a generator, so none can call it on its defaults.
+    assert music.render_oversampled(not_called,
+                                    number_of_samples=0).size == 0
 
 
 @pytest.mark.parametrize("kwargs,match", [

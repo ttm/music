@@ -216,6 +216,13 @@ def test_rhythm_refuses_a_frequency_that_is_not_positive(freqs):
         rhythm_to_durations(freqs=freqs, total_duration=4)
 
 
+def test_a_tuplet_may_have_one_part_or_a_part_of_nothing():
+    """Its span and at least one part, which may be zero: the cells the
+    refusals below stop short of."""
+    assert rhythm_to_durations([[2, 1]], duration=.25) == [.5]
+    assert rhythm_to_durations([[2, 1, 0]], duration=.25) == [.5, 0.]
+
+
 @pytest.mark.parametrize("durations,refusal", [
     ([1, -1], "an entry of durations must be zero or more"),
     ([4, [2, 0, 0]], "the parts of a tuplet in durations come to nothing"),

@@ -98,8 +98,8 @@ waveform tables and is the one thing that needs matplotlib, which is an extra:
 
    pip install 'music[plot]'
 
-Nothing else in the package uses it, and leaving it out makes ``import music``
-about 40% faster.
+Nothing else in the package uses it, and it is imported only when
+``draw_tables`` runs, so leaving it out costs nothing else.
 
 :func:`music.sing` sings with espeak-ng, a system program, and Praat,
 through praat-parselmouth, which the singing extra installs:
@@ -166,7 +166,8 @@ Where things live
    * - :doc:`tables <api>`
      - Waveform lookup tables
    * - :doc:`legacy <api>`
-     - The ``Being`` and ``IteratorSynth`` synthesizer classes
+     - The ``CanonicalSynth``, ``IteratorSynth`` and ``Being``
+       synthesizer classes
 
 The whole public API is re-exported flat from the top level, so
 ``music.note(...)`` works regardless of which submodule defines it.

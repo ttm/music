@@ -128,8 +128,8 @@ which plots the waveform tables so you can look at them, needs matplotlib:
 pip install 'music[plot]'
 ```
 
-Nothing else in the package uses it, and leaving it out makes `import music`
-about 40% faster.
+Nothing else in the package uses it, and it is imported only when
+`draw_tables` runs, so leaving it out costs nothing else.
 
 `sing` needs espeak-ng, a system program, and Praat, through
 praat-parselmouth:
@@ -429,11 +429,11 @@ shapes for a level-matched listening review, and
 Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) you can find some scripts that use the main features of Music.
 
 * [chromatic_scale](https://github.com/ttm/music/tree/master/examples/chromatic_scale.py): writes twelve notes into a WAV file from a sequence of frequencies.
-* [penta_effects](https://github.com/ttm/music/tree/master/examples/penta_effects.py): writes a pentatonic scale repeated once clean, once with pitch, one with vibrato, one with Doppler, and one with FM, into a WAV stereo file.
+* [penta_effects](https://github.com/ttm/music/tree/master/examples/penta_effects.py): writes a pentatonic scale five times, plain, gliding up 30 Hz on each note, with a vibrato, with a Doppler shift and with FM, into a stereo WAV file.
 * [noisy](https://github.com/ttm/music/tree/master/examples/noisy.py): writes into a WAV file a sequence of different noises.
 * [thirty_notes](https://github.com/ttm/music/tree/master/examples/thirty_notes.py) and [thirty_numpy_notes](https://github.com/ttm/music/tree/master/examples/thirty_numpy_notes.py) generate a sequence of sounds by using a synth class (in this case the class [`Being`](https://github.com/ttm/music/tree/master/music/legacy/classes.py)).
 * [campanology](https://github.com/ttm/music/tree/master/examples/campanology.py) and [geometric_music](https://github.com/ttm/music/tree/master/examples/geometric_music.py) both use `Being` as their synth, but this time with permutations.
-* [isynth](https://github.com/ttm/music/tree/master/examples/isynth.py) also uses a synth class, but of a different kind, [`IteratorSynth`](https://github.com/ttm/music/tree/master/music/legacy/classes.py), that iterates through arbitrary lists of variables.
+* [isynth](https://github.com/ttm/music/tree/master/examples/isynth.py) also uses a synth class, but of a different kind, [`IteratorSynth`](https://github.com/ttm/music/tree/master/music/legacy/IteratorSynth.py), that iterates through arbitrary lists of variables.
 * [singing_demo](https://github.com/ttm/music/tree/master/examples/singing_demo.py): sings Mary had a little lamb with `music.sing`, and writes it to a WAV file.
 * [singing_backends](https://github.com/ttm/music/tree/master/examples/singing_backends.py): sings four songs, in English, French and German, and one slowly, with both singing backends, a file each, to be heard side by side.
 * [singing_effects](https://github.com/ttm/music/tree/master/examples/singing_effects.py): sings eCantorix's tremolo, melted and flite voices with both backends.
@@ -451,18 +451,18 @@ Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) 
 The modules are:
 
 * **core**:
-  * **synths** for synthesization of notes (including vibratos, glissandos, etc.), noises and envelopes, and the band-limited notes and oscillators.
+  * **synths** for the synthesis of notes (including vibratos, glissandos, etc.), noises and envelopes, and the band-limited notes and oscillators.
   * **filters** for the application of filters such as ADSR envelopes, fades, IIR and FIR, reverb, loudness, and localization, and for designing the coefficients the IIR ones take.
   * **io** for reading, writing and playing audio, both mono and stereo.
   * **functions** for normalization.
 * **structures** for higher level musical structures: permutations and the algebraic groups they form, change-ringing peals, and symmetry, built from sympy's, which the `structures` extra installs.
 * **theory** for scales, chords and the harmonic series. Counterpoint, harmonic expansion and modulation are described in the companion paper and are [not there yet](https://github.com/ttm/music/issues/1).
 * **bonds** for tying a note's vibrato and tremolo to its frequency, which is where an arbitrary construction of that kind goes.
-* **legacy** for musical pieces that are rendered with the Music package and might be used as material to make more music.
+* **legacy** for the synthesizer classes the examples play with, `CanonicalSynth`, `IteratorSynth` and `Being`, and for musical pieces rendered with them, which might be used as material to make more music.
 * **stimulation** for sensory-stimulation work: the seven stimuli above, each carrying the SSTIM term it implements, `StimulationSession` for sequencing them into a protocol, and `music.stimulation.sstim`, which writes them as SSTIM descriptions, reads them back, and reads what other tools write.
 * **singing** for `sing` and its two backends: `psola`, the package's own singer, and `perform`, which writes the score and runs the eCantorix engine that `bootstrap` clones and `paths` finds.
 * **hrtf** for fetching the KEMAR measurements into your cache and reading a direction's impulse responses out of them.
-* **tables** for the generation of lookup tables for some basic waveform.
+* **tables** for the generation of lookup tables for some basic waveforms.
 * **utils** for various functions regarding conversions, mix, etc.
 * **sequencer** for scheduling notes into a timeline and exporting audio.
 

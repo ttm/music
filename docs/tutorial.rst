@@ -80,7 +80,7 @@ Whether it happens at all depends on the frequency and the duration
 multiplying out to a whole number of cycles, so a melody can click on some
 notes and not others, which makes it sound like an articulation rather
 than a defect. :func:`music.adsr`, the next section, runs each note to
-silence at both ends and the joins go quiet. `tests/test_artifacts.py`
+silence at both ends and the joins go quiet. ``tests/test_artifacts.py``
 measures both.
 
 If you would rather write rhythm in beat units than in seconds,

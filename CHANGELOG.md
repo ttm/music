@@ -226,9 +226,20 @@ Old names keep working and warn: see **Deprecated**.
 - **Every two numeric parameters of an export move together,** to zero
   or a thousandth of their defaults, where the sweeps had moved one at a
   time. That found `bandlimited_note`'s fractional `table_size`.
+- **Every code block in the README runs,** in order and in one
+  namespace, as the tutorial's do; only the first had been run, for the
+  clicks between its notes. The singing block is left to CI's singing
+  job, and the KEMAR measurements, which the suite does not fetch, are
+  two short responses.
 
 ### Maintenance
 
+- **The README and the documentation's front page say what is true of
+  them now.** Leaving matplotlib out no longer makes `import music`
+  faster, since only `draw_tables` imports it; the `IteratorSynth` link
+  pointed at another file; `legacy` holds three synthesizer classes, not
+  only pieces; and `penta_effects` glides each note up 30 Hz where the
+  README said "with pitch".
 - **The Zenodo record's release notes keep the bold of a headline that
   opens with code.** The sync converted bold piece by piece between code
   spans, so a headline that is bold around one, as the one on

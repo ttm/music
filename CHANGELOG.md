@@ -49,6 +49,11 @@ Old names keep working and warn: see **Deprecated**.
   writer. A sound reaching past full scale is refused rather than clipped.
 - **A `play` extra, for `play_audio`, and a `structures` extra, for the
   permutations and peals.**
+- **`silence`, `gaussian_noise` and `trill` take `number_of_samples`,**
+  as every other routine that renders a duration does, and as the
+  tutorial said they did; `gaussian_noise` takes a `seed`, as `noise`
+  does, which draws the same noise again and leaves NumPy's global
+  random state alone.
 
 ### Changed
 

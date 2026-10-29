@@ -401,6 +401,26 @@ def test_the_count_sweep_finds_the_routines_that_take_one():
     assert {"note", "adsr", "noise", "binaural_beats"} <= set(COUNTED)
 
 
+#: What takes a duration and no count of samples, and why.
+DURATION_WITHOUT_A_COUNT = {
+    "StimulusPhase": "a phase's length in a session, which renders it",
+    "reverb": "the length of the reverberation, not of what it renders",
+    "rhythm_to_durations": "the length of a beat, and no sound at all",
+}
+
+
+def test_every_routine_taking_a_duration_takes_a_count_instead():
+    """The tutorial says so. silence, gaussian_noise and trill took a
+    duration alone."""
+    alone = sorted(
+        name for name in music.__all__
+        if callable(getattr(music, name))
+        and "duration" in inspect.signature(getattr(music, name)).parameters
+        and "number_of_samples" not in inspect.signature(
+            getattr(music, name)).parameters)
+    assert alone == sorted(DURATION_WITHOUT_A_COUNT)
+
+
 @pytest.mark.parametrize("name", COUNTED)
 def test_zero_samples_render_nothing(name):
     """As a zero duration does, and in the same shape.
@@ -419,7 +439,9 @@ def test_zero_samples_render_nothing(name):
         rendered = np.asarray(function(number_of_samples=0), dtype=float)
     assert rendered.size == 0, (
         f"{name}(number_of_samples=0) rendered {rendered.shape}")
-    full = np.asarray(function(number_of_samples=10), dtype=float)
+    # Ten milliseconds, not ten samples: those are 4410 Hz apart, and
+    # gaussian_noise's band, 2250 to 3750 Hz, falls between them.
+    full = np.asarray(function(number_of_samples=441), dtype=float)
     assert rendered.ndim == full.ndim
 
 

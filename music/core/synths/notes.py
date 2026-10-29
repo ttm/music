@@ -1520,7 +1520,7 @@ def note_with_two_vibratos(
 
 
 def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
-          sample_rate=None):
+          sample_rate=None, number_of_samples=None):
     """
     Makes a trill.
 
@@ -1544,6 +1544,9 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
         default attack, decay and sustain and a 10 ms release, all timed
         at this rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
+    number_of_samples : integer or None
+        The maximum number of samples, taken instead of `duration` when
+        given.
 
     See Also
     --------
@@ -1598,7 +1601,9 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
         raise ValueError(
             f"each note of the trill must span at least one sample; "
             f"{notes_per_second} notes a second at {sample_rate} Hz do not")
-    number_of_samples = sample_rate / notes_per_second
+    note_length = sample_rate / notes_per_second
+    limit = (duration * sample_rate if number_of_samples is None
+             else number_of_samples)
     pointer = 0
     i = 0
     s = []
@@ -1609,8 +1614,8 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
     # it rendered three, a quarter of the duration missing. At 44,100 the
     # note length is 5512.5 and the accumulated pointer landed just under
     # the bound, so the same call was right there and nothing noticed.
-    while pointer + number_of_samples <= duration * sample_rate:
-        ns = int(number_of_samples * (i + 1) - pointer)
+    while pointer + note_length <= limit:
+        ns = int(note_length * (i + 1) - pointer)
         note_ = note(freqs[i % len(freqs)], number_of_samples=ns,
                      waveform_table=WAVEFORM_TRIANGULAR,
                      sample_rate=sample_rate)

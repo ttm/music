@@ -7,6 +7,19 @@ import music
 from ..._rate import resolve_rate
 
 
+
+def _uniform(seed):
+    """A uniform draw: NumPy's global one, or a generator of its own seeded
+    with `seed`, which draws the same noise again and leaves the global
+    state alone."""
+    if seed is not None and (
+            not isinstance(seed, (int, np.integer)) or isinstance(seed, bool)
+            or not 0 <= seed < 2**64):
+        raise ValueError("seed must be a nonnegative uint64 integer")
+    return (np.random.uniform if seed is None
+            else np.random.default_rng(seed).uniform)
+
+
 def noise(noise_type: str | float = "brown", duration: float = 2,
           min_freq: float = 15, max_freq: float = 15000,
           number_of_samples: int | None = None,
@@ -127,10 +140,7 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
         raise ValueError(
             f"min_freq ({min_freq} Hz) is above the Nyquist frequency "
             f"({sample_rate / 2} Hz), so the band holds nothing")
-    if seed is not None and (
-            not isinstance(seed, (int, np.integer)) or isinstance(seed, bool)
-            or not 0 <= seed < 2**64):
-        raise ValueError("seed must be a nonnegative uint64 integer")
+    uniform = _uniform(seed)
     if number_of_samples is not None:
         length = number_of_samples
     else:
@@ -151,8 +161,6 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
     # always silent; an even length draws as many as it did.
     positive = (length + 1) // 2
     coeffs = np.zeros(length, dtype=complex)
-    uniform = (np.random.uniform if seed is None
-               else np.random.default_rng(seed).uniform)
     coeffs[:positive] = np.exp(1j * uniform(0, 2 * np.pi, positive))
     if length % 2 == 0:
         coeffs[length // 2] = 1.
@@ -201,7 +209,9 @@ def _band(low, high, length, sample_rate):
 
 
 def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
-                   sample_rate: int | None = None) -> NDArray[np.float64]:
+                   sample_rate: int | None = None,
+                   number_of_samples: int | None = None,
+                   seed: int | None = None) -> NDArray[np.float64]:
     """Synth gaussian noise
 
     Parameters
@@ -225,6 +235,13 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
     sample_rate : int or None, optional
         The sample rate to use.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
+    number_of_samples : integer or None
+        The number of samples, as :func:`noise` takes it: if given,
+        duration is ignored, and zero is no samples.
+    seed : integer or None
+        A seed for the random phases, as :func:`noise` takes it: the same
+        seed draws the same noise again. None, the default, draws from
+        NumPy's global random state.
 
     Returns
     -------
@@ -241,7 +258,8 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
         by its own zero range: the caller got an array of NaN behind a
         warning. A duration too short to hold a sample is not refused --
         it renders nothing, as everything here does. Also if
-        ``sample_rate`` is not positive.
+        ``sample_rate`` is not positive, or ``seed`` is not a whole number
+        in [0, 2**64).
 
     Notes
     -----
@@ -272,13 +290,15 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
         raise ValueError(
             f"std is the width of the band and must be positive; got {std}. "
             "A band of no width holds no frequency to draw a noise from")
-    length = int(duration * sample_rate)
+    uniform = _uniform(seed)
+    length = (int(duration * sample_rate) if number_of_samples is None
+              else int(number_of_samples))
     if length < 1:
         # As in `noise` above: a zero duration renders nothing, and
         # normalize_mono is where an empty sound is refused.
         return np.array([])
     freq_res = sample_rate / float(length)
-    coeffs = np.exp(1j * np.random.uniform(0, 2 * np.pi, length))
+    coeffs = np.exp(1j * uniform(0, 2 * np.pi, length))
     f1 = (mean - std / 2) * 3000
     f2 = (mean + std / 2) * 3000
     # A band reaching below 0 Hz is the positive part of itself: mean=1
@@ -320,8 +340,8 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
     return music.core.normalize_mono(noise_vector)
 
 
-def silence(duration: float = 1.0,
-            sample_rate: int | None = None) -> NDArray[np.float64]:
+def silence(duration: float = 1.0, sample_rate: int | None = None,
+            number_of_samples: int | None = None) -> NDArray[np.float64]:
     """Generate a silence of specified length.
 
     Parameters
@@ -331,6 +351,8 @@ def silence(duration: float = 1.0,
     sample_rate : int or None, optional
         The sample rate to use.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
+    number_of_samples : integer or None
+        The number of samples, taken instead of `duration` when given.
 
     Returns
     -------
@@ -348,5 +370,6 @@ def silence(duration: float = 1.0,
     >>> phrase = horizontal_stack(note(220, 0.2), silence(0.1), note(330, 0.2))
     """
     sample_rate = resolve_rate(sample_rate)
-
-    return np.zeros(max(0, int(duration * sample_rate)))
+    count = (int(duration * sample_rate) if number_of_samples is None
+             else int(number_of_samples))
+    return np.zeros(max(0, count))

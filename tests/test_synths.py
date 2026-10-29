@@ -516,3 +516,26 @@ def test_the_vibratos_glissandos_defaults_are_the_ones_it_declares():
     assert np.array_equal(
         music.note_with_vibratos_glissandos(),
         music.note_with_vibratos_glissandos(sample_rate=44100))
+
+
+def test_a_seed_draws_the_same_gaussian_noise_and_leaves_numpy_alone():
+    """`noise` took a seed and `gaussian_noise` did not, so the one could
+    be drawn again and the other only by seeding NumPy's global state."""
+    state = np.random.get_state()
+    first = music.gaussian_noise(duration=0.05, seed=7)
+    np.testing.assert_array_equal(first,
+                                  music.gaussian_noise(duration=0.05, seed=7))
+    assert not np.array_equal(first,
+                              music.gaussian_noise(duration=0.05, seed=8))
+    np.testing.assert_array_equal(np.random.get_state()[1], state[1])
+    with pytest.raises(ValueError, match="seed must be a nonnegative"):
+        music.gaussian_noise(seed=-1)
+
+
+@pytest.mark.parametrize("make", ["silence", "gaussian_noise", "trill"])
+def test_a_count_of_samples_is_the_duration_it_stands_for(make):
+    function = getattr(music, make)
+    np.random.seed(0)
+    by_count = function(number_of_samples=4410)
+    np.random.seed(0)
+    np.testing.assert_array_equal(by_count, function(duration=0.1))

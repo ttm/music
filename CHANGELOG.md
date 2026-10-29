@@ -245,6 +245,12 @@ Old names keep working and warn: see **Deprecated**.
   short responses.
 - **Every docstring keeps its sections in numpydoc's order,** which
   forty-three did not, the Examples mostly before the Notes.
+- **Every area of the mutation audit was measured again,** over the
+  code this release ships, and a nineteenth area holds the four modules
+  it added. The runs found the singing resampler halving a component at
+  the new Nyquist frequency, and tests too loose to see a change in much
+  of what the release added; both are fixed, and of 15,360 mutants the
+  1,016 left are reviewed in `MUTATION_AUDIT.md`.
 
 ### Maintenance
 

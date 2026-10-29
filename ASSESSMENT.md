@@ -254,11 +254,12 @@ either documented in the code or tracked in the issue list.
   degenerate parameters now checks the mean as well, with these seven
   registered, so the class has somewhere to be recorded.
 
-- **Mutation testing covers every module, in eighteen areas.** The
+- **Mutation testing covers every module, in nineteen areas.** The
   audits change each module with code to mutate, one operation at a
-  time: the 36 that 1.10.0 had, in sixteen areas, and the SSTIM package
-  and the band-limited oscillators added since, in two more; everything
-  but `structures/symmetry.py`, which only re-exports. All eighteen areas
+  time: the 36 that 1.10.0 had, in sixteen areas, the SSTIM package and
+  the band-limited oscillators added since, in two more, and the four
+  modules 2.0.0 added, in a nineteenth; everything but
+  `structures/symmetry.py`, which only re-exports. All nineteen areas
   are complete, with their surviving mutants individually reviewed.
   These tests exposed timing, gain, modulation, envelope-rate, phase,
   padding, naming, permutation and refusal defects that line and branch
@@ -292,16 +293,15 @@ either documented in the code or tracked in the issue list.
   files and their selected tests. Expanding the audit remains
   issue #113.
 
-  **They describe the code before the release after 1.11.0.** The
-  default sample rate, the zero sample count, the renamed parameters,
-  the writers' `normalize` and the lazy sympy changed modules in most of
-  the eighteen areas after they were measured, and added four, which a
-  nineteenth area, `foundations`, now holds: `music/_rate.py`,
-  `music/_deprecation.py`, `music/_warn.py` and
-  `music/structures/_sympy.py`. Line and branch coverage of all of it is
-  100 %, which says every line ran and not that a wrong one would fail;
-  until the areas are measured again, the survivor lists in
-  MUTATION_AUDIT.md are for code that has since changed.
+  **Every area was measured again for 2.0.0,** on 2026-10-29, over the
+  code it ships. The runs found one defect, in the resampler this
+  release added for singing at other rates, which halved a component at
+  the new Nyquist frequency when it shortened a line; and tests too loose
+  to see a change in much of what the release added -- refusals matched
+  by their last words, a sweep that took any finite result for a render,
+  a count of zero nothing reached. Both are fixed, and of 15,360 mutants
+  the 1,016 left are reviewed in MUTATION_AUDIT.md, which gives each
+  area's IDs now and why each is accepted.
 
 - **The click measure is relative, so it is blind in fast passages.** A
   step counts as a click when it stands eight times over the median step
@@ -674,5 +674,5 @@ documented, and clean under both the default lint set and the type
 checker. Until the review after 1.8.3 it also built its noise tail at
 44.1 kHz whatever rate it was given, and nothing measured that. Coverage
 says a line ran; it cannot say the line was right. The mutation audits
-come closest to asking, and they cover every module, in eighteen areas,
+come closest to asking, and they cover every module, in nineteen areas,
 each against its own tests: not a whole-package score.

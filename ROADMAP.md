@@ -895,6 +895,34 @@ converter cut a line at its code spans before looking for bold. It no
 longer does, and the record was synced again; every earlier release's
 notes have the same fault.
 
+## Completed: the review for 2.0.0, 2026-10-29
+
+A review of everything since 1.11.0, and of what the sweeps had not yet
+reached, found three kinds of thing, each in CHANGELOG.md under 2.0.0:
+
+- **Traps in the API, changed in a major release.** A count of zero
+  samples meant "not given" and rendered two seconds; parameters in
+  milliseconds did not say so; `cross_fade` faded the caller's arrays;
+  `pan_transitions` ignored its `method`; `mix_stereo` given one sound
+  returned it doubled; and `Bonds.render` joined its notes bare. Each
+  changed, under **Note for anyone upgrading**, and an old name still
+  works and warns.
+- **Inputs the routines met badly.** Swept at zero, below zero, in
+  stereo, two parameters at a time, and through every method that takes
+  arguments, routines failed in numpy, in Python's own words, or in a
+  refusal naming a parameter the caller never gave. Each works now or is
+  refused by the package, naming what it refuses, and the sweeps are
+  tests.
+- **One defect the mutation audits found:** the resampler this release
+  added for singing at other rates halved a component at the new
+  Nyquist frequency when it shortened a line.
+
+Every area of the package was measured again, and a nineteenth holds
+the four modules the release added; `MUTATION_AUDIT.md` has the runs,
+and the tests they showed too loose to see a change are not any more.
+The README's and the documentation's code blocks run as tests now, as
+the tutorial's did, and the figures the tutorial quotes are recomputed.
+
 ## Open after the September 2026 audits
 
 What the audits found and did not fix, and why. Each is recorded where

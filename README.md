@@ -469,10 +469,10 @@ The modules are:
 ## Plans
 
 See [the findings and prioritized roadmap](ROADMAP.md) for the September
-2026 review, the correctness patches since 1.8.1, the
-[mutation audits](MUTATION_AUDIT.md) of all eighteen areas of the package,
-every module it has, and the band-limited synthesis and SSTIM work since
-1.10.0.
+2026 review, the correctness patches since 1.8.1, the review for 2.0.0,
+the [mutation audits](MUTATION_AUDIT.md) of all nineteen areas of the
+package, every module it has, and the band-limited synthesis and SSTIM
+work since 1.10.0.
 
 Concrete things the code itself is waiting for, rather than a wish list:
 

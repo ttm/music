@@ -78,11 +78,19 @@ def test_count_override_and_empty_render():
     ({"rolloff_hz": -1}, "rolloff_hz"),
     ({"rolloff_hz": float("inf")}, "rolloff_hz"),
     ({"table_size": 3}, "table_size"),
+    ({"table_size": 1000.5}, "table_size must be a whole number"),
     ({"waveform": "unknown"}, "unknown waveform"),
 ])
 def test_invalid_arguments_refused(args, message):
     with pytest.raises(ValueError, match=message):
         music.bandlimited_note(**args)
+
+
+def test_a_whole_table_size_may_be_written_as_a_float():
+    """A fraction reached numpy's FFT as a TypeError, and so did 64.0."""
+    np.testing.assert_array_equal(
+        music.bandlimited_note(220, number_of_samples=37, table_size=64.0),
+        music.bandlimited_note(220, number_of_samples=37, table_size=64))
 
 
 def test_gibbs_overshoot_is_not_hidden_by_normalization():

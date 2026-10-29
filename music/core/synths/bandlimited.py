@@ -61,7 +61,8 @@ def bandlimited_note(
         Samples per second.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
     table_size : int
-        Resolution of the periodic prefiltered table (at least 4).
+        Resolution of the periodic prefiltered table: a whole number, at
+        least 4.
     rolloff_hz : float
         Optional nonnegative linear transition width below Nyquist.
         The default zero keeps all allowed harmonics. A smooth rolloff
@@ -106,8 +107,12 @@ def bandlimited_note(
         raise ValueError("duration must be finite and nonnegative")
     if rolloff_hz < 0 or not np.isfinite(rolloff_hz):
         raise ValueError("rolloff_hz must be finite and nonnegative")
-    if table_size < 4:
-        raise ValueError("table_size must be at least 4")
+    # A fraction reached numpy's FFT, which refused it as a TypeError.
+    if table_size < 4 or table_size != int(table_size):
+        raise ValueError(
+            f"table_size must be a whole number of at least 4; got "
+            f"{table_size}")
+    table_size = int(table_size)
     count = (int(number_of_samples) if number_of_samples is not None
              else int(duration * sample_rate))
     if not count:

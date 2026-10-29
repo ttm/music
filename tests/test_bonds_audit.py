@@ -73,8 +73,8 @@ def test_a_render_is_at_the_rate_it_is_given():
 
 
 def test_a_render_of_nothing_says_so():
-    with pytest.raises(ValueError, match="^render needs at least one "
-                       "frequency$"):
+    with pytest.raises(ValueError, match="^freqs is empty, and render needs "
+                       "at least one frequency$"):
         Bonds().render([])
 
 

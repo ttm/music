@@ -70,6 +70,15 @@ class StimulusPhase:
     parameters : dict
         Keyword arguments passed to ``stimulus`` when it is a callable.
 
+    Raises
+    ------
+    ValueError
+        If ``ramp`` or ``duration`` is negative, or if a callable
+        stimulus is given no duration -- it would render nothing, and
+        silently dropping a phase from a protocol is worse than refusing
+        it. Only :meth:`StimulationSession.add` checked, so a phase made
+        by hand was refused nowhere.
+
     Examples
     --------
     >>> phase = StimulusPhase(stimulus=binaural_beats, duration=0.2,
@@ -91,6 +100,17 @@ class StimulusPhase:
     gain: float = 1.0
     label: str = ''
     parameters: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.duration < 0:
+            raise ValueError(
+                f"duration cannot be negative, got {self.duration}")
+        if self.ramp < 0:
+            raise ValueError(f"ramp cannot be negative, got {self.ramp}")
+        if callable(self.stimulus) and not self.duration:
+            raise ValueError(
+                "a callable stimulus needs a duration; pass an already "
+                "rendered array to use its own length instead")
 
 
 def _ramp_shape(count, shape, rising):
@@ -157,6 +177,14 @@ class StimulationSession:
     phases : list of StimulusPhase
         The phases, in order. Normally built with :meth:`add`.
 
+    Raises
+    ------
+    ValueError
+        If ``sample_rate`` is not positive, ``end_ramp`` is negative, or
+        ``ramp_shape`` is neither name. A zero rate rendered nothing and a
+        negative one divided by zero; a negative end ramp was taken as
+        none, and any other shape as ``'equal_power'``.
+
     Examples
     --------
     >>> import music
@@ -179,6 +207,18 @@ class StimulationSession:
     end_ramp: float = 0.0
     ramp_shape: str = 'equal_power'
     phases: List[StimulusPhase] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if self.sample_rate <= 0:
+            raise ValueError(
+                f"sample_rate must be positive; got {self.sample_rate}")
+        if self.end_ramp < 0:
+            raise ValueError(
+                f"end_ramp cannot be negative, got {self.end_ramp}")
+        if self.ramp_shape not in ('equal_power', 'linear'):
+            raise ValueError(
+                f"ramp_shape is 'equal_power' or 'linear'; got "
+                f"{self.ramp_shape!r}")
 
     def add(self, stimulus: Stimulus, duration: float = 0.0,
             ramp: float = 0.0, gain: float = 1.0, label: str = '',
@@ -206,19 +246,10 @@ class StimulationSession:
         Raises
         ------
         ValueError
-            If ``ramp`` or ``duration`` is negative, or if a callable
-            stimulus is given no duration -- it would render nothing,
-            and silently dropping a phase from a protocol is worse than
-            refusing it.
+            As :class:`StimulusPhase` raises it: if ``ramp`` or
+            ``duration`` is negative, or if a callable stimulus is given
+            no duration.
         """
-        if duration < 0:
-            raise ValueError(f"duration cannot be negative, got {duration}")
-        if ramp < 0:
-            raise ValueError(f"ramp cannot be negative, got {ramp}")
-        if callable(stimulus) and not duration:
-            raise ValueError(
-                "a callable stimulus needs a duration; pass an already "
-                "rendered array to use its own length instead")
         self.phases.append(
             StimulusPhase(stimulus=stimulus, duration=duration, ramp=ramp,
                           gain=gain, label=label, parameters=parameters))

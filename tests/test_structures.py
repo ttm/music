@@ -115,6 +115,35 @@ def test_as_many_hunts_as_elements_or_more_is_rejected(nhunts):
         PlainChanges(4, nhunts=nhunts)
 
 
+def test_a_peal_is_performed_on_no_more_bells_than_it_was_built_for():
+    """The swaps are built for the object's bells, and a peal on more of
+    them ran off their end as an IndexError."""
+    changes = PlainChanges(4)
+    assert changes.perform_peal(3)
+    with pytest.raises(ValueError, match="built for 4 bells and has no "
+                                         "swaps for 5"):
+        changes.perform_peal(5)
+
+
+def test_a_change_needs_the_hunts_initialize_hunts_lays_out():
+    changes = PlainChanges(4)
+    with pytest.raises(ValueError, match="hunts holds no 'hunt0'"):
+        changes.perform_change(4, {})
+    with pytest.raises(ValueError, match="hunts holds no 'hunt7'"):
+        changes.perform_change(4, changes.initialize_hunts(4), "hunt7")
+
+
+def test_a_domain_of_the_wrong_length_is_refused():
+    """It reached sympy, which refused it with a TypeError."""
+    peals = music.Peals(4)
+    peals.transpositions_peal(peals.permutations[1])
+    refusal = "the domain has 3 elements and the peal permutes 4"
+    with pytest.raises(ValueError, match=refusal):
+        peals.act("transposition_peal", domain=[1, 2, 3])
+    with pytest.raises(ValueError, match=refusal):
+        PlainChanges(4).act([1, 2, 3])
+
+
 @pytest.mark.parametrize("nelements", [2, 3, 4])
 def test_small_peals_do_not_warn_about_negative_hunts(nelements):
     """Regression: the warning threshold was `nelements - 3`, which goes

@@ -136,6 +136,22 @@ Old names keep working and warn: see **Deprecated**.
   now refuses a negative duration by name, and a to-zero longer than its
   stage is the whole stage. A negative vibrato or tremolo index was
   refused without saying which: `alphav1` or `alphav2`.
+- **The methods that take arguments refuse what they cannot use,** which
+  no sweep had reached. Swept, they showed `PlainChanges` performing a
+  peal on more bells than it was built for, or a change on hunts it had
+  not laid out, and both peal classes acting on a domain of the wrong
+  length, failing as an `IndexError`, a `KeyError` and sympy's
+  `TypeError`; a `StimulationSession` taking any ramp shape as
+  `'equal_power'`, a negative end ramp as none, a zero sample rate as
+  silence and a negative one as a `ZeroDivisionError`; a `StimulusPhase`
+  made by hand refusing nothing `add` refused; the legacy
+  synthesizers' `adsrApply` and `tremoloEnvelope` failing in numpy on a
+  stereo sound, and `adsrSetup` on a negative release; and
+  `Being.render(0)` failing in numpy where no notes are no samples. Each
+  now works or is refused by the package.
+- **`bandlimited_note` refuses a fractional `table_size`,** which reached
+  numpy's FFT as a `TypeError`, and takes a whole one written as a
+  float, which did too.
 
 ### Deprecated
 
@@ -158,6 +174,15 @@ Old names keep working and warn: see **Deprecated**.
   its own shape,** as the zero-duration sweep already required.
 - **Each deprecated name still works and warns, and no export uses one
   itself.**
+- **Every public method that takes arguments is called with ones that
+  work, and then with each at its edge** -- a number at zero and below,
+  a sequence empty, a sound in stereo and with no samples -- and works or
+  is refused by the package, naming the argument. A method added without
+  a call there fails the sweep. The sweeps of the exports' parameters at
+  zero and below now ask the same naming of every refusal.
+- **Every two numeric parameters of an export move together,** to zero
+  or a thousandth of their defaults, where the sweeps had moved one at a
+  time. That found `bandlimited_note`'s fractional `table_size`.
 
 ### Maintenance
 

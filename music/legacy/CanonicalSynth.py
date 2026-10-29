@@ -14,6 +14,15 @@ def _fit(stage, count):
     return stage[indexes]
 
 
+def _refuse_negative_stages(**stages):
+    """Refuse a stage of the envelope lasting less than nothing."""
+    for name, value in stages.items():
+        if value < 0:
+            raise ValueError(
+                f"{name} is a duration in milliseconds and cannot be "
+                f"negative; got {value}")
+
+
 class CanonicalSynth:
     """
     Simple synthesizer for sound synthesis with vibrato, tremolo, and ADSR.
@@ -168,7 +177,17 @@ class CanonicalSynth:
         adsr_method : str, optional
             The ADSR method, by default "absolute". Stored and not read
             either: "absolute" is the only one there is.
+
+        Raises
+        ------
+        ValueError
+            If `A`, `D` or `R` is negative. A negative release reached
+            numpy as a negative count of samples, and a negative attack or
+            decay left stages that did not meet.
         """
+        # A helper's loop, not one here: what is local here becomes an
+        # attribute of the synthesizer, below.
+        _refuse_negative_stages(A=A, D=D, R=R)
         adsr_method = adsr_method  # implement relative and False
         a_S = 10 ** (S / 20.)
         Lambda_A = int(A * self.samplerate * 0.001)
@@ -202,9 +221,12 @@ class CanonicalSynth:
         Returns
         -------
         array_like
-            Audio vector with applied ADSR envelope.
+            Audio vector with applied ADSR envelope. A stereo vector has
+            each channel shaped alike.
         """
-        Lambda = len(audio_vec)
+        # The length of a channel: len() counted a stereo vector's two
+        # channels, and numpy could not broadcast a two-sample envelope.
+        Lambda = n.shape(audio_vec)[-1]
         attack, decay, release = self.A_i, self.D_i, self.R_i
 
         # The attack, decay and release stages cannot outlast the note they
@@ -258,13 +280,15 @@ class CanonicalSynth:
         Returns
         -------
         array_like
-            Tremolo envelope.
+            Tremolo envelope, or the sonic vector under it: a stereo one
+            has each channel shaped alike.
         """
         self.absorbState(**statevars)
         # `is not None`, as the return below already does: truth-testing an
-        # array raises, so passing one here was a ValueError.
+        # array raises, so passing one here was a ValueError. The length
+        # of a channel: len() counted a stereo vector's two channels.
         if sonic_vector is not None:
-            Lambda = len(sonic_vector)
+            Lambda = n.shape(sonic_vector)[-1]
         else:
             Lambda = n.floor(self.samplerate * self.duration)
         ii = n.arange(Lambda)

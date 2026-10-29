@@ -93,6 +93,8 @@ are settled by the tests and tools each row names.
 | Round-trip noise | `tests/test_artifacts.py` | **48 dB** at 8-bit, **121** at 16, **145** at 24, against what was written |
 | Filter stability | `tests/test_artifacts.py` | every design's poles inside the unit circle across its whole parameter range |
 | Degenerate parameters | `tests/test_degenerate.py` | **148** (routine, parameter) pairs set to zero, and below it: each works or is refused with a `ValueError` naming the parameter |
+| Parameter pairs | `tests/test_degenerate.py` | every two numeric parameters of a routine together, at zero or a thousandth of their defaults: each pair works or is refused with a `ValueError` naming one of them |
+| Methods | `tests/test_methods.py` | every public method taking arguments, called with ones that work and then with each at its edge -- zero, below, empty, stereo: each works or is refused with a `ValueError` naming the argument |
 | Zero durations | `tests/test_degenerate.py` | every routine that takes a duration renders nothing for a zero one, in the shape it would otherwise have |
 | Zero samples | `tests/test_degenerate.py` | every routine that takes a sample count renders nothing for a count of zero, likewise |
 | Length, rate and pitch | `tests/test_properties.py` | **24 of 26** timed routines render exactly `duration * sample_rate` at four rates; the other two are registered |

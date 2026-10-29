@@ -411,7 +411,8 @@ class Being:
 
         Returns
         -------
-        array or None: Rendered notes.
+        array or None: Rendered notes. No notes, or fewer, are no
+        samples.
 
         """
         self.mkArray()
@@ -432,14 +433,17 @@ class Being:
                  for ff, dd, fvv, nuu, tabb, AA, DD, SS, RR
                  in zip(freq, duration, vibrato_freq, max_pitch_dev,
                         waveform_table, A, D, S, R)]
+        # Stacking no notes failed in numpy, where the rest of the package
+        # renders nothing for a count of nothing.
+        sound = horizontal_stack(*notes) if notes else n.zeros(0)
         if fn:
             if not isinstance(fn, str):
                 fn = 'abeing.wav'
             if fn[-4:] != '.wav':
                 fn += '.wav'
-            write_wav_mono(horizontal_stack(*notes), fn)
+            write_wav_mono(sound, fn)
         else:
-            return horizontal_stack(*notes)
+            return sound
 
     def startBeing(self):
         """Start the Being.

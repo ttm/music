@@ -1,3 +1,17 @@
+def _acted(peal, domain):
+    """Each permutation of `peal` applied to `domain`.
+
+    A domain of another length than the permutations reached sympy, which
+    refused it with a ``TypeError`` from inside the call.
+    """
+    for permutation in peal:
+        if len(domain) != permutation.size:
+            raise ValueError(
+                f"the domain has {len(domain)} elements and the peal "
+                f"permutes {permutation.size}; give one for each bell")
+    return [permutation(domain) for permutation in peal]
+
+
 class GenericPeal:
     """A collection of named peals that can be acted on a domain.
 
@@ -77,6 +91,15 @@ class GenericPeal:
         list
             The result of acting the peal on the specified domain.
 
+        Raises
+        ------
+        ValueError
+            If no peals are defined, no domain is given and `nelements`
+            is not set, or the domain's length is not the number of
+            elements the peal permutes.
+        KeyError
+            If no peal goes by `peal`.
+
         """
         if not self.peals:
             raise ValueError(
@@ -93,7 +116,7 @@ class GenericPeal:
                     "be built; pass domain explicitly"
                 )
             domain = list(range(self.nelements))
-        return [i(domain) for i in self.peals[peal]]
+        return _acted(self.peals[peal], domain)
 
     def act_all(self, domain=None):
         """Acts all peals on the specified domain.
@@ -103,6 +126,11 @@ class GenericPeal:
         domain : list, optional
             The domain on which to act the peals.
             Defaults to None.
+
+        Raises
+        ------
+        ValueError
+            As :meth:`act` raises it.
 
         """
         if not self.peals:
@@ -118,6 +146,6 @@ class GenericPeal:
             domain = list(range(self.nelements))
         acted_peals = {}
         for peal in self.peals:
-            acted_peals[peal+"_acted"] = [i(domain) for i in self.peals[peal]]
+            acted_peals[peal + "_acted"] = _acted(self.peals[peal], domain)
         self.domain = domain
         self.acted_peals = acted_peals

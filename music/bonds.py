@@ -327,7 +327,8 @@ class Bonds:
         sample_rate = resolve_rate(sample_rate)
         freqs = list(freqs)
         if not freqs:
-            raise ValueError('render needs at least one frequency')
+            raise ValueError('freqs is empty, and render needs at least one '
+                             'frequency')
         # Real rather than (int, float): numpy's float64 subclasses float
         # but its int64 does not, so a duration straight out of an array
         # went to the sequence branch and was iterated over.

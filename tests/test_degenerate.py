@@ -33,6 +33,7 @@ something anyone can act on.
 """
 
 import inspect
+import itertools
 import os
 import pathlib
 import re
@@ -667,3 +668,43 @@ def test_a_parameter_below_zero_works_or_is_refused_clearly(name, parameter):
             f"{parameter}: {error}")
         return
     assert _finite(rendered), f"{name}({parameter}={value}) is not finite"
+
+
+PAIRS = sorted(
+    (name, first, second)
+    for name in ZERO_ARG_EXPORTS
+    for first, second in itertools.combinations(
+        _numeric_parameters(_callable_with_defaults(name)), 2))
+
+
+def test_the_pair_sweep_finds_the_pairs():
+    assert len(PAIRS) >= 250
+    assert ("adsr", "attack_ms", "to_zero_ms") in PAIRS
+
+
+@pytest.mark.parametrize("name,first,second", PAIRS,
+                         ids=lambda value: str(value))
+def test_two_parameters_near_nothing_work_or_are_refused_by_name(
+        name, first, second):
+    """The sweeps above move one parameter at a time. Moved together, to
+    zero or a thousandth of their defaults, two found `bandlimited_note`
+    handing a fractional `table_size` to numpy's FFT, which refused it as
+    a `TypeError`."""
+    function = _callable_with_defaults(name)
+    parameters = inspect.signature(function).parameters
+    for scales in itertools.product((0, 1e-3), repeat=2):
+        arguments = {parameter: parameters[parameter].default * scale
+                     for parameter, scale in zip((first, second), scales)}
+        np.random.seed(0)
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("error")
+                rendered = function(**arguments)
+        except ValueError as error:
+            assert _was_raised_deliberately(error), (
+                f"{name}(**{arguments}) failed where numpy gave up: {error}")
+            assert first in str(error) or second in str(error), (
+                f"{name}(**{arguments}) was refused without naming either: "
+                f"{error}")
+            continue
+        assert _finite(rendered), f"{name}(**{arguments}) is not finite"

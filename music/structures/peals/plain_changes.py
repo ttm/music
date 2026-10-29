@@ -10,6 +10,7 @@ References
 
 from ..._warn import warn
 from .._sympy import combinatorics
+from .base import _acted
 
 
 class PlainChanges:
@@ -63,13 +64,13 @@ class PlainChanges:
         self.acted_peals = None
         hunts = self.initialize_hunts(nelements, nhunts)
         Permutation = combinatorics().Permutation
+        self.nelements = nelements
         self.neutral_perm = Permutation(size=nelements)
         self.neighbor_swaps = [Permutation(i, i + 1, size=nelements)
                                for i in range(nelements - 1)]
         self.domains = []
         self.perform_peal(nelements, dict(hunts))
         self.hunts = hunts
-        self.nelements = nelements
 
     @staticmethod
     def saturating_hunts(nelements):
@@ -170,6 +171,12 @@ class PlainChanges:
         dict
             The updated hunts dictionary.
 
+        Raises
+        ------
+        ValueError
+            As :meth:`perform_change` raises it, or :meth:`initialize_hunts`
+            for fewer than two elements.
+
         """
         if hunts is None:
             hunts = self.initialize_hunts(nelements)
@@ -210,9 +217,25 @@ class PlainChanges:
         dict
             The updated hunts dictionary.
 
+        Raises
+        ------
+        ValueError
+            If `nelements` is more than this object was built for, whose
+            swaps it changes with, or `hunts` holds no `hunt`. They failed
+            as an ``IndexError`` and a ``KeyError`` from inside the change.
+
         """
+        if nelements > self.nelements:
+            raise ValueError(
+                f"this PlainChanges was built for {self.nelements} bells "
+                f"and has no swaps for {nelements}; build one for "
+                f"{nelements}")
         if hunt is None:
             hunt = "hunt0"
+        if hunt not in hunts:
+            raise ValueError(
+                f"hunts holds no {hunt!r}; give the hunts initialize_hunts "
+                f"lays out")
         hunt_ = hunts[hunt]
         direction = hunt_["direction"]
         assert direction in {"up", "down"}
@@ -261,12 +284,18 @@ class PlainChanges:
         list
             The acted domain.
 
+        Raises
+        ------
+        ValueError
+            If the domain's length is not the number of elements the peal
+            permutes.
+
         """
         if domain is None:
             domain = list(range(self.nelements))
         if peal is None:
             peal = self.peal_direct
-        return [i(domain) for i in peal]
+        return _acted(peal, domain)
 
     def act_all(self, domain=None):
         """
@@ -277,12 +306,16 @@ class PlainChanges:
         domain : list, optional
             The domain. Defaults to None.
 
+        Raises
+        ------
+        ValueError
+            As :meth:`act` raises it.
+
         """
         if domain is None:
             domain = list(range(self.nelements))
         acted_peals = {}
         for peal in self.peals:
-            acted_peals[peal + "_acted"] = [i(domain)
-                                            for i in self.peals[peal]]
+            acted_peals[peal + "_acted"] = _acted(self.peals[peal], domain)
         self.domain = domain
         self.acted_peals = acted_peals

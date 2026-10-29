@@ -516,6 +516,30 @@ def test_negative_times_are_refused(kwargs, match):
     session = music.StimulationSession()
     with pytest.raises(ValueError, match=match):
         session.add(constant, **kwargs)
+    with pytest.raises(ValueError, match=match):
+        music.StimulusPhase(constant, **kwargs)
+
+
+def test_a_phase_made_by_hand_is_refused_as_add_refuses_it():
+    """Only `add` checked, so a phase made directly took a negative
+    duration, a negative ramp or a callable with no duration."""
+    with pytest.raises(ValueError, match='needs a duration'):
+        music.StimulusPhase(constant)
+
+
+@pytest.mark.parametrize('kwargs, match', [
+    ({'sample_rate': 0}, "sample_rate must be positive; got 0"),
+    ({'sample_rate': -SR}, "sample_rate must be positive"),
+    ({'end_ramp': -1}, "end_ramp cannot be negative, got -1"),
+    ({'ramp_shape': 'cosine'},
+     "ramp_shape is 'equal_power' or 'linear'; got 'cosine'"),
+])
+def test_a_session_refuses_what_it_could_not_render(kwargs, match):
+    """A zero rate rendered nothing and a negative one divided by zero; a
+    negative end ramp was taken as none, and any other shape name as
+    'equal_power'."""
+    with pytest.raises(ValueError, match=match):
+        music.StimulationSession(**kwargs)
 
 
 def test_a_stimulus_that_ignores_number_of_samples_is_caught():

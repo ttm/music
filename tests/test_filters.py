@@ -500,3 +500,16 @@ def test_adsr_stereo_takes_the_per_stage_values_too():
     np.testing.assert_array_equal(
         music.adsr_stereo(alpha=(2, 0.5, 3), to_zero_ms=(5, 10)),
         np.vstack((mono, mono)))
+
+
+def test_a_seed_draws_the_same_room_and_leaves_numpy_alone():
+    """reverb drew its incidences and its tail from NumPy's global state,
+    so the same room could only be drawn again by seeding that state, as
+    the psola singer did around every call."""
+    state = np.random.get_state()
+    room = music.reverb(duration=0.3, seed=11)
+    np.testing.assert_array_equal(room, music.reverb(duration=0.3, seed=11))
+    assert not np.array_equal(room, music.reverb(duration=0.3, seed=12))
+    np.testing.assert_array_equal(np.random.get_state()[1], state[1])
+    with pytest.raises(ValueError, match="seed must be a nonnegative"):
+        music.reverb(seed=1.5)

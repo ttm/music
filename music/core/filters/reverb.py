@@ -2,7 +2,7 @@
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from ..synths.noises import noise
+from ..synths.noises import _random, noise
 from ...utils import as_sonic_vector
 from ..._rate import resolve_rate
 
@@ -10,7 +10,8 @@ from ..._rate import resolve_rate
 def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
            decay: float = -50, noise_type: str | float = "brown",
            sonic_vector: ArrayLike = 0,
-           sample_rate: int | None = None) -> NDArray[np.float64]:
+           sample_rate: int | None = None,
+           seed: int | None = None) -> NDArray[np.float64]:
     """
     Apply an artificial reverberation or return the impulse response.
 
@@ -23,13 +24,24 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     decay : scalar
         The total decay of the last incidence in decibels.
     noise_type : string or scalar
-        A string or scalar specifying the noise. Passed to
-        noises(ntype=scalar).
+        The colour of the noise the second period is made of, passed to
+        :func:`noise` as its ``noise_type``.
     sonic_vector : array_like
         An optional one dimensional array for the reverberation to be applied.
     sample_rate : scalar or None
         The sampling frequency.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
+    seed : integer or None
+        A seed for the incidences and the noise, as :func:`noise` takes
+        one: the same seed draws the same room again, and leaves NumPy's
+        global random state alone. None, the default, draws from that
+        state, as this always did.
+
+    Returns
+    -------
+    result : numpy.ndarray
+        An array with the impulse response of the reverberation. If
+        sonic_vector is specified, the reverberation applied to sonic_vector.
 
     Raises
     ------
@@ -43,11 +55,7 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
         deep for desired array". Reverberate each channel, or mix them
         down first.
 
-    Returns
-    -------
-    result : numpy.ndarray
-        An array with the impulse response of the reverberation. If
-        sonic_vector is specified, the reverberation applied to sonic_vector.
+        If ``seed`` is not a whole number in [0, 2**64).
 
     Notes
     -----
@@ -80,6 +88,7 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     sample_rate = resolve_rate(sample_rate)
     if sample_rate <= 0:
         raise ValueError(f"sample_rate must be positive; got {sample_rate}")
+    draw = _random(seed)
     samples = as_sonic_vector(sonic_vector)
     if samples is not None and samples.ndim != 1:
         raise ValueError(
@@ -110,7 +119,7 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     ii = np.arange(lambda_r)
     p = (ii[:lambda1] / lambda1) ** 2.
     # incidences:
-    r1_ = np.random.random(lambda1) < p
+    r1_ = draw.random(lambda1) < p
     # A one-sample response is the direct sound alone, with no span for
     # the decay to divide.
     a = 10. ** ((decay / 20) * (ii / max(lambda_r - 1, 1)))
@@ -129,9 +138,12 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
     # for a rate too low to reach it: noise refuses a band upside down,
     # and at 20 Hz this one would be, for a floor the caller never set.
     tail = lambda_r - lambda1
+    # A seeded room draws the noise's seed from its own generator, so the
+    # two draws do not repeat each other's numbers.
     noise_ = noise(noise_type, min_freq=min(15, sample_rate / 2),
                    max_freq=sample_rate / 2, number_of_samples=tail,
-                   sample_rate=sample_rate)
+                   sample_rate=sample_rate,
+                   seed=None if seed is None else int(draw.integers(2**63)))
     r2 = noise_ * a[lambda1:lambda_r]
 
     # Eq. 78 Impulse response of the reverberation

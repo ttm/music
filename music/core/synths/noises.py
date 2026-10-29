@@ -8,16 +8,15 @@ from ..._rate import resolve_rate
 
 
 
-def _uniform(seed):
-    """A uniform draw: NumPy's global one, or a generator of its own seeded
-    with `seed`, which draws the same noise again and leaves the global
-    state alone."""
+def _random(seed):
+    """Where to draw from: NumPy's global random state, or a generator of
+    its own seeded with `seed`, which draws the same again and leaves the
+    global state alone. Both have ``uniform`` and ``random``."""
     if seed is not None and (
             not isinstance(seed, (int, np.integer)) or isinstance(seed, bool)
             or not 0 <= seed < 2**64):
         raise ValueError("seed must be a nonnegative uint64 integer")
-    return (np.random.uniform if seed is None
-            else np.random.default_rng(seed).uniform)
+    return np.random if seed is None else np.random.default_rng(seed)
 
 
 def noise(noise_type: str | float = "brown", duration: float = 2,
@@ -140,7 +139,7 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
         raise ValueError(
             f"min_freq ({min_freq} Hz) is above the Nyquist frequency "
             f"({sample_rate / 2} Hz), so the band holds nothing")
-    uniform = _uniform(seed)
+    uniform = _random(seed).uniform
     if number_of_samples is not None:
         length = number_of_samples
     else:
@@ -290,7 +289,7 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
         raise ValueError(
             f"std is the width of the band and must be positive; got {std}. "
             "A band of no width holds no frequency to draw a noise from")
-    uniform = _uniform(seed)
+    uniform = _random(seed).uniform
     length = (int(duration * sample_rate) if number_of_samples is None
               else int(number_of_samples))
     if length < 1:

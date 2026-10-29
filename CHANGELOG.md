@@ -54,6 +54,9 @@ Old names keep working and warn: see **Deprecated**.
   tutorial said they did; `gaussian_noise` takes a `seed`, as `noise`
   does, which draws the same noise again and leaves NumPy's global
   random state alone.
+- **`reverb` takes a `seed`,** which draws the same room again. Its
+  incidences and its tail came from NumPy's global state, so the psola
+  singer seeded that state around every call and set it back after.
 
 ### Changed
 

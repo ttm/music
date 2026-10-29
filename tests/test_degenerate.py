@@ -609,6 +609,9 @@ def test_a_stereo_sound_is_shaped_or_refused_clearly(name):
         assert _was_raised_deliberately(error), (
             f"{name} failed on a stereo sound where numpy gave up: "
             f"{error}")
+        assert "mono" in str(error), (
+            f"{name} refused a stereo sound without saying it takes a mono "
+            f"one: {error}")
         return
     assert rendered.ndim == 2 and rendered.shape[0] == 2, (
         f"{name} took a stereo sound and gave back {rendered.shape}")
@@ -668,6 +671,23 @@ def test_a_parameter_below_zero_works_or_is_refused_clearly(name, parameter):
             f"{parameter}: {error}")
         return
     assert _finite(rendered), f"{name}({parameter}={value}) is not finite"
+
+
+def test_zero_is_the_edge_of_an_index_or_an_ear_distance_not_past_it():
+    """The sweeps above take a refusal at zero as readily as a render, so
+    nothing held these three to refusing below zero only. An index of
+    zero bends a transition into a jump and an oscillation into a square,
+    and ears no distance apart hear a source at the same moment."""
+    from music.utils import _bent, _require_ears, _signed_power
+
+    np.testing.assert_array_equal(_bent(np.array([0, .5, 1]), 0), [1, 1, 1])
+    np.testing.assert_array_equal(
+        _signed_power(np.array([-.5, 0, .5]), 0, "alpha"), [-1, 0, 1])
+    _require_ears(0)
+    sound = music.note(220, 0.05)
+    for place in (music.localize, music.localize_linear):
+        placed = place(sonic_vector=sound, zeta=0)
+        np.testing.assert_array_equal(placed[0], placed[1])
 
 
 PAIRS = sorted(

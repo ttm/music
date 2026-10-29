@@ -687,7 +687,8 @@ def _bent(progress, alpha):
 def _require_ears(zeta):
     """Refuse a negative distance between the ears.
 
-    Zero is a head with coincident ears, which renders the two channels
+    Zero is a head with coincident ears, which hear a source at the same
+    moment: `localize` and `localize_linear` render the two channels
     alike. Below zero, the interaural delay came out negative and reached
     numpy as an array of negative length.
     """

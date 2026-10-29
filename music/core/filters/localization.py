@@ -771,7 +771,6 @@ def localize_hrtf(sonic_vector: ArrayLike,
     .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
            representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
     """
-    sample_rate = resolve_rate(sample_rate)
     samples = np.asarray(sonic_vector, dtype=np.float64)
     if samples.ndim != 1:
         raise ValueError(

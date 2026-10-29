@@ -403,7 +403,8 @@ def test_louds_refuses_an_envelope_of_no_transitions():
     """Zero counts used to mean "use the durations"; with counts given
     and none in them there is nothing to build, and numpy said so in its
     own words."""
-    with pytest.raises(ValueError, match="at least one"):
+    with pytest.raises(ValueError, match="^an envelope of transitions needs "
+                                         "at least one$"):
         louds(number_of_samples=[])
 
 

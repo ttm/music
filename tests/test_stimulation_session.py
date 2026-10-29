@@ -625,3 +625,9 @@ def test_a_session_is_written_as_write_audio_writes_it(tmp_path, suffix):
     session.write(str(path), normalize=False)
     np.testing.assert_allclose(music.read_audio(str(path)),
                                session.render(), atol=2 ** -15)
+
+
+def test_a_session_at_one_sample_a_second_is_a_session():
+    """The smallest rate there is, which the refusal of a rate of nothing
+    must leave alone."""
+    assert music.StimulationSession(sample_rate=1).sample_rate == 1

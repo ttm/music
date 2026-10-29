@@ -153,3 +153,15 @@ def test_the_writers_refuse_fades_they_cannot_apply(tmp_path, writer,
     with pytest.raises(ValueError, match="fades_ms is milliseconds of fade"):
         getattr(music, writer)(music.note(duration=0.1),
                                str(tmp_path / "faded.wav"), fades_ms=fades)
+
+
+def test_a_fade_at_one_end_only_leaves_the_other_alone(tmp_path):
+    """A pair holding a zero reaches the fades, where all zeros skip them:
+    nothing had asked for a fade out alone."""
+    tone = music.note(duration=0.2)
+    path = str(tmp_path / "fade_out.wav")
+    music.write_wav_mono(tone, path, fades_ms=(0, 50))
+    written = music.read_audio(path)
+    np.testing.assert_allclose(written[:100], music.normalize_mono(tone)[:100],
+                               atol=2 ** -15)
+    assert abs(written[-10:]).max() < 1e-3

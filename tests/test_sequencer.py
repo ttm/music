@@ -46,9 +46,12 @@ def test_a_note_cannot_start_before_the_sequence():
 @pytest.mark.parametrize("suffix", [".wav", ".flac"])
 def test_a_sequence_is_written_as_write_audio_writes_it(tmp_path, suffix):
     """It wrote WAV alone, normalized to full scale whatever the notes'
-    level."""
+    level. A note held at -12 dB from its first sample peaks near 0.25,
+    which normalizing would have taken to 1."""
     seq = music.Sequencer()
-    seq.add_note(220, 0, 0.2)
+    seq.add_note(220, 0, 0.2, adsr_params={"attack_ms": 0, "decay_ms": 0,
+                                           "sustain_level": -12})
+    assert abs(seq.render()).max() < 0.3
     path = tmp_path / ("sequence" + suffix)
     seq.write(str(path), normalize=False)
     np.testing.assert_allclose(music.read_audio(str(path)), seq.render(),

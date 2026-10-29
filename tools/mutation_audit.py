@@ -37,10 +37,11 @@ ROOT = Path(__file__).resolve().parent.parent
 
 #: Files the audit copies into the scratch tree besides the package and its
 #: tests, because some selected test reads them: ``RECONCILIATION.md`` holds
-#: the reference comparison, ``docs/`` the tutorial and API listing, and
-#: ``README.md`` the figures checked against the code.
+#: the reference comparison, ``docs/`` the tutorial and API listing,
+#: ``README.md`` the figures checked against the code, and ``examples/`` the
+#: scripts a test runs to count their clicks.
 SUPPORT = ['conftest.py', 'pytest.ini', 'tests/', 'tools/',
-           'RECONCILIATION.md', 'docs/', 'README.md']
+           'RECONCILIATION.md', 'docs/', 'README.md', 'examples/']
 
 #: The bounded areas this runner knows how to audit. ``sources`` are mutated;
 #: ``tests`` judge the mutants and must cover every line and branch of the
@@ -383,6 +384,8 @@ AREAS = {
             'tests/test_synths.py::test_gaussian_noise_takes_a_fractional_duration',
             'tests/test_synths.py::test_noise_and_silence_generation',
             'tests/test_synths.py::test_noise_no_warnings',
+            'tests/test_synths.py::test_a_seed_draws_the_same_gaussian_noise_and_leaves_numpy_alone',
+            'tests/test_synths.py::test_a_count_of_samples_is_the_duration_it_stands_for',
             'tests/test_artifacts.py::test_what_the_click_measure_can_and_cannot_see',
             'tests/test_branches.py::test_noise_rejects_an_unknown_colour',
             'tests/test_mass_reconciliation.py::test_the_package_runs_where_the_reference_cannot',
@@ -408,6 +411,7 @@ AREAS = {
             'tests/test_sequencer.py::test_sequencer_basic_mono',
             'tests/test_sequencer.py::test_sequencer_stereo_spatial',
             'tests/test_sequencer.py::test_sequencer_write',
+            'tests/test_sequencer.py::test_a_sequence_is_written_as_write_audio_writes_it',
             'tests/test_theory_properties.py::test_a_sequencer_puts_its_notes_where_it_was_told',
             'tests/test_tutorial.py::test_every_tutorial_block_runs',
             'tests/test_sample_rate.py',

@@ -1,4 +1,5 @@
 
+import numpy as np
 import pytest
 
 import music
@@ -40,3 +41,15 @@ def test_a_note_cannot_start_before_the_sequence():
     sequencer = music.Sequencer()
     with pytest.raises(ValueError, match="cannot start before"):
         sequencer.add_note(440, start=-0.05, duration=0.1)
+
+
+@pytest.mark.parametrize("suffix", [".wav", ".flac"])
+def test_a_sequence_is_written_as_write_audio_writes_it(tmp_path, suffix):
+    """It wrote WAV alone, normalized to full scale whatever the notes'
+    level."""
+    seq = music.Sequencer()
+    seq.add_note(220, 0, 0.2)
+    path = tmp_path / ("sequence" + suffix)
+    seq.write(str(path), normalize=False)
+    np.testing.assert_allclose(music.read_audio(str(path)), seq.render(),
+                               atol=2 ** -15)

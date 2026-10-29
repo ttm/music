@@ -11,7 +11,7 @@ from .core import synths
 from .core.filters.adsr import adsr
 from .core.filters.localization import localize
 from .utils import convert_to_stereo
-from .core.io import write_wav_mono, write_wav_stereo
+from .core.io import write_audio
 from ._rate import get_sample_rate
 
 
@@ -202,29 +202,34 @@ class Sequencer:
                                            event.start)
         return result
 
-    def write(self, filename: str, bit_depth: int = 16) -> None:
-        """Write the rendered audio to a WAV file.
+    def write(self, filename: str, bit_depth: int = 16,
+              normalize: bool = True) -> None:
+        """Write the rendered audio to a file, as :func:`write_audio` does.
+
+        Parameters
+        ----------
+        filename : string
+            The path to write: ``.wav`` or ``.flac``.
+        bit_depth : integer
+            The bit depth of the samples written.
+        normalize : boolean
+            Normalize to full scale, as by default, or write the samples
+            as they are, refusing a sound that reaches past [-1, 1], which
+            keeps the level of a sequence written beside others.
 
         Raises
         ------
         ValueError
-            If there are no notes to write. The empty render reached the
-            normalization, which blamed a duration computed as zero.
+            If there are no notes to write: the empty render reached the
+            normalization, which blamed a duration computed as zero. Or
+            as :func:`write_audio` raises it.
         """
         if not self.events:
             raise ValueError(
                 "there are no notes to write; add some with add_note")
-        data = self.render()
-        if data.ndim == 1:
-            write_wav_mono(
-                data, filename=filename, sample_rate=self.sample_rate,
-                bit_depth=bit_depth,
-            )
-        else:
-            write_wav_stereo(
-                data, filename=filename, sample_rate=self.sample_rate,
-                bit_depth=bit_depth,
-            )
+        write_audio(self.render(), filename=filename,
+                    sample_rate=self.sample_rate, bit_depth=bit_depth,
+                    normalize=normalize)
 
 
 __all__ = ["Sequencer", "NoteEvent"]

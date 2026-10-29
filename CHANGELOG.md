@@ -57,6 +57,11 @@ Old names keep working and warn: see **Deprecated**.
 - **`reverb` takes a `seed`,** which draws the same room again. Its
   incidences and its tail came from NumPy's global state, so the psola
   singer seeded that state around every call and set it back after.
+- **`Sequencer.write` and `StimulationSession.write` take `normalize`,**
+  as the writers do, so a sequence or a session written beside others
+  keeps its level, and write FLAC as well as WAV, by the extension:
+  they write through `write_audio`, where each chose between the WAV
+  writers itself.
 
 ### Changed
 

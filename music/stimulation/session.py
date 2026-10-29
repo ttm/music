@@ -32,7 +32,7 @@ from typing import Any, Callable, Dict, List, Union
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from ..core.io import write_wav_mono, write_wav_stereo
+from ..core.io import write_audio
 from ..utils import convert_to_stereo
 from .._rate import get_sample_rate
 
@@ -423,25 +423,29 @@ class StimulationSession:
             mix[..., -1] = 0
         return mix
 
-    def write(self, filename: str, bit_depth: int = 16) -> None:
-        """Render the session and write it to a WAV file.
+    def write(self, filename: str, bit_depth: int = 16,
+              normalize: bool = True) -> None:
+        """Render the session and write it, as :func:`write_audio` does.
 
         Parameters
         ----------
         filename : string
-            The path to write to.
+            The path to write: ``.wav`` or ``.flac``.
         bit_depth : integer
             The bit depth of the samples written.
+        normalize : boolean
+            Normalize to full scale, as by default, or write the samples
+            as they are, refusing a sound that reaches past [-1, 1], which
+            keeps the levels each phase's ``gain`` set.
+
+        Raises
+        ------
+        ValueError
+            As :func:`write_audio` raises it.
         """
-        data = self.render()
-        if data.ndim == 1:
-            write_wav_mono(data, filename=filename,
-                           sample_rate=self.sample_rate,
-                           bit_depth=bit_depth)
-        else:
-            write_wav_stereo(data, filename=filename,
-                             sample_rate=self.sample_rate,
-                             bit_depth=bit_depth)
+        write_audio(self.render(), filename=filename,
+                    sample_rate=self.sample_rate, bit_depth=bit_depth,
+                    normalize=normalize)
 
     def __repr__(self) -> str:
         if not self.phases:

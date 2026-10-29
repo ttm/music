@@ -613,3 +613,15 @@ def test_an_unlabelled_array_phase_is_named_for_what_it_is():
     session = music.StimulationSession()
     session.add(np.ones(10))
     assert 'array' in repr(session)
+
+
+@pytest.mark.parametrize("suffix", [".wav", ".flac"])
+def test_a_session_is_written_as_write_audio_writes_it(tmp_path, suffix):
+    """It wrote WAV alone, normalized: a session written beside another
+    lost the level its gains set, and FLAC was out of reach."""
+    session = music.StimulationSession()
+    session.add(constant, duration=0.2, level=0.25)
+    path = tmp_path / ("session" + suffix)
+    session.write(str(path), normalize=False)
+    np.testing.assert_allclose(music.read_audio(str(path)),
+                               session.render(), atol=2 ** -15)

@@ -5,6 +5,7 @@ import pytest
 
 import music
 from music.bonds import Bonds, stepped
+from test_artifacts import clicks
 
 
 def test_a_stepped_bond_reads_its_thresholds_once():
@@ -66,10 +67,31 @@ def test_a_bare_render_gives_each_note_two_seconds():
 
 def test_a_render_is_at_the_rate_it_is_given():
     rendered = Bonds(vibrato_freq=5).render([220, 330], duration=0.5,
-                                            sample_rate=8000)
+                                            sample_rate=8000, fades_ms=0)
     np.testing.assert_array_equal(rendered, np.concatenate([
         Bonds(vibrato_freq=5).note(freq, duration=0.5, sample_rate=8000)
         for freq in (220, 330)]))
+
+
+def test_a_render_fades_each_note_at_its_own_rate():
+    """A line joined its notes bare, and clicked where a note's last
+    sample met the next one's first: twice in the README's own line."""
+    bonds = Bonds(vibrato_freq=5)
+    rendered = bonds.render([220, 277], duration=0.5, sample_rate=8000,
+                            fades_ms=(5, 20))
+    np.testing.assert_array_equal(rendered, np.concatenate([
+        music.adsr(sonic_vector=bonds.note(freq, duration=0.5,
+                                           sample_rate=8000),
+                   attack_ms=5, sustain_level=0, release_ms=20,
+                   sample_rate=8000)
+        for freq in (220, 277)]))
+    line = Bonds(vibrato_freq=music.proportional(1 / 40),
+                 max_pitch_dev=music.inversely_proportional(400))
+    assert clicks(line.render([220, 277, 330, 440], duration=0.5,
+                              fades_ms=0))
+    assert not clicks(line.render([220, 277, 330, 440], duration=0.5))
+    with pytest.raises(ValueError, match="fades_ms is milliseconds of fade"):
+        bonds.render([220], fades_ms=(5,))
 
 
 def test_a_render_of_nothing_says_so():

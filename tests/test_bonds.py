@@ -127,7 +127,8 @@ def test_every_note_of_a_render_carries_the_bond_at_its_own_frequency():
     """What makes it a bond and not a parameter: the piece decides once."""
     bonds = music.Bonds(vibrato_freq=music.proportional(1 / 40))
     freqs, duration = [220.0, 440.0, 330.0], 0.1
-    rendered = bonds.render(freqs, duration=duration)
+    # Joined bare, so each stretch is the note and nothing else.
+    rendered = bonds.render(freqs, duration=duration, fades_ms=0)
 
     length = int(duration * 44100)
     assert len(rendered) == length * len(freqs)

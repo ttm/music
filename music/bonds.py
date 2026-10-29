@@ -32,6 +32,8 @@ from typing import Any, cast
 import numpy as np
 from numpy.typing import NDArray
 
+from .core.filters.adsr import adsr
+from .core.io import _fade_pair
 from .core.synths.envelopes import tremolo
 from .core.synths.notes import note, note_with_vibrato
 from .utils import horizontal_stack
@@ -291,7 +293,9 @@ class Bonds:
 
     def render(self, freqs: Sequence[float],
                duration: float | Sequence[float] = 2.0,
-               sample_rate: int | None = None) -> NDArray[np.float64]:
+               sample_rate: int | None = None,
+               fades_ms: int | Sequence[int] = 20
+               ) -> NDArray[np.float64]:
         """A sequence of notes, each bound to its own frequency.
 
         Parameters
@@ -304,6 +308,14 @@ class Bonds:
             The sample rate.
             None, the default, is the rate :func:`music.get_sample_rate`
             returns.
+        fades_ms : scalar or pair of scalars
+            Milliseconds of fade in and out on every note, one value for
+            both ends or two, as the writers take them; 20 by default,
+            the attack :func:`adsr` takes by default, which leaves no
+            click its tests measure. A note ends wherever its phase lands
+            and the next opens at the bottom of its table, so notes joined
+            bare step from one to the next, which is a click; zero joins
+            them bare, as this did before 2.0.0.
 
         Returns
         -------
@@ -313,8 +325,9 @@ class Bonds:
         Raises
         ------
         ValueError
-            If `freqs` is empty, or if a sequence of durations is not as
-            long as it.
+            If `freqs` is empty, if a sequence of durations is not as long
+            as it, or if `fades_ms` is neither one value nor two, or is
+            negative.
 
         Examples
         --------
@@ -342,6 +355,11 @@ class Bonds:
                 raise ValueError(
                     f'{len(durations)} durations for {len(freqs)} '
                     f'frequencies; give one each, or one for all of them')
-        return horizontal_stack(*[
-            self.note(freq=freq, duration=each, sample_rate=sample_rate)
-            for freq, each in zip(freqs, durations)])
+        fade_in, fade_out = _fade_pair(fades_ms)
+        notes = [self.note(freq=freq, duration=each, sample_rate=sample_rate)
+                 for freq, each in zip(freqs, durations)]
+        if fade_in or fade_out:
+            notes = [adsr(sonic_vector=note_, attack_ms=fade_in,
+                          sustain_level=0, release_ms=fade_out,
+                          sample_rate=sample_rate) for note_ in notes]
+        return horizontal_stack(*notes)

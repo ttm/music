@@ -23,6 +23,9 @@ says so when it is met:
   passed none got, so it renders as before.
 - `mix_stereo(sound)` returns the sound in stereo. Since a cleanup in
   2024 it returned it mixed with itself, at twice its amplitude.
+- `Bonds.render` fades each note in and out over 20 ms before joining
+  them, which they clicked without; `fades_ms=0` joins them bare, as
+  before.
 
 Old names keep working and warn: see **Deprecated**.
 
@@ -89,6 +92,13 @@ Old names keep working and warn: see **Deprecated**.
   every transition, and fewer durations or methods than transitions, an
   unknown method, and a negative amplitude for 'circ' or 'exp' are
   refused rather than met by an `IndexError` or a NaN.
+- **`Bonds.render` fades each note in and out before joining them.** A
+  note ends wherever its phase lands and the next opens at the bottom of
+  its table, which is why the README shapes its scale; the one routine
+  here that joins notes itself joined them bare, and the README's own
+  line of bound notes clicked twice. Each note now fades over
+  `fades_ms`, 20 ms by default, at which none of ninety random lines
+  clicked by the suite's measure; zero joins them bare.
 
 ### Fixed
 

@@ -16,11 +16,12 @@ code after 1.11.0.** The default sample rate, the zero sample count, the
 parameters renamed for their unit, the writers' `normalize` and the lazy
 sympy import changed sources in every area but `theory`, `tables` and
 `hrtf` after it was measured, so the survivor IDs below no longer name
-the current code's mutants. Three modules were added that no area
-includes: `music/_rate.py`, `music/_deprecation.py` and
-`music/structures/_sympy.py`. Line and branch coverage of all of it is
-100 %; until those fifteen areas are run again, and the three modules
-given one, that is the only claim made of the changed code.
+the current code's mutants. Four modules were added, which a new area,
+`foundations`, holds: `music/_rate.py`, `music/_deprecation.py`,
+`music/_warn.py` and `music/structures/_sympy.py`. Line and branch
+coverage of all of it is 100 %; until those fifteen areas are run again,
+and `foundations` for the first time, that is the only claim made of the
+changed code.
 
 | Area | Sources | Measured | Mutations | Detected | Surviving | Reviewed |
 |---|---|---|---:|---:|---:|---|
@@ -875,9 +876,10 @@ than leaving this routine marked exact from its default-duration case.
 
 ## Tool limitation and adapter
 
-This applies to the `export`, `sequencer` and `sstim` areas, and its
-cache adapter to `bandlimited`; the other modules define plain functions
-or undecorated classes.
+The dataclass adapter applies to the `export`, `sequencer` and `sstim`
+areas, the cache adapter to `bandlimited`, and the trampoline adapter to
+every area; the other modules define plain functions or undecorated
+classes.
 
 `mutmut` 3.7.0 skips decorated classes and property-decorated methods.
 Without an adapter, the session file contributes only `_ramp_shape`:
@@ -903,6 +905,15 @@ A cache outlives the test that fills it, and each mutant runs in a
 process forked from the one that ran the tests unmutated, so the tests
 that judge a cached function clear its cache first; the mipmapped
 tables' tests do the same for theirs.
+
+A third adapter applies to every area. The package warns through
+`music/_warn.py`, which names the first line outside the package, and
+the trampoline mutmut puts in front of each function it mutates is a
+frame outside the package: under the audit a warning named mutmut's own
+file, and the tests of where warnings point failed before the first
+mutant ran. In the temporary copy only, the trampolines' file joins the
+package among the frames a warning walks past, so those tests judge the
+mutants as they judge the package.
 
 The `duration` property, `SstimCapability.can_render` and generated
 dataclass methods remain outside mutation scope, though normal tests
@@ -937,6 +948,7 @@ python tools/mutation_audit.py --area singing --revision HEAD
 python tools/mutation_audit.py --area legacy --revision HEAD
 python tools/mutation_audit.py --area sstim --revision HEAD --max-children 8
 python tools/mutation_audit.py --area bandlimited --revision HEAD --max-children 8
+python tools/mutation_audit.py --area foundations --revision HEAD
 python tools/mutation_audit.py --area export --revision ef03962 --max-children 2
 ```
 

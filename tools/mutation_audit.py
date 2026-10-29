@@ -64,6 +64,10 @@ AREAS = {
             'tests/test_mass_reconciliation.py',
             'tests/test_artifacts.py::test_the_quantizer_clips_rather_than_wraps',
             'tests/test_degenerate.py::test_writing_nothing_says_there_is_nothing',
+            'tests/test_sample_rate.py',
+            'tests/test_deprecation.py',
+            'tests/test_warnings.py',
+            'tests/test_methods.py',
         ),
         'dataclass_adapter': 'music/stimulation/session.py',
     },
@@ -109,6 +113,7 @@ AREAS = {
             'tests/test_normalization.py',
             'tests/test_tutorial.py',
             'tests/test_transition_methods.py',
+            'tests/test_sample_rate.py',
         ),
         'dataclass_adapter': None,
     },
@@ -140,6 +145,9 @@ AREAS = {
             'tests/test_theory_properties.py',
             'tests/test_tutorial.py',
             'tests/test_transition_methods.py',
+            'tests/test_sample_rate.py',
+            'tests/test_deprecation.py',
+            'tests/test_warnings.py',
         ),
         'dataclass_adapter': None,
     },
@@ -157,6 +165,7 @@ AREAS = {
             'tests/test_public_api.py',
             'tests/test_artifacts.py',
             'tests/test_stimulation_session.py',
+            'tests/test_sample_rate.py',
         ),
         'dataclass_adapter': None,
     },
@@ -185,6 +194,8 @@ AREAS = {
             'tests/test_stimulation.py',
             'tests/test_stimuli_audit.py',
             'tests/test_tutorial.py',
+            'tests/test_sample_rate.py',
+            'tests/test_warnings.py',
         ),
         'dataclass_adapter': None,
     },
@@ -205,6 +216,9 @@ AREAS = {
             'tests/test_envelopes.py',
             'tests/test_additional.py',
             'tests/test_transition_methods.py',
+            'tests/test_sample_rate.py',
+            'tests/test_deprecation.py',
+            'tests/test_warnings.py',
         ),
         'dataclass_adapter': None,
     },
@@ -251,6 +265,11 @@ AREAS = {
             'tests/test_noises_audit.py::test_a_reverb_at_a_rate_below_the_noise_floor_still_has_a_tail',
             'tests/test_noises_audit.py::test_a_reverb_at_an_ordinary_rate_keeps_the_15_hz_floor',
             'tests/test_transition_methods.py',
+            'tests/test_sample_rate.py',
+            'tests/test_degenerate.py::test_zero_samples_render_nothing',
+            'tests/test_degenerate.py::test_a_stereo_sound_is_shaped_or_refused_clearly',
+            'tests/test_degenerate.py::test_an_envelope_shapes_each_channel_as_it_would_alone',
+            'tests/test_degenerate.py::test_a_parameter_below_zero_works_or_is_refused_clearly',
         ),
         'dataclass_adapter': None,
     },
@@ -313,6 +332,9 @@ AREAS = {
             'tests/test_theory_properties.py::test_plain_changes_ring_every_row_once',
             'tests/test_theory_properties.py::test_transposing_a_permutation_shifts_what_it_moves',
             'tests/test_tutorial.py::test_every_tutorial_block_runs',
+            'tests/test_import_cost.py',
+            'tests/test_warnings.py',
+            'tests/test_methods.py',
         ),
         'dataclass_adapter': None,
     },    # Coloured, Gaussian-band and silent noise. Selected from full-suite
@@ -365,6 +387,8 @@ AREAS = {
             'tests/test_branches.py::test_noise_rejects_an_unknown_colour',
             'tests/test_mass_reconciliation.py::test_the_package_runs_where_the_reference_cannot',
             'tests/test_tutorial.py::test_every_tutorial_block_runs',
+            'tests/test_sample_rate.py',
+            'tests/test_degenerate.py::test_zero_samples_render_nothing',
         ),
         'dataclass_adapter': None,
     },    # The note sequencer: scheduling, per-note rendering and mixing.
@@ -386,6 +410,8 @@ AREAS = {
             'tests/test_sequencer.py::test_sequencer_write',
             'tests/test_theory_properties.py::test_a_sequencer_puts_its_notes_where_it_was_told',
             'tests/test_tutorial.py::test_every_tutorial_block_runs',
+            'tests/test_sample_rate.py',
+            'tests/test_methods.py',
         ),
         'dataclass_adapter': 'music/sequencer.py',
     },    # Bonds between a note's characteristics and its frequency. Selected
@@ -403,6 +429,8 @@ AREAS = {
             'tests/test_degenerate.py::test_a_parameter_at_zero_does_not_quietly_add_a_bias',
             'tests/test_degenerate.py::test_a_parameter_at_zero_works_or_is_refused_clearly',
             'tests/test_public_api.py::test_export_runs_with_its_documented_defaults',
+            'tests/test_sample_rate.py',
+            'tests/test_methods.py',
         ),
         'dataclass_adapter': None,
     },
@@ -428,6 +456,7 @@ AREAS = {
             'tests/test_branches.py::test_a_canonical_synth_keeps_tables_it_was_constructed_with',
             'tests/test_branches.py::test_a_canonical_synth_sets_up_with_the_tables_it_is_given',
             'tests/test_fidelity.py::test_every_table_source_agrees',
+            'tests/test_methods.py',
         ),
         'dataclass_adapter': None,
     },
@@ -459,6 +488,7 @@ AREAS = {
             'tests/test_abc_notation.py',
             'tests/test_remaining_paths.py::test_make_test_song_sings_its_phrase',
             'tests/test_remaining_paths.py::test_sing_reports_a_missing_makefile',
+            'tests/test_sample_rate.py',
         ),
         'dataclass_adapter': None,
     },
@@ -483,6 +513,7 @@ AREAS = {
             'tests/test_sstim_io_limits.py',
             'tests/test_sstim_interop_cli.py',
             'tests/test_sstim_audit.py',
+            'tests/test_sample_rate.py',
         ),
         'dataclass_adapter': (
             'music/stimulation/sstim/_others.py',
@@ -523,6 +554,8 @@ AREAS = {
             'tests/test_public_api.py::test_export_runs_with_its_documented_defaults',
             'tests/test_sstim_audit.py::test_the_oversampling_factor_asked_for_is_the_one_used',
             'tests/test_sstim_stimuli.py::test_oversampled_render_matches_the_manual_call',
+            'tests/test_sample_rate.py',
+            'tests/test_degenerate.py::test_zero_samples_render_nothing',
         ),
         'dataclass_adapter': None,
         # bandlimited_note's table is filtered once a pitch and cached.
@@ -546,6 +579,25 @@ AREAS = {
             'tests/test_branches.py::test_a_being_refuses_a_way_of_sequencing_it_does_not_have',
             'tests/test_branches.py::test_a_canonical_synth_keeps_tables_it_was_constructed_with',
             'tests/test_branches.py::test_a_canonical_synth_sets_up_with_the_tables_it_is_given',
+            'tests/test_sample_rate.py',
+            'tests/test_methods.py',
+        ),
+        'dataclass_adapter': None,
+    },
+    # The default sample rate, the deprecation and warning helpers and the
+    # structures' lazy sympy, which arrived after 1.11.0.
+    'foundations': {
+        'sources': (
+            'music/_rate.py',
+            'music/_deprecation.py',
+            'music/_warn.py',
+            'music/structures/_sympy.py',
+        ),
+        'tests': (
+            'tests/test_sample_rate.py',
+            'tests/test_deprecation.py',
+            'tests/test_warnings.py',
+            'tests/test_import_cost.py',
         ),
         'dataclass_adapter': None,
     },
@@ -645,6 +697,28 @@ def expose_cached_functions(tree, relative_path):
     path.write_text(''.join(lines))
 
 
+def skip_trampolines(tree):
+    """Let a warning name the caller's line past mutmut's trampolines.
+
+    The package warns through ``music/_warn.py``, which names the first
+    line outside the package. The trampoline mutmut 3.7.0 puts in front
+    of each function it mutates is a frame outside the package, so in the
+    audit a warning named mutmut's file, and the tests of where warnings
+    point failed before the first mutant ran. This changes only the
+    scratch copy: the trampolines' file joins the package among the
+    frames a warning walks past.
+    """
+    from mutmut.mutation import trampoline
+    path = tree / 'music' / '_warn.py'
+    source = path.read_text()
+    skipped = '_SKIPPED = (os.path.dirname(__file__) + os.sep,)\n'
+    if source.count(skipped) != 1:
+        raise SystemExit('trampoline adapter no longer matches '
+                         'music/_warn.py')
+    path.write_text(source.replace(skipped, skipped.replace(
+        ',)', f', {trampoline.__file__!r})')))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--area', default='export', choices=sorted(AREAS),
@@ -704,6 +778,7 @@ def main():
     cached = area.get('cache_adapter', ())
     for relative in cached:
         expose_cached_functions(tree, relative)
+    skip_trampolines(tree)
     config = {
         'source_paths': ['music/'],
         'only_mutate': list(sources),

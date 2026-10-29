@@ -464,3 +464,19 @@ def test_without_a_domain_the_grid_window_is_permuted_instead():
     being.domain = None
     being.stay(6, "perm")
     assert [float(x) for x in being.f_] == [1.0, 2.0, 0.0, 2.0, 0.0, 1.0]
+
+
+@pytest.mark.parametrize("stage", ["A", "D", "R"])
+def test_adsr_setup_refuses_a_stage_shorter_than_nothing(stage):
+    """A negative release reached numpy as a negative count; a negative
+    attack or decay left empty stages that the sweep of the methods took
+    for a render, since they are finite."""
+    with pytest.raises(ValueError, match=rf"^{stage} is a duration in "
+                                         rf"milliseconds"):
+        CanonicalSynth().adsrSetup(**{stage: -10})
+
+
+def test_a_being_renders_no_notes_as_no_samples():
+    """Stacking no notes failed in numpy; a single silent sample is not
+    nothing either."""
+    assert music.Being().render(0).size == 0

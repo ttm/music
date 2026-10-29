@@ -539,3 +539,25 @@ def test_a_count_of_samples_is_the_duration_it_stands_for(make):
     by_count = function(number_of_samples=4410)
     np.random.seed(0)
     np.testing.assert_array_equal(by_count, function(duration=0.1))
+
+@pytest.mark.parametrize("routine, given, name", [
+    ("note_with_vibrato", {"alpha": -1}, "alpha"),
+    ("note_with_glissando_vibrato", {"alpha_vibrato": -1}, "alpha_vibrato"),
+    ("note_with_two_vibratos", {"alphav1": -1}, "alphav1"),
+    ("note_with_two_vibratos", {"alphav2": -1}, "alphav2"),
+    ("note_with_two_vibratos_glissando", {"alphav1": -1}, "alphav1"),
+    ("note_with_two_vibratos_glissando", {"alphav2": -1}, "alphav2"),
+    # The nested indices, which no sweep reaches: a vibrato's, in the
+    # rows after the transitions'.
+    ("note_with_vibrato_seq_localization",
+     {"alpha": ((1, 1), (1, -1, 1), (1, 1, 1, 1, 1), (1, 1, 1))}, "alpha"),
+    ("note_with_vibratos_glissandos",
+     {"alpha": ((1, 1), (1, -1, 1), (1, 1, 1, 1, 1))}, "alpha"),
+])
+def test_a_negative_vibrato_index_is_refused_by_its_name(routine, given,
+                                                         name):
+    """The sweep below zero asks that a refusal contain the parameter's
+    name, which "XXalphav1XX" does too; and the nested indices it never
+    gives at all."""
+    with pytest.raises(ValueError, match=rf"^{name} is a distortion index"):
+        getattr(music, routine)(**given)

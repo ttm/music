@@ -604,9 +604,11 @@ def note_with_glissando_vibrato(
             _signed_power(tv * max_pitch_dev / 12, alpha_vibrato,
                           'alpha_vibrato')
     else:
+        # Both indices are 1 here, so neither bends anything. This raised
+        # the vibrato to the glissando's index, which, being 1, returned it
+        # as it was.
         f = start_freq * (end_freq / start_freq) ** \
-            (samples / intervals) * 2. ** \
-            _signed_power(tv * max_pitch_dev / 12, alpha, 'alpha')
+            (samples / intervals) * 2. ** (tv * max_pitch_dev / 12)
     length = len(waveform_table)
     gamma = _integrate_phase(f * length / sample_rate, length).astype(np.int64)
     s = waveform_table[gamma % length]

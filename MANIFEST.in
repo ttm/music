@@ -26,12 +26,19 @@ recursive-include tests/fixtures *
 # where every measured figure lives.
 recursive-include tools *.py
 
-# tests/test_tutorial.py runs the tutorial's code blocks; three tests in
+# tests/test_tutorial.py runs the tutorial's code blocks, and
+# tests/test_docs_pages.py those of the other pages; three tests in
 # test_public_api.py read the API reference.
 include docs/api.rst
 include docs/tutorial.rst
 include docs/index.rst
+include docs/bandlimited_synthesis.rst
+include docs/sstim.rst
 include docs/conf.py
+
+# tests/test_artifacts.py runs two examples to count their clicks, and
+# a reader of the tarball should have the examples anyway.
+recursive-include examples *.py
 
 # tests/test_zenodo_metadata.py reads the archival metadata.
 include .zenodo.json

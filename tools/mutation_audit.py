@@ -115,6 +115,10 @@ AREAS = {
             'tests/test_tutorial.py',
             'tests/test_transition_methods.py',
             'tests/test_sample_rate.py',
+            # The old names of the two vibratos' parameters, which only
+            # these tests give.
+            'tests/test_deprecation.py',
+            'tests/test_warnings.py',
         ),
         'dataclass_adapter': None,
     },

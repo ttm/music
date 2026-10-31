@@ -666,7 +666,7 @@ def test_the_adsr_envelope_is_the_four_pieces_equation_adsr_writes():
     """
     duration, attack, decay, release = 1.0, 100.0, 100.0, 200.0
     sustain_db, db_dev = -6.0, -80.0
-    envelope = music.adsr(envelope_duration=duration,
+    envelope = music.adsr(duration=duration,
                           attack_ms=attack, decay_ms=decay,
                           sustain_level=sustain_db,
                           release_ms=release, transition="exp",
@@ -718,7 +718,7 @@ def test_the_adsr_envelope_is_the_four_pieces_equation_adsr_writes():
 def test_applying_the_envelope_is_the_product_equation_adsrapl_writes():
     """t_i^ADSR = t_i . a_i, sample by sample and nothing else."""
     tone = music.note(freq=440, duration=0.5, sample_rate=SAMPLE_RATE)
-    envelope = music.adsr(envelope_duration=0.5, sample_rate=SAMPLE_RATE)
+    envelope = music.adsr(duration=0.5, sample_rate=SAMPLE_RATE)
     applied = music.adsr(sonic_vector=tone, sample_rate=SAMPLE_RATE)
     assert np.allclose(applied, tone * envelope)
 

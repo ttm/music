@@ -28,7 +28,7 @@ def test_five_sample_glide_follows_its_pitch_curve(stereo, index, frequencies):
     table = np.arange(65536, dtype=float) / 65536
     out = music.note_with_vibrato_seq_localization(
         freqs=(3, 48), durations=((5 / 64,), (5 / 64,), (5 / 64,)),
-        vibratos_freqs=((0,),), max_pitch_devs=((0,),),
+        vibratos_freqs=((0,),), vibratos_max_pitch_devs=((0,),),
         alpha=((index,), (1,), (1,)),
         waveform_tables=((table,), (np.zeros(2),)),
         **_stationary(stereo))
@@ -47,7 +47,7 @@ def test_each_carrier_table_starts_at_its_pitch_segment(stereo):
     out = music.note_with_vibrato_seq_localization(
         freqs=(2, 3, 4, 5),
         durations=(tuple(n / 64 for n in lengths), (13 / 64,), (11 / 64,)),
-        vibratos_freqs=((0,),), max_pitch_devs=((0,),),
+        vibratos_freqs=((0,),), vibratos_max_pitch_devs=((0,),),
         alpha=((1, 1, 1), (1,), (1,)),
         waveform_tables=(tables, (np.zeros(2),)),
         **_stationary(stereo))
@@ -75,7 +75,7 @@ def test_two_vibrato_lines_reach_the_rendered_pitch(stereo, index):
     square = np.array([1., -1.])
     out = music.note_with_vibrato_seq_localization(
         freqs=(220, 220), durations=((1,), (1,), (1,), (1,)),
-        vibratos_freqs=((1,), (2,)), max_pitch_devs=((6,), (3,)),
+        vibratos_freqs=((1,), (2,)), vibratos_max_pitch_devs=((6,), (3,)),
         alpha=((1,), (index,), (1,), (1,)),
         waveform_tables=((music.WAVEFORM_SINE,), (square,), (square,)),
         **_stationary(stereo, rate))
@@ -94,7 +94,7 @@ def test_finished_pitch_and_vibrato_lines_hold_frequency_and_unity(stereo):
     rate = 8000
     out = music.note_with_vibrato_seq_localization(
         freqs=(220, 330, 440), durations=((.125, .125), (.5,), (.75,)),
-        vibratos_freqs=((0,),), max_pitch_devs=((12,),),
+        vibratos_freqs=((0,),), vibratos_max_pitch_devs=((12,),),
         alpha=((1, 1), (1,), (1,)),
         waveform_tables=((music.WAVEFORM_SINE,) * 2, (np.ones(2),)),
         **_stationary(stereo, rate))
@@ -110,7 +110,7 @@ def test_default_sample_rate_is_44100():
     kwargs.pop("sample_rate")
     out = music.note_with_vibrato_seq_localization(
         freqs=(220, 220), durations=((1,), (1,), (1,)),
-        vibratos_freqs=((0,),), max_pitch_devs=((0,),),
+        vibratos_freqs=((0,),), vibratos_max_pitch_devs=((0,),),
         alpha=((1,), (1,), (1,)),
         waveform_tables=((music.WAVEFORM_SINE,), (np.zeros(2),)), **kwargs)
     assert len(out) == 44100

@@ -222,7 +222,7 @@ def test_being_render_appends_the_extension(tmp_path, monkeypatch):
 # --------------------------------------------------------------------------
 
 def test_adsr_sized_by_a_number_of_samples():
-    """number_of_samples is the alternative to envelope_duration."""
+    """number_of_samples is the alternative to duration."""
     assert len(music.adsr(number_of_samples=8820)) == 8820
 
 

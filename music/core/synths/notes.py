@@ -1,10 +1,13 @@
 """Utilities for synthesizing notes and note effects."""
+from typing import Any
+
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from ...utils import (WAVEFORM_SINE, WAVEFORM_TRIANGULAR,
                       _bent, _integrate_phase, _require_ears,
                       _signed_power, _transition_is_linear)
 from ..filters.adsr import adsr
+from ..._deprecation import renamed_arguments
 from ..._rate import resolve_rate, sample_count
 
 
@@ -672,8 +675,8 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
                                                   (4, 6, 1)),
                                        vibratos_freqs=((2, 6, 1),
                                                        (.5, 15, 2, 6, 3)),
-                                       max_pitch_devs=((2, 1, 5),
-                                                       (4, 3, 7, 10, 3)),
+                                       vibratos_max_pitch_devs=(
+                                           (2, 1, 5), (4, 3, 7, 10, 3)),
                                        alpha=((1, 1), (1, 1, 1),
                                               (1, 1, 1, 1, 1), (1, 1, 1)),
                                        x=(-10, 10, 5, 3), y=(1, 1, .1, .1),
@@ -689,7 +692,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
                                             WAVEFORM_SINE)),
                                        stereo=True, zeta=0.215, air_temp=20,
                                        number_of_samples=None,
-                                       sample_rate=None):
+                                       sample_rate=None, **renamed):
     """
     A sound with arbitrary meta-vibratos, transitions of frequency and
     localization.
@@ -705,7 +708,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         transition must span at least one sample to define its velocity.
     vibratos_freqs :  list of lists of scalars
         The frequencies of each vibrato.
-    max_pitch_devs : list of lists of scalars
+    vibratos_max_pitch_devs : list of lists of scalars
         The maximum deviation of pitch in the vibratos in semitones.
     alpha : list of lists of scalars
         Indexes to distort the pitch deviations of the transitions
@@ -740,6 +743,10 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     sample_rate : scalar or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
+    **renamed
+        ``max_pitch_devs``, what ``vibratos_max_pitch_devs`` was called
+        before it took the name :func:`note_with_vibratos_glissandos`
+        gives it. Still accepted, with a :class:`DeprecationWarning`.
 
     Returns
     -------
@@ -802,6 +809,10 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     """
     _require_ears(zeta)
     sample_rate = resolve_rate(sample_rate)
+    vibratos_max_pitch_devs = renamed_arguments(
+        'note_with_vibrato_seq_localization', renamed,
+        max_pitch_devs='vibratos_max_pitch_devs').get(
+            'vibratos_max_pitch_devs', vibratos_max_pitch_devs)
     waveform_tables = tuple(tuple(np.asarray(table, dtype=float)
                                   for table in row)
                             for row in waveform_tables)
@@ -839,10 +850,11 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
             # values of the oscillatory pattern at each sample
             tv = waveform_tables[i + 1][j][gammav % lv]
             if alpha[i + 1][j] != 0:
-                f = 2. ** _signed_power(tv * max_pitch_devs[i][j] / 12,
-                                        alpha[i + 1][j], 'alpha')
+                f = 2. ** _signed_power(
+                    tv * vibratos_max_pitch_devs[i][j] / 12,
+                    alpha[i + 1][j], 'alpha')
             else:
-                f = 2. ** (tv * max_pitch_devs[i][j] / 12)
+                f = 2. ** (tv * vibratos_max_pitch_devs[i][j] / 12)
             segments.append(f)
 
         v_.append(np.hstack(segments))
@@ -1003,9 +1015,11 @@ def note_with_two_vibratos_glissando(
         max_pitch_dev: float = 2, secondary_max_pitch_dev: float = .5,
         alpha: float = 1, alphav1: float = 1, alphav2: float = 1,
         waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
-        tabv1: ArrayLike = WAVEFORM_SINE, tabv2: ArrayLike = WAVEFORM_SINE,
+        vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
+        secondary_vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
         number_of_samples: int | None = None,
-        sample_rate: int | None = None) -> NDArray[np.float64]:
+        sample_rate: int | None = None,
+        **renamed: Any) -> NDArray[np.float64]:
     """
     A note with a glissando and a vibrato that also has a secondary
     oscillatory pattern.
@@ -1037,9 +1051,9 @@ def note_with_two_vibratos_glissando(
         secondary pattern of the vibrato.
     waveform_table : array_like
         The table with the waveform to synthesize the sound.
-    tabv1 : array_like
+    vibrato_waveform_table : array_like
         The table with the waveform for the vibrato oscillatory pattern.
-    tabv2 : array_like
+    secondary_vibrato_waveform_table : array_like
         The table with the waveform for the
         secondary pattern of the vibrato.
     number_of_samples : scalar or None
@@ -1048,6 +1062,11 @@ def note_with_two_vibratos_glissando(
     sample_rate : scalar or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
+    **renamed
+        ``tabv1`` and ``tabv2``, what ``vibrato_waveform_table`` and
+        ``secondary_vibrato_waveform_table`` were called before they took
+        the names :func:`note_with_two_vibratos` gives them. Still
+        accepted, with a :class:`DeprecationWarning`.
 
     Returns
     -------
@@ -1093,32 +1112,39 @@ def note_with_two_vibratos_glissando(
 
     """
     sample_rate = resolve_rate(sample_rate)
+    given = renamed_arguments(
+        'note_with_two_vibratos_glissando', renamed,
+        tabv1='vibrato_waveform_table',
+        tabv2='secondary_vibrato_waveform_table')
+    vibrato_waveform_table = np.array(
+        given.get('vibrato_waveform_table', vibrato_waveform_table))
+    secondary_vibrato_waveform_table = np.array(given.get(
+        'secondary_vibrato_waveform_table', secondary_vibrato_waveform_table))
     _require_a_ratio(start_freq, end_freq)
     waveform_table = np.array(waveform_table)
-    tabv1 = np.array(tabv1)
-    tabv2 = np.array(tabv2)
     if number_of_samples is not None:
         lambda_pvv = number_of_samples
     else:
         lambda_pvv = sample_count(duration, sample_rate)
     samples = np.arange(lambda_pvv)
 
-    lv1 = len(tabv1)
+    lv1 = len(vibrato_waveform_table)
     # LUT indexes
     gammav1 = (samples * vibrato_freq * lv1 / sample_rate).astype(np.int64)
     # values of the oscillatory pattern at each sample
-    tv1 = tabv1[gammav1 % lv1]
+    tv1 = vibrato_waveform_table[gammav1 % lv1]
 
-    lv2 = len(tabv2)
+    lv2 = len(secondary_vibrato_waveform_table)
     # LUT indexes
     gammav2 = (samples * secondary_vibrato_freq * lv2 /
                sample_rate).astype(np.int64)
-    # values of the oscillatory pattern at each sample. This read `tabv1`,
-    # as the MASS reference still does, so the second vibrato's waveform
-    # was the first one's: `tabv2` was accepted, documented and used only
-    # for its length. Two tables of different lengths then indexed the
-    # shorter one with the longer one's modulus and raised IndexError.
-    tv2 = tabv2[gammav2 % lv2]
+    # values of the oscillatory pattern at each sample. This read the
+    # first table, as the MASS reference still does, so the second
+    # vibrato's waveform was the first one's: the second table was
+    # accepted, documented and used only for its length. Two tables of
+    # different lengths then indexed the shorter one with the longer
+    # one's modulus and raised IndexError.
+    tv2 = secondary_vibrato_waveform_table[gammav2 % lv2]
 
     # A single sample sits at the start; it has no interval to divide by.
     intervals = max(lambda_pvv - 1, 1)
@@ -1406,13 +1432,15 @@ def note_with_vibrato(
 
 def note_with_two_vibratos(
         freq: float = 220, duration: float = 2, vibrato_freq: float = 2,
-        secondary_vibrato_freq: float = 6, nu1: float = 2, nu2: float = 4,
+        secondary_vibrato_freq: float = 6, max_pitch_dev: float = 2,
+        secondary_max_pitch_dev: float = 4,
         alphav1: float = 1, alphav2: float = 1,
         waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
         vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
-        sec_vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
+        secondary_vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
         number_of_samples: int | None = None,
-        sample_rate: int | None = None) -> NDArray[np.float64]:
+        sample_rate: int | None = None,
+        **renamed: Any) -> NDArray[np.float64]:
     """
     A note with a vibrato that also has a secondary oscillatory pattern.
 
@@ -1426,9 +1454,9 @@ def note_with_two_vibratos(
         The frequency of the vibrato.
     secondary_vibrato_freq : scalar
         The frequency of the secondary pattern of the vibrato.
-    nu1 : scalar
+    max_pitch_dev : scalar
         The maximum deviation of pitch in the vibrato in semitones.
-    nu2 : scalar
+    secondary_max_pitch_dev : scalar
         The maximum deviation in semitones of pitch in the
         secondary pattern of the vibrato.
     alphav1 : scalar
@@ -1440,7 +1468,7 @@ def note_with_two_vibratos(
         The table with the waveform to synthesize the sound.
     vibrato_waveform_table : array_like
         The table with the waveform for the vibrato oscillatory pattern.
-    sec_vibrato_waveform_table : array_like
+    secondary_vibrato_waveform_table : array_like
         The table with the waveform for the
         secondary pattern of the vibrato.
     number_of_samples : scalar or None
@@ -1449,6 +1477,12 @@ def note_with_two_vibratos(
     sample_rate : scalar or None
         The sample rate.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
+    **renamed
+        ``nu1``, ``nu2`` and ``sec_vibrato_waveform_table``, what
+        ``max_pitch_dev``, ``secondary_max_pitch_dev`` and
+        ``secondary_vibrato_waveform_table`` were called before they took
+        the names :func:`note_with_two_vibratos_glissando` gives them.
+        Still accepted, with a :class:`DeprecationWarning`.
 
     Returns
     -------
@@ -1488,9 +1522,19 @@ def note_with_two_vibratos(
 
     """
     sample_rate = resolve_rate(sample_rate)
+    given = renamed_arguments(
+        'note_with_two_vibratos', renamed, nu1='max_pitch_dev',
+        nu2='secondary_max_pitch_dev',
+        sec_vibrato_waveform_table='secondary_vibrato_waveform_table')
+    max_pitch_dev = given.get('max_pitch_dev', max_pitch_dev)
+    secondary_max_pitch_dev = given.get('secondary_max_pitch_dev',
+                                        secondary_max_pitch_dev)
+    secondary_vibrato_waveform_table = given.get(
+        'secondary_vibrato_waveform_table', secondary_vibrato_waveform_table)
     waveform_table = np.array(waveform_table)
     vibrato_waveform_table = np.array(vibrato_waveform_table)
-    sec_vibrato_waveform_table = np.array(sec_vibrato_waveform_table)
+    secondary_vibrato_waveform_table = np.array(
+        secondary_vibrato_waveform_table)
     if number_of_samples is not None:
         lambda_vv = number_of_samples
     else:
@@ -1503,19 +1547,22 @@ def note_with_two_vibratos(
     # values of the oscillatory pattern at each sample
     tv1 = vibrato_waveform_table[gammav1 % lv1]
 
-    lv2 = len(sec_vibrato_waveform_table)
+    lv2 = len(secondary_vibrato_waveform_table)
     gammav2 = (samples * secondary_vibrato_freq * lv2 /
                sample_rate).astype(np.int64)  # LUT indexes
     # values of the oscillatory pattern at each sample. The same defect
     # the glissando form carried: this read `vibrato_waveform_table`, so
-    # `sec_vibrato_waveform_table` was used only for its length.
-    tv2 = sec_vibrato_waveform_table[gammav2 % lv2]
+    # the secondary table was used only for its length.
+    tv2 = secondary_vibrato_waveform_table[gammav2 % lv2]
 
     if alphav1 != 1 or alphav2 != 1:
-        f = freq * 2. ** _signed_power(tv1 * nu1 / 12, alphav1, 'alphav1') \
-            * 2. ** _signed_power(tv2 * nu2 / 12, alphav2, 'alphav2')
+        f = freq * 2. ** _signed_power(tv1 * max_pitch_dev / 12, alphav1,
+                                       'alphav1') \
+            * 2. ** _signed_power(tv2 * secondary_max_pitch_dev / 12,
+                                  alphav2, 'alphav2')
     else:
-        f = freq * 2. ** (tv1 * nu1 / 12) * 2. ** (tv2 * nu2 / 12)
+        f = freq * 2. ** (tv1 * max_pitch_dev / 12) \
+            * 2. ** (tv2 * secondary_max_pitch_dev / 12)
     length = len(waveform_table)
     gamma = _integrate_phase(f * length / sample_rate, length).astype(np.int64)
     s = waveform_table[gamma % length]

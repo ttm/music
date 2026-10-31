@@ -102,6 +102,19 @@ Old names keep working and warn: see **Deprecated**.
   line of bound notes clicked twice. Each note now fades over
   `fades_ms`, 20 ms by default, at which none of ninety random lines
   clicked by the suite's measure; zero joins them bare.
+- **`adsr`'s length is `duration`, and two vibratos are named alike
+  with a glissando or without.** `adsr` called it `envelope_duration`,
+  where `fade`, `loud`, `tremolo`, `am` and `adsr_stereo` say
+  `duration`. `note_with_two_vibratos` called its depths `nu1` and `nu2`
+  and its second table `sec_vibrato_waveform_table`, where
+  `note_with_two_vibratos_glissando` said `max_pitch_dev` and
+  `secondary_max_pitch_dev`, and called its tables `tabv1` and `tabv2`;
+  both now take `max_pitch_dev`, `secondary_max_pitch_dev`,
+  `vibrato_waveform_table` and `secondary_vibrato_waveform_table`, the
+  names `note_with_vibrato` and `note_with_glissando_vibrato` already
+  used. `note_with_vibrato_seq_localization`'s `max_pitch_devs` is
+  `vibratos_max_pitch_devs`, as `note_with_vibratos_glissandos` has it.
+  Positional calls are unchanged.
 - **`iir` is about nine times faster for every filter the designs
   compute,** and the same to the last bit. It called numpy twice at each
   sample, to sum a few products; a filter of fewer than eight
@@ -234,6 +247,11 @@ Old names keep working and warn: see **Deprecated**.
 - **`attack_duration`, `decay_duration`, `release_duration`, `to_zero`,
   `cross_fade`'s `duration` and the writers' `fades`,** the names the
   millisecond parameters had. They still work, and warn.
+- **`adsr`'s `envelope_duration`, `note_with_two_vibratos`' `nu1`, `nu2`
+  and `sec_vibrato_waveform_table`, `note_with_two_vibratos_glissando`'s
+  `tabv1` and `tabv2`, and `note_with_vibrato_seq_localization`'s
+  `max_pitch_devs`,** the names those parameters had before they took
+  their siblings'. They still work, and warn.
 
 ### Tests
 

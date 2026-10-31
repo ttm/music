@@ -19,7 +19,7 @@ def _render(*, stereo, x, y, movement_durations, method, curves,
     return music.note_with_vibrato_seq_localization(
         freqs=(440, 440),
         durations=((duration,), (0.007,), movement_durations),
-        vibratos_freqs=((0,),), max_pitch_devs=((0,),),
+        vibratos_freqs=((0,),), vibratos_max_pitch_devs=((0,),),
         alpha=((1,), (3,), curves), x=x, y=y, method=method,
         waveform_tables=((carrier,), (np.zeros(16),)),
         stereo=stereo, air_temp=air_temp, sample_rate=sample_rate,

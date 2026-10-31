@@ -281,25 +281,25 @@ def test_two_vibratos_each_bend_the_pitch_by_their_own_depth(alphav1, alphav2):
 
     One at 1 Hz and one at 2 Hz divide a second into quadrants holding
     (-1,-1), (-1,+1), (+1,-1) and (+1,+1), so each quadrant is a steady
-    tone whose frequency identifies `nu1`, `nu2`, both signs and the
+    tone whose frequency identifies both depths, both signs and the
     product that combines them. Nothing measured any of it: every
     arithmetic edit to the line survived, and so did the mutants that
     changed which branch a lopsided pair of indices takes.
     """
-    freq, nu1, nu2 = 440, 2, 7
+    freq, dev1, dev2 = 440, 2, 7
     note = music.note_with_two_vibratos(
         freq=freq, duration=1.0, vibrato_freq=1, secondary_vibrato_freq=2,
-        nu1=nu1, nu2=nu2, alphav1=alphav1, alphav2=alphav2,
-        vibrato_waveform_table=music.WAVEFORM_SQUARE,
-        sec_vibrato_waveform_table=music.WAVEFORM_SQUARE)
+        max_pitch_dev=dev1, secondary_max_pitch_dev=dev2, alphav1=alphav1,
+        alphav2=alphav2, vibrato_waveform_table=music.WAVEFORM_SQUARE,
+        secondary_vibrato_waveform_table=music.WAVEFORM_SQUARE)
     # Both tables named: until the secondary read was corrected, naming
     # only the first gave the second one the same square wave by accident,
     # and this test passed because of the defect it now guards.
     quadrants = ((0.03, 0.22, -1, -1), (0.28, 0.47, -1, 1),
                  (0.53, 0.72, 1, -1), (0.78, 0.97, 1, 1))
     for start, end, first, second in quadrants:
-        expected = (freq * 2 ** _bend(first * nu1 / 12, alphav1)
-                    * 2 ** _bend(second * nu2 / 12, alphav2))
+        expected = (freq * 2 ** _bend(first * dev1 / 12, alphav1)
+                    * 2 ** _bend(second * dev2 / 12, alphav2))
         assert _steady_pitch(note, start, end) == pytest.approx(expected,
                                                                 rel=2e-3)
 
@@ -308,7 +308,9 @@ def test_the_note_with_two_vibratos_defaults_are_the_ones_it_declares():
     assert np.array_equal(
         music.note_with_two_vibratos(),
         music.note_with_two_vibratos(freq=220, duration=2, vibrato_freq=2,
-                                     secondary_vibrato_freq=6, nu1=2, nu2=4,
+                                     secondary_vibrato_freq=6,
+                                     max_pitch_dev=2,
+                                     secondary_max_pitch_dev=4,
                                      sample_rate=44100))
     assert len(music.note_with_two_vibratos()) == 2 * 44100
 
@@ -353,8 +355,9 @@ def test_the_glissando_vibrato_defaults_are_the_ones_it_declares():
 
 @pytest.mark.parametrize("routine, primary, secondary", [
     ("note_with_two_vibratos", "vibrato_waveform_table",
-     "sec_vibrato_waveform_table"),
-    ("note_with_two_vibratos_glissando", "tabv1", "tabv2"),
+     "secondary_vibrato_waveform_table"),
+    ("note_with_two_vibratos_glissando", "vibrato_waveform_table",
+     "secondary_vibrato_waveform_table"),
 ])
 def test_the_second_vibrato_reads_its_own_waveform_table(routine, primary,
                                                          secondary):
@@ -379,8 +382,9 @@ def test_the_second_vibrato_reads_its_own_waveform_table(routine, primary,
 
 @pytest.mark.parametrize("routine, primary, secondary", [
     ("note_with_two_vibratos", "vibrato_waveform_table",
-     "sec_vibrato_waveform_table"),
-    ("note_with_two_vibratos_glissando", "tabv1", "tabv2"),
+     "secondary_vibrato_waveform_table"),
+    ("note_with_two_vibratos_glissando", "vibrato_waveform_table",
+     "secondary_vibrato_waveform_table"),
 ])
 def test_two_vibratos_may_have_tables_of_different_lengths(routine, primary,
                                                            secondary):
@@ -406,8 +410,8 @@ def test_two_vibratos_over_a_glissando_each_bend_by_their_own_depth(
         start_freq=freq, end_freq=freq, duration=1.0, vibrato_freq=1,
         secondary_vibrato_freq=2, max_pitch_dev=dev1,
         secondary_max_pitch_dev=dev2, alpha=alpha, alphav1=alphav1,
-        alphav2=alphav2, tabv1=music.WAVEFORM_SQUARE,
-        tabv2=music.WAVEFORM_SQUARE)
+        alphav2=alphav2, vibrato_waveform_table=music.WAVEFORM_SQUARE,
+        secondary_vibrato_waveform_table=music.WAVEFORM_SQUARE)
     quadrants = ((0.03, 0.22, -1, -1), (0.28, 0.47, -1, 1),
                  (0.53, 0.72, 1, -1), (0.78, 0.97, 1, 1))
     for start, end, first, second in quadrants:

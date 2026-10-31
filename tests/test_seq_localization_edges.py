@@ -11,7 +11,7 @@ def _settings(stereo=False):
     """A stationary source a metre away, with readable table indices."""
     return dict(
         freqs=(125, 250), durations=((.008,), (.008,)),
-        vibratos_freqs=(), max_pitch_devs=(), alpha=((1,), (1,)),
+        vibratos_freqs=(), vibratos_max_pitch_devs=(), alpha=((1,), (1,)),
         x=(0, 0), y=(1, 1), method=("lin",),
         waveform_tables=((np.arange(16, dtype=float) / 16,),),
         stereo=stereo, zeta=0, sample_rate=1000,
@@ -91,7 +91,7 @@ def test_a_spatial_segment_needs_time_to_define_its_velocity(stereo, duration):
     settings = _settings(stereo)
     settings.update(
         durations=((.008,), (.008,), (duration,)), y=(1, 2),
-        vibratos_freqs=((0,),), max_pitch_devs=((0,),),
+        vibratos_freqs=((0,),), vibratos_max_pitch_devs=((0,),),
         alpha=((1,), (1,), (1,)),
         waveform_tables=(settings["waveform_tables"][0], (np.zeros(2),)),
     )
@@ -126,7 +126,7 @@ def test_vibrato_segments_use_whole_samples_before_switching_tables(stereo):
     settings = _settings(stereo)
     settings.update(
         freqs=(125, 125), durations=((.008,), (.0025, .0055), (.008,)),
-        vibratos_freqs=((0, 0),), max_pitch_devs=((12, 12),),
+        vibratos_freqs=((0, 0),), vibratos_max_pitch_devs=((12, 12),),
         alpha=((1,), (1, 1), (1,)),
         waveform_tables=(settings["waveform_tables"][0],
                          (np.ones(4), -np.ones(4))),
@@ -148,7 +148,7 @@ def test_waveform_tables_accept_array_likes_and_integer_samples(stereo,
     vibrato = container([1, -1])
     settings.update(
         freqs=(125, 125), durations=((.008,), (.008,), (.008,)),
-        vibratos_freqs=((0,),), max_pitch_devs=((12,),),
+        vibratos_freqs=((0,),), vibratos_max_pitch_devs=((12,),),
         alpha=((1,), (1,), (1,)), y=(2, 2),
         waveform_tables=((carrier,), (vibrato,)),
     )

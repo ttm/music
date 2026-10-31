@@ -34,7 +34,7 @@ def _per_stage(value, stages, name):
     return tuple(float(v) for v in values)
 
 
-def adsr(envelope_duration=2, attack_ms=20,
+def adsr(duration=2, attack_ms=20,
          decay_ms=20, sustain_level=-5,
          release_ms=50, transition="exp", alpha=1,
          db_dev=-80, to_zero_ms=1, number_of_samples=None, sonic_vector=0,
@@ -47,7 +47,7 @@ def adsr(envelope_duration=2, attack_ms=20,
 
     Parameters
     ----------
-    envelope_duration : scalar
+    duration : scalar
         The duration of the envelope in seconds.
     attack_ms : scalar
         The duration of the Attack in milliseconds.
@@ -76,19 +76,21 @@ def adsr(envelope_duration=2, attack_ms=20,
         value for both, or two: for the Attack and the Release. Longer than
         its stage, it is the whole stage. Ignored if transition="linear".
     number_of_samples : integer or None
-        The number of samples of the envelope. If given, envelope_duration
-        is ignored, and zero is an envelope of no samples.
+        The number of samples of the envelope. If given, duration is
+        ignored, and zero is an envelope of no samples.
     sonic_vector : array_like
         Samples for the ADSR envelope to be applied to: mono, or of shape
         ``(nchannels, nsamples)``, every channel shaped alike. If
-        supplied, envelope_duration and number_of_samples are ignored.
+        supplied, duration and number_of_samples are ignored.
     sample_rate : integer or None
         The sample rate. None, the default, is the rate
         :func:`music.get_sample_rate` returns.
     **renamed
         ``attack_duration``, ``decay_duration``, ``release_duration`` and
         ``to_zero``, the names these milliseconds had before they said
-        their unit among parameters in seconds. Still accepted, with a
+        their unit among parameters in seconds, and ``envelope_duration``,
+        what ``duration`` was called before it took the name every other
+        envelope gives it. Still accepted, with a
         :class:`DeprecationWarning`.
 
     Returns
@@ -145,7 +147,7 @@ def adsr(envelope_duration=2, attack_ms=20,
     >>> s = horizontal_stack(*[adsr(attack_ms=i, release_ms=j,
     ...                            sonic_vector=note_with_vibrato())
     ...                       for i, j in zip([6, 15, 100], [2, 2, 20])])
-    >>> envelope = adsr(envelope_duration=440, attack_ms=10e3,
+    >>> envelope = adsr(duration=10, attack_ms=3e3,
     ...                 decay_ms=0, release_ms=5e3)
     >>> stereo = localize(note(duration=1))
     >>> adsr(sonic_vector=stereo).shape == stereo.shape   # each channel
@@ -154,7 +156,9 @@ def adsr(envelope_duration=2, attack_ms=20,
 
     """
     sample_rate = resolve_rate(sample_rate)
-    given = renamed_arguments('adsr', renamed, **_RENAMED)
+    given = renamed_arguments('adsr', renamed, envelope_duration='duration',
+                              **_RENAMED)
+    duration = given.get('duration', duration)
     attack_ms = given.get('attack_ms', attack_ms)
     decay_ms = given.get('decay_ms', decay_ms)
     release_ms = given.get('release_ms', release_ms)
@@ -182,7 +186,7 @@ def adsr(envelope_duration=2, attack_ms=20,
     elif number_of_samples is not None:
         lambda_adsr = number_of_samples
     else:
-        lambda_adsr = sample_count(envelope_duration, sample_rate)
+        lambda_adsr = sample_count(duration, sample_rate)
     lambda_a = sample_count(attack_ms / 1000, sample_rate)
     lambda_d = sample_count(decay_ms / 1000, sample_rate)
     lambda_r = sample_count(release_ms / 1000, sample_rate)
@@ -295,8 +299,7 @@ def adsr_stereo(duration=2, attack_ms=20, decay_ms=20,
     Parameters
     ----------
     duration : scalar
-        The duration of the envelope in seconds. Passed to :func:`adsr`
-        as ``envelope_duration``.
+        The duration of the envelope in seconds.
     attack_ms : scalar
         The duration of the Attack in milliseconds.
     decay_ms : scalar
@@ -376,13 +379,13 @@ def adsr_stereo(duration=2, attack_ms=20, decay_ms=20,
     else:
         sonic_vector1 = 0
         sonic_vector2 = 0
-    s1 = adsr(envelope_duration=duration, attack_ms=attack_ms,
+    s1 = adsr(duration=duration, attack_ms=attack_ms,
               decay_ms=decay_ms, sustain_level=sustain_level,
               release_ms=release_ms, transition=transition,
               alpha=alpha, db_dev=db_dev, to_zero_ms=to_zero_ms,
               number_of_samples=number_of_samples, sonic_vector=sonic_vector1,
               sample_rate=sample_rate)
-    s2 = adsr(envelope_duration=duration, attack_ms=attack_ms,
+    s2 = adsr(duration=duration, attack_ms=attack_ms,
               decay_ms=decay_ms, sustain_level=sustain_level,
               release_ms=release_ms, transition=transition,
               alpha=alpha, db_dev=db_dev, to_zero_ms=to_zero_ms,

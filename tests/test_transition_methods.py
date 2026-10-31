@@ -36,7 +36,7 @@ def _fade_in(method):
 
 
 def _adsr(method):
-    return music.adsr(envelope_duration=0.2, attack_ms=20,
+    return music.adsr(duration=0.2, attack_ms=20,
                       decay_ms=20, release_ms=50,
                       transition=method, sample_rate=1000)
 
@@ -118,11 +118,11 @@ def test_an_envelope_of_no_stages_still_checks_its_transition():
     """With every stage empty nothing reached `fade` or `loud`, so any
     name was accepted."""
     with pytest.raises(ValueError, match=f"^transition {_REFUSAL}'bogus'"):
-        music.adsr(envelope_duration=0.1, attack_ms=0,
+        music.adsr(duration=0.1, attack_ms=0,
                    decay_ms=0, release_ms=0,
                    transition="bogus", sample_rate=1000)
     np.testing.assert_array_equal(
-        music.adsr(envelope_duration=0.1, attack_ms=0,
+        music.adsr(duration=0.1, attack_ms=0,
                    decay_ms=0, release_ms=0, sustain_level=0,
                    transition="linear", sample_rate=1000),
         np.ones(100))

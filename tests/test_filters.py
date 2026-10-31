@@ -17,7 +17,7 @@ import music
 
 def test_adsr_envelope_basic():
     env = adsr(
-        envelope_duration=0.1,
+        duration=0.1,
         attack_ms=10,
         decay_ms=20,
         sustain_level=-6,
@@ -187,7 +187,7 @@ def test_adsr_hands_each_stage_the_shape_it_was_given(transition):
     # them. What is under test is that `transition`, `alpha` and `db_dev`
     # reach all three: each could be dropped from any of the calls and
     # every test still passed, because none used a non-default value.
-    env = adsr(envelope_duration=0.2, attack_ms=30, decay_ms=40,
+    env = adsr(duration=0.2, attack_ms=30, decay_ms=40,
                sustain_level=-6, release_ms=50, transition=transition,
                alpha=2, db_dev=-40, sample_rate=1000)
     sustain = 10 ** (-6 / 20)
@@ -211,7 +211,7 @@ def test_adsr_stereo_gives_both_channels_every_setting(transition):
                     release_ms=50, transition=transition, alpha=2,
                     db_dev=-40, to_zero_ms=3, number_of_samples=200,
                     sample_rate=1000)
-    mono = adsr(envelope_duration=5, **settings)
+    mono = adsr(duration=5, **settings)
     stereo = music.adsr_stereo(duration=5, **settings)
     assert stereo.shape == (2, 200)
     assert np.allclose(stereo[0], mono)

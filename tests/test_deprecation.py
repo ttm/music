@@ -4,9 +4,12 @@ The package had no way to retire a name. `mix2`, `mix_with_offset_` and
 `read_wav` were second names kept bound with nothing telling their
 callers to move, and the parameters in milliseconds -- among parameters
 in seconds -- said nothing of their unit, so `cross_fade(a, b,
-duration=0.5)` crossfaded over half a millisecond. Each old spelling now
-works as it did and warns, naming what replaced it; CONTRIBUTING.md says
-when one may go.
+duration=0.5)` crossfaded over half a millisecond. A few more took the
+names the routines beside them already gave the same thing: `adsr`'s
+`envelope_duration` is the `duration` of every other envelope, and two
+vibratos' depths and tables are named alike with a glissando or without.
+Each old spelling now works as it did and warns, naming what replaced it;
+CONTRIBUTING.md says when one may go.
 """
 
 import inspect
@@ -23,17 +26,33 @@ from test_public_api import ZERO_ARG_EXPORTS, _callable_with_defaults
 #: called with besides them, and each old name with the value to give.
 RENAMED = {
     "adsr": ({}, {"attack_duration": 30, "decay_duration": 40,
-                  "release_duration": 60, "to_zero": 3}),
+                  "release_duration": 60, "to_zero": 3,
+                  "envelope_duration": 0.5}),
     "adsr_stereo": ({}, {"attack_duration": 30, "decay_duration": 40,
                          "release_duration": 60, "to_zero": 3}),
     "cross_fade": ({"sonic_vector_1": np.ones(4410),
                     "sonic_vector_2": np.ones(4410) * 2},
                    {"duration": 50}),
+    "note_with_two_vibratos": (
+        {"duration": 0.2},
+        {"nu1": 3, "nu2": 1,
+         "sec_vibrato_waveform_table": music.WAVEFORM_SQUARE}),
+    "note_with_two_vibratos_glissando": (
+        {"duration": 0.2},
+        {"tabv1": music.WAVEFORM_SQUARE, "tabv2": music.WAVEFORM_SQUARE}),
+    "note_with_vibrato_seq_localization": (
+        {}, {"max_pitch_devs": ((1, 2, 3), (2, 1, 0, 3, 2))}),
 }
 
 NEW_NAMES = {"attack_duration": "attack_ms", "decay_duration": "decay_ms",
              "release_duration": "release_ms", "to_zero": "to_zero_ms",
-             "duration": "duration_ms", "fades": "fades_ms"}
+             "duration": "duration_ms", "fades": "fades_ms",
+             "envelope_duration": "duration", "nu1": "max_pitch_dev",
+             "nu2": "secondary_max_pitch_dev",
+             "sec_vibrato_waveform_table": "secondary_vibrato_waveform_table",
+             "tabv1": "vibrato_waveform_table",
+             "tabv2": "secondary_vibrato_waveform_table",
+             "max_pitch_devs": "vibratos_max_pitch_devs"}
 
 
 def _own(arguments):
@@ -78,7 +97,9 @@ def test_a_millisecond_name_is_what_the_old_one_meant():
 
 @pytest.mark.parametrize("routine", ["adsr", "adsr_stereo", "cross_fade",
                                      "write_wav_mono", "write_wav_stereo",
-                                     "write_audio"])
+                                     "write_audio", "note_with_two_vibratos",
+                                     "note_with_two_vibratos_glissando",
+                                     "note_with_vibrato_seq_localization"])
 def test_a_keyword_that_is_neither_name_is_still_a_type_error(routine):
     """Accepting the old names must not mean accepting any name."""
     required = RENAMED.get(routine, ({},))[0]

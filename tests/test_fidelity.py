@@ -124,7 +124,7 @@ def test_tremolo_envelope_spans_the_requested_decibel_range(max_db_dev):
 def test_adsr_sustain_plateau_sits_at_the_requested_decibels(sustain_level):
     """The sustain stage is a plateau at 10 ** (sustain_level / 20)."""
     envelope = music.adsr(
-        envelope_duration=1.0, attack_ms=20, decay_ms=20,
+        duration=1.0, attack_ms=20, decay_ms=20,
         sustain_level=sustain_level, release_ms=50,
     )
     attack = int(20 * SAMPLE_RATE * 0.001)
@@ -1046,7 +1046,7 @@ def test_adsr_reaches_each_stage_where_it_says_it_will():
     """
     attack, decay, release = 100, 200, 300      # milliseconds
     sustain = -6.0                              # decibels
-    envelope = music.adsr(envelope_duration=1.0, attack_ms=attack,
+    envelope = music.adsr(duration=1.0, attack_ms=attack,
                           decay_ms=decay, sustain_level=sustain,
                           release_ms=release)
 
@@ -1068,7 +1068,7 @@ def test_adsr_reaches_each_stage_where_it_says_it_will():
 
 def test_the_adsr_sustain_holds_its_level_flat():
     """Between decay and release nothing should move."""
-    envelope = music.adsr(envelope_duration=1.0, attack_ms=100,
+    envelope = music.adsr(duration=1.0, attack_ms=100,
                           decay_ms=200, sustain_level=-6,
                           release_ms=300)
     a = int(0.1 * SAMPLE_RATE)

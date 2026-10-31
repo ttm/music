@@ -86,8 +86,7 @@ def renamed_arguments(routine: str, given: dict[str, Any],
             raise TypeError(
                 f"{routine}() got an unexpected keyword argument {old!r}")
         new = renames[old]
-        warn(f"{routine}()'s {old!r} is now {new!r}, which says its "
-             f"unit; {old!r} still works but is deprecated",
-             DeprecationWarning)
+        warn(f"{routine}()'s {old!r} is now {new!r}; {old!r} still "
+             f"works but is deprecated", DeprecationWarning)
         values[new] = value
     return values

@@ -45,8 +45,8 @@ def test_extra_note_functions_shapes():
     assert note_with_two_vibratos(
         vibrato_freq=0,
         secondary_vibrato_freq=0,
-        nu1=0,
-        nu2=0,
+        max_pitch_dev=0,
+        secondary_max_pitch_dev=0,
         **params
     ).shape == (10,)
     assert tremolo(number_of_samples=10, tremolo_freq=0, max_db_dev=0,

@@ -254,7 +254,7 @@ def build_cases(ns: dict) -> list[Case]:
     def localized_sequence(durations=SEQ_D_LOC):
         return music.note_with_vibrato_seq_localization(
             freqs=SEQ_F, durations=durations, vibratos_freqs=SEQ_FV,
-            max_pitch_devs=SEQ_NU, alpha=SEQ_ALPHA_LOC,
+            vibratos_max_pitch_devs=SEQ_NU, alpha=SEQ_ALPHA_LOC,
             x=SEQ_X, y=SEQ_Y, method=('lin', 'exp', 'lin'),
             waveform_tables=seq_tables(), sample_rate=FS)
 
@@ -308,9 +308,10 @@ def build_cases(ns: dict) -> list[Case]:
                               tab=Tr, tabv1=S, tabv2=S, fs=FS),
              lambda: music.note_with_two_vibratos(
                  freq=220, duration=D, vibrato_freq=2,
-                 secondary_vibrato_freq=6, nu1=2, nu2=4, waveform_table=Tr,
+                 secondary_vibrato_freq=6, max_pitch_dev=2,
+                 secondary_max_pitch_dev=4, waveform_table=Tr,
                  vibrato_waveform_table=S,
-                 sec_vibrato_waveform_table=S, sample_rate=FS)),
+                 secondary_vibrato_waveform_table=S, sample_rate=FS)),
         Case('PVV', 'note_with_two_vibratos_glissando',
              lambda: ns['PVV'](f1=220, f2=440, d=D, fv1=2, fv2=6, nu1=2,
                                nu2=0.5, tab=Tr, tabv1=S, tabv2=S, fs=FS),
@@ -318,8 +319,8 @@ def build_cases(ns: dict) -> list[Case]:
                  start_freq=220, end_freq=440, duration=D, vibrato_freq=2,
                  secondary_vibrato_freq=6, max_pitch_dev=2,
                  secondary_max_pitch_dev=0.5,
-                 waveform_table=Tr, tabv1=S,
-                 tabv2=S, sample_rate=FS)),
+                 waveform_table=Tr, vibrato_waveform_table=S,
+                 secondary_vibrato_waveform_table=S, sample_rate=FS)),
         Case('PV_', 'note_with_vibratos_glissandos',
              lambda: ns['PV_'](f=list(SEQ_F), d=lists(SEQ_D), fv=lists(SEQ_FV),
                                nu=lists(SEQ_NU), alpha=lists(SEQ_ALPHA),
@@ -384,7 +385,7 @@ def build_cases(ns: dict) -> list[Case]:
                               waveform_table=S, sample_rate=FS)),
         Case('AD', 'adsr',
              lambda: ns['AD'](d=D, A=20, D=20, S=-5, R=50, fs=FS),
-             lambda: music.adsr(envelope_duration=D, attack_ms=20,
+             lambda: music.adsr(duration=D, attack_ms=20,
                                 decay_ms=20, sustain_level=-5,
                                 release_ms=50, sample_rate=FS),
              expect=DIVERGENT, bound=2e-2, reason=TO_ZERO_REASON),

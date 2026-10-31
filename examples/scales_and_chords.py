@@ -35,7 +35,7 @@ def render_chord(name, root=0, duration=1.0):
                         sample_rate=SAMPLE_RATE) for freq in freqs]
     # mix_many sums them sample by sample, which is what a chord is.
     return music.adsr(sonic_vector=music.mix_many(notes),
-                      envelope_duration=duration, sample_rate=SAMPLE_RATE)
+                      duration=duration, sample_rate=SAMPLE_RATE)
 
 
 # --- The seven modes -------------------------------------------------------

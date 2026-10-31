@@ -257,7 +257,7 @@ def test_the_examples_are_actually_being_run():
 
     The tests above check that an example parses and names things that
     exist. Running it is what catches the rest: `adsr(note_with_vibrato())`
-    passes a sound as `envelope_duration`, and `horizontal_stack([a, b])`
+    passes a sound as its `duration`, and `horizontal_stack([a, b])`
     hands a list to a routine taking `*arrays`. Both parse, both name real
     routines, and both raise.
 

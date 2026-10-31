@@ -41,7 +41,10 @@ routine takes ``number_of_samples`` instead, and it wins over ``duration``:
 
 .. code-block:: python
 
-   exactly_one_period = music.note(440, number_of_samples=round(44100 / 440))
+   one_period = music.note(441, number_of_samples=100)   # 44100 / 441
+
+A duration is counted the same way, as the whole samples it lasts: 0.35 s
+is 15,435 samples at 44.1 kHz, and 1/441 s would be the 100 above.
 
 It is all numpy
 ---------------
@@ -128,7 +131,7 @@ ending is in seconds:
      - Examples
    * - Duration of a sound
      - seconds
-     - ``duration``, ``envelope_duration``
+     - ``duration``
    * - Duration of an envelope stage, or of a crossfade
      - milliseconds, which the name says: ``_ms``
      - ``attack_ms``, ``release_ms``, ``duration_ms``
@@ -298,9 +301,8 @@ sample:
                                    theta1=150, theta2=30, dist=0.6)
    music.write_wav_stereo(passing, "passing.wav", fades_ms=(100, 500))
 
-Angles are in degrees, and *x is the lateral axis*: 0° is the right ear,
-90° is straight ahead, 180° is the left ear. So the call above sweeps from
-left to right.
+From 150°, on the left, to 30°, on the right: the call above sweeps from
+left to right, passing in front at 90°.
 
 The delays are fractional — a source 0.3 samples further from one ear than
 the other is rendered as 0.3 of a sample, by cubic interpolation, not
@@ -491,10 +493,10 @@ Where to go next
 * The :doc:`api` reference. Every routine has an example, and each one
   the article describes states the equation it implements.
 * `The examples folder
-  <https://github.com/ttm/music/tree/master/examples>`_, which holds each
-  of the above as a runnable script, plus the ``Being`` and
-  ``IteratorSynth`` classes for generating material algorithmically, and
-  the two singers singing the same songs side by side.
+  <https://github.com/ttm/music/tree/master/examples>`_: runnable scripts
+  for most of the above, the ``Being`` and ``IteratorSynth`` classes
+  generating material algorithmically, and the two singers singing the
+  same songs side by side.
 * What this page leaves out: :func:`music.setup_hrtf` and
   :func:`music.hrir`, which place a source with measured ears, above or
   behind you, where :func:`music.localize` can only place it to a side;

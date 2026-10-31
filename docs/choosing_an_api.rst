@@ -1,9 +1,10 @@
 Choosing the smallest API
 =========================
 
-The package retains its flat public namespace for compatibility. You do
-not need to learn all of it. Start with the smallest set below and use
-specialized routines when an experiment requires them.
+Every public name is importable from ``music`` itself, which is a long
+list, and most of it is variations. Start with the few routines below,
+and reach for the specialized ones when a piece or an experiment needs
+them.
 
 .. list-table::
    :header-rows: 1
@@ -12,25 +13,31 @@ specialized routines when an experiment requires them.
    * - Task
      - Start here
      - What to know
-   * - Render a calibrated oscillator
+   * - Render a note
      - :func:`music.note`
-     - MASS-compatible periodic LUT; even a rich waveform may alias.
-   * - Render a static-pitch, high-frequency tone
+     - The wavetable read as MASS reads it, sample for sample. Anything
+       richer than a sine folds its partials above the Nyquist frequency
+       back into the band, more the higher the note.
+   * - Render a rich waveform at a high pitch
      - :func:`music.bandlimited_note`
-     - Nyquist-filtered harmonic LUT with interpolation; not for FM or
-       glissandi. Defaults to sine, preserving a smooth ordinary note.
-   * - Control joins and envelope clicks
+     - The table with the partials the pitch cannot hold taken out, read
+       with interpolation; a sine by default. For a pitch that holds
+       still: a glissando or FM makes partials of its own.
+   * - Join notes without clicks
      - :func:`music.adsr`
-     - Apply per note before concatenation. A hard gate creates its own
-       broadband energy even with a band-limited carrier.
-   * - Compose notes into a timeline
+     - Shape each note before joining them: a note ends wherever its
+       phase lands, and a bare join steps. A hard gate makes broadband
+       energy of its own, whatever the carrier.
+   * - Place notes in time
      - :class:`music.Sequencer`
-     - Prefer scheduled notes to assembling timing by hand.
+     - Notes at start times, overlapping as they will, rather than
+       stacked end to end by hand.
    * - Render a named sensory-stimulation technique
      - :mod:`music.stimulation`
-     - Explicit binaural, monaural, isochronic, amplitude/FM, noise and
-       spatial-motion routines; test stimulus properties independently of
-       clinical claims.
+     - Binaural, monaural and isochronic beats, amplitude and frequency
+       modulation, modulated noise and spatial motion, each tested for
+       the property that defines it. None is a claim about what it does
+       to a listener.
    * - Describe a stimulus for another tool, or render one it described
      - :func:`music.stimulation.sstim.to_sstim_graph`,
        :func:`~music.stimulation.sstim.render_sstim`
@@ -41,7 +48,8 @@ specialized routines when an experiment requires them.
      - Ordered phases, duration-preserving crossfades, reproducible params.
    * - Sing a lyric
      - :func:`music.sing`
-     - Optional espeak-ng/PSOLA dependencies; intelligibility is variable.
+     - Needs espeak-ng and ``pip install 'music[singing]'``. The words
+       do not always come through clearly.
    * - Read or write files
      - :func:`music.read_audio`, :func:`music.write_audio`
      - Writers normalize levels unless given ``normalize=False``; preserve
@@ -80,11 +88,11 @@ new projects. No previously exported name is removed or renamed here.
 Spectral accuracy
 -----------------
 
-``music.note`` intentionally follows MASS LUT lookup and should be used
-when comparing exact numerical results to the reference paper/code.
-``music.bandlimited_note`` is a separate DSP decision: it FFT-filters
-a periodic waveform according to the requested **static fundamental**
-and linearly interpolates sample positions. Near Nyquist a square or
+``music.note`` reads its table exactly as MASS does, and is the one to
+use when comparing results with the article or its reference code.
+``music.bandlimited_note`` is a separate decision: it filters a periodic
+waveform's spectrum for the requested **fixed pitch**, then reads it
+with linear interpolation. Near Nyquist a square or
 sawtooth approaches a sinusoid because only its low harmonics survive.
 At low pitches harmonics can still exceed Nyquist when their harmonic
 number becomes large, so the table is recalculated by pitch and cached.

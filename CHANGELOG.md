@@ -333,6 +333,18 @@ Old names keep working and warn: see **Deprecated**.
   transfer function was implemented, beside `localize_hrtf`, and `am`'s
   ended on advice for a stereo reverberation. `sing` has an example, so
   every export now has one.
+- **The tutorial, the page on where to start, and an example say what
+  they mean.** The tutorial's "exactly one period" of 440 Hz was 100
+  samples, which is not one; it now takes 441 Hz, whose period is. Its
+  units listed `envelope_duration`, it gave the angles of `localize` twice
+  in two wordings, and it said the examples held "each of the above".
+  The page on where to start spoke of a "calibrated oscillator" and a
+  "MASS-compatible periodic LUT" where it meant a note read from a
+  table, and now says what each routine is for in plain words. The
+  README described the binaural beats example as for "relaxation or
+  focus", an effect the package claims nowhere else and nothing tests;
+  and the example, which shaped each channel apart, hands `tremolo` the
+  stereo sound, which it shapes alike.
 
 ## [1.11.0] - 2026-10-19
 

@@ -271,7 +271,28 @@ def test_reverb_applies_the_response_by_convolution():
     response = music.reverb(**settings)
     np.random.seed(123)
     produced = music.reverb(sonic_vector=signal, **settings)
-    np.testing.assert_array_equal(produced, np.convolve(signal, response))
+    direct = np.convolve(signal, response)
+    assert produced.shape == direct.shape
+    np.testing.assert_allclose(produced, direct, rtol=0,
+                               atol=1e-14 * np.abs(direct).max())
+
+
+def test_reverb_convolves_a_long_sound_through_its_spectrum_to_rounding():
+    """The direct sum multiplied every sample by every sample of the
+    response, so two seconds took a second and a half; the spectral one
+    takes a hundredth of that and differs only in rounding."""
+    sound = music.note(440, duration=2, sample_rate=44100)
+    response = music.reverb(seed=3, sample_rate=44100)
+    produced = music.reverb(sonic_vector=sound, seed=3, sample_rate=44100)
+    direct = np.convolve(sound, response)
+    assert produced.shape == (len(sound) + len(response) - 1,)
+    np.testing.assert_allclose(produced, direct, rtol=0,
+                               atol=1e-14 * np.abs(direct).max())
+
+
+def test_reverb_of_no_samples_is_no_samples():
+    """np.convolve refused an empty sound in its own words."""
+    assert music.reverb(sonic_vector=np.zeros(0), seed=1).shape == (0,)
 
 
 def test_stretches_accepts_duration_generators():

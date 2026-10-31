@@ -121,6 +121,14 @@ Old names keep working and warn: see **Deprecated**.
   coefficients a side now sums them as numpy does, over Python floats,
   with the feedforward half added across the whole signal at once. Two
   seconds of noise through `low_pass` took 0.45 s and take 0.05.
+- **`reverb` reverberates a sound through its spectrum, about a hundred
+  times faster.** `np.convolve` is always direct, and the response lasts
+  as long as the reverberation, so every sample of the sound was
+  multiplied by each of its 83,790: two seconds took a second and a
+  half, and a three-minute piece more than two minutes. Multiplying the
+  spectra takes a hundredth of a second for those two, and differs from
+  the direct sum only in rounding, below one part in 1e14 of the peak.
+  An empty sound gives an empty one back, where numpy refused it.
 
 ### Fixed
 

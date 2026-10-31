@@ -45,7 +45,8 @@ them.
        what SSTIM has no term for is given, never guessed.
    * - Run a phase-structured stimulation protocol
      - :class:`music.StimulationSession`
-     - Ordered phases, duration-preserving crossfades, reproducible params.
+     - Phases in order, crossfaded rather than cut, lasting exactly the
+       sum of their durations, each with the parameters it was given.
    * - Sing a lyric
      - :func:`music.sing`
      - Needs espeak-ng and ``pip install 'music[singing]'``. The words
@@ -92,10 +93,10 @@ Spectral accuracy
 use when comparing results with the article or its reference code.
 ``music.bandlimited_note`` is a separate decision: it filters a periodic
 waveform's spectrum for the requested **fixed pitch**, then reads it
-with linear interpolation. Near Nyquist a square or
-sawtooth approaches a sinusoid because only its low harmonics survive.
-At low pitches harmonics can still exceed Nyquist when their harmonic
-number becomes large, so the table is recalculated by pitch and cached.
+with linear interpolation. Near the Nyquist frequency a square or a
+sawtooth approaches a sine, because only its lowest harmonics survive;
+at a low pitch many more fit, so the table is filtered again for each
+pitch, and cached.
 
 This filters the *source waveform*. It does not prevent aliasing after
 nonlinear effects, sampling-rate conversion, frequency modulation, or

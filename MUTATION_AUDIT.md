@@ -12,9 +12,10 @@ output worth reading is the list of survivors rather than the percentage.
 work; `tools/mutation_audit.py --list-areas` lists what has been done.
 
 **Every area was measured again for 2.0.0, on 2026-10-29,** over the
-code that release ships, and the table holds those runs. [2.0.0 —
-every area again](#200--every-area-again-2026-10-29) says what they
-found and gives each area's surviving mutants now. The sections after it
+code that release ships, and the ten whose code a second review changed
+were measured again on 2026-10-31; the table holds the latest run of
+each. [2.0.0 — every area again](#200--every-area-again-2026-10-29) says
+what they found and gives each area's surviving mutants now. The sections after it
 are each area's earlier audits, kept as the record of what those found;
 the survivor IDs in them are their own runs', since an edit to a
 function renumbers its mutants.
@@ -22,24 +23,24 @@ function renumbers its mutants.
 | Area | Sources | Measured | Mutations | Detected | Surviving | Reviewed |
 |---|---|---|---:|---:|---:|---|
 | `export` | `core/functions.py`, `core/io.py`, `stimulation/session.py` | 2026-10-29 | 855 | 775 | 80 | all |
-| `envelopes` | `synths/envelopes.py`, `filters/adsr.py`, `filters/fade.py` | 2026-10-29 | 750 | 722 | 28 | all |
-| `oscillators` | `synths/notes.py` | 2026-10-29 | 1511 | 1493 | 18 | all |
-| `stimuli` | `stimulation/stimuli.py` | 2026-10-29 | 431 | 427 | 4 | all |
+| `envelopes` | `synths/envelopes.py`, `filters/adsr.py`, `filters/fade.py` | 2026-10-31 | 777 | 749 | 28 | all |
+| `oscillators` | `synths/notes.py` | 2026-10-31 | 1638 | 1620 | 18 | all |
+| `stimuli` | `stimulation/stimuli.py` | 2026-10-31 | 435 | 431 | 4 | all |
 | `localization` | `filters/localization.py` | 2026-10-29 | 671 | 649 | 22 | all |
-| `utils` | `utils.py` | 2026-10-29 | 1104 | 1012 | 92 | all |
-| `filters` | `filters/design.py`, `impulse_response.py`, `loud.py`, `reverb.py`, `stretches.py` | 2026-10-29 | 569 | 542 | 27 | all |
+| `utils` | `utils.py` | 2026-10-31 | 1111 | 1019 | 92 | all |
+| `filters` | `filters/design.py`, `impulse_response.py`, `loud.py`, `reverb.py`, `stretches.py` | 2026-10-31 | 653 | 626 | 27 | all |
 | `theory` | `theory/chords.py`, `intervals.py`, `scales.py` | 2026-10-29 | 214 | 213 | 1 | all |
 | `structures` | `structures/permutations.py`, `peals/base.py`, `peals.py`, `plain_changes.py` | 2026-10-29 | 709 | 695 | 14 | all |
-| `noises` | `synths/noises.py` | 2026-10-29 | 314 | 309 | 5 | all |
+| `noises` | `synths/noises.py` | 2026-10-31 | 320 | 315 | 5 | all |
 | `sequencer` | `sequencer.py` | 2026-10-29 | 149 | 149 | 0 | all |
 | `bonds` | `bonds.py` | 2026-10-29 | 127 | 124 | 3 | all |
-| `tables` | `tables.py` | 2026-10-29 | 77 | 77 | 0 | all |
+| `tables` | `tables.py` | 2026-10-31 | 93 | 93 | 0 | all |
 | `hrtf` | `hrtf.py` | 2026-10-29 | 224 | 217 | 7 | all |
 | `singing` | `singing/bootstrap.py`, `paths.py`, `perform.py`, `psola.py` | 2026-10-29 | 1942 | 1905 | 37 | all |
 | `legacy` | `legacy/CanonicalSynth.py`, `IteratorSynth.py`, `classes.py`, `tables.py`, `pieces/testSong2.py` | 2026-10-29 | 1662 | 1171 | 491 | all |
-| `bandlimited` | `synths/bandlimited.py`, `frequency_path.py`, `mipmap.py`, `oversampling.py`, `polyblep.py` | 2026-10-29 | 979 | 904 | 75 | all |
-| `sstim` | `stimulation/sstim/`: `__init__.py`, `_capabilities.py`, `_others.py`, `_sessions.py`, `_stimuli.py`, `_vocabulary.py` | 2026-10-29 | 3009 | 2898 | 111 | all |
-| `foundations` | `_rate.py`, `_deprecation.py`, `_warn.py`, `structures/_sympy.py` | 2026-10-29 | 63 | 62 | 1 | all |
+| `bandlimited` | `synths/bandlimited.py`, `frequency_path.py`, `mipmap.py`, `oversampling.py`, `polyblep.py` | 2026-10-31 | 983 | 909 | 74 | all |
+| `sstim` | `stimulation/sstim/`: `__init__.py`, `_capabilities.py`, `_others.py`, `_sessions.py`, `_stimuli.py`, `_vocabulary.py` | 2026-10-31 | 3013 | 2902 | 111 | all |
+| `foundations` | `_rate.py`, `_deprecation.py`, `_warn.py`, `structures/_sympy.py` | 2026-10-31 | 70 | 69 | 1 | all |
 
 Each area names the files it mutates and the tests that judge them, and the
 tests must cover every line and branch of those files between them, or
@@ -47,15 +48,14 @@ mutmut reports mutants no test reaches. All areas report none.
 
 Every area ran with eight workers, and *Detected* includes the mutants
 that hang, which a suite that finishes never accepts -- 21 in
-`structures`' peals, 5 in `legacy`, 4 in `oscillators`' `trill`, 3 in
-`utils` and one each in `envelopes` and `singing` -- and the singing
-resampler's ten that crash the interpreter. A mutant that runs out of
-time because the machine slept through its run counts as detected too,
-which could hide a survivor, and the machine slept through several. The
-areas they hit were run again; the `oscillators` run in the table still
-lost hours to sleep, and counted 12 timeouts where the awake run
-before it counted 4, but each of the eight more is a mutant that run
-killed, and every mutant it left alive is accounted for.
+`structures`' peals, 5 in `legacy`, 4 in `oscillators`' `trill`, 4 in
+`utils`' `mix_many_with_offsets` and one each in `envelopes` and
+`singing` -- and the singing resampler's ten that crash the interpreter.
+A mutant that runs out of time because the machine slept through its run
+counts as detected too, which could hide a survivor, and on 2026-10-29
+the machine slept through several. The areas they hit were run again,
+and the ten run on 2026-10-31 ran awake, none for more than four
+minutes.
 
 ## 2.0.0 — every area again, 2026-10-29
 
@@ -106,27 +106,46 @@ are the kinds a section below accepts, with the reason it gives, the
 list says so and gives the IDs they have now; the kinds new in 2.0.0 are
 given their reasons here.
 
+**Ten areas again, 2026-10-31.** A second review changed code in ten
+areas: every routine that turns a duration into samples asks
+`_rate.sample_count` now, `iir` has a short path and `reverb` convolves
+through the spectrum, `adsr` and the routines with two vibratos took
+their siblings' names for parameters and keep the old ones, and
+`draw_tables` names its lines. Those areas were measured again, and the
+table at the top holds their runs. They found three things the tests did
+not see. Nothing told `sample_count`'s floor from a rounding, nor pinned
+the millionth of a sample it rounds the product to. The spectral
+convolution was checked at no length one past a power of two, where
+padding to one short of it wraps, nor at a one-sample result, where the
+inverse transform must be told its length. And the oscillators area did
+not select the tests that give the two vibratos' old names, so every
+mutant of the renaming survived, 51 of them. Each is tested, or
+selected, now; and `iir`'s short path added a zero whose sign nothing
+could see, which went. The rows below give these ten areas' survivors in
+those runs: the kinds accepted already, renumbered by the new lines, and
+one new kind, in `filters`.
+
 | Area | Survivors now | What they are |
 |---|---:|---|
 | `foundations` | 1 | `combinatorics` 4, `exc.name or ""` → `or "XXXX"`: only an error naming no module reaches it, and it is raised again either way. Equivalent. |
 | `export` | 80 | The kinds its section accepts, renumbered where this release edited them: `normalize_mono` 10, 12–24, `normalize_stereo` 11, 13–15, `_audio_format` 5, 7, `_subtype` 1, 2, 4, 6, 7, `_wav_subtype` 4, `_scaled` 4, 6, `_quantize` 4, 6, 9–15, 41, `read_audio` 5–10, 14, 17, 31, `play_audio` 5, `write_wav_mono` 39, 42–44, 69, 74, `write_wav_stereo` 40, 43, 44, 46, 73, 78, `_ramp_shape` 1, `StimulationSession._layout` 83, `.render` 55, 61, 62, `.__repr__` 7, 17. New: `_as_given` 3, 5, the samples a writer told not to normalize left in their own type, which `_quantize` casts to `float64` again; `_as_given` 9, 10, 12–17 and `StimulusPhase.__post_init__` 11, 13, 14, refusal wording. |
-| `envelopes` | 28 | The kinds its section accepts, renumbered: `sonic_vector` sentinels `am` 4, `tremolo` 5, `tremolos` 1, `adsr` 9, `adsr_stereo` 9, `fade` 7; `adsr_stereo` 55–58; falsy sentinels `adsr` 139, `fade` 50, 94, 108, `cross_fade` 98; an unread `sample_rate` `cross_fade` 89, 92, 97, 101; boundaries that cannot bind `adsr` 126, `tremolos` 49, 63; wording `fade` 16, `cross_fade` 40–42. New: `_per_stage` 7, 9, a stage's values left in their own type, which only arithmetic reads. The eight substring survivors are gone with the substring matching. |
-| `oscillators` | 18 | The kinds its sections accept, renumbered: `note_with_vibrato_seq_localization` 22, 502, `note_with_doppler` 129, `_exponential_positions` 14, 17, 20–26, `_require_a_ratio` 8, 13, 14, `trill` 8, 37, `_fit_to_samples` 5. |
-| `stimuli` | 4 | As its section has them: `isochronic_tones` 48, 65, 68, and `spatial_motion` 44, its 43 renumbered. |
+| `envelopes` | 28 | The kinds its section accepts, renumbered: `sonic_vector` sentinels `am` 4, `tremolo` 5, `tremolos` 1, `adsr` 9, `adsr_stereo` 9, `fade` 7; `adsr_stereo` 55–58; falsy sentinels `adsr` 158, `fade` 52, 96, 110, `cross_fade` 100; an unread `sample_rate` `cross_fade` 91, 94, 99, 103; boundaries that cannot bind `adsr` 145, `tremolos` 49, 63; wording `fade` 16, `cross_fade` 42–44. New: `_per_stage` 7, 9, a stage's values left in their own type, which only arithmetic reads. The eight substring survivors are gone with the substring matching. |
+| `oscillators` | 18 | The kinds its sections accept, renumbered: `note_with_vibrato_seq_localization` 41, 535, `note_with_doppler` 131, `_exponential_positions` 14, 17, 20–26, `_require_a_ratio` 8, 13, 14, `trill` 8, 40, `_fit_to_samples` 5. |
+| `stimuli` | 4 | As its section has them: `isochronic_tones` 48, 67, 70, and `spatial_motion` 44, its 43 renumbered. |
 | `localization` | 22 | The kinds its section accepts, renumbered: `localize2` 16, 17, 170, 171 (wording); `localize2` 156, 232, 242 and `localize` 64 (`>=` at zero); `localize2` 209, 211, 212 (the unreachable Nyquist branch) and 100 (`<=` at the cutoff); `localize` 14, 16 and `localize_hrtf` 3, 5, 16, 18, 37, 39 (casts). New: `localize2` 24, 26, the cast this release added before its mono check, as `localize`'s. |
-| `utils` | 92 | The kinds its section accepts, renumbered: `waveform_table` 44, `horizontal_stack` 4, `mix` 1–4, 9–15, 19, `mix_stereo` 4, 6, 15, 18, 20, 25, `convert_to_stereo` 23–28, `_integrate_phase` 1, 4, 6, 7, 12, 14, `mix_with_offset` 32, 37, 39–52, 63, 66, `mix_many_with_offsets` 11, 22, 38, `pan_transitions` 84, 92, 94, `_describe_array` 7, 9, 11, 47, 48, 66, 67, 69, 70, 112, 121, 127, `_guess_role` 41, 44, 76, 77, 90, 92, 95, 103–106, 110, 111, `rhythm_to_durations` 50, 57, 70, 72–74, 114 (wording) and 96. New: `mix_many` 7, 9, the sounds left in their own type, which the `float64` padding promotes; `pan_transitions` 107, the last point repeated too often, which the slice to the sound's length cuts. |
-| `filters` | 27 | The kinds its section accepts, renumbered: `fir` 5, 7, 10, 12, `iir` 3, 5, 8, 10, 13, 15, 22, 28–30, 50, 67, `loud` 7, `louds` 1, 41, 49, `reverb` 5, 33, 34, 102, 104, `stretches` 33. New: `reverb` 90, the tail's seed drawn from 126 values rather than 2**63, which seeds it all the same. |
+| `utils` | 92 | The kinds its section accepts, renumbered: `waveform_table` 44, `horizontal_stack` 4, `mix` 1–4, 9–15, 19, `mix_stereo` 4, 6, 15, 18, 20, 25, `convert_to_stereo` 23–28, `_integrate_phase` 1, 4, 6, 7, 12, 14, `mix_with_offset` 35, 40, 42–55, 66, 69, `mix_many_with_offsets` 11, 22, 38, `pan_transitions` 86, 94, 96, `_describe_array` 7, 9, 11, 47, 48, 66, 67, 69, 70, 112, 121, 127, `_guess_role` 41, 44, 76, 77, 90, 92, 95, 103–106, 110, 111, `rhythm_to_durations` 50, 57, 70, 72–74, 114 (wording) and 96. New: `mix_many` 7, 9, the sounds left in their own type, which the `float64` padding promotes; `pan_transitions` 109, the last point repeated too often, which the slice to the sound's length cuts. |
+| `filters` | 27 | The kinds its section accepts, renumbered: `fir` 5, 7, 10, 12, `iir` 3, 5, 8, 10, 13, 15, 22, 28–30, 61, 78, `loud` 7, `louds` 1, 43, 51, `reverb` 5, 37, 38, `stretches` 33. New: `reverb` 94, the tail's seed drawn from 126 values rather than 2**63, which seeds it all the same; and, from the second pass, `_convolved` 11 and 12, the spectra padded to twice the power of two they need, or to the next one when the convolution is one short of it: the result is the same, to rounding, at up to twice the cost. `reverb`'s 102 and 104 went with the direct convolution they changed. |
 | `theory` | 1 | As its section has it: `interval_names` 31. |
 | `structures` | 14 | The kinds its section accepts: `InterestingPermutations.even_odd` 25, 28, 29, `Peals.an_eight_and_forty` 35, 58, 63, 74, `PlainChanges.initialize_hunts` 11, 12, and `PlainChanges.perform_change` 51, 82, 84, 85, 106, its 47, 78, 80, 81, 102 renumbered. |
-| `noises` | 5 | As its section has them: `_band` 9, 19, and `noise` 110, 136, 148, its 125, 151, 163 renumbered by the generator `noise` now shares with `gaussian_noise` and `reverb`. |
+| `noises` | 5 | As its section has them: `_band` 9, 19, and `noise` 112, 138, 150, its 125, 151, 163 renumbered by the generator `noise` now shares with `gaussian_noise` and `reverb`, and by the count of its samples. |
 | `sequencer` | 0 | |
 | `bonds` | 3 | As its section has them: `Bonds.note` 41, 43 and `Bonds.render` 18, its 40, 42 and 14 renumbered. |
 | `tables` | 0 | |
 | `hrtf` | 7 | As its section has them: `hrir` 1, 2, 53, and `setup_hrtf` 43, 44, 69, 70. |
 | `singing` | 37 | As its section has them, its `_trembling` 8 now detected. |
 | `legacy` | 491 | As its section has them: the piece's 444 and `Being.__init__`'s 38, `Being.stay` 24, `_fit` 1, and `CanonicalSynth.adsrApply` 9, 36, 38 and `adsrSetup` 36, 38, 53, 56, its 6, 33, 35 and 30, 32, 47, 50 renumbered. |
-| `bandlimited` | 75 | As its section has them, renumbered where this release set a default rate: `bandlimited_frequency_path` 14, 26, 37, 48, 58, 59, 72, 73, 77, 79, 95, 111, 113, 129, 158, 163, 175, 180, 204, 205, `PolyBLEPOscillator.__init__` 15, 24, 37, `bandlimited_note` 12, 21, 29, 39, 47, 64, 66, and `render_oversampled` 11, 22, 32, 40, 49, 51, 57, 60–63, 67, 69, 86, 87, 89, 90, 94, 112, 114. |
-| `sstim` | 111 | As its section has them. |
+| `bandlimited` | 74 | As its section has them, renumbered where this release set a default rate and counts samples: `bandlimited_frequency_path` 14, 26, 37, 48, 58, 59, 72, 73, 77, 79, 95, 111, 113, 129, 158, 163, 175, 180, 204, 205, `PolyBLEPOscillator.__init__` 15, 24, 37, `bandlimited_note` 12, 21, 29, 39, 47, 66, 68, and `render_oversampled` 11, 22, 32, 40, 51, 53, 59, 62–65, 69, 71, 88, 89, 91, 92, 96, 114, 116. `MipmapOscillator.render` 41 is detected now. |
+| `sstim` | 111 | As its section has them, `render_sstim`'s 27, 29 and 30 renumbered 29, 31 and 32 by the count of its samples. |
 
 ## `export` — normalization, export and session envelopes
 

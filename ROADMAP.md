@@ -923,6 +923,31 @@ and the tests they showed too loose to see a change are not any more.
 The README's and the documentation's code blocks run as tests now, as
 the tutorial's did, and the figures the tutorial quotes are recomputed.
 
+A second pass, on 2026-10-31, read the package again for what the first
+had not looked for:
+
+- **Arithmetic the sweeps could not see.** Every routine counted a
+  duration's samples as `int(duration * sample_rate)`, and the binary
+  rounding of the product took a sample from one duration in fourteen
+  written to two decimals: 0.35 s at 44.1 kHz was 15,434 samples, not
+  15,435. One helper counts them all now, as the article's `eq:dur`
+  does.
+- **Cost.** `iir` called numpy twice a sample and `reverb` convolved
+  directly with a response tens of thousands of samples long; the one is
+  nine times faster, bit for bit, and the other a hundred, to rounding.
+- **Names.** `adsr` called its length what no other envelope did, and
+  the two routines with two vibratos named the same depths and tables
+  differently; they share names now, and the old ones warn.
+- **What the documentation claimed.** The README, the front page and the
+  tutorial said every docstring stated its equation; the routines the
+  article describes now do, in their parameters' names, and say where
+  the package departs from it. The tutorial's one period that was not
+  one, notes that said no HRTF existed beside `localize_hrtf`, and an
+  example described as for "relaxation or focus" are gone.
+
+The ten areas whose code this changed were measured again;
+`MUTATION_AUDIT.md` has the runs.
+
 ## Open after the September 2026 audits
 
 What the audits found and did not fix, and why. Each is recorded where

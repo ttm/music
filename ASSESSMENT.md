@@ -299,9 +299,10 @@ either documented in the code or tracked in the issue list.
   the new Nyquist frequency when it shortened a line; and tests too loose
   to see a change in much of what the release added -- refusals matched
   by their last words, a sweep that took any finite result for a render,
-  a count of zero nothing reached. Both are fixed, and of 15,360 mutants
-  the 1,016 left are reviewed in MUTATION_AUDIT.md, which gives each
-  area's IDs now and why each is accepted.
+  a count of zero nothing reached. Both are fixed. A second review, on
+  2026-10-31, changed code in ten areas, which were measured again; of
+  15,646 mutants, the 1,015 left are reviewed in MUTATION_AUDIT.md, which
+  gives each area's IDs now and why each is accepted.
 
 - **The click measure is relative, so it is blind in fast passages.** A
   step counts as a click when it stands eight times over the median step

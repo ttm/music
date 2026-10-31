@@ -298,8 +298,10 @@ Old names keep working and warn: see **Deprecated**.
   code this release ships, and a nineteenth area holds the four modules
   it added. The runs found the singing resampler halving a component at
   the new Nyquist frequency, and tests too loose to see a change in much
-  of what the release added; both are fixed, and of 15,360 mutants the
-  1,016 left are reviewed in `MUTATION_AUDIT.md`.
+  of what the release added; both are fixed. The ten areas a second
+  review changed were measured again, and what those runs found untested
+  is tested; of 15,646 mutants the 1,015 left are reviewed in
+  `MUTATION_AUDIT.md`.
 
 ### Maintenance
 

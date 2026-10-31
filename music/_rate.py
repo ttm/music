@@ -22,6 +22,7 @@ two rates from changing each other's sound.
 
 from __future__ import annotations
 
+import math
 from contextvars import ContextVar, Token
 from numbers import Integral
 from typing import Any
@@ -132,3 +133,24 @@ def resolve_rate(sample_rate: Any) -> Any:
     use or refuse, exactly as before the default could be changed.
     """
     return _rate.get() if sample_rate is None else sample_rate
+
+
+def sample_count(duration: Any, sample_rate: Any) -> int:
+    """How many samples `duration` seconds last at `sample_rate`.
+
+    The floor of their product, as the article's ``eq:dur`` counts a
+    duration, but of the product the caller wrote rather than of its
+    binary rounding. 0.35 s at 44.1 kHz is 15,435 samples, and ``0.35 *
+    44100`` is 15434.999999999998, so ``int()`` of it -- which every
+    routine here took -- made the note a sample short. So did one
+    duration in fourteen written to two decimals, and a line of them
+    drifted behind the sequencer, which places notes by rounding. The
+    product is rounded to a millionth of a sample before it is floored:
+    that removes the binary error and nothing a caller could mean, since
+    15,435.5 samples is still 15,435.
+
+    A negative duration floors too, away from zero, which is how
+    :func:`music.mix_with_offset` has always counted an offset back from
+    the end of a sound.
+    """
+    return math.floor(round(duration * sample_rate, 6))

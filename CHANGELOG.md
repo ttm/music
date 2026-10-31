@@ -26,6 +26,9 @@ says so when it is met:
 - `Bonds.render` fades each note in and out over 20 ms before joining
   them, which they clicked without; `fades_ms=0` joins them bare, as
   before.
+- A duration that is a whole number of samples renders that many: 0.35 s
+  at 44.1 kHz is 15,435 samples, and was 15,434. About one duration in
+  fourteen written to two decimals is a sample longer than it was.
 
 Old names keep working and warn: see **Deprecated**.
 
@@ -102,6 +105,15 @@ Old names keep working and warn: see **Deprecated**.
 
 ### Fixed
 
+- **A duration lasted a sample less than it should, one time in
+  fourteen.** Every routine counted `int(duration * sample_rate)`, and
+  `0.35 * 44100` is 15434.999999999998 in binary floating point: a 0.35 s
+  note was 15,434 samples, not the 15,435 the article's `eq:dur` counts,
+  and so were 70 of the thousand durations from 0.01 s to 10 s written to
+  two decimals. A line of them stacked end to end fell a sample behind the
+  beat at every note, against the `Sequencer`, which rounds. A count is
+  now the floor of the product rounded to a millionth of a sample, which
+  removes the binary error and nothing a caller could mean.
 - **A count of zero samples was two seconds of sound.** `note(duration=0)`
   rendered nothing and `note(number_of_samples=0)` 88,200 samples, as did
   `adsr`, `fade`, `loud`, `noise`, `tremolo` and every other routine that
@@ -219,6 +231,8 @@ Old names keep working and warn: see **Deprecated**.
 
 ### Tests
 
+- **Every routine that takes a duration and a count renders the same
+  sound for 0.35 s as for the 15,435 samples it lasts.**
 - **Every routine that takes a rate renders at the default rate exactly
   what it renders when handed it, and none may declare one of its own.**
   The second is a scan of the source, so a routine added with

@@ -4,7 +4,7 @@ import numpy as np
 from .fade import fade
 from .loud import loud
 from ..._deprecation import renamed_arguments
-from ..._rate import resolve_rate
+from ..._rate import resolve_rate, sample_count
 from ...utils import _transition_is_linear, as_sonic_vector
 
 #: The parameters :func:`adsr` and :func:`adsr_stereo` renamed so their
@@ -182,10 +182,10 @@ def adsr(envelope_duration=2, attack_ms=20,
     elif number_of_samples is not None:
         lambda_adsr = number_of_samples
     else:
-        lambda_adsr = int(envelope_duration * sample_rate)
-    lambda_a = int(attack_ms * sample_rate * 0.001)
-    lambda_d = int(decay_ms * sample_rate * 0.001)
-    lambda_r = int(release_ms * sample_rate * 0.001)
+        lambda_adsr = sample_count(envelope_duration, sample_rate)
+    lambda_a = sample_count(attack_ms / 1000, sample_rate)
+    lambda_d = sample_count(decay_ms / 1000, sample_rate)
+    lambda_r = sample_count(release_ms / 1000, sample_rate)
 
     # The attack, decay and release stages cannot outlast the envelope they
     # belong to: compress them proportionally when the sound is too short,

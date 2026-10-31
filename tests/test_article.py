@@ -20,6 +20,7 @@ References
        representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 """
 
+import inspect
 import math
 
 import numpy as np
@@ -27,6 +28,7 @@ import pytest
 
 import music
 from music.core.filters.localization import localize2
+from test_public_api import ZERO_ARG_EXPORTS
 
 SAMPLE_RATE = 44100
 
@@ -311,14 +313,50 @@ def test_a_change_of_tuning_rescales_the_step_count_as_equation_micro_says():
 # eq:dur, eq:notaBasica, eq:lut -- the note, and how long it is
 # --------------------------------------------------------------------------
 
-@pytest.mark.parametrize("duration", [0.1, 0.25, 1.0, 0.333])
-def test_a_sound_lasts_the_samples_equation_dur_counts(duration):
+@pytest.mark.parametrize("duration, expected", [
+    (0.1, 4410), (0.25, 11025), (1.0, 44100), (0.333, 14685),
+    # The floor of the product, not of its binary rounding: 0.35 * 44100
+    # is 15434.999999999998 in floating point, and int() of that made
+    # these a sample short.
+    (0.35, 15435), (0.7, 30870), (1.15, 50715), (2.01, 88641),
+])
+def test_a_sound_lasts_the_samples_equation_dur_counts(duration, expected):
     """Lambda = floor(Delta * f_s), the floor and not a rounding."""
-    expected = int(np.floor(duration * SAMPLE_RATE))
     assert len(music.note(duration=duration,
                           sample_rate=SAMPLE_RATE)) == expected
     assert len(music.silence(duration=duration,
                              sample_rate=SAMPLE_RATE)) == expected
+
+
+def _takes_a_duration_and_a_count(name):
+    parameters = inspect.signature(getattr(music, name)).parameters
+    return {"duration", "number_of_samples"} <= set(parameters)
+
+
+DURATIONS_AND_COUNTS = sorted(
+    name for name in ZERO_ARG_EXPORTS if _takes_a_duration_and_a_count(name))
+
+
+def test_the_sweep_finds_the_routines_that_take_a_duration():
+    assert len(DURATIONS_AND_COUNTS) >= 25
+    assert {"note", "noise", "tremolo", "binaural_beats",
+            "adsr_stereo"} <= set(DURATIONS_AND_COUNTS)
+
+
+@pytest.mark.parametrize("name", DURATIONS_AND_COUNTS)
+def test_every_routine_counts_a_duration_as_equation_dur_does(name):
+    """0.35 s is 15,435 samples at 44.1 kHz, whichever routine is asked.
+
+    Each one renders the same sound for the duration as for the count of
+    samples eq:dur gives it -- a count the product's binary rounding,
+    15434.999999999998, used to take one sample from.
+    """
+    function = getattr(music, name)
+    np.random.seed(0)
+    timed = function(duration=0.35, sample_rate=SAMPLE_RATE)
+    np.random.seed(0)
+    counted = function(number_of_samples=15435, sample_rate=SAMPLE_RATE)
+    np.testing.assert_array_equal(timed, counted)
 
 
 @pytest.mark.parametrize("freq", [110.0, 220.0, 443.7])

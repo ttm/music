@@ -13,6 +13,7 @@ from numpy.typing import NDArray
 from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import RDF
 
+from ... import _rate
 from .. import stimuli
 from ._stimuli import (
     BEATS, COLOURS, TONES, SstimStimulus, checked, portable, stimulus_graph,
@@ -610,7 +611,7 @@ class SstimBeat:
                        self.duration, self.sample_rate)
         carrier = beat.parameters["carrier_freq"]
         rate = beat.parameters["beat_freq"]
-        t = np.arange(int(beat.duration * beat.sample_rate)) / \
+        t = np.arange(_rate.sample_count(beat.duration, beat.sample_rate)) / \
             beat.sample_rate
         low = np.sin(2 * np.pi * (carrier - rate / 2) * t)
         high = np.sin(2 * np.pi * (carrier + rate / 2) * t)

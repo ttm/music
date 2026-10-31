@@ -3,7 +3,7 @@
 import numpy as np
 from .loud import loud
 from ..._deprecation import renamed_arguments
-from ..._rate import resolve_rate
+from ..._rate import resolve_rate, sample_count
 from ...utils import (resolve_stereo, mix_with_offset,
                       as_sonic_vector, _transition_is_linear)
 
@@ -109,7 +109,7 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
     elif number_of_samples is not None:
         n = number_of_samples
     else:
-        n = int(sample_rate * duration)
+        n = sample_count(duration, sample_rate)
     # Checked after the stereo branch, which hands this call's locals to
     # each channel's: a name bound before it would arrive as an argument.
     linear = _transition_is_linear(method)
@@ -227,7 +227,7 @@ def cross_fade(sonic_vector_1, sonic_vector_2, duration_ms=500,
     # the caller's arrays.
     sonic_vector_1 = np.array(sonic_vector_1, dtype=np.float64)
     sonic_vector_2 = np.array(sonic_vector_2, dtype=np.float64)
-    ns = int(duration_ms * sample_rate / 1000)
+    ns = sample_count(duration_ms / 1000, sample_rate)
     if len(sonic_vector_1.shape) != len(sonic_vector_2.shape):
         raise ValueError('sonic_vector_1 and sonic_vector_2 must have '
                          'the same shape')

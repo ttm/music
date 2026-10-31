@@ -4,7 +4,7 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from ..synths.noises import _random, noise
 from ...utils import as_sonic_vector
-from ..._rate import resolve_rate
+from ..._rate import resolve_rate, sample_count
 
 
 def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
@@ -99,8 +99,8 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
         raise ValueError(
             "first_phase_duration must be non-negative; "
             f"got {first_phase_duration}")
-    lambda_r = int(duration * sample_rate)
-    lambda1 = int(first_phase_duration * sample_rate)
+    lambda_r = sample_count(duration, sample_rate)
+    lambda1 = sample_count(first_phase_duration, sample_rate)
     if lambda1 > lambda_r:
         # ii[:lambda1] is only lambda_r long, so p and the incidences
         # below came out different lengths and numpy reported a

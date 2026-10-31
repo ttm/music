@@ -10,7 +10,7 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 from ._deprecation import alias
-from ._rate import resolve_rate
+from ._rate import resolve_rate, sample_count
 from ._warn import warn
 
 LAMBDA_TILDE = 1024 * 16
@@ -857,7 +857,7 @@ def mix_with_offset(
     dur = duration
 
     if number_of_samples is None:  # sample in s1 where s2[0] is added
-        ns = dur * sample_rate
+        ns = sample_count(dur, sample_rate)
     else:
         ns = number_of_samples
 
@@ -1075,7 +1075,7 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
         # Whole samples, as every other routine counts a duration: the
         # count was np.arange of the product, which rounds a fraction up,
         # so 1.1 s of panning was a sample longer than 1.1 s of note.
-        di = int(d[i] * sample_rate)
+        di = sample_count(d[i], sample_rate)
         di_ = np.arange(di) / di
         t0_.append(_pan_leg(pp_[0], pp[0], di_, laws[i]))
         t1_.append(_pan_leg(pp_[1], pp[1], di_, laws[i]))
@@ -1187,7 +1187,7 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=None):
         for i, off in enumerate(offset):
             if off:
                 sonic_vectors[i] = padded(sonic_vectors[i],
-                                          int(off * sample_rate), True)
+                                          sample_count(off, sample_rate), True)
 
     max_len = max(s.shape[-1] for s in sonic_vectors)
     return np.sum([padded(s, max_len - s.shape[-1], end)

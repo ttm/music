@@ -5,7 +5,7 @@ from ...utils import (WAVEFORM_SINE, WAVEFORM_TRIANGULAR,
                       _bent, _integrate_phase, _require_ears,
                       _signed_power, _transition_is_linear)
 from ..filters.adsr import adsr
-from ..._rate import resolve_rate
+from ..._rate import resolve_rate, sample_count
 
 
 def _require_a_ratio(start_freq, end_freq, linear_option=False):
@@ -88,7 +88,7 @@ def note(freq: float = 220, duration: float = 2,
     sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
     if number_of_samples is None:
-        number_of_samples = int(duration * sample_rate)
+        number_of_samples = sample_count(duration, sample_rate)
     samples = np.arange(number_of_samples)
     waveform_table_length = len(waveform_table)
 
@@ -174,7 +174,7 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
     if number_of_samples is None:
-        number_of_samples = int(duration * sample_rate)
+        number_of_samples = sample_count(duration, sample_rate)
     if number_of_samples < 1:
         # Zero samples is zero samples, with this routine's own shape
         # kept: adsr_stereo and spatial_motion already answer a zero
@@ -310,7 +310,7 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
     if number_of_samples is not None:
         lambda_fm = number_of_samples
     else:
-        lambda_fm = int(sample_rate * duration)
+        lambda_fm = sample_count(duration, sample_rate)
     samples = np.arange(lambda_fm)
 
     fm_waveform_table_length = len(fm_waveform_table)
@@ -399,7 +399,7 @@ def note_with_phase(freq: float = 220, duration: float = 2,
     sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
     if number_of_samples is None:
-        number_of_samples = int(duration * sample_rate)
+        number_of_samples = sample_count(duration, sample_rate)
     samples = np.arange(number_of_samples)
     waveform_table_length = len(waveform_table)
     i0 = phase * waveform_table_length / (2 * np.pi)
@@ -486,7 +486,7 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
     if number_of_samples is not None:
         lambda_p = number_of_samples
     else:
-        lambda_p = int(sample_rate * duration)
+        lambda_p = sample_count(duration, sample_rate)
     samples = np.arange(lambda_p)
     # A single sample sits at the start; it has no interval to divide by.
     intervals = max(lambda_p - 1, 1)
@@ -587,7 +587,7 @@ def note_with_glissando_vibrato(
     if number_of_samples is not None:
         lambda_pv = number_of_samples
     else:
-        lambda_pv = int(sample_rate * duration)
+        lambda_pv = sample_count(duration, sample_rate)
     samples = np.arange(lambda_pv)
 
     lv = len(vibrato_waveform_table)
@@ -701,7 +701,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     durations : list of lists of scalars
         The durations of the pitch transitions and then of the
         vibratos and then of the position transitions, in seconds. Each
-        segment uses ``int(sample_rate * duration)`` samples. A position
+        segment is as many whole samples as its duration lasts. A position
         transition must span at least one sample to define its velocity.
     vibratos_freqs :  list of lists of scalars
         The frequencies of each vibrato.
@@ -805,7 +805,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     waveform_tables = tuple(tuple(np.asarray(table, dtype=float)
                                   for table in row)
                             for row in waveform_tables)
-    if any(int(sample_rate * dur) < 1 for dur in durations[-1]):
+    if any(sample_count(dur, sample_rate) < 1 for dur in durations[-1]):
         raise ValueError(
             "each location duration must span at least one sample")
     linear = [_transition_is_linear(m) for m in method]
@@ -813,7 +813,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     # pitch transition contributions
     pitch_parts = []
     for i, dur in enumerate(durations[0]):
-        lambda_ = int(sample_rate * dur)
+        lambda_ = sample_count(dur, sample_rate)
         samples = np.arange(lambda_)
         f1, f2 = freqs[i:i + 2]
         _require_a_ratio(f1, f2)
@@ -832,7 +832,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     for i, vib in enumerate(durations[1:-1]):
         segments = []
         for j, dur in enumerate(vib):
-            samples = np.arange(int(dur * sample_rate))
+            samples = np.arange(sample_count(dur, sample_rate))
             lv = len(waveform_tables[i + 1][j])
             gammav = (samples * vibratos_freqs[i][j] * lv /
                       sample_rate).astype(np.int64)  # LUT indexes
@@ -859,7 +859,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     if stereo:
         for i in range(len(method)):
             a = alpha[-1][i]
-            lambda_d = int(sample_rate * durations[-1][i])
+            lambda_d = sample_count(durations[-1][i], sample_rate)
             if not linear[i]:
                 if a == 1:
                     foo = np.arange(lambda_d + 1) / lambda_d
@@ -890,7 +890,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     else:
         for i in range(len(method)):
             a = alpha[-1][i]
-            lambda_d = int(sample_rate * durations[-1][i])
+            lambda_d = sample_count(durations[-1][i], sample_rate)
             if not linear[i]:
                 if a == 1:
                     foo = np.arange(lambda_d + 1) / lambda_d
@@ -941,7 +941,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         s_ = []
         pointer = 0
         for i, t in enumerate(waveform_tables[0]):
-            lambda_d = int(sample_rate * durations[0][i])
+            lambda_d = sample_count(durations[0][i], sample_rate)
             s = t[gamma[pointer:pointer + lambda_d] % length]
             pointer += lambda_d
             s_.append(s)
@@ -959,7 +959,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         s_ = []
         pointer = 0
         for i, t in enumerate(waveform_tables[0]):
-            lambda_d = int(sample_rate * durations[0][i])
+            lambda_d = sample_count(durations[0][i], sample_rate)
             s = t[gamma[pointer:pointer + lambda_d] % length]
             pointer += lambda_d
             s_.append(s)
@@ -977,7 +977,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         s_ = []
         pointer = 0
         for i, t in enumerate(waveform_tables[0]):
-            lambda_d = int(sample_rate * durations[0][i])
+            lambda_d = sample_count(durations[0][i], sample_rate)
             s = t[gamma[pointer:pointer + lambda_d] % length]
             pointer += lambda_d
             s_.append(s)
@@ -1100,7 +1100,7 @@ def note_with_two_vibratos_glissando(
     if number_of_samples is not None:
         lambda_pvv = number_of_samples
     else:
-        lambda_pvv = int(sample_rate * duration)
+        lambda_pvv = sample_count(duration, sample_rate)
     samples = np.arange(lambda_pvv)
 
     lv1 = len(tabv1)
@@ -1175,7 +1175,8 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
         Positive frequencies at each end of the pitch transitions.
     durations : list of lists of scalars
         Durations of the pitch transitions and then of the vibratos, in
-        seconds. Every segment uses ``int(sample_rate * duration)`` samples.
+        seconds. Every segment is as many whole samples as its duration
+        lasts.
     vibratos_freqs :  list of lists of scalars
         The frequencies of each vibrato.
     vibratos_max_pitch_devs : list of lists of scalars
@@ -1232,7 +1233,7 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
     # pitch transition contributions
     f_ = []
     for i, dur in enumerate(durations[0]):
-        lambda_ = int(sample_rate * dur)
+        lambda_ = sample_count(dur, sample_rate)
         samples = np.arange(lambda_)
         f1, f2 = freqs[i:i + 2]
         _require_a_ratio(f1, f2)
@@ -1250,7 +1251,7 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
     for i, vib in enumerate(durations[1:]):
         segments = []
         for j, dur in enumerate(vib):
-            samples = np.arange(int(dur * sample_rate))
+            samples = np.arange(sample_count(dur, sample_rate))
             lv = len(waveform_tables[i + 1][j])
             gammav = (samples * vibratos_freqs[i][j] * lv /
                       sample_rate).astype(np.int64)  # LUT indexes
@@ -1279,7 +1280,7 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
     s_ = []
     pointer = 0
     for i, t in enumerate(waveform_tables[0]):
-        lambda_2 = int(sample_rate * durations[0][i])
+        lambda_2 = sample_count(durations[0][i], sample_rate)
         s = t[gamma[pointer:pointer + lambda_2] % length]
         pointer += lambda_2
         s_.append(s)
@@ -1376,7 +1377,7 @@ def note_with_vibrato(
     if number_of_samples is not None:
         lambda_v = number_of_samples
     else:
-        lambda_v = int(sample_rate * duration)
+        lambda_v = sample_count(duration, sample_rate)
     samples = np.arange(lambda_v)
 
     vibrato_waveform_table_length = len(vibrato_waveform_table)
@@ -1493,7 +1494,7 @@ def note_with_two_vibratos(
     if number_of_samples is not None:
         lambda_vv = number_of_samples
     else:
-        lambda_vv = int(sample_rate * duration)
+        lambda_vv = sample_count(duration, sample_rate)
     samples = np.arange(lambda_vv)
 
     lv1 = len(vibrato_waveform_table)
@@ -1604,7 +1605,8 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
             f"each note of the trill must span at least one sample; "
             f"{notes_per_second} notes a second at {sample_rate} Hz do not")
     note_length = sample_rate / notes_per_second
-    limit = (duration * sample_rate if number_of_samples is None
+    limit = (sample_count(duration, sample_rate)
+             if number_of_samples is None
              else number_of_samples)
     pointer = 0
     i = 0

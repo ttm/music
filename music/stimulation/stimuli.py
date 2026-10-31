@@ -7,7 +7,7 @@ from ..core.filters.localization import _localize_positions
 from ..core.synths.noises import noise
 from ..core.synths.notes import note
 from ..utils import WAVEFORM_SINE, _integrate_phase, _require_ears
-from .._rate import resolve_rate
+from .._rate import resolve_rate, sample_count
 
 __all__ = [
     'amplitude_modulation',
@@ -29,7 +29,7 @@ def _sample_count(duration, number_of_samples, sample_rate):
     """
     if number_of_samples is not None:
         return int(number_of_samples)
-    return int(duration * sample_rate)
+    return sample_count(duration, sample_rate)
 
 
 def _nothing(channels):
@@ -340,7 +340,7 @@ def isochronic_tones(carrier_freq: float = 200.0, pulse_rate: float = 10.0,
     gate = (phase < duty_cycle).astype(np.float64)
 
     if ramp_duration:
-        ramp = int(ramp_duration * sample_rate)
+        ramp = sample_count(ramp_duration, sample_rate)
         if ramp:
             # Distance in samples to the nearest edge of the pulse, so
             # one expression tapers both the rise and the fall.

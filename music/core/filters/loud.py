@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from ..._rate import resolve_rate
+from ..._rate import resolve_rate, sample_count
 from ...utils import _bent, _transition_is_linear, as_sonic_vector
 
 
@@ -100,7 +100,7 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
     elif number_of_samples is not None:
         n = number_of_samples
     else:
-        n = int(sample_rate * duration)
+        n = sample_count(duration, sample_rate)
     linear = _transition_is_linear(method)
     samples = np.arange(n)
     # A single-sample transition has no span to interpolate across; keeping
@@ -211,7 +211,7 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
     # the count then overrode, so `trans_devs` was never read there.
     sample_rate = resolve_rate(sample_rate)
     counts = (number_of_samples if number_of_samples is not None else
-              [int(sample_rate * dur) for dur in durations])
+              [sample_count(dur, sample_rate) for dur in durations])
     if not len(counts):
         raise ValueError("an envelope of transitions needs at least one")
     s = []

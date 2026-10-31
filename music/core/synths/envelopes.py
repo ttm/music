@@ -3,7 +3,7 @@
 import numpy as np
 from music.utils import (WAVEFORM_SINE, WAVEFORM_TRIANGULAR,
                          as_sonic_vector, _signed_power)
-from ..._rate import resolve_rate
+from ..._rate import resolve_rate, sample_count
 
 
 def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
@@ -92,7 +92,7 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     elif number_of_samples is not None:
         lambda_am = number_of_samples
     else:
-        lambda_am = np.floor(sample_rate * duration)
+        lambda_am = sample_count(duration, sample_rate)
     samples = np.arange(lambda_am)
 
     length = len(waveform_table)
@@ -198,7 +198,7 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     elif number_of_samples is not None:
         lambda_tremolo = number_of_samples
     else:
-        lambda_tremolo = np.floor(sample_rate * duration)
+        lambda_tremolo = sample_count(duration, sample_rate)
     samples = np.arange(lambda_tremolo)
 
     length = len(waveform_table)

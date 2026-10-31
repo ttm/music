@@ -4,7 +4,7 @@ from numbers import Real
 import numpy as np
 from numpy.typing import NDArray
 import music
-from ..._rate import resolve_rate
+from ..._rate import resolve_rate, sample_count
 
 
 
@@ -143,7 +143,7 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
     if number_of_samples is not None:
         length = number_of_samples
     else:
-        length = int(duration * sample_rate)
+        length = sample_count(duration, sample_rate)
     if length < 1:
         # Zero samples is zero samples, which is what every routine
         # here answers a zero duration with. The sequence operations
@@ -290,7 +290,7 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
             f"std is the width of the band and must be positive; got {std}. "
             "A band of no width holds no frequency to draw a noise from")
     uniform = _random(seed).uniform
-    length = (int(duration * sample_rate) if number_of_samples is None
+    length = (sample_count(duration, sample_rate) if number_of_samples is None
               else int(number_of_samples))
     if length < 1:
         # As in `noise` above: a zero duration renders nothing, and
@@ -369,6 +369,6 @@ def silence(duration: float = 1.0, sample_rate: int | None = None,
     >>> phrase = horizontal_stack(note(220, 0.2), silence(0.1), note(330, 0.2))
     """
     sample_rate = resolve_rate(sample_rate)
-    count = (int(duration * sample_rate) if number_of_samples is None
+    count = (sample_count(duration, sample_rate) if number_of_samples is None
              else int(number_of_samples))
     return np.zeros(max(0, count))

@@ -16,7 +16,7 @@ from typing import Any
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from ..._rate import resolve_rate
+from ..._rate import resolve_rate, sample_count
 
 
 def render_oversampled(
@@ -102,7 +102,7 @@ def render_oversampled(
     if not np.isfinite(duration) or duration < 0:
         raise ValueError("duration must be finite and nonnegative")
     count = (number_of_samples if number_of_samples is not None
-             else int(duration * sample_rate))
+             else sample_count(duration, sample_rate))
     if count == 0:
         return np.empty(0, dtype=np.float64)
     if count * factor > 50_000_000:

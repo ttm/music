@@ -17,7 +17,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from ...utils import waveform_table
-from ..._rate import resolve_rate
+from ..._rate import resolve_rate, sample_count
 
 
 @lru_cache(maxsize=128)
@@ -114,7 +114,7 @@ def bandlimited_note(
             f"{table_size}")
     table_size = int(table_size)
     count = (int(number_of_samples) if number_of_samples is not None
-             else int(duration * sample_rate))
+             else sample_count(duration, sample_rate))
     if not count:
         return np.empty(0, dtype=np.float64)
 

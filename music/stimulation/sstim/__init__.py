@@ -354,7 +354,7 @@ def render_sstim(value: Source, /, *,
                                  sample_rate=sample_rate, duration=duration)
     timeline = (described.session if isinstance(described, PlannedSession)
                 else described)
-    count = int(timeline.duration * timeline.sample_rate)
+    count = _rate.sample_count(timeline.duration, timeline.sample_rate)
     if count > max_samples:
         raise ValueError(
             f"the description renders {count} samples a channel, more than "

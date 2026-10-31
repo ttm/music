@@ -2,7 +2,7 @@
 
 import numpy as np
 from music.utils import horizontal_stack
-from ..._rate import resolve_rate
+from ..._rate import resolve_rate, sample_count
 
 
 def stretches(x, durations=(1, 4, 8, 12), sample_rate=None):
@@ -26,8 +26,8 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=None):
     -------
     ndarray
         The repeats concatenated, mono or ``(2, nsamples)`` stereo
-        according to ``x``, each ``int(duration * sample_rate)`` samples
-        long. An empty ``x`` gives an empty result.
+        according to ``x``, each as many samples as its duration lasts
+        at ``sample_rate``. An empty ``x`` gives an empty result.
 
     Raises
     ------
@@ -85,7 +85,7 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=None):
         # one past its end were dropped rather than held, so a repeat fell
         # short by half a fragment sample's worth of output: a ten-sample
         # fragment stretched to twelve seconds lost more than half of one.
-        count = int(ss * sample_rate)
+        count = sample_count(ss, sample_rate)
         indexes = np.minimum(np.round(np.arange(count) * length / count),
                              length - 1).astype(np.int64)
         if stereo:

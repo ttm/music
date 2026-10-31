@@ -319,6 +319,20 @@ Old names keep working and warn: see **Deprecated**.
   table whole and the release gate checks it; on every push, `--fast`
   checks only what prose still quotes, the version stamps and the
   reconciliation register's counts.
+- **The routines the article describes state its equation in their
+  docstrings.** The README, the documentation's front page and the
+  tutorial said every docstring carried the equation it implements;
+  `iir` and the four filter designs did, and most of the rest only said
+  to cite the article. Nineteen more state it now, in the parameters'
+  own names, from the table lookup of `note` to the two periods of
+  `reverb`,
+  and where the package departs from the article -- the release of
+  `adsr`, the `alpha` of a vibrato -- they say so; a test pins the one
+  form, `adsr`'s bent stages, that no test had. Their notes lost what
+  had gone stale: `localize` and `localize2` said no head-related
+  transfer function was implemented, beside `localize_hrtf`, and `am`'s
+  ended on advice for a stereo reverberation. `sing` has an example, so
+  every export now has one.
 
 ## [1.11.0] - 2026-10-19
 

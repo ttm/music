@@ -40,8 +40,13 @@ def stretches(x, durations=(1, 4, 8, 12), sample_rate=None):
 
     Notes
     -----
-    This function is useful to render musical sequences given any material.
-    PS: not clear if this function is already useful.
+    Each repeat is the whole fragment read faster or slower, as a tape
+    played at another speed, so its pitch rises as it is squeezed and
+    falls as it is stretched. Each sample is taken from the nearest
+    position of the fragment, with neither interpolation nor filtering:
+    a squeeze can fold partials past the Nyquist frequency back into the
+    band, and a stretch holds each sample for several. It makes a rhythm,
+    or a melody of speeds, out of any material.
 
     Examples
     --------

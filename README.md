@@ -34,7 +34,7 @@ note to a short stereo piece.
 📖 **[Where to start](https://ttm.github.io/music/choosing_an_api.html)** — the
 few routines a common task needs.
 📖 **[API reference](https://ttm.github.io/music/)** — every routine documented
-with the equation it implements and the article it comes from.
+with an example, and each the article describes with its equation.
 
 ## Core features
 

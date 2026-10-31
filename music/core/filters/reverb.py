@@ -12,7 +12,7 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
            sonic_vector: ArrayLike = 0,
            sample_rate: int | None = None,
            seed: int | None = None) -> NDArray[np.float64]:
-    """
+    r"""
     Apply an artificial reverberation or return the impulse response.
 
     Parameters
@@ -59,14 +59,28 @@ def reverb(duration: float = 1.9, first_phase_duration: float = 0.15,
 
     Notes
     -----
-    This is a simple artificial reverberation with a progressive loudness
-    decay of the reincidences of the sound and with two periods: the first
-    consists of scattered reincidences, the second period reincidences is
-    modeled by a noise.
+    The impulse response has the article's two periods [1]. Over the
+    first, of :math:`\Lambda_1` samples, the sound comes back at sample
+    :math:`i` with the probability :math:`p_i = (i / \Lambda_1)^2`
+    (``eq:p1rev``); over the rest of the :math:`\Lambda_R`, it comes back
+    as `noise_type` noise :math:`r^b_i` (``eq:p2rev``). Both decay by
+    `decay` decibels, :math:`V_{dB}`, across the whole response:
 
-    Comparing with the description in [1], the frequency bands are ignored.
+    .. math::
 
-    One might want to run this function twice to obtain a stereo reverberation.
+        r_i = 10^{\frac{V_{dB}}{20} \frac{i}{\Lambda_R - 1}} \times
+        \begin{cases}
+            1 \text{ with probability } p_i, \text{ else } 0,
+            & i < \Lambda_1, \\
+            r^b_i, & \Lambda_1 \le i < \Lambda_R,
+        \end{cases}
+
+    with :math:`r_0 = 1`, the direct sound (``eq:rev``). Given a
+    `sonic_vector`, it returns the sound convolved with :math:`r`, which
+    is longer than the sound by :math:`\Lambda_R - 1` samples. Unlike
+    the article's, the reflections are not filtered by the surfaces they
+    meet, so every frequency decays alike. For a stereo room, reverberate
+    each channel with a different `seed`.
 
     Cite the following article whenever you use this function.
 

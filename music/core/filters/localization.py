@@ -10,7 +10,7 @@ from ..._warn import warn
 
 def localize(sonic_vector=None, theta=None, distance=0, x=.1, y=.01,
              zeta=0.215, air_temp=20, sample_rate=None):
-    """
+    r"""
     Make a mono sound stereo and localize it by a very naive method.
 
     See below for implementation notes.
@@ -62,32 +62,43 @@ def localize(sonic_vector=None, theta=None, distance=0, x=.1, y=.01,
 
     Notes
     -----
-    A Head Related Transfer Function would localize more convincingly than
-    either this or localize2; none is implemented yet.
+    The ears are `zeta` meters apart on the x axis, either side of the
+    origin, and the source is at :math:`(x, y)`, or `distance` meters
+    towards `theta`. Its distance from each ear is a straight line, the
+    article's ``eq:distOuvidos`` [1], and the farther ear hears it later
+    by the difference over the speed of sound (``eq:dti``) and quieter by
+    the ratio (``eq:dii``):
 
-    Uses the most naive ITD and IID calculations as described in [1]. A less
-    naive method is implemented in localize2(). Nonetheless, if dist is small
-    enough (e.g. <.3), the perception of theta occurs and might be used.
-    The advantages of this method are:
+    .. math::
 
-      - It is fast.
-      - It is simple.
-      - It is true to sound propagation phenomenon (although it does not
-        consider the human body beyond the localization of the ears).
-      - It can be used easily for tweaks (such as for a moving source
-        resulting in a Doppler Effect).
+        d_r = \sqrt{(x - \zeta/2)^2 + y^2}, \qquad
+        d_l = \sqrt{(x + \zeta/2)^2 + y^2},
 
-    When az = tan^{-1}(y/x) lies in the 'cone of confusion', many values of x
-    and y have the same ITD and IID [1]. Furthermore, lateral sources have the
-    low frequencies diffracted and reach the opposite ear with a delay of
-    ~0.7 ms [1]. The height of a source and if it is in front or behind a
-    listener are cues given by the HRTF [1]. These issues are not taken into
-    account in this function.
+        \Lambda_{ITD} = \left\lfloor \frac{|d_l - d_r|}{c} f_s
+        \right\rfloor, \qquad
+        \frac{\min(d_l, d_r)}{\max(d_l, d_r)},
 
-    The value of zeta is ~0.215 for adult humans [1].
+    the delay in whole samples and the gain on the farther ear, with
+    :math:`c = 331.3 + 0.606\,T` m/s, the speed of sound at `air_temp`
+    :math:`T` (``eq:locImpl``). :func:`localize_linear` delays by
+    fractions of a sample.
 
-    This implementation assumes that the speed of sound (in air) is
-    s = 331.3 + 0.606 * temp.
+    These are the most naive interaural cues [1]. Near the head -- a
+    `distance` under about 0.3 m -- they place a source at `theta`
+    convincingly, and they are fast, simple and true to how sound
+    travels, though they know nothing of the body but where the ears are.
+    :func:`localize2` is less naive, and a head-related transfer function
+    more convincing than either: :func:`localize_hrtf` applies a measured
+    one, which :func:`hrir` reads.
+
+    Every direction on a cone around the ear axis -- the 'cone of
+    confusion' -- gives the same delay and the same ratio, so these cues
+    cannot tell front from back, nor say how high a source is; those come
+    from the head and the outer ears, which an HRTF measures [1]. Nor is
+    the diffraction modelled that brings a lateral source's low
+    frequencies round the head to the far ear, about 0.7 ms later [1].
+
+    The value of zeta is about 0.215 m for an adult [1].
 
     Cite the following article whenever you use this function.
 
@@ -465,7 +476,8 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
 
     Treat the refinement as a rule of thumb that sounds better than the
     geometric model, not as a result the article supports. A full
-    treatment needs an HRTF, which nothing here has.
+    treatment needs an HRTF: :func:`localize_hrtf` applies a measured
+    one, which :func:`hrir` reads.
 
     See localize() for further notes.
 

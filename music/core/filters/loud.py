@@ -8,11 +8,11 @@ from ...utils import _bent, _transition_is_linear, as_sonic_vector
 
 def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
          number_of_samples=None, sonic_vector=0, sample_rate=None):
-    """
+    r"""
     An envelope for a linear or exponential transition of amplitude.
 
-    An exponential transition of loudness yields a linear transition of
-    loudness (theoretically).
+    An exponential transition of amplitude is a linear transition of its
+    level in decibels, which is heard as a steady change of loudness.
 
     Parameters
     ----------
@@ -73,6 +73,23 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
 
     Notes
     -----
+    The exponential transition is the article's, in decibels [1]: from
+    0 dB to :math:`V_{dB}`, `trans_dev`, bent by `alpha`,
+
+    .. math::
+
+        a_i = 10^{\frac{V_{dB}}{20}
+        \left(\frac{i}{\Lambda - 1}\right)^{\alpha}},
+        \qquad i = 0, 1, \ldots, \Lambda - 1,
+
+    or from :math:`V_{dB}` back to 0 dB with `to` false, :math:`i` then
+    counted from the end. The linear one moves the amplitude itself, from
+    :math:`a_0 = 1` to :math:`a_{\Lambda-1}`, `trans_dev`, or back:
+
+    .. math::
+
+        a_i = a_0 + (a_{\Lambda-1} - a_0) \frac{i}{\Lambda - 1}.
+
     Cite the following article whenever you use this function.
 
     References

@@ -36,7 +36,7 @@ def note(freq: float = 220, duration: float = 2,
          waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
          number_of_samples: int | None = None,
          sample_rate: int | None = None) -> NDArray[np.float64]:
-    """
+    r"""
     Synthesize a basic musical note.
 
     Parameters
@@ -66,12 +66,28 @@ def note(freq: float = 220, duration: float = 2,
 
     Notes
     -----
-    In the MASS framework implementation, for a sound with a vibrato (or FM)
-    to be synthesized using LUT, the vibrato pattern is considered when
-    performing the lookup calculations.
+    The note is the waveform table read at the rate its frequency sets,
+    as the article's ``eq:lut`` writes it [1]:
 
-    The tremolo and AM patterns are implemented as separate amplitude
-    envelopes.
+    .. math::
+
+        t_i = \tilde{l}_{\gamma_i \bmod \tilde{\Lambda}}, \qquad
+        \gamma_i = \left\lfloor i f \frac{\tilde{\Lambda}}{f_s}
+        \right\rfloor, \qquad i = 0, 1, \ldots, \Lambda - 1,
+
+    where :math:`\tilde{l}` is `waveform_table`, :math:`\tilde{\Lambda}`
+    its length, :math:`f` is `freq`, :math:`f_s` the sample rate and
+    :math:`\Lambda = \lfloor f_s \Delta \rfloor` the samples `duration`
+    lasts (``eq:dur``). The index is truncated rather than interpolated,
+    as MASS reads the table, so a waveform whose partials reach past the
+    Nyquist frequency folds them back into the band;
+    :func:`bandlimited_note` renders one without them.
+
+    A vibrato or an FM changes the frequency at each sample, so it is
+    folded into this lookup, by :func:`note_with_vibrato` and
+    :func:`note_with_fm`. A tremolo or an AM changes the amplitude, and
+    is an envelope to multiply the note by: :func:`tremolo` and
+    :func:`am`.
 
     Cite the following article whenever you use this function.
 
@@ -104,7 +120,7 @@ def note(freq: float = 220, duration: float = 2,
 def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
                       x=(-10, 10), y=(1, 1), stereo=True, zeta=0.215,
                       air_temp=20, number_of_samples=None, sample_rate=None):
-    """
+    r"""
     A simple note with a transition of localization and resulting Doppler
     effect.
 
@@ -159,6 +175,23 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
 
     Notes
     -----
+    The source moves in a straight line from :math:`(x_0, y_0)` to
+    :math:`(x_1, y_1)` over the note. At each sample its distance
+    :math:`d_i` from an ear, and the speed
+    :math:`s_i = f_s (d_{i+1} - d_i)` at which that distance grows, set
+    the frequency heard there, by the article's ``eq:fDoppler`` with the
+    listener still, and the amplitude, by the inverse distance [1]:
+
+    .. math::
+
+        f_i = \frac{c}{c + s_i} \, f, \qquad a_i = \frac{1}{d_i},
+
+    with :math:`c = 331.3 + 0.606\,T` m/s the speed of sound at
+    `air_temp` :math:`T`. The note's table is read where the
+    :math:`f_i` accumulate, as :func:`note_with_glissando` reads it. In
+    stereo each ear is computed apart, `zeta` meters from the other, and
+    the farther one starts later by the delay between them at the start;
+    in mono the distance is from the centre of the head.
 
     Cite the following article whenever you use this function.
 
@@ -242,7 +275,7 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
                  fm_waveform_table: ArrayLike = WAVEFORM_SINE,
                  number_of_samples: int | None = None,
                  sample_rate: int | None = None) -> NDArray[np.float64]:
-    """
+    r"""
     Synthesize a musical note with FM synthesis.
 
     Set fm=0 or max_fm_deviation=0 (or use synth_note()) for a note without FM.
@@ -283,13 +316,27 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
 
     Notes
     -----
-    In the MASS framework implementation,
-    for a sound with a vibrato (or FM) to be synthesized using LUT,
-    the vibrato (or FM)
-    pattern is considered when performing the lookup calculations.
+    The modulator is read from its table as a vibrato's pattern is, and
+    it moves the carrier's frequency by up to :math:`\mu` Hertz either
+    way, as the article writes FM [1]:
 
-    The tremolo and AM patterns are implemented as separate amplitude
-    envelopes.
+    .. math::
+
+        t'_i = \tilde{m}_{\gamma'_i \bmod \tilde{\Lambda}_M}, \qquad
+        \gamma'_i = \left\lfloor i f' \frac{\tilde{\Lambda}_M}{f_s}
+        \right\rfloor,
+
+        f_i = f + \mu \, t'_i, \qquad
+        t_i = \tilde{l}_{\gamma_i \bmod \tilde{\Lambda}}, \qquad
+        \gamma_i = \left\lfloor \sum_{j=0}^{i} f_j
+        \frac{\tilde{\Lambda}}{f_s} \right\rfloor,
+
+    where :math:`\tilde{m}` is `fm_waveform_table`, :math:`f'` is `fm`,
+    :math:`\mu` is `max_fm_deviation` and :math:`f` is `freq`. The
+    deviation is in Hertz, where a vibrato's is in semitones: this is the
+    linear modulation whose spectrum the article expands into sidebands at
+    :math:`f \pm k f'`, weighted by Bessel functions of the index
+    :math:`\mu / f'` (``eq:fmEsp``).
 
     Cite the following article whenever you use this function.
 
@@ -340,7 +387,7 @@ def note_with_phase(freq: float = 220, duration: float = 2,
                     waveform_table: ArrayLike = WAVEFORM_TRIANGULAR,
                     number_of_samples: int | None = None,
                     sample_rate: int | None = None) -> NDArray[np.float64]:
-    """
+    r"""
     Synthesize a basic musical note with a phase.
 
     It's useful in more complex synthesis routines. For synthesizing a musical
@@ -376,12 +423,15 @@ def note_with_phase(freq: float = 220, duration: float = 2,
 
     Notes
     -----
-    In the MASS framework implementation, for a sound with a vibrato (or FM)
-    to be synthesized using LUT, the vibrato pattern is considered when
-    performing the lookup calculations.
+    :func:`note`, with the table read from a point the `phase`
+    :math:`\phi`, in radians, puts a fraction :math:`\phi / 2\pi` of the
+    way through it [1]:
 
-    The tremolo and AM patterns are implemented as separate amplitude
-    envelopes.
+    .. math::
+
+        t_i = \tilde{l}_{\gamma_i \bmod \tilde{\Lambda}}, \qquad
+        \gamma_i = \left\lfloor \frac{\phi \tilde{\Lambda}}{2 \pi}
+        + i f \frac{\tilde{\Lambda}}{f_s} \right\rfloor .
 
     Cite the following article whenever you use this function.
 
@@ -418,7 +468,7 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
                         method: str = "exp",
                         number_of_samples: int | None = None,
                         sample_rate: int | None = None) -> NDArray[np.float64]:
-    """
+    r"""
     A note with a pitch transition: a glissando.
 
     Parameters
@@ -474,6 +524,38 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
     tremolo : A tremolo, an oscillation of loudness.
     loud : A transition of loudness.
     fade : Fade in or out.
+
+    Notes
+    -----
+    The frequency moves from :math:`f_0`, `start_freq`, to
+    :math:`f_{\Lambda-1}`, `end_freq`, by a constant ratio -- linearly in
+    pitch -- or by a constant step, as the article writes them [1]:
+
+    .. math::
+
+        f_i = f_0 \left(\frac{f_{\Lambda-1}}{f_0}\right)^{\left(
+        \frac{i}{\Lambda-1}\right)^{\alpha}}
+        \quad \text{or} \quad
+        f_i = f_0 + (f_{\Lambda-1} - f_0) \frac{i}{\Lambda - 1},
+
+    the first bent by `alpha`, which the second does not read. The table
+    is read where those frequencies accumulate, so the phase follows the
+    frequency rather than jumping with it:
+
+    .. math::
+
+        t_i = \tilde{l}_{\gamma_i \bmod \tilde{\Lambda}}, \qquad
+        \gamma_i = \left\lfloor \sum_{j=0}^{i} f_j
+        \frac{\tilde{\Lambda}}{f_s} \right\rfloor,
+
+    with the table and its length as in :func:`note`.
+
+    Cite the following article whenever you use this function.
+
+    References
+    ----------
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     Examples
     --------
@@ -1323,11 +1405,11 @@ def note_with_vibrato(
         vibrato_waveform_table: ArrayLike = WAVEFORM_SINE,
         alpha: float = 1, number_of_samples: int | None = None,
         sample_rate: int | None = None) -> NDArray[np.float64]:
-    """
+    r"""
     Synthesize a musical note with a vibrato.
 
-    Set fv=0 or nu=0 (or use N()) for a note without vibrato.
-    A vibrato is an oscillatory pattern of pitch [1].
+    A vibrato is an oscillatory pattern of pitch [1]. A `max_pitch_dev`
+    of zero is a note without one.
 
     Parameters
     ----------
@@ -1374,12 +1456,29 @@ def note_with_vibrato(
 
     Notes
     -----
-    In the MASS framework implementation,
-    for a sound with a vibrato (or FM) to be synthesized using LUT,
-    the vibrato pattern is considered when performing the lookup calculations.
+    The vibrato's pattern is read from its own table at its own
+    frequency, as :func:`note` reads a table; it sets the note's
+    frequency at each sample, and the note's table is read where those
+    frequencies accumulate. In the article's terms [1]:
 
-    The tremolo and AM patterns are implemented as separate amplitude
-    envelopes.
+    .. math::
+
+        t'_i = \tilde{m}_{\gamma'_i \bmod \tilde{\Lambda}_M}, \qquad
+        \gamma'_i = \left\lfloor i f' \frac{\tilde{\Lambda}_M}{f_s}
+        \right\rfloor,
+
+        f_i = f \, 2^{t'_i \nu / 12}, \qquad
+        t_i = \tilde{l}_{\gamma_i \bmod \tilde{\Lambda}}, \qquad
+        \gamma_i = \left\lfloor \sum_{j=0}^{i} f_j
+        \frac{\tilde{\Lambda}}{f_s} \right\rfloor,
+
+    where :math:`\tilde{m}` is `vibrato_waveform_table`, of length
+    :math:`\tilde{\Lambda}_M`, :math:`f'` is `vibrato_freq`, :math:`\nu`
+    is `max_pitch_dev` and the rest is as in :func:`note`. A pattern
+    between -1 and 1 takes the pitch :math:`\nu` semitones either way.
+    With `alpha` other than 1 the exponent :math:`x = t'_i \nu / 12` is
+    bent to :math:`\operatorname{sgn}(x) |x|^{\alpha}`, an index the
+    article gives transitions but not vibratos; see DISCREPANCIES.md.
 
     Cite the following article whenever you use this function.
 
@@ -1572,13 +1671,13 @@ def note_with_two_vibratos(
 def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
           sample_rate=None, number_of_samples=None):
     """
-    Makes a trill.
+    A trill: notes alternating fast, one after another.
 
-    This is just a simple function for exemplifying
-    the synthesis of trills.
-    The user is encouraged to make its own functions
-    for trills and set e.g. ADSR envelopes, tremolos
-    and vibratos as intended.
+    The notes cycle through `freqs`, `notes_per_second` of them a second,
+    each a triangle wave under :func:`adsr`'s envelope with a 10 ms
+    release, so that the joins do not click. It is a small example of a
+    figure built from the routines here; one with other envelopes, a
+    vibrato or a tremolo is written the same way.
 
     Parameters
     ----------

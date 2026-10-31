@@ -24,7 +24,7 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
           number_of_samples: int | None = None,
           sample_rate: int | None = None,
           seed: int | None = None) -> NDArray[np.float64]:
-    """
+    r"""
     Return a colored or user-refined noise.
 
     Parameters
@@ -74,15 +74,30 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
 
     Notes
     -----
-    The noise is synthesized with components with random phases, with the
-    moduli that are related to the decibels/octave, and with a frequency
-    resolution of fs / nsamples = fs / (fs*d) = 1/d Hz
+    Every colour is the article's [1]: the inverse transform of a
+    spectrum whose components, at :math:`f_i = i f_s / \Lambda`
+    (``eq:branco``), have a random phase :math:`x_i` and a magnitude that
+    changes by :math:`\beta` decibels an octave,
 
-    The components are the multiples of that resolution from ``min_freq``
-    to ``max_freq``, both included. The band used to be rounded down at
-    both ends, which let in a component below ``min_freq`` whenever it
-    fell between two, and always left out one at ``max_freq``. A noise too
-    short to hold any component in the band is silence.
+    .. math::
+
+        c_i = e^{j x_i} \left(10^{\beta / 20}\right)^{
+        \log_2 (f_i / f_{\min})},
+
+    from :math:`f_{\min}`, `min_freq`, to `max_freq`, and zero outside
+    them; conjugate above the Nyquist frequency, so the noise is real,
+    and normalized to a peak of 1. :math:`\beta` is -6 for brown
+    (``eq:marrom``), -3 for pink (``eq:rosa``), 0 for white, 3 for blue
+    (``eq:azul``), 6 for violet (``eq:violeta``) and -12 for black, which
+    ``eq:preto`` asks only to fall faster than brown.
+
+    The components are the multiples of :math:`f_s / \Lambda`, which is
+    :math:`1 / \Delta` Hz for a noise of :math:`\Delta` seconds, from
+    ``min_freq`` to ``max_freq``, both included. The band used to be
+    rounded down at both ends, which let in a component below
+    ``min_freq`` whenever it fell between two, and always left out one at
+    ``max_freq``. A noise too short to hold any component in the band is
+    silence.
 
     Cite the following article whenever you use this function.
 

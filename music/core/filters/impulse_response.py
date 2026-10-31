@@ -4,7 +4,7 @@ import numpy as np
 
 
 def fir(samples, sonic_vector, freq=True, max_freq=True):
-    """
+    r"""
     Apply a FIR filter to a sonic_array.
 
     Parameters
@@ -42,14 +42,30 @@ def fir(samples, sonic_vector, freq=True, max_freq=True):
 
     Notes
     -----
-    If freq=True, the samples are the absolute values of the frequency
-    components. The phases are set to zero to maintain the phases of the
-    components of the original signal.
+    The signal is convolved with a kernel :math:`h` of :math:`N`
+    samples, the article's ``eq:conv`` [1]:
+
+    .. math::
+
+        t'_i = \sum_{j=0}^{N-1} h_j \, t_{i-j}.
+
+    With `freq` false, `samples` is :math:`h` itself. With it true,
+    `samples` are the absolute values of the frequency components, and
+    :math:`h` is their inverse transform with every phase zero, centred,
+    so the filter is linear phase and leaves the phases of the signal's
+    components where they were.
 
     A magnitude response is applied by convolving with its inverse
     transform, not with the magnitudes themselves. Convolving with them
     directly -- which this did -- makes a flat response a boxcar average
     rather than the identity it should be.
+
+    Cite the following article whenever you use this function.
+
+    References
+    ----------
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     Examples
     --------

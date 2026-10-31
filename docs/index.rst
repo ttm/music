@@ -68,8 +68,8 @@ model that describes it.
 **Musical structures**, with an emphasis on symmetry and discourse: permutation
 groups, change-ringing peals and plain changes.
 
-Every routine's docstring carries the equation it implements and cites the
-article it comes from. If you use this package, please cite:
+Every routine the article describes states, in its docstring, the equation
+it implements, and cites the article. If you use this package, please cite:
 
    Fabbri, Renato, et al. *Musical elements in the discrete-time representation
    of sound.* arXiv preprint `arXiv:1412.6853 <https://arxiv.org/abs/1412.6853>`_

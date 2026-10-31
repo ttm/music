@@ -132,8 +132,7 @@ def as_sonic_vector(sonic_vector: Any) -> NDArray[np.float64] | None:
 
 
 def horizontal_stack(*arrays: ArrayLike) -> NDArray[np.float64]:
-    """Creates a horizontal stack of arrays while preserving bidimensional
-       data.
+    r"""Join sounds end to end, mono or stereo.
 
     This function takes multiple arrays as input and stacks them horizontally.
     If any of the input arrays are bidimensional (have two dimensions), the
@@ -151,6 +150,19 @@ def horizontal_stack(*arrays: ArrayLike) -> NDArray[np.float64]:
     ndarray
         A numpy array representing the horizontal stack of input arrays.
         No arrays stack to no samples.
+
+    Notes
+    -----
+    The article's concatenation, ``eq:concatenacao`` [1]: the samples of
+    each sound follow the last of the one before, so the result lasts the
+    sum of their durations. A sound that does not start and end in
+    silence joins the next with a step, heard as a click; shape each with
+    :func:`adsr` or :func:`fade` first.
+
+    References
+    ----------
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     Examples
     --------
@@ -194,7 +206,7 @@ H = horizontal_stack
 
 
 def db_to_amp(db_difference: float) -> float:
-    """Converts a difference in decibels to a difference in amplitude.
+    r"""Converts a difference in decibels to a difference in amplitude.
 
     This function takes a difference in decibels as input and returns the
     corresponding difference in amplitude.
@@ -210,6 +222,21 @@ def db_to_amp(db_difference: float) -> float:
         The difference in amplitude corresponding to the input difference
         in decibels.
 
+    Notes
+    -----
+    The article's relation between a level and an amplitude [1]:
+
+    .. math::
+
+        A = 10^{V_{dB} / 20},
+
+    so 6 dB is about twice the amplitude and 20 dB exactly ten times it.
+
+    References
+    ----------
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
+
     Examples
     --------
     >>> db_to_amp(6)
@@ -221,7 +248,7 @@ def db_to_amp(db_difference: float) -> float:
 
 
 def amp_to_db(amplitude_difference: float) -> float:
-    """Converts a difference in amplitude to a difference in decibels.
+    r"""Converts a difference in amplitude to a difference in decibels.
 
     This function takes a difference in amplitude as input and returns the
     corresponding difference in decibels.
@@ -243,6 +270,19 @@ def amp_to_db(amplitude_difference: float) -> float:
         If the ratio is negative, which no number of decibels is. It came
         back as NaN behind numpy's warning, and zero as minus infinity
         behind another.
+
+    Notes
+    -----
+    The inverse of :func:`db_to_amp` [1]:
+
+    .. math::
+
+        V_{dB} = 20 \log_{10} A.
+
+    References
+    ----------
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     Examples
     --------
@@ -386,7 +426,7 @@ def pitch_to_freq(
 
 def mix(first_sonic_vector: np.ndarray,
         second_sonic_vector: np.ndarray) -> np.ndarray:
-    """Mixes two sonic vectors.
+    r"""Mixes two sonic vectors.
 
     This function mixes two sonic vectors of different lengths. It creates a
     new sonic vector by summing the samples of the input sonic vectors. If one
@@ -421,6 +461,24 @@ def mix(first_sonic_vector: np.ndarray,
     mix_many : the same sum over a list of sounds of any lengths, with
                per-sound offsets and a choice of aligning their starts
                or their ends.
+
+    Notes
+    -----
+    The article's mixing, ``eq:mixagem`` [1]: a sum, sample by sample,
+
+    .. math::
+
+        t_i = t'_i + t''_i,
+
+    over the longer sound's samples, the shorter one counting as zero
+    past its end. Summing can take a sample past full scale, so a mix of
+    loud sounds may want scaling before it is written; the writers
+    normalize unless told not to.
+
+    References
+    ----------
+    .. [1] Fabbri, Renato, et al. "Musical elements in the discrete-time
+           representation of sound." arXiv preprint arXiv:abs/1412.6853 (2017)
 
     Examples
     --------

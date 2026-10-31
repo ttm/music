@@ -76,6 +76,13 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
 
     Notes
     -----
+    An exponential fade is :func:`loud`'s transition between 0 dB and
+    `db`, -80 dB by default, which never reaches silence: so the last
+    `perc` percent of a fade out, or the first of a fade in, is a straight
+    line between zero and wherever the exponential has got to [1]. A
+    linear fade is a straight line all the way, from 1 to 0 or from 0 to
+    1.
+
     Cite the following article whenever you use this function.
 
     References

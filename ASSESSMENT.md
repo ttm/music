@@ -112,7 +112,7 @@ produced.
 
 | Grade | What earns it |
 |---|---|
-| **Exceptional** | Docstrings and scientific grounding: every routine carries the equation it implements and the article section it comes from, and `RECONCILIATION.md` now measures the correspondence routine by routine rather than asserting it |
+| **Exceptional** | Docstrings and scientific grounding: every routine the article describes states the equation it implements, and `RECONCILIATION.md` now measures the correspondence routine by routine rather than asserting it |
 | **Excellent** | Conceptual architecture; breadth of synthesis primitives; the release and archival process, which is reproducible and produces a citable DOI per version |
 | **Very good** | Test suite and its coverage gate; Linux CI across Python 3.10–3.14 including a job pinned to the declared lower bounds; installed-wheel checks on Linux, macOS and Windows with Python 3.12 |
 | **Good** | Curated flat public API; examples; published API reference; the sensory-stimulation toolkit, whose stimuli are each tested against the property that defines them rather than against their shape |

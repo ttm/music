@@ -715,6 +715,34 @@ def test_the_adsr_envelope_is_the_four_pieces_equation_adsr_writes():
     assert largest_gap == pytest.approx(-sustain_db, abs=1e-6)
 
 
+def test_each_stage_bends_by_its_own_alpha_as_the_adsr_docstring_writes():
+    """The article's eq:adsr has no alpha; the docstring states where it
+    goes, and that is checked here rather than trusted.
+
+    The attack bends what remains of it, xi ** ((1 - i / (L_A - 1)) **
+    alpha_A), which is the article's xi * (1 / xi) ** (i / (L_A - 1)) at
+    an alpha of one and not its exponent bent; the decay and the release
+    bend what has passed.
+    """
+    envelope = music.adsr(duration=1, attack_ms=100, decay_ms=100,
+                          release_ms=200, sustain_level=-6,
+                          alpha=(2.5, 0.5, 3), db_dev=-60, to_zero_ms=0,
+                          sample_rate=SAMPLE_RATE)
+    attack, decay, release = 4410, 4410, 8820
+    xi, a_s = 10 ** (-60 / 20), 10 ** (-6 / 20)
+    i, k, r = np.arange(attack), np.arange(decay), np.arange(release)
+    assert np.allclose(envelope[:attack],
+                       xi ** ((1 - i / (attack - 1)) ** 2.5))
+    assert np.allclose(envelope[attack:attack + decay],
+                       a_s ** ((k / (decay - 1)) ** 0.5))
+    assert np.allclose(envelope[attack + decay:-release], a_s)
+    assert np.allclose(envelope[-release:],
+                       a_s * xi ** ((r / (release - 1)) ** 3))
+    # Not the article's attack with its exponent bent instead.
+    assert not np.allclose(envelope[:attack],
+                           xi * (1 / xi) ** ((i / (attack - 1)) ** 2.5))
+
+
 def test_applying_the_envelope_is_the_product_equation_adsrapl_writes():
     """t_i^ADSR = t_i . a_i, sample by sample and nothing else."""
     tone = music.note(freq=440, duration=0.5, sample_rate=SAMPLE_RATE)

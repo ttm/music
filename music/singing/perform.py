@@ -161,6 +161,21 @@ def sing(text="Mar-ry had a litt-le lamb",
     which were not in the cache. Together, every note was sung at
     ``reference + note - 12`` in the default voice, whatever was asked;
     the default transposition, -12, keeps that.
+
+    Examples
+    --------
+    Skipped when the examples run, since singing needs espeak-ng and
+    praat-parselmouth:
+
+    >>> twinkle = sing(text="Twin-kle, twin-kle, lit-tle star",
+    ...                notes=(0, 0, 7, 7, 9, 9, 7),
+    ...                durs=(1, 1, 1, 1, 1, 1, 2))  # doctest: +SKIP
+    >>> write_wav_mono(twinkle, "twinkle.wav")  # doctest: +SKIP
+    >>> frere = sing(text="Frè-re Jac-ques, dor-mez vous?",
+    ...              notes=(0, 2, 4, 0, 4, 5, 7), durs=(1, 1, 1, 1, 1, 1, 2),
+    ...              lang="fr", effect="tremolo")  # doctest: +SKIP
+    >>> frere.shape[0]  # doctest: +SKIP
+    2
     """
     if backend not in BACKENDS:
         raise ValueError(

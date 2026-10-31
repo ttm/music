@@ -39,7 +39,7 @@ def adsr(duration=2, attack_ms=20,
          release_ms=50, transition="exp", alpha=1,
          db_dev=-80, to_zero_ms=1, number_of_samples=None, sonic_vector=0,
          sample_rate=None, **renamed):
-    """
+    r"""
     Synthesize an ADSR envelope.
 
     ADSR (Attack, Decay, Sustain, Release) is a very traditional loudness
@@ -95,10 +95,9 @@ def adsr(duration=2, attack_ms=20,
 
     Returns
     -------
-    as : ndarray
-        A numpy array where each value is a value of the envelope for the PCM
-        samples if sonic_vector is 0. If sonic_vector is input, ad is the
-        sonic vector with the ADSR envelope applied to it.
+    ndarray
+        The envelope, a value for each sample; or, when `sonic_vector` is
+        given, the sound with the envelope applied to it.
 
     Raises
     ------
@@ -131,6 +130,35 @@ def adsr(duration=2, attack_ms=20,
 
     Notes
     -----
+    The envelope is the article's ``eq:adsr`` [1] in its exponential
+    form. With :math:`\xi = 10^{d/20}`, the level `db_dev` names, and
+    :math:`a_S = 10^{S/20}`, `sustain_level`'s, over the attack's
+    :math:`\Lambda_A` samples, the decay's :math:`\Lambda_D` and the
+    release's :math:`\Lambda_R`, each bent by its `alpha`:
+
+    .. math::
+
+        a_i = \xi^{\left(1 - \frac{i}{\Lambda_A - 1}\right)^{\alpha_A}},
+        \qquad
+        a_{\Lambda_A + k} = a_S^{\left(\frac{k}{\Lambda_D - 1}
+        \right)^{\alpha_D}},
+
+        a_S \text{ while it sustains}, \qquad
+        a_{\Lambda - \Lambda_R + k} = a_S \, \xi^{\left(
+        \frac{k}{\Lambda_R - 1}\right)^{\alpha_R}}.
+
+    At :math:`\alpha = 1` the attack is the article's
+    :math:`\xi (1/\xi)^{i / (\Lambda_A - 1)}`. The sustain lasts what the
+    other three stages leave, and they are shortened in proportion when
+    they would outlast the envelope. Two things the article does not
+    have: the release falls by :math:`\xi` from the sustain level, as the
+    MASS reference has it, where the article's ends at :math:`\xi` itself
+    (DISCREPANCIES.md); and over the attack's first `to_zero_ms` and the
+    release's last, a straight line meets zero, which an exponential
+    never reaches. ``transition="lin"`` makes each stage a straight line.
+    Given a `sonic_vector` :math:`t`, it returns :math:`t_i a_i`
+    (``eq:adsrApl``).
+
     Cite the following article whenever you use this function.
 
     References

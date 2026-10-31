@@ -8,7 +8,7 @@ from ..._rate import resolve_rate, sample_count
 
 def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
        number_of_samples=None, sonic_vector=0, sample_rate=None):
-    """
+    r"""
     Synthesize an AM envelope or apply it to a sound.
 
     Set fm=0 or max_amplitude=0 for a constant envelope with value 1. An AM is
@@ -50,16 +50,22 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
 
     Notes
     -----
-    In the MASS framework implementation, for obtaining a sound with a tremolo
-    (or AM), the tremolo pattern is considered separately from a synthesis of
-    the sound.
+    The modulator is read from its table as a vibrato's pattern is, and
+    it scales the amplitude linearly, as the article writes AM [1]:
 
-    The AM is an oscillatory pattern of amplitude while the tremolo is an
-    oscillatory pattern of loudness being: loudness ~ log(amplitude)
+    .. math::
 
-    The vibrato and FM patterns are considered when synthesizing the sound.
+        a_i = 1 + \alpha \, t'_i, \qquad
+        t'_i = \tilde{m}_{\gamma'_i \bmod \tilde{\Lambda}_M}, \qquad
+        \gamma'_i = \left\lfloor i f' \frac{\tilde{\Lambda}_M}{f_s}
+        \right\rfloor,
 
-    One might want to run this function twice to obtain a stereo reverberation.
+    where :math:`\tilde{m}` is `waveform_table`, :math:`f'` is `fm` and
+    :math:`\alpha` is `max_amplitude`. Given a `sonic_vector`
+    :math:`t`, it returns :math:`t_i a_i`, and a sinusoidal carrier at
+    :math:`f` comes out with one sideband each side of it, at
+    :math:`f \pm f'` (``eq:specAM``). :func:`tremolo` oscillates the
+    level in decibels instead.
 
     Cite the following article whenever you use this function.
 
@@ -109,7 +115,7 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
 def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
             waveform_table=WAVEFORM_SINE, number_of_samples=None,
             sonic_vector=0, sample_rate=None):
-    """
+    r"""
     Synthesize a tremolo envelope or apply it to a sound.
 
     Set fa=0 or dB=0 for a constant envelope with value 1. A tremolo is an
@@ -161,15 +167,27 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
 
     Notes
     -----
-    In the MASS framework implementation, for obtaining a sound with a tremolo
-    (or AM), the tremolo pattern is considered separately from a synthesis of
-    the sound.
+    The tremolo's pattern is read from its table as a vibrato's is, and
+    it takes the level up to :math:`V_{dB}` decibels either way, as the
+    article writes a tremolo [1]:
 
-    The vibrato and FM patterns are considering when synthesizing the sound.
+    .. math::
+
+        a_i = 10^{t'_i V_{dB} / 20}, \qquad
+        t'_i = \tilde{m}_{\gamma'_i \bmod \tilde{\Lambda}_M}, \qquad
+        \gamma'_i = \left\lfloor i f' \frac{\tilde{\Lambda}_M}{f_s}
+        \right\rfloor,
+
+    where :math:`\tilde{m}` is `waveform_table`, :math:`f'` is
+    `tremolo_freq` and :math:`V_{dB}` is `max_db_dev`. Given a
+    `sonic_vector` :math:`t`, it returns :math:`t_i a_i`. In decibels the
+    swing is the same either way -- 10 dB up and down is a factor of 3.16
+    one way and of 0.316 the other -- which is why a tremolo is written in
+    them, where :func:`am` moves the amplitude itself. With `alpha` other
+    than 1 the exponent is bent as :func:`note_with_vibrato` bends its
+    own.
 
     Cite the following article whenever you use this function.
-
-    See the envelopes.am function.
 
     References
     ----------

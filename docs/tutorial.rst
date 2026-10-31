@@ -488,8 +488,8 @@ Nothing here is new; it is the pieces above composed:
 Where to go next
 ----------------
 
-* The :doc:`api` reference. Every routine's docstring carries the equation
-  it implements, an example, and the article section it comes from.
+* The :doc:`api` reference. Every routine has an example, and each one
+  the article describes states the equation it implements.
 * `The examples folder
   <https://github.com/ttm/music/tree/master/examples>`_, which holds each
   of the above as a runnable script, plus the ``Being`` and

@@ -79,7 +79,7 @@ class PrimaryTables:
         self.triangle = waveform_table("triangle", size)
 
     def draw_tables(self):
-        """Draw the four waveform tables on one pair of axes.
+        """Draw the four waveform tables on one pair of axes, each named.
 
         Raises
         ------
@@ -105,16 +105,20 @@ class PrimaryTables:
 
         """
         try:
-            import pylab as p
+            from matplotlib import pyplot
         except ImportError:
             raise ImportError(
                 "draw_tables needs matplotlib, which is not installed. "
                 "Install it with: pip install 'music[plot]'") from None
 
-        p.plot(self.sine, "-o")
-        p.plot(self.saw, "-o")
-        p.plot(self.square, "-o")
-        p.plot(self.triangle, "-o")
-        p.xlim(-self.size * 0.1, self.size * 1.1)
-        p.ylim(-1.1, 1.1)
-        p.show()
+        # pyplot rather than pylab, which matplotlib discourages; and a
+        # legend, without which four lines of one style were four
+        # unnamed lines.
+        pyplot.plot(self.sine, "-o", label="sine")
+        pyplot.plot(self.saw, "-o", label="sawtooth")
+        pyplot.plot(self.square, "-o", label="square")
+        pyplot.plot(self.triangle, "-o", label="triangle")
+        pyplot.xlim(-self.size * 0.1, self.size * 1.1)
+        pyplot.ylim(-1.1, 1.1)
+        pyplot.legend()
+        pyplot.show()

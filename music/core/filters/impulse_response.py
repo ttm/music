@@ -211,11 +211,15 @@ def _short_recurrence(signal, a, b):
     every sample. The feedforward sums do not depend on the outputs, so
     they are added across the whole signal at once, one coefficient at a
     time in that same order; only the feedback has to wait for the
-    sample before it, and runs over Python floats. From eight terms numpy
-    adds in eight interleaved partial sums, which this does not
-    reproduce, so longer filters take the general loop.
+    sample before it, and runs over Python floats. The feedforward sums
+    start from their first product rather than from zero, which can
+    change only the sign of a zero, and the feedback, which does start
+    from zero, is added to each before it is divided, which makes that
+    sign what numpy's would be. From eight terms numpy adds in eight
+    interleaved partial sums, which this does not reproduce, so longer
+    filters take the general loop.
     """
-    forward = signal * a[0] + 0.0
+    forward = signal * a[0]
     for k in range(1, min(len(a), len(signal))):
         forward[k:] += signal[:-k] * a[k]
     divisor = float(b[0])

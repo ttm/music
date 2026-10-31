@@ -319,6 +319,8 @@ def test_a_change_of_tuning_rescales_the_step_count_as_equation_micro_says():
     # is 15434.999999999998 in floating point, and int() of that made
     # these a sample short.
     (0.35, 15435), (0.7, 30870), (1.15, 50715), (2.01, 88641),
+    # And the floor, where a rounding would give 44,100.
+    (0.99999, 44099),
 ])
 def test_a_sound_lasts_the_samples_equation_dur_counts(duration, expected):
     """Lambda = floor(Delta * f_s), the floor and not a rounding."""

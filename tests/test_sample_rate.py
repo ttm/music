@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 import music
+from music._rate import sample_count
 from music.core.synths.mipmap import MipmapOscillator
 from music.core.synths.polyblep import PolyBLEPOscillator
 from music.singing import perform
@@ -98,6 +99,32 @@ def test_a_new_thread_starts_at_the_default():
     worker.join()
     assert seen == [44100]
     assert music.get_sample_rate() == RATE
+
+
+@pytest.mark.parametrize("duration, rate, count", [
+    (0.35, 44100, 15435),       # 15434.999999999998 in binary
+    (0.29, 48000, 13920),       # 13919.999999999998
+    (0.99999, 44100, 44099),    # 44099.559: the floor, not a rounding
+    (0.015, 44100, 661),        # 661.5: not round-half-even's 662
+    ((15435 - 4e-7) / 44100, 44100, 15435),  # within a millionth
+    ((15435 - 6e-7) / 44100, 44100, 15434),  # beyond it
+    (-0.00001, 44100, -1),      # -0.441, away from zero
+])
+def test_a_duration_lasts_the_floor_of_its_product_to_a_millionth(
+        duration, rate, count):
+    """Floored, so 0.99999 s is 44,099 samples; but floored after
+    rounding to a millionth of a sample, so a product a binary rounding
+    left just under a whole number counts that number, and one a caller
+    meant to fall short of it does not. A negative offset floors away
+    from zero, as mix_with_offset counts one back from a sound's end."""
+    assert sample_count(duration, rate) == count
+
+
+def test_an_offset_a_fraction_of_a_sample_back_is_a_whole_one_back():
+    first, second = np.ones(10), np.full(3, 2.0)
+    mixed = music.mix_with_offset(first, second, duration=-0.00001,
+                                  sample_rate=44100)
+    np.testing.assert_array_equal(mixed, [1] * 9 + [3, 2, 2])
 
 
 def _takes_a_rate(name):

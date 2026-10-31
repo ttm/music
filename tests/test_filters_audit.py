@@ -290,6 +290,35 @@ def test_reverb_convolves_a_long_sound_through_its_spectrum_to_rounding():
                                atol=1e-14 * np.abs(direct).max())
 
 
+@pytest.mark.parametrize("sound_length", [1, 2, 3])
+@pytest.mark.parametrize("response_length", [15, 16, 17])
+def test_reverb_convolves_at_every_length_around_a_power_of_two(
+        sound_length, response_length):
+    """The spectra are padded to a power of two at least as long as the
+    convolution. One shorter would wrap its last sample onto its first,
+    which only a length one past a power of two shows: 17 here."""
+    sound = np.arange(1.0, sound_length + 1)
+    settings = dict(duration=response_length / 1000,
+                    first_phase_duration=0.005, sample_rate=1000,
+                    noise_type="white", seed=5)
+    response = music.reverb(**settings)
+    assert len(response) == response_length
+    produced = music.reverb(sonic_vector=sound, **settings)
+    direct = np.convolve(sound, response)
+    np.testing.assert_allclose(produced, direct, rtol=0,
+                               atol=1e-12 * np.abs(direct).max())
+
+
+def test_the_shortest_reverberation_gives_the_sound_back():
+    """A response of one sample is the direct sound alone, and a sound of
+    one sample through it is that sample: a spectrum of one bin, which
+    the inverse transform reads as no samples unless told otherwise."""
+    produced = music.reverb(sonic_vector=[0.25], duration=0.001,
+                            first_phase_duration=0, sample_rate=1000,
+                            seed=1)
+    np.testing.assert_allclose(produced, [0.25], rtol=0, atol=1e-15)
+
+
 def test_reverb_of_no_samples_is_no_samples():
     """np.convolve refused an empty sound in its own words."""
     assert music.reverb(sonic_vector=np.zeros(0), seed=1).shape == (0,)

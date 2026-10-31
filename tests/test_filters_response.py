@@ -181,6 +181,45 @@ def test_iir_matches_the_recurrence_it_documents():
     assert np.allclose(music.iir(x, a, b), expected)
 
 
+def _summed_at_every_sample(x, a, b):
+    """The recurrence as `iir` computed it before its short path: a numpy
+    sum of each side at every sample."""
+    x, a, b = (np.asarray(v, dtype=float) for v in (x, a, b))
+    out = np.zeros(len(x))
+    for i in range(len(x)):
+        first = max(0, i - len(a) + 1)
+        forward = (x[first:i + 1][::-1] * a[:i + 1 - first]).sum()
+        first = max(0, i - len(b) + 1)
+        feedback = (out[first:i][::-1] * b[1:i + 1 - first]).sum()
+        out[i] = (forward + feedback) / b[0]
+    return out
+
+
+@pytest.mark.parametrize("taps", range(1, 10))
+@pytest.mark.parametrize("poles", range(0, 10))
+def test_iir_is_bit_for_bit_the_sum_at_every_sample(taps, poles):
+    """However many coefficients, the same bits as a numpy sum per sample.
+
+    A filter of fewer than eight a side skips numpy at each sample, which
+    is only right because numpy adds so few values one after another from
+    zero; from eight it interleaves partial sums, and the general loop
+    takes over. Each side is swept across that boundary, and signed zeros
+    are in the signal because a sum from zero turns -0.0 into 0.0.
+    """
+    rng = np.random.default_rng(taps * 10 + poles)
+    x = rng.normal(size=48) * 10.0 ** rng.uniform(-3, 3, 48)
+    x[rng.random(48) < 0.2] = -0.0
+    a = rng.normal(size=taps)
+    b = np.concatenate(([rng.choice([1.0, 0.3, -2.5])],
+                        rng.normal(size=poles) * 0.05))
+    expected = _summed_at_every_sample(x, a, b)
+    assert music.iir(x, a, b).tobytes() == expected.tobytes()
+
+
+def test_iir_filters_an_empty_signal_into_an_empty_one():
+    assert music.iir([], [0.5, 0.5], [1.0, 0.2]).shape == (0,)
+
+
 def test_iir_cost_is_linear_in_the_signal_length():
     """Regression: it rebuilt a reversed copy of the whole signal so far
     on every sample, so cost grew with the square of the length. One
@@ -191,7 +230,13 @@ def test_iir_cost_is_linear_in_the_signal_length():
     Quadratic growth would show as roughly 16x here; linear shows as 4x.
     The threshold is loose because this is wall-clock on shared CI.
     """
-    a, b = [1.0], [1.0, -0.9]
+    for a, b in (([1.0], [1.0, -0.9]),
+                 # long enough to take the general loop
+                 ([0.1] * 9, [1.0, -0.5])):
+        _assert_linear_cost(a, b)
+
+
+def _assert_linear_cost(a, b):
     music.iir(np.zeros(256), a, b)  # warm up
 
     def best_of_three(n):

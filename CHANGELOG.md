@@ -102,6 +102,12 @@ Old names keep working and warn: see **Deprecated**.
   line of bound notes clicked twice. Each note now fades over
   `fades_ms`, 20 ms by default, at which none of ninety random lines
   clicked by the suite's measure; zero joins them bare.
+- **`iir` is about nine times faster for every filter the designs
+  compute,** and the same to the last bit. It called numpy twice at each
+  sample, to sum a few products; a filter of fewer than eight
+  coefficients a side now sums them as numpy does, over Python floats,
+  with the feedforward half added across the whole signal at once. Two
+  seconds of noise through `low_pass` took 0.45 s and take 0.05.
 
 ### Fixed
 
@@ -233,6 +239,9 @@ Old names keep working and warn: see **Deprecated**.
 
 - **Every routine that takes a duration and a count renders the same
   sound for 0.35 s as for the 15,435 samples it lasts.**
+- **`iir` is checked bit for bit against a numpy sum at every sample,**
+  for every filter of one to nine coefficients a side, across the length
+  where its short path stops.
 - **Every routine that takes a rate renders at the default rate exactly
   what it renders when handed it, and none may declare one of its own.**
   The second is a scan of the source, so a routine added with

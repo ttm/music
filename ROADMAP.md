@@ -948,6 +948,18 @@ had not looked for:
 The ten areas whose code this changed were measured again;
 `MUTATION_AUDIT.md` has the runs.
 
+## Released: 2.0.0, 2026-11-01
+
+Both reviews went out as 2.0.0, a major release, because some calls now
+do something different: the changelog's note for anyone upgrading lists
+each, and every old name still works and warns. The release gate passed
+whole on the commit the artifacts were built from, and CI on every job;
+PyPI has the wheel and the source distribution. Zenodo archived it as
+10.5281/zenodo.23852548 within five seconds of the release event, and the
+sync gave the record its nineteen controlled subjects and the release
+notes, all 54 of their bold headlines intact, 28 of them opening with
+code, verified through the record and its DataCite export.
+
 ## Open after the September 2026 audits
 
 What the audits found and did not fix, and why. Each is recorded where

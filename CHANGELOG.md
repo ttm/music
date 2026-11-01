@@ -1,10 +1,10 @@
-## [Unreleased]
+## [2.0.0] - 2026-11-01
 
 ### Note for anyone upgrading
 
-**Some calls now do something different, so the next version should be a
-major one.** Each change below was a trap, and each is either a fix or
-says so when it is met:
+**Some calls now do something different, which is why this is a major
+version.** Each change below was a trap, and each is either a fix or says
+so when it is met:
 
 - `pip install music` no longer installs sympy, termcolor or colorama.
   The permutation groups and peals need `pip install 'music[structures]'`;

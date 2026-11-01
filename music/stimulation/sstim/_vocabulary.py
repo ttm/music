@@ -16,7 +16,7 @@ SSTIM_EX = Namespace("https://w3id.org/sstim/exposure#")
 MUSIC = Namespace("https://github.com/ttm/music/terms#")
 
 #: The SSTIM release the descriptions are written in and validated against.
-SSTIM_VERSION = "0.19.0"
+SSTIM_VERSION = "0.20.0"
 
 #: How many samples a channel :func:`render_sstim` renders at most, by
 #: default: about 113 s at 44.1 kHz. A description is only numbers, so

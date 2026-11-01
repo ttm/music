@@ -349,6 +349,14 @@ def test_what_says_nothing_about_the_sound_is_left_alone(node, term, value):
     (AM_CHANNEL, SSTIM_EX.hasPhaseOffset, Literal(.25)),
     (AM_CHANNEL, SSTIM.soundPressureLevelDb, Literal(65.)),
     (AM_CHANNEL, SSTIM_EX.pitchShiftCents, Literal(-31.77)),
+    # Terms 0.20.0 added, each saying something the package does not
+    # render: where a channel's modulation starts, randomly timed onsets,
+    # a level at a stage of delivery, and an adaptive control law.
+    (AM_CHANNEL, SSTIM_EX.hasInitialPhase, Literal(.25)),
+    (AM_CHANNEL, SSTIM_EX.hasOnsetIntervalDistribution,
+     URIRef("urn:intervals")),
+    (AM_CHANNEL, SSTIM.hasMagnitude, URIRef("urn:magnitude")),
+    (AM, SSTIM.hasControlLaw, URIRef("urn:control-law")),
     (AM_SIGNAL, SSTIM.hasAdaptationPolicy, URIRef("urn:policy")),
     (AM_SIGNAL, SSTIM.signalSourceAsset, URIRef("urn:recording")),
     (AM_RENDERING, URIRef("https://w3id.org/sstim/ecosystem#x"),

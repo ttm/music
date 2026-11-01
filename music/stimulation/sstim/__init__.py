@@ -35,9 +35,11 @@ A description is read in one of three ways:
 The package's exact samples are its own: SSTIM states what a stimulus
 is, not how an engine computes it, so another engine renders the same
 description into different samples. A session is a program in the
-package's terms, since SSTIM 0.19 has none for phases in order, each
-phase an SSTIM stimulus; given a :class:`SessionPlan`, it is wrapped in
-SSTIM's own SessionSpecification. Nothing written is a record of
+package's terms, each phase an SSTIM stimulus: SSTIM orders segments
+only in a published protocol's schedule, which must cite the framework
+or the paper it comes from, and has no terms for a phase's ramps or its
+gain. Given a :class:`SessionPlan`, the program is wrapped in SSTIM's
+own SessionSpecification. Nothing written is a record of
 delivery: no SessionInstance, event or exposure is made.
 
 Reading never follows a URL or a link in what it reads, and never runs

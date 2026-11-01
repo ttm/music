@@ -73,10 +73,11 @@ class PlannedSession:
 def program_graph(session: StimulationSession, base: str) -> Graph:
     """`session` as a program in the package's terms, its stimuli in SSTIM's.
 
-    SSTIM 0.19 has no terms for phases in order, their ramps or their
-    gains, so the program is the package's; each phase's stimulus is an
-    SSTIM StimulusSpecification. Nothing here was delivered, so it is
-    never an ``sstim:SessionInstance``.
+    SSTIM orders segments only in a published protocol's schedule, which
+    must cite its framework or its paper, and has no terms for a phase's
+    ramps or its gain, so the program is the package's; each phase's
+    stimulus is an SSTIM StimulusSpecification. Nothing here was
+    delivered, so it is never an ``sstim:SessionInstance``.
     """
     check_base(base)
     if not isinstance(session, StimulationSession):

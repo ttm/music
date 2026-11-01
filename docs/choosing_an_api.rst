@@ -41,7 +41,7 @@ them.
    * - Describe a stimulus for another tool, or render one it described
      - :func:`music.stimulation.sstim.to_sstim_graph`,
        :func:`~music.stimulation.sstim.render_sstim`
-     - SSTIM 0.19.0 descriptions, with ``pip install 'music[sstim]'``;
+     - SSTIM 0.20.0 descriptions, with ``pip install 'music[sstim]'``;
        what SSTIM has no term for is given, never guessed.
    * - Run a phase-structured stimulation protocol
      - :class:`music.StimulationSession`
@@ -74,7 +74,7 @@ Machine-readable stimulus exchange
 ----------------------------------
 
 The optional ``music.stimulation.sstim`` module writes the seven stimuli,
-and sessions of them, as SSTIM 0.19.0 descriptions and renders them back;
+and sessions of them, as SSTIM 0.20.0 descriptions and renders them back;
 it also renders a description another tool wrote, from SSTIM's terms and
 what they cannot say. It is a separate module, rather than new names in
 the flat API. See :doc:`sstim` for examples and validation.

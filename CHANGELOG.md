@@ -1,3 +1,22 @@
+## [Unreleased]
+
+### Changed
+
+- **Descriptions are checked against SSTIM 0.20.0,** the
+  published-protocols release, which removes and deprecates nothing.
+  Every description the package writes -- each of the seven stimuli, a
+  program of phases and a planned session -- conforms to its Full
+  profile, and so do the descriptions other tools wrote that the tests
+  read, checked against the release itself. `validate_sstim` validates
+  against it unless given another version.
+- **The terms 0.20.0 added that would change a stimulus are refused when
+  read, not ignored:** a channel's initial phase, randomly timed onsets,
+  a level at a stage of delivery and an adaptive control law, as every
+  term the package does not render already was. The ordered segments it
+  added belong to a published protocol's schedule, which must cite the
+  framework or the paper it comes from, so a session is still written as
+  a program in the package's terms.
+
 ## [2.0.0] - 2026-11-01
 
 ### Note for anyone upgrading

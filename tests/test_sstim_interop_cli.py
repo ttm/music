@@ -21,7 +21,7 @@ def test_the_report_is_stable_and_claims_no_portable_samples(tmp_path):
     assert first["shape"] == [1920]
     assert first["generator"] == "amplitude_modulation"
     assert first["rendered_by"] == "music.amplitude_modulation"
-    assert first["sstim_version"] == "0.19.0"
+    assert first["sstim_version"] == "0.20.0"
     assert first["sstim_full_profile_conforms"] is None
     assert first["exact_pcm_cross_vendor"] is False
     assert first["rms"] > 0

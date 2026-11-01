@@ -5,7 +5,7 @@ Stimuli in SSTIM
 describes a stimulus in RDF: its signals, the channels it is presented
 on, and how each signal is rendered onto each channel. One module,
 ``music.stimulation.sstim``, writes the package's seven auditory stimuli
-and sessions of them as SSTIM 0.19.0 descriptions, renders them back,
+and sessions of them as SSTIM 0.20.0 descriptions, renders them back,
 and reads what other tools write. It needs:
 
 .. code-block:: console
@@ -127,10 +127,12 @@ tone are written; a custom waveform table is not.
 Sessions
 --------
 
-A :class:`music.StimulationSession` is written the same way. SSTIM 0.19
-has no terms for phases in order, so a session is a program in the
-package's terms -- a ``StimulationProgram`` and its phases, with their
-order, ramps and gains -- each phase an SSTIM description of its own:
+A :class:`music.StimulationSession` is written the same way. SSTIM
+orders segments only in a published protocol's schedule, which must cite
+the framework or the paper it comes from, and has no terms for a phase's
+ramps or its gain, so a session is a program in the package's terms -- a
+``StimulationProgram`` and its phases, with their order, ramps and gains
+-- each phase an SSTIM description of its own:
 
 .. code-block:: python
 
@@ -427,7 +429,7 @@ Constants
    The convention a beat in SSTIM's terms alone can be rendered by.
 
 .. data:: SSTIM_VERSION
-   :value: "0.19.0"
+   :value: "0.20.0"
 
    The SSTIM release descriptions are written in and validated against.
 

@@ -500,7 +500,7 @@ def test_validation_calls_sstims_validator_on_the_full_profile(monkeypatch):
     assert validate_sstim(described()).ok
     assert validate_sstim(described(), version="0.18.0").ok
     assert [kw for _, kw in calls] == [
-        {"profile": "full", "version": "0.19.0"},
+        {"profile": "full", "version": "0.20.0"},
         {"profile": "full", "version": "0.18.0"}]
     assert calls[0][0] == len(described())
 

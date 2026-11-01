@@ -194,7 +194,7 @@ either documented in the code or tracked in the issue list.
   remain a limit on the claim, not evidence that their terms are wrong.
 - **An SSTIM description says what a stimulus is, not how to render it
   sample for sample elsewhere.** All seven stimuli, and a session of them,
-  are written in SSTIM 0.19.0's terms and checked against its Full
+  are written in SSTIM 0.20.0's terms and checked against its Full
   profile, and that checks the description: SSTIM fixes no oscillator,
   phase, gain, fade or random generator, so another engine can render a
   valid description differently and be right. Rendering one back sample

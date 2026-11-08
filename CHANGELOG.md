@@ -17,6 +17,12 @@
   framework or the paper it comes from, so a session is still written as
   a program in the package's terms.
 
+### Maintenance
+
+- **`notes.md` is gone.** Its list was done -- the comparison with
+  MASS, the split into subpackages, the examples -- but for an article
+  describing the package, which the README lists under Plans.
+
 ## [2.0.0] - 2026-11-01
 
 ### Note for anyone upgrading

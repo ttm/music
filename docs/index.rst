@@ -28,8 +28,10 @@ musical elements expressed as equations and corresponding Python routines.
 The envelope brings each note to silence at its ends so that joining
 different pitches does not introduce a click.
 
-New here? The :doc:`tutorial` walks from a single note to a short stereo
-piece, and explains what the sample-by-sample model actually buys you.
+New here? :doc:`listen` plays what the package sounds like, each sound
+under the code that computes it. The :doc:`tutorial` walks from a single
+note to a short stereo piece, and explains what the sample-by-sample
+model actually buys you.
 :doc:`choosing_an_api` maps common tasks onto the few routines to start
 with, :doc:`bandlimited_synthesis` renders without the folding a
 wavetable read brings, and :doc:`sstim` writes stimuli as SSTIM
@@ -186,6 +188,7 @@ The whole public API is re-exported flat from the top level, so
    :hidden:
 
    tutorial
+   listen
    choosing_an_api
    bandlimited_synthesis
    sstim

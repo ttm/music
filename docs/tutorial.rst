@@ -24,7 +24,9 @@ A first sound
 ``a`` is 66,150 float64 samples — 1.5 seconds at 44.1 kHz — in the range
 [-1, 1]. Frequency is in hertz, duration in seconds. To hear it without
 writing a file, use :func:`music.play_audio`, after ``pip install
-'music[play]'``.
+'music[play]'``. In a notebook, ``IPython.display.Audio(a,
+rate=music.get_sample_rate())`` plays it in the page, one channel or two,
+and :doc:`listen` plays what the rest of the package sounds like.
 
 44.1 kHz is the default rate, not a fixed one. Every routine takes a
 ``sample_rate``, and every one defaults it to the same rate, which

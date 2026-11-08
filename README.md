@@ -6,6 +6,7 @@
 [![Docs](https://img.shields.io/badge/docs-ttm.github.io%2Fmusic-blue.svg)](https://ttm.github.io/music/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/ttm/music/blob/master/LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22151793.svg)](https://doi.org/10.5281/zenodo.22151793)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ttm/music/blob/master/examples/listen.ipynb)
 
 **Extreme-fidelity synthesis of musical elements.**
 
@@ -29,6 +30,10 @@ steps -- by up to the full scale, and on nine of this scale's twelve joins.
 An envelope runs each note to silence at both ends, which is what makes the
 joins joins rather than clicks.
 
+🔊 **[Listen](https://ttm.github.io/music/listen.html)** — what the package
+sounds like, each sound under the code that computes it; the same sounds
+[in a notebook](https://colab.research.google.com/github/ttm/music/blob/master/examples/listen.ipynb)
+run in Colab with nothing installed.
 📖 **[Tutorial](https://ttm.github.io/music/tutorial.html)** — from a single
 note to a short stereo piece.
 📖 **[Where to start](https://ttm.github.io/music/choosing_an_api.html)** — the
@@ -428,6 +433,7 @@ shapes for a level-matched listening review, and
 
 Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) you can find some scripts that use the main features of Music.
 
+* [listen.ipynb](https://github.com/ttm/music/tree/master/examples/listen.ipynb): every sound on [the Listen page](https://ttm.github.io/music/listen.html), each cell playing the one it computes; it [opens in Colab](https://colab.research.google.com/github/ttm/music/blob/master/examples/listen.ipynb) with nothing installed.
 * [chromatic_scale](https://github.com/ttm/music/tree/master/examples/chromatic_scale.py): writes twelve notes into a WAV file from a sequence of frequencies.
 * [penta_effects](https://github.com/ttm/music/tree/master/examples/penta_effects.py): writes a pentatonic scale five times, plain, gliding up 30 Hz on each note, with a vibrato, with a Doppler shift and with FM, into a stereo WAV file.
 * [noisy](https://github.com/ttm/music/tree/master/examples/noisy.py): writes into a WAV file a sequence of different noises.

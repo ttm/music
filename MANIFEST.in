@@ -35,6 +35,10 @@ include docs/index.rst
 include docs/bandlimited_synthesis.rst
 include docs/sstim.rst
 include docs/conf.py
+# tests/test_listen.py runs the Listen page's sounds, and holds the
+# notebook written from them to the page.
+include docs/listen.rst
+include examples/listen.ipynb
 
 # tests/test_artifacts.py runs two examples to count their clicks, and
 # a reader of the tarball should have the examples anyway.

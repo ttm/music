@@ -1,6 +1,13 @@
 """Sphinx configuration for the music package documentation."""
 
 from importlib.metadata import version as _version
+from pathlib import Path
+import sys
+
+# The repository's root, for tools/listen.py, and _ext, for the sound
+# directive the Listen page is written in.
+_DOCS = Path(__file__).resolve().parent
+sys.path[:0] = [str(_DOCS.parent), str(_DOCS / "_ext")]
 
 project = "music"
 author = "Renato Fabbri, Jacopo Donati"
@@ -17,6 +24,7 @@ extensions = [
     "numpydoc",
     "sphinx_sitemap",
     "sphinxext.opengraph",
+    "sounds",
 ]
 
 # The docstrings in this package are numpydoc-style, with Parameters,
@@ -48,6 +56,7 @@ html_theme = "furo"
 html_title = "music: extreme-fidelity sound synthesis in Python"
 templates_path = ["_templates"]
 html_static_path = ["_static"]
+html_css_files = ["sounds.css"]
 html_theme_options = {
     "source_repository": "https://github.com/ttm/music/",
     "source_branch": "master",

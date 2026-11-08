@@ -149,10 +149,11 @@ jobs:
       - name: Sing, and measure it
         # The engine tests, the timing experiment's, which hold its
         # vibrato variant to the package's singer sample for sample, and
-        # the tutorial, whose singing blocks the test jobs leave out.
+        # the tutorial and the Listen page, whose singing blocks the test
+        # jobs leave out.
         run: >-
           pytest -v tests/test_singing_engine.py tests/test_singing_timing.py
-          tests/test_tutorial.py
+          tests/test_tutorial.py tests/test_listen.py
       - name: Compare the backends
         run: python tools/compare_singing.py --out singing-comparison
       - name: Sing the examples that compare the backends

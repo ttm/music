@@ -36,6 +36,19 @@
   `tools/social_preview.py` renders a phrase with the mipmapped
   band-limited oscillator, gliding from note to note with a vibrato, and
   draws its spectrogram beside the package's name and tagline.
+- **A Listen page plays what the package sounds like.** Twelve sounds,
+  each under the code that computes it: a scale, a vibrato and a glide,
+  a sawtooth that folds and one that does not, noise by colour, a low
+  pass opening, a mode and a cadence, a vibrato bound to its pitch, plain
+  changes, a source passing, a binaural beat, a session and a sung line.
+  The build runs the code, through a `sound` directive, and writes each
+  clip as FLAC at one loudness. The documentation's workflow fails if one
+  cannot be rendered, and `tests/test_listen.py` runs every block.
+- **The same sounds play in a notebook that runs in Colab.**
+  `examples/listen.ipynb` plays each with IPython's `Audio`, and opens in
+  Google Colab with nothing installed. `tools/listen.py` writes it from
+  the page's blocks, and a test holds it to them. The tutorial says how
+  to listen in a notebook.
 
 ## [2.0.0] - 2026-11-01
 

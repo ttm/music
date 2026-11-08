@@ -1,3 +1,12 @@
+:og:title: music: extreme-fidelity sound synthesis in Python
+:og:description: music is a Python package for sound synthesis, sample by sample: notes, filters, noise, spatial audio, music theory, change ringing, binaural beats and singing.
+
+.. The same sentence twice: link previews read the field above, search
+   engines the description below.
+
+.. meta::
+   :description: music is a Python package for sound synthesis, sample by sample: notes, filters, noise, spatial audio, music theory, change ringing, binaural beats and singing.
+
 music
 =====
 

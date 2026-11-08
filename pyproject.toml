@@ -40,6 +40,8 @@ optional-dependencies = { plot = [
     'sphinx >= 8.0',
     'numpydoc >= 1.8',
     'furo >= 2024.1.29',
+    'sphinx-sitemap >= 2.9.0',
+    'sphinxext-opengraph >= 0.13.0',
 ] }
 classifiers = [
     'Programming Language :: Python :: 3',

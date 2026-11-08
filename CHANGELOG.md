@@ -23,6 +23,20 @@
   MASS, the split into subpackages, the examples -- but for an article
   describing the package, which the README lists under Plans.
 
+### Documentation
+
+- **The pages tell search engines and link previews what the package
+  is.** Every page's title named only the version, `music 2.0.0`; it now
+  says "music: extreme-fidelity sound synthesis in Python", and the
+  sidebar names the version instead. The front page has a description,
+  every page has Open Graph tags and a preview image, and the site
+  publishes a sitemap of the pages a reader might be looking for. The
+  `docs` extra installs sphinx-sitemap and sphinxext-opengraph for them.
+- **The preview image is the package's own output.**
+  `tools/social_preview.py` renders a phrase with the mipmapped
+  band-limited oscillator, gliding from note to note with a vibrato, and
+  draws its spectrogram beside the package's name and tagline.
+
 ## [2.0.0] - 2026-11-01
 
 ### Note for anyone upgrading

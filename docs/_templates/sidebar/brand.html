@@ -1,0 +1,7 @@
+{#- The sidebar names the package and the version these pages describe.
+    html_title, which tabs, search results and link previews show, says
+    what the package is instead; see conf.py. -#}
+{%- extends "!sidebar/brand.html" %}
+{%- block brand_content %}
+<span class="sidebar-brand-text">{{ project }} {{ release }}</span>
+{%- endblock brand_content %}

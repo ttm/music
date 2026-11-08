@@ -15,6 +15,8 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.mathjax",
     "numpydoc",
+    "sphinx_sitemap",
+    "sphinxext.opengraph",
 ]
 
 # The docstrings in this package are numpydoc-style, with Parameters,
@@ -40,7 +42,12 @@ intersphinx_mapping = {
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 html_theme = "furo"
-html_title = f"music {release}"
+# What a browser tab, a search result and a link preview call these pages:
+# what the package is, in the words someone looking for it would use. The
+# sidebar names the version instead, in _templates/sidebar/brand.html.
+html_title = "music: extreme-fidelity sound synthesis in Python"
+templates_path = ["_templates"]
+html_static_path = ["_static"]
 html_theme_options = {
     "source_repository": "https://github.com/ttm/music/",
     "source_branch": "master",
@@ -54,6 +61,29 @@ html_theme_options = {
         "color-brand-content": "#4fbecb",
     },
 }
+
+# Where the pages are served. The sitemap lists them against it, each page's
+# canonical link points into it, and link previews are built on it.
+html_baseurl = "https://ttm.github.io/music/"
+# One version in one language, so a page's address is its link alone,
+# not the extension's default of "{lang}{version}{link}".
+sitemap_url_scheme = "{link}"
+# The index, the search page and the highlighted sources serve a reader
+# already here; the sitemap lists the pages someone might be looking for.
+sitemap_excludes = ["genindex.html", "search.html", "_modules/*"]
+
+ogp_site_url = html_baseurl
+# Drawn from the package's own output by tools/social_preview.py. Upload
+# the same file as the repository's social preview in GitHub's settings.
+ogp_image = "_static/social-preview.png"
+ogp_image_alt = ("The spectrogram of a phrase the package renders, gliding "
+                 "from note to note with a vibrato, beside its name and "
+                 "tagline.")
+ogp_custom_meta_tags = [
+    '<meta property="og:image:width" content="1280" />',
+    '<meta property="og:image:height" content="640" />',
+    '<meta name="twitter:card" content="summary_large_image" />',
+]
 
 # Some docstring Examples reference names that are illustrative rather than
 # importable; do not let those become nitpick failures.

@@ -64,6 +64,12 @@
   141 changes from one year to the next are played as one note repeated.
   `tests/test_sonification.py` measures each year's pitch in the files,
   and the Listen page plays the first.
+- **`localize_hrtf` says where its responses come from.** Its docstring
+  said `ASSESSMENT.md` lists the lack of an HRTF as the package's
+  largest gap, which it no longer does now that `music.hrtf` fetches
+  the KEMAR measurements, and named neither `setup_hrtf` nor `hrir`. It
+  now points to those two, says any other pair measured at the rate in
+  use will do, and shows a note placed above and behind.
 
 ## [2.0.0] - 2026-11-01
 

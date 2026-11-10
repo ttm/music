@@ -716,13 +716,14 @@ def localize_hrtf(sonic_vector: ArrayLike,
     is what the article says of it and what this does -- once per ear, with
     the impulse response measured for that ear from that direction.
 
-    **This package ships no impulse responses, and this routine is not an
-    HRTF.** It is the step that uses one. Where the response comes from --
-    a measured database such as CIPIC, a set interpolated for a direction
-    between measured ones, or one synthesised for a generic head -- is the
-    part that is research rather than signal processing, and none of it
-    happens here. `ASSESSMENT.md` still lists the absence of an HRTF as the
-    largest gap in this package, and this does not close it.
+    **This routine is not an HRTF; it is the step that applies one.** The
+    pair can be Gardner and Martin's KEMAR measurements, made at 44.1 kHz,
+    which :func:`~music.setup_hrtf` fetches once and :func:`~music.hrir`
+    reads for the measured direction nearest the one asked for. Or it can
+    come from anywhere else: a database such as CIPIC, a set interpolated
+    for a direction between measured ones, or one synthesised for a
+    generic head. Choosing or making a response is research rather than
+    signal processing, and none of it happens here.
 
     Parameters
     ----------
@@ -754,6 +755,8 @@ def localize_hrtf(sonic_vector: ArrayLike,
 
     See Also
     --------
+    hrir : the KEMAR responses measured nearest to a direction.
+    setup_hrtf : fetches the KEMAR measurements, once.
     localize : the geometric model, from interaural time and intensity
                difference alone.
     localize2 : the same cues per frequency band.
@@ -781,6 +784,13 @@ def localize_hrtf(sonic_vector: ArrayLike,
     >>> placed = localize_hrtf(note(duration=0.1), left, right)
     >>> placed.shape[0]
     2
+
+    With measured ears, from above and behind, at the default rate, which
+    is the one the KEMAR responses were measured at:
+
+    >>> setup_hrtf()  # doctest: +SKIP
+    >>> _, _, left, right = hrir(elevation=30, azimuth=270)  # doctest: +SKIP
+    >>> placed = localize_hrtf(note(duration=2), left, right)  # doctest: +SKIP
     """
     samples = np.asarray(sonic_vector, dtype=np.float64)
     if samples.ndim != 1:

@@ -1,4 +1,4 @@
-:og:description: Sounds computed by music, a Python package for sound synthesis, each under the code that computes it: a scale, vibrato, aliasing, noise, filters, harmony, change ringing, spatial audio, binaural beats and singing.
+:og:description: Sounds computed by music, a Python package for sound synthesis, each under the code that computes it: a scale, vibrato, aliasing, noise, filters, harmony, change ringing, data sonification, spatial audio, binaural beats and singing.
 
 Listen
 ======
@@ -164,6 +164,46 @@ frequencies, so the peal is the melody. It needs ``pip install
    sound = music.horizontal_stack(*[
        music.adsr(sonic_vector=music.note(freq, duration=0.16))
        for row in rows for freq in row])
+
+A temperature record, a note a year
+-----------------------------------
+
+A data sonification: the global mean temperature of each year from 1880
+to 2025, in NASA's `GISTEMP v4 <https://data.giss.nasa.gov/gistemp/>`_
+record, as a pitch. The mean of 1951 to 1980, which the record is
+measured from, is 440 Hz, and a degree Celsius is an octave, so equal
+differences in temperature are equal intervals wherever they fall. Ten
+years pass in a second. ``python examples/sonification.py`` cites the
+record, and writes it twice more: on a scale, and as one line over a
+drone that marks the reference.
+
+.. sound:: sonification
+
+   import music
+
+   # Hundredths of a degree Celsius from the mean of 1951-1980. A row is
+   # a decade, and lasts a second.
+   hundredths = """
+       -17  -9 -11 -18 -28 -33 -31 -36 -18 -11
+       -36 -22 -27 -31 -30 -23 -11 -11 -28 -18
+        -8 -16 -28 -37 -47 -26 -22 -38 -42 -48
+       -44 -44 -37 -34 -15 -14 -36 -46 -30 -27
+       -27 -18 -28 -26 -27 -22 -11 -22 -20 -36
+       -15  -9 -16 -28 -13 -20 -15  -3   0  -2
+        12  18   6   9  20   9  -7  -3 -11 -11
+       -17  -7   1   8 -13 -14 -19   5   6   3
+        -2   6   3   5 -20 -11  -6  -2  -8   5
+         3  -8   1  16  -7  -1 -10  18   7  16
+        26  32  14  31  16  12  18  32  39  27
+        45  41  22  23  31  45  33  47  61  38
+        39  53  63  62  53  68  64  66  54  66
+        72  61  65  67  75  89 101  91  85  98
+       101  85  89 117 128 118
+   """.split()
+   semitones = [12 * int(number) / 100 for number in hundredths]
+   sound = music.horizontal_stack(*[
+       music.adsr(sonic_vector=music.note(freq, duration=0.1))
+       for freq in music.pitch_to_freq(440, semitones)])
 
 A source passing by
 -------------------

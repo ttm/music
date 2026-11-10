@@ -28,6 +28,12 @@ them.
      - Shape each note before joining them: a note ends wherever its
        phase lands, and a bare join steps. A hard gate makes broadband
        energy of its own, whatever the carrier.
+   * - Turn data into sound
+     - :func:`music.pitch_to_freq`
+     - Map a value to semitones rather than to hertz, so that equal
+       differences are equal intervals wherever they fall.
+       ``examples/sonification.py`` plays a temperature record three
+       ways, and :doc:`listen` plays the first.
    * - Place notes in time
      - :class:`music.Sequencer`
      - Notes at start times, overlapping as they will, rather than

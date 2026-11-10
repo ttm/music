@@ -36,19 +36,34 @@
   `tools/social_preview.py` renders a phrase with the mipmapped
   band-limited oscillator, gliding from note to note with a vibrato, and
   draws its spectrogram beside the package's name and tagline.
-- **A Listen page plays what the package sounds like.** Twelve sounds,
+- **A Listen page plays what the package sounds like.** Thirteen sounds,
   each under the code that computes it: a scale, a vibrato and a glide,
   a sawtooth that folds and one that does not, noise by colour, a low
   pass opening, a mode and a cadence, a vibrato bound to its pitch, plain
-  changes, a source passing, a binaural beat, a session and a sung line.
-  The build runs the code, through a `sound` directive, and writes each
-  clip as FLAC at one loudness. The documentation's workflow fails if one
-  cannot be rendered, and `tests/test_listen.py` runs every block.
+  changes, a temperature record, a source passing, a binaural beat, a
+  session and a sung line. The build runs the code, through a `sound`
+  directive, and writes each clip as FLAC at one loudness. The
+  documentation's workflow fails if one cannot be rendered, and
+  `tests/test_listen.py` runs every block.
 - **The same sounds play in a notebook that runs in Colab.**
   `examples/listen.ipynb` plays each with IPython's `Audio`, and opens in
   Google Colab with nothing installed. `tools/listen.py` writes it from
   the page's blocks, and a test holds it to them. The tutorial says how
   to listen in a notebook.
+- **An example sonifies data,** one of the three uses the README names
+  for the package, and the only one that had no example.
+  `examples/sonification.py` plays the global mean temperature of each
+  year since 1880, NASA's GISTEMP record, as pitch: the mean of
+  1951-1980 is 440 Hz and a degree Celsius is an octave, so equal
+  differences in temperature are equal intervals wherever they fall. It
+  writes the record three ways: a note a year; the same notes moved to
+  the nearest degree of a scale; and one line through the years, over a
+  drone an octave under the reference and a tick each decade, which are
+  to the line what axes are to a chart. It prints what the scale costs
+  the data: a year moves by 0.04 of a degree on average, and 70 of the
+  141 changes from one year to the next are played as one note repeated.
+  `tests/test_sonification.py` measures each year's pitch in the files,
+  and the Listen page plays the first.
 
 ## [2.0.0] - 2026-11-01
 

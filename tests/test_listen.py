@@ -24,7 +24,7 @@ BLOCKS = listen.blocks()
 def test_the_page_has_the_blocks_this_test_thinks_it_has():
     """Guard the extraction: a change to the directive's formatting must
     not quietly leave this file testing nothing."""
-    assert len(BLOCKS) == 12
+    assert len(BLOCKS) == 13
     assert len({block.name for block in BLOCKS}) == len(BLOCKS)
     assert all(block.title and block.code.startswith("import music\n")
                for block in BLOCKS)

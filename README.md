@@ -450,6 +450,7 @@ Inside [the examples folder](https://github.com/ttm/music/tree/master/examples) 
 * [sensory_stimulation](https://github.com/ttm/music/tree/master/examples/sensory_stimulation.py): writes one file per SSTIM technique with `music.stimulation`, and one three-phase session, which is the form these stimuli are actually delivered in.
 * [sstim_descriptions](https://github.com/ttm/music/tree/master/examples/sstim_descriptions.py): writes a stimulus and a planned session as SSTIM descriptions, renders both back, and renders an amplitude modulation another tool might have described, in SSTIM's terms alone.
 * [aliasing_demo](https://github.com/ttm/music/tree/master/examples/aliasing_demo.py): writes a 10 kHz sawtooth twice, read from the table as MASS does and band-limited, at one gain, so the folding can be heard.
+* [sonification](https://github.com/ttm/music/tree/master/examples/sonification.py): sonifies a data series, the global mean temperature of each year since 1880, as pitch, three ways: a note a year; the same notes moved to a scale, saying what the scale costs the data; and one line over a drone that marks the reference, with a tick each decade.
 * [Singing](#singing), above, says what each singing backend needs.
 
 ## Package structure
@@ -593,6 +594,6 @@ under the same open license. Open an issue or get in touch to discuss scope.
 
 ## Further information
 
-Music is primarily intended for artistic use, psychophysics experiments and data sonification.
+Music is primarily intended for artistic use, psychophysics experiments and [data sonification](https://github.com/ttm/music/tree/master/examples/sonification.py).
 
 You can find an example in [Versinus](https://github.com/ttm/versinus), an animated visualization method for evolving networks that uses Music to render the musical track that represents networks structures.

@@ -40,8 +40,9 @@ include docs/conf.py
 include docs/listen.rst
 include examples/listen.ipynb
 
-# tests/test_artifacts.py runs two examples to count their clicks, and
-# a reader of the tarball should have the examples anyway.
+# tests/test_artifacts.py runs two examples to count their clicks and
+# tests/test_sonification.py measures what a third writes, and a reader
+# of the tarball should have the examples anyway.
 recursive-include examples *.py
 
 # tests/test_zenodo_metadata.py reads the archival metadata.

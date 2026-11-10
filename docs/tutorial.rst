@@ -497,8 +497,8 @@ Where to go next
 * `The examples folder
   <https://github.com/ttm/music/tree/master/examples>`_: runnable scripts
   for most of the above, the ``Being`` and ``IteratorSynth`` classes
-  generating material algorithmically, and the two singers singing the
-  same songs side by side.
+  generating material algorithmically, a temperature record played as
+  pitch, and the two singers singing the same songs side by side.
 * What this page leaves out: :func:`music.setup_hrtf` and
   :func:`music.hrir`, which place a source with measured ears, above or
   behind you, where :func:`music.localize` can only place it to a side;

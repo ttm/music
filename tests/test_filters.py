@@ -400,6 +400,39 @@ def test_louds_refuses_a_transition_with_no_samples(given):
               sample_rate=1000, **given)
 
 
+@pytest.mark.parametrize("single, each", [
+    (dict(method="linear"), dict(method=("linear",) * 3)),
+    (dict(method="exp"), dict(method=("exp",) * 3)),
+    (dict(alpha=2), dict(alpha=(2, 2, 2))),
+    (dict(trans_devs=-6), dict(trans_devs=(-6, -6, -6))),
+])
+def test_louds_takes_one_value_for_every_transition(single, each):
+    """As adsr takes one alpha for its stages and pan_transitions one
+    method for its moves. A method given as a string was indexed a letter
+    per transition, so "linear" was refused as 'l', and a number for
+    alpha was not subscriptable."""
+    durations = dict(number_of_samples=(50, 60, 70))
+    assert np.array_equal(louds(**durations, **single),
+                          louds(**durations, **each))
+
+
+@pytest.mark.parametrize("given, name, count", [
+    (dict(durations=(1, 1, 1, 1), trans_devs=(1, 2, 3, 4)), "alpha", 3),
+    (dict(durations=(1, 1, 1, 1), trans_devs=(1, 2, 3, 4),
+          alpha=(1, 1, 1, 1)), "method", 3),
+    (dict(durations=(1, 1), trans_devs=(3,)), "trans_devs", 1),
+])
+def test_louds_names_the_argument_short_of_a_transition(given, name, count):
+    """Each default holds an entry for each of the three default
+    transitions, so a fourth duration ran off the end of whichever was
+    left alone, as Python's "tuple index out of range"."""
+    transitions = len(given["durations"])
+    with pytest.raises(ValueError, match="^" + re.escape(
+            f"louds takes one of its {name} for each of its {transitions} "
+            f"transitions, or one for all of them; got {count}") + "$"):
+        louds(sample_rate=1000, **given)
+
+
 def test_louds_refuses_an_envelope_of_no_transitions():
     """Zero counts used to mean "use the durations"; with counts given
     and none in them there is nothing to build, and numpy said so in its

@@ -178,6 +178,13 @@ def test_hz_to_midi_no_warnings():
         utils.hz_to_midi(np.array([0.0, 440.0]))
 
 
+def test_hz_to_midi_takes_no_frequency_as_machine_epsilon():
+    """The docstring said the smallest positive float and a pitch near
+    -680: the clip is to machine epsilon, 2.2e-16, which is near -660."""
+    assert round(float(utils.hz_to_midi(0))) == -660
+    assert utils.hz_to_midi(-5) == utils.hz_to_midi(np.finfo(float).eps)
+
+
 def test_profile_sorts_a_namespace_by_what_the_names_hold():
     """It was exported, documented as returning a dictionary, and had a
     fully commented-out body, so every call quietly returned None; then it

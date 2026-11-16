@@ -950,8 +950,9 @@ def test_a_one_pole_design_is_stable_at_any_cutoff(design, cutoff):
 @pytest.mark.parametrize("bandwidth", [0.001, 0.01, 0.1, 0.4])
 def test_a_two_pole_design_is_stable_anywhere_in_its_grid(design, centre,
                                                           bandwidth):
-    """The two-pole designs put their poles at 1 - bandwidth, so the
-    narrowest band is the closest call: 0.997 at a bandwidth of 0.001."""
+    """The two-pole designs put their poles at a radius of
+    |1 - 3 bandwidth|, so the narrowest band is the closest call: 0.997 at
+    a bandwidth of 0.001."""
     _feedforward, feedback = getattr(music, design)(centre, bandwidth)
     assert np.abs(poles(feedback)).max() < 1.0
 

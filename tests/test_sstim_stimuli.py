@@ -236,6 +236,23 @@ def test_max_samples_is_a_positive_integer(max_samples):
         render_sstim(described(), max_samples=max_samples)
 
 
+def test_numpy_integers_are_whole_numbers_to_a_description():
+    """Asked ``isinstance(value, int)``, a rate or a limit read out of an
+    array was refused as "must be an integer", which it was: by the rule
+    `set_sample_rate` and the band-limited routines follow, it is one."""
+    given = to_sstim_graph("binaural_beats", duration=.01,
+                           sample_rate=np.int64(48000), base=BASE)
+    written = to_sstim_graph("binaural_beats", duration=.01,
+                             sample_rate=48000, base=BASE)
+    assert from_sstim_graph(given) == from_sstim_graph(written)
+    assert from_sstim_graph(given).sample_rate == 48000
+    assert type(from_sstim_graph(given).sample_rate) is int
+    short = described(duration=.01)
+    assert render_sstim(short, max_samples=np.int64(480)).shape == (2, 480)
+    with pytest.raises(ValueError, match="more than max_samples, 479:"):
+        render_sstim(short, max_samples=np.int32(479))
+
+
 @pytest.mark.parametrize("kwargs,match", [
     ({"sample_rate": 1.5}, "sample_rate must be an integer"),
     ({"sample_rate": True}, "sample_rate must be an integer"),

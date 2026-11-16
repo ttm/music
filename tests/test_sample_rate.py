@@ -16,6 +16,7 @@ import ast
 import inspect
 import math
 import pathlib
+import re
 import threading
 
 import numpy as np
@@ -131,6 +132,27 @@ def test_a_duration_lasts_the_floor_of_its_product_to_a_millionth(
     meant to fall short of it does not. A negative offset floors away
     from zero, as mix_with_offset counts one back from a sound's end."""
     assert sample_count(duration, rate) == count
+
+
+@pytest.mark.parametrize("duration, rate", [
+    (math.nan, 44100), (math.inf, 44100), (-math.inf, 44100),
+    (1.0, math.inf), (np.float64("nan"), 8000),
+])
+def test_no_number_of_samples_is_refused_by_name(duration, rate):
+    """NaN reached math.floor, which said "cannot convert float NaN to
+    integer", naming neither the duration nor the rate, and infinity
+    raised OverflowError, which a caller catching ValueError missed."""
+    with pytest.raises(ValueError, match="^" + re.escape(
+            f"a duration is a finite number of seconds, at a finite rate; "
+            f"got {duration!r} s at {rate!r} Hz, which is no number of "
+            f"samples") + "$"):
+        sample_count(duration, rate)
+
+
+@pytest.mark.parametrize("duration", [math.nan, math.inf])
+def test_a_routine_given_no_number_of_samples_says_so(duration):
+    with pytest.raises(ValueError, match="no number of samples"):
+        music.note(duration=duration)
 
 
 def test_an_offset_a_fraction_of_a_sample_back_is_a_whole_one_back():

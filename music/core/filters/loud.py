@@ -148,6 +148,23 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
     return e
 
 
+def _per_transition(given, name, transitions):
+    """`given` as an entry for each of `transitions`.
+
+    One value serves them all, as :func:`adsr` takes one `alpha` for its
+    stages and :func:`music.pan_transitions` one method for its moves. A
+    string was indexed like the tuple it stood in for, a letter for each
+    transition, and a number was not subscriptable.
+    """
+    if np.ndim(given) == 0:
+        return (given,) * transitions
+    if len(given) < transitions:
+        raise ValueError(
+            f"louds takes one of its {name} for each of its {transitions} "
+            f"transitions, or one for all of them; got {len(given)}")
+    return given
+
+
 def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
           method=("exp", "exp", "exp"), number_of_samples=None,
           sonic_vector=0, sample_rate=None):
@@ -160,16 +177,16 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
     ----------
     durations : iterable
         The durations of the transitions in seconds.
-    trans_devs : iterable
-        The sequence of deviations of the transitions.
-        If method="exp" the deviations are in decibels.
+    trans_devs : scalar or iterable
+        The deviations of the transitions, one for each, or one for all
+        of them. If method="exp" the deviations are in decibels.
         If method="linear" the deviations are amplitude proportions.
-    alpha : iterable
-        Indexes to make the transitions slower or faster [1].
-        Ignored if method="linear".
-    method : iterable
-        Methods for each transition.
-        "exp" for exponential transitions of amplitude (linear loudness).
+    alpha : scalar or iterable
+        Indexes to make the transitions slower or faster [1], one for each
+        transition or one for all of them. Ignored if method="linear".
+    method : string or iterable of strings
+        The method of each transition, or one method for all of them:
+        "exp" for exponential transitions of amplitude (linear loudness),
         "linear" for linear transitions of amplitude.
     number_of_samples : iterable or None
         The number of samples of each transition.
@@ -199,6 +216,13 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
     ------
     ValueError
         If there are no transitions, or one spans fewer than one sample.
+
+        If `trans_devs`, `alpha` or `method` has fewer entries than there
+        are transitions. Each default has one for each of the three
+        default transitions, so a fourth transition needs each of the
+        three given, as one value or as four: the missing entry was an
+        ``IndexError``, and a method given as one string was read a
+        letter for each transition, so "linear" was refused as ``'l'``.
 
     See Also
     --------
@@ -231,6 +255,10 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
               [sample_count(dur, sample_rate) for dur in durations])
     if not len(counts):
         raise ValueError("an envelope of transitions needs at least one")
+    trans_devs, alpha, method = (
+        _per_transition(given, name, len(counts))
+        for name, given in (("trans_devs", trans_devs), ("alpha", alpha),
+                            ("method", method)))
     s = []
     fact = 1
     for i, count in enumerate(counts):

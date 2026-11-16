@@ -130,8 +130,6 @@ class InterestingPermutations:
         length_max = self.nelements
         self.alternations_by_sizes = []
         for length in range(length_max + 1):
-            # while length in [i.length()
-            #                  for i in self.alternations_complement]:
             self.alternations_by_sizes.append(
                 [i for i in self.alternations_complement
                  if i.length() == length])

@@ -29,8 +29,9 @@ def fir(samples, sonic_vector, freq=True, max_freq=True):
     -------
     ndarray
         The filtered signal, of length len(sonic_vector) + len(kernel) - 1.
-        The kernel is symmetric, so the filter is linear phase and the
-        output is delayed by half the kernel.
+        With `freq` true the kernel is symmetric, so the filter is linear
+        phase and the output is delayed by half the kernel; with it false
+        the kernel is `samples`, whatever its shape.
 
     Raises
     ------
@@ -128,6 +129,11 @@ def iir(sonic_vector, a, b):
         samples -- and a zero divisor produced an array of infinities
         behind a warning. Filter one channel at a time.
 
+        If ``a`` or ``b`` is not a sequence of coefficients, or ``a`` is
+        empty. The path short filters take reads ``a[0]`` first, so an
+        empty ``a`` failed as numpy's ``IndexError``, and a number in
+        place of either array failed in Python's words, or in numpy's.
+
     Notes
     -----
     The recurrence implemented is
@@ -176,6 +182,15 @@ def iir(sonic_vector, a, b):
         raise ValueError(
             f"iir filters one channel at a time; got an array of shape "
             f"{signal.shape}. Pass each channel separately.")
+    for name, coefficients in (("a", a), ("b", b)):
+        if coefficients.ndim != 1:
+            raise ValueError(
+                f"{name} is a sequence of coefficients; got an array of "
+                f"shape {coefficients.shape}")
+    if a.size == 0:
+        raise ValueError(
+            "a must hold at least one feedforward coefficient: with none, "
+            "nothing of the signal reaches the output")
     if b.size == 0:
         raise ValueError("b must hold at least the divisor b[0]")
     if b[0] == 0:

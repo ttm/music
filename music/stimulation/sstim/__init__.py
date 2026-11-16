@@ -348,8 +348,9 @@ def render_sstim(value: Source, /, *,
         than `max_samples`, or `oversampling_factor` is given for a
         session or a beat rendered by its profile.
     """
-    if (isinstance(max_samples, bool) or not isinstance(max_samples, int)
-            or max_samples < 1):
+    # A whole number, NumPy's included, as every count here is read.
+    limit = _rate.whole(max_samples)
+    if limit is None or limit < 1:
         raise ValueError(f"max_samples must be a positive integer; got "
                          f"{max_samples!r}")
     described = from_sstim_graph(value, controls=controls, profile=profile,
@@ -357,10 +358,10 @@ def render_sstim(value: Source, /, *,
     timeline = (described.session if isinstance(described, PlannedSession)
                 else described)
     count = _rate.sample_count(timeline.duration, timeline.sample_rate)
-    if count > max_samples:
+    if count > limit:
         raise ValueError(
             f"the description renders {count} samples a channel, more than "
-            f"max_samples, {max_samples}: raise it to render a longer one")
+            f"max_samples, {limit}: raise it to render a longer one")
     if oversampling_factor is None:
         return described.render()
     if not isinstance(described, SstimStimulus):

@@ -534,12 +534,7 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
     # was the shadow of a tone an octave up, and the 4000 Hz crossover
     # between the two delay coefficients fired at a true 2000 Hz.
     df = sample_rate / lambda_l
-
-    # zero theta in right ahead and counter-clockwise is positive
-    # theta_ = 2*np.pi*theta/360
     freqs = np.arange(max_coef) * df
-    # max_size = len(sonic_vector) + 300*zeta*np.sin(theta_)*fs
-    # s = np.zeros( (2, max_size) )
     if method == "ifft":
         normsl = np.copy(norms)
         anglesl = np.copy(angles)
@@ -585,9 +580,9 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
             else:
                 itd = .2 * zeta * np.sin(abs(theta_)) / speed
             iid = 1 + ((f / 1000) ** .8) * np.sin(abs(theta_))
-            # not needed, coefs are duplicated afterwards:
-            # if i != Lambda/2:
-            #     IID *= 2
+            # One bin of each conjugate pair is changed here, and the
+            # mirror below copies it into the other half of the spectrum,
+            # so nothing is doubled as the brute method doubles.
             #
             # A delay of tau is a phase change of -2*pi*f*tau, and it is
             # the *far* ear that is delayed and attenuated relative to
@@ -694,10 +689,6 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
                         coefsr[mirror])[::-1]
         sr = np.fft.ifft(coefsr).real
         s = np.vstack((sl, sr))
-    # If in need to force energy to be preserved, try:
-    # energy1 = np.sum(sonic_vector**2)
-    # energy2 = np.sum(s**2)
-    # s = s*(energy1/energy2)**.5
     return s
 
 

@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy as n
 import music as M
+from .._rate import sample_count
 
 
 def _fit(stage, count):
@@ -290,7 +291,7 @@ class CanonicalSynth:
         if sonic_vector is not None:
             Lambda = n.shape(sonic_vector)[-1]
         else:
-            Lambda = n.floor(self.samplerate * self.duration)
+            Lambda = sample_count(self.duration, self.samplerate)
         ii = n.arange(Lambda)
         Lt = len(self.tremolo_table)
         Gammaa_i = n.floor(ii * self.tremolo_frequency * Lt /
@@ -330,7 +331,11 @@ class CanonicalSynth:
             Rendered audio vector.
         """
         self.absorbState(**statevars)
-        Lambda = n.floor(self.samplerate * self.duration)
+        # Counted as every routine in the package counts a duration: the
+        # floor of the product as written, not of its binary rounding,
+        # which put a note of 0.35 s at 44.1 kHz a sample short of the
+        # 15,435 that note() renders for it.
+        Lambda = sample_count(self.duration, self.samplerate)
         ii = n.arange(Lambda)
         Lv = len(self.vibrato_table)
         Gammav_i = n.floor(ii * self.vibrato_frequency * Lv /

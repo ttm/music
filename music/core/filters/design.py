@@ -82,8 +82,12 @@ def low_pass(cutoff: float = 0.1) -> tuple[NDArray[np.float64],
     Parameters
     ----------
     cutoff : scalar
-        Where the filter attenuates by 3 dB, as a fraction of the sample
-        rate, in ``(0, 0.5)``.
+        The cutoff as a fraction of the sample rate, in ``(0, 0.5)``:
+        where the filter is 3 dB down, while the cutoff is small. As it
+        grows the 3 dB point drifts above it, to 0.1035 for a cutoff of
+        0.1 and 0.2339 for 0.2, and from 0.2805 there is none: the
+        filter is less than 3 dB down even at the Nyquist frequency.
+        See `DISCREPANCIES.md`.
 
     Returns
     -------
@@ -130,8 +134,11 @@ def high_pass(cutoff: float = 0.1) -> tuple[NDArray[np.float64],
     Parameters
     ----------
     cutoff : scalar
-        Where the filter attenuates by 3 dB, as a fraction of the sample
-        rate, in ``(0, 0.5)``.
+        The cutoff as a fraction of the sample rate, in ``(0, 0.5)``:
+        where the filter is 3 dB down, while the cutoff is small. As it
+        grows the 3 dB point drifts below it, to 0.094 for a cutoff of
+        0.1 and 0.1617 for 0.2, and it never reaches 0.2363, however
+        high the cutoff. See `DISCREPANCIES.md`.
 
     Returns
     -------

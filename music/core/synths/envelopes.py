@@ -240,6 +240,24 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     return t
 
 
+def _segment(values, name, line, segment):
+    """`values[line][segment]`, or a refusal that says which is missing.
+
+    Each argument of :func:`tremolos` is laid out as its durations are,
+    and the defaults for two lines of three and four segments: a layout
+    with more failed on the first default it outgrew, as an
+    ``IndexError`` that named no argument, and a flat list as a
+    ``TypeError``.
+    """
+    try:
+        return values[line][segment]
+    except (IndexError, TypeError):
+        raise ValueError(
+            f"tremolos takes {name} laid out as its durations are, a value "
+            f"for each segment of each line; it has none for segment "
+            f"{segment} of line {line}") from None
+
+
 def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
              tremolo_freqs=((2, 6, 20), (5, 6.2, 21, 5)),
              max_db_devs=((10, 20, 1), (5, 7, 9, 2)),
@@ -258,14 +276,15 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
         tremolos of a line follow one another, and the lines are
         multiplied together.
     tremolo_freqs : iterable of iterable of scalars
-        The frequencies of each tremolo.
+        The frequencies of each tremolo, laid out as `durations` is.
     max_db_devs : iterable of iterable of scalars
-        The maximum loudness variation
-        of each tremolo.
+        The maximum loudness variation of each tremolo, in decibels,
+        laid out as `durations` is.
     alpha : iterable of iterable of scalars
-        Indexes for distortion of each tremolo [1].
+        Indexes for distortion of each tremolo [1], laid out as
+        `durations` is.
     waveform_tables : iterable of iterable of array_likes
-        Tables for lookup for each tremolo.
+        Tables for lookup for each tremolo, laid out as `durations` is.
     number_of_samples : iterable of iterable of scalars, or None
         The number of samples of each tremolo. If given, durations is
         ignored.
@@ -283,8 +302,18 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
     -------
     s : ndarray
         A numpy array where each value is a value of the envelope for the PCM
-        samples. If sonic_vector is supplied, e is the sonic vector with the
+        samples. If sonic_vector is supplied, s is the sonic vector with the
         envelope applied to it.
+
+    Raises
+    ------
+    ValueError
+        If `tremolo_freqs`, `max_db_devs`, `alpha` or `waveform_tables`
+        has no entry for a segment that `durations`, or
+        `number_of_samples`, has. Each default is laid out for two lines
+        of three and four segments, so a layout with more needs them all
+        given: the first default it outgrew failed as an ``IndexError``
+        that named no argument.
 
     See Also
     --------
@@ -312,28 +341,23 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
 
     """
     sample_rate = resolve_rate(sample_rate)
-    waveform_tables = [
-        [np.array(wt) for wt in row]
-        for row in waveform_tables
-    ]
     t_: list = []
-    if number_of_samples is not None:
-        for i, ns in enumerate(number_of_samples):
-            t_.append([])
-            for j, ns_ in enumerate(ns):
-                s = tremolo(tremolo_freq=tremolo_freqs[i][j],
-                            max_db_dev=max_db_devs[i][j], alpha=alpha[i][j],
-                            waveform_table=waveform_tables[i][j],
-                            number_of_samples=ns_, sample_rate=sample_rate)
-                t_[-1].append(s)
-    else:
-        for i, durs in enumerate(durations):
-            t_.append([])
-            for j, dur in enumerate(durs):
-                s = tremolo(dur, tremolo_freqs[i][j], max_db_devs[i][j],
-                            alpha[i][j], waveform_table=waveform_tables[i][j],
-                            sample_rate=sample_rate)
-                t_[-1].append(s)
+    lines = durations if number_of_samples is None else number_of_samples
+    for i, line in enumerate(lines):
+        t_.append([])
+        for j, length in enumerate(line):
+            settings = dict(
+                tremolo_freq=_segment(tremolo_freqs, 'tremolo_freqs', i, j),
+                max_db_dev=_segment(max_db_devs, 'max_db_devs', i, j),
+                alpha=_segment(alpha, 'alpha', i, j),
+                waveform_table=_segment(waveform_tables, 'waveform_tables',
+                                        i, j),
+                sample_rate=sample_rate)
+            if number_of_samples is None:
+                s = tremolo(duration=length, **settings)
+            else:
+                s = tremolo(number_of_samples=length, **settings)
+            t_[-1].append(s)
     sonic_vector = as_sonic_vector(sonic_vector)
     amax = 0
     if sonic_vector is not None:

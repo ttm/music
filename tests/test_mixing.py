@@ -81,6 +81,35 @@ def test_mix_stereo_does_not_mistake_a_two_sample_mono_for_stereo():
     assert np.allclose(out[0][:2], [1.0, 2.0])
 
 
+@pytest.mark.parametrize("first, second", [
+    (np.ones((3, 5)), np.ones((2, 4))),
+    (np.ones((2, 5)), np.ones((3, 4))),
+    (np.ones((3, 5)), None),
+])
+def test_mix_stereo_refuses_a_third_channel(first, second):
+    """As every routine that keeps two channels does. numpy refused it
+    in its own words, a broadcast between a pair and a triple, even with
+    no second sound to mix."""
+    with pytest.raises(ValueError, match="^" + re.escape(
+            "mix_stereo takes a mono or a stereo sound; got an array of "
+            "shape ") + r"\(3, \d\)\. convert_to_stereo folds more channels "
+                        r"into two$"):
+        mix_stereo(first, second)
+
+
+def test_mix_stereo_puts_a_single_row_in_both_channels():
+    out = mix_stereo(np.array([[1.0, 2.0, 3.0]]), np.zeros(2))
+    np.testing.assert_array_equal(out, [[1, 2, 3], [1, 2, 3]])
+
+
+@pytest.mark.parametrize("sound", [np.zeros(0), np.zeros((2, 0))])
+def test_mix_stereo_of_one_empty_sound_is_an_empty_pair(sound):
+    """No second sound is a pair of no samples, which pads nothing: a
+    mutant that made it one sample long survived the audit, since every
+    sound mixed alone here had samples of its own."""
+    assert mix_stereo(sound).shape == (2, 0)
+
+
 # --------------------------------------------------------------------------
 # mix_many_with_offsets
 # --------------------------------------------------------------------------
@@ -194,6 +223,38 @@ def test_mix_many_offsets_a_stereo_sound_along_its_samples():
     np.testing.assert_array_equal(
         music.mix_many([stereo, stereo], offset=[0, 1], sample_rate=1),
         [[1, 2, 1], [2, 4, 2]])
+
+
+def test_mix_many_takes_an_array_of_offsets_as_it_takes_a_list():
+    """`if offset:` asked an array for one truth value, and numpy refused
+    to give it one."""
+    sounds = [np.ones(3), np.full(2, 2.0)]
+    np.testing.assert_array_equal(
+        music.mix_many(sounds, offset=np.array([0, 2]), sample_rate=1),
+        music.mix_many(sounds, offset=[0, 2], sample_rate=1))
+
+
+def test_mix_many_starts_a_sound_without_an_offset_at_zero():
+    np.testing.assert_array_equal(
+        music.mix_many([np.ones(2), np.ones(2), np.ones(2)], offset=[1],
+                       sample_rate=1), [2, 3, 1])
+
+
+@pytest.mark.parametrize("offset, message", [
+    (1, "offset is a list of offsets in seconds, one for each sound; got "
+        "the number 1"),
+    ([0, 1, 2], "3 offsets for 2 sounds; give one for each sound, or "
+                "fewer, and the rest start at zero"),
+    ([0, -1], "an offset delays a sound, so it cannot be negative; offset "
+              "1 is -1"),
+])
+def test_mix_many_refuses_offsets_it_cannot_place(offset, message):
+    """Each failed in Python's words or numpy's: "'int' object is not
+    iterable", "list index out of range" and "negative dimensions are not
+    allowed"."""
+    with pytest.raises(ValueError, match=f"^{re.escape(message)}$"):
+        music.mix_many([np.ones(3), np.ones(2)], offset=offset,
+                       sample_rate=1)
 
 
 # --------------------------------------------------------------------------

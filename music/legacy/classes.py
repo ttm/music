@@ -357,7 +357,6 @@ class Being:
                     domain = n_.array(self.domain)
             else:
                 domain = self.domain
-            # nel = self.perms[0].size  # should match self.seqsize ?
             count = 0
             while len(sequence) < n:
                 perm = self.perms[count % len(self.perms)]

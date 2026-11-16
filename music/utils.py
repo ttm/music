@@ -315,10 +315,10 @@ def hz_to_midi(hertz_value: float) -> np.float64:
     -------
     numpy.float64
         The MIDI note number corresponding to the input frequency value.
-        A frequency of zero or below, which has no pitch, is taken as the
-        smallest positive float, a pitch near -680, far below hearing:
-        an array of frequencies with silent frames at 0 Hz converts
-        without numpy's warning about a logarithm of zero.
+        A frequency of zero or below, which has no pitch, is taken as
+        machine epsilon, 2.2e-16 Hz, a pitch near -660, far below
+        hearing: an array of frequencies with silent frames at 0 Hz
+        converts without numpy's warning about a logarithm of zero.
 
     Examples
     --------
@@ -521,9 +521,9 @@ def mix_stereo(
 ) -> np.ndarray:
     """Mixes two stereo sonic vectors.
 
-    This function mixes two stereo sonic vectors. A mono one is put in both
-    channels first, and the shorter is padded with zeros to the length of
-    the longer.
+    This function mixes two stereo sonic vectors. A mono one, or one
+    written as a single row, is put in both channels first, and the
+    shorter is padded with zeros to the length of the longer.
 
     Parameters
     ----------
@@ -541,6 +541,14 @@ def mix_stereo(
     -------
     ndarray
         A stereo sonic vector containing the mix of the input sonic vectors.
+
+    Raises
+    ------
+    ValueError
+        If either sound has more than two channels, which
+        :func:`convert_to_stereo` folds into two: numpy refused three in
+        its own words, a broadcast between a pair and a triple, even with
+        no second sound to mix.
 
     Notes
     -----
@@ -560,19 +568,15 @@ def mix_stereo(
     >>> together.shape
     (2, 44100)
     """
-    # ndim, not len: a two-sample mono vector also has len() == 2, and was
-    # taken for a stereo pair whose channels were then indexed as scalars.
-    first_sonic_vector = np.asarray(first_sonic_vector, dtype=np.float64)
-    if first_sonic_vector.ndim != 2:
-        first_sonic_vector = np.array((first_sonic_vector, first_sonic_vector))
+    # By the shape, not len: a two-sample mono vector also has len() == 2,
+    # and was taken for a stereo pair whose channels were then indexed as
+    # scalars.
+    first_sonic_vector = _two_channels(first_sonic_vector, "mix_stereo")
     if second_sonic_vector is None:
         second_sonic_vector = np.zeros((2, 0))
     else:
-        second_sonic_vector = np.asarray(second_sonic_vector,
-                                         dtype=np.float64)
-        if second_sonic_vector.ndim != 2:
-            second_sonic_vector = np.array((second_sonic_vector,
-                                            second_sonic_vector))
+        second_sonic_vector = _two_channels(second_sonic_vector,
+                                            "mix_stereo")
 
     if len(first_sonic_vector[0]) > len(second_sonic_vector[0]):
         if not end:
@@ -1214,8 +1218,10 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=None):
         If True, sync the final samples.
         If False (default) sync the initial samples.
     offset : list of scalars
-        A list of the offsets for each sonic vectors
-        in seconds.
+        The offset of each sound in seconds: the silence put before it,
+        so that with `end` false it begins that long after the start of
+        the mix. A sound past the end of the list has none, as no sound
+        has by default.
     sample_rate : integer or None
         The sample rate. Only used if offset is supplied. None, the
         default, is the rate :func:`music.get_sample_rate` returns.
@@ -1225,6 +1231,14 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=None):
     S : ndarray
         A numpy array where each value is a PCM sample of
         the resulting sound. No sounds mix to no samples.
+
+    Raises
+    ------
+    ValueError
+        If `offset` is a number rather than a list, holds more offsets
+        than there are sounds, or holds a negative one. Each failed in
+        Python's words or numpy's, and an array of offsets, which is
+        taken now as a list is, failed as numpy's ambiguous truth value.
 
     Notes
     -----
@@ -1257,11 +1271,28 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=None):
         return np.concatenate((pad, sound) if before else (sound, pad),
                               axis=-1)
 
-    if offset:
-        for i, off in enumerate(offset):
-            if off:
-                sonic_vectors[i] = padded(sonic_vectors[i],
-                                          sample_count(off, sample_rate), True)
+    # Read by its shape rather than its truth: an array of offsets has no
+    # single truth value, and numpy refused to give it one.
+    if np.ndim(offset) == 0:
+        if offset:
+            raise ValueError(
+                f"offset is a list of offsets in seconds, one for each "
+                f"sound; got the number {offset!r}")
+        offsets = []
+    else:
+        offsets = list(offset)
+    if len(offsets) > len(sonic_vectors):
+        raise ValueError(
+            f"{len(offsets)} offsets for {len(sonic_vectors)} sounds; give "
+            f"one for each sound, or fewer, and the rest start at zero")
+    for i, off in enumerate(offsets):
+        if off < 0:
+            raise ValueError(
+                f"an offset delays a sound, so it cannot be negative; "
+                f"offset {i} is {off}")
+        if off:
+            sonic_vectors[i] = padded(sonic_vectors[i],
+                                      sample_count(off, sample_rate), True)
 
     max_len = max(s.shape[-1] for s in sonic_vectors)
     return np.sum([padded(s, max_len - s.shape[-1], end)
@@ -1612,7 +1643,6 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
                 d_ = [1 / i for i in d[1:]]
                 # normalize d_ to sum to t_
                 d__ = [t_ * i / sum(d_) for i in d_]
-                # durs = [t_*i/sum(d[1:]) for i in d[1:]]
                 durs.extend(d__)
             else:
                 durs.append(dur / d)
@@ -1633,7 +1663,6 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
                 d_ = [i / sum(d[1:]) for i in d[1:]]
                 # normalize d_ to fit t_
                 d__ = [i * t_ for i in d_]
-                # durs = [t_*i for i in d[1:]]
                 durs.extend(d__)
             else:
                 durs.append(d * dur)

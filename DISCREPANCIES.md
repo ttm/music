@@ -105,6 +105,15 @@ one-pole design does rather than an error in the coefficients, but the
 article does not say so. `tests/test_filter_design.py` pins both the
 accuracy at the bottom of the range and the monotone drift towards Nyquist.
 
+Further up, the drift becomes a difference of kind. The low pass is
+weakest at the Nyquist frequency, where it passes `(1 − x)/(1 + x)` of
+full scale, and that is 3 dB down at `x = 3 − 2√2`: from
+`f_c = ln(3 + 2√2)/2π ≈ 0.2805` the low pass has no 3 dB point at all,
+and is 2.7 dB down at the Nyquist frequency for `f_c = 0.3`, 0.8 dB for
+0.49. The high pass's 3 dB point never reaches 0.2363, however high
+`f_c` goes. Both docstrings say where the 3 dB point drifts to, and the
+tests pin these limits too.
+
 ### `eq:adsr` — where the release lands
 
 The article's release is `a_S (ξ/a_S)^t`, which reaches **ξ** at the end of

@@ -13,6 +13,15 @@
   and `write_wav_stereo` give a mono sound to both channels, where one
   returned two bare envelopes and the other wrote one channel when it did
   not normalize.
+- **Some calls that failed in Python's words, or numpy's, now fail in the
+  package's, as `ValueError`.** A duration that is NaN or infinite is
+  refused by every routine that counts one, where infinity was an
+  `OverflowError`; `iir` refuses an empty `a`, or a number where `a` or
+  `b` belongs, which were an `IndexError` and a `TypeError`; and
+  `mix_stereo`, `mix_many`, `louds` and `tremolos` refuse what each
+  cannot take, where they failed on a broadcast, a subscript or an
+  index. `louds` also takes one `trans_devs`, `alpha` or `method` for
+  every transition, and `mix_many` an array of offsets.
 
 ### Changed
 
@@ -98,6 +107,48 @@
   Python's; a boolean is refused still. Nor do the two oscillators that
   take a phase refuse one in NumPy's single precision, or one of its
   integers, any more.
+- **`louds` read a method given as one string a letter at a time.**
+  `method="linear"` was refused as `'l'`, `alpha=2` was "not
+  subscriptable", and a fourth duration ran off the end of whichever
+  three-entry default was left alone, as "tuple index out of range". One
+  value now serves every transition, as `adsr` takes one `alpha` for its
+  stages and `pan_transitions` one method for its moves, and an argument
+  with too few entries is named. `tremolos`, whose defaults are laid out
+  for two lines of three and four segments, names the argument without a
+  segment, where it failed on the first default a layout outgrew.
+- **`mix_stereo` refused a third channel in numpy's words,** a broadcast
+  between a pair and a triple, even when given no second sound. It
+  follows the rule the other routines that keep two channels follow: a
+  mono sound, or a single row, in both, and more refused, with a pointer
+  to `convert_to_stereo`.
+- **`mix_many` failed on an array of offsets.** It asked `if offset:`,
+  and numpy will not give an array one truth value. It takes any
+  sequence now, and refuses by name a number, more offsets than sounds
+  and a negative offset, which failed as "'int' object is not iterable",
+  "list index out of range" and "negative dimensions are not allowed". A
+  sound past the end of the list has no offset, as the docstring now
+  says, and an offset is the silence put before a sound, which `end`
+  then aligns as it aligns the rest.
+- **`iir` failed on an empty feedforward array as numpy's `IndexError`.**
+  The path short filters take, which 2.0.0 added, reads `a[0]` first;
+  the loop it stands in for gave silence. An empty `a`, or a number or a
+  matrix where `a` or `b` belongs, is refused by name.
+- **A duration of NaN or infinity reached `math.floor`,** which said
+  "cannot convert float NaN to integer", naming neither the duration nor
+  the rate, and raised `OverflowError` for infinity, which a caller
+  catching `ValueError` missed. `sample_count`, which counts every
+  duration, refuses both in its own words.
+- **SSTIM refused a rate, or a limit on samples, in NumPy's integers,**
+  as "must be an integer", which it was: `to_sstim_graph`, the readers
+  and `render_sstim` asked `isinstance(value, int)`, the question the
+  fix above took out of the band-limited routines. They read whole
+  numbers by `_rate.whole` now, and a description written at
+  `np.int64(48000)` is the one written at 48,000.
+- **`CanonicalSynth` rendered 0.35 s a sample short.** It counted a
+  note's samples as the floor of the binary product, which 2.0.0
+  replaced everywhere else with `sample_count`: 15,434 samples where
+  `note()` renders 15,435, for ten durations of whole milliseconds under
+  two seconds. Its notes and its tremolo count as every routine does.
 
 ### Tests
 
@@ -139,6 +190,11 @@
   mono branch keeps its distances in `distance`, not in `duration`, the
   name of a parameter. `perform.py`, run as a script, prints how many
   samples it sang, where it logged "finished" at a level nothing showed.
+- **More leftovers are gone:** commented-out code in `localize2`,
+  `rhythm_to_durations`, `Being.stay`,
+  `InterestingPermutations.get_alternating` and `Notes.make_dict`, among
+  it a question to nobody, "should match self.seqsize ?". One note in
+  `localize2`, on why it doubles no coefficient, stays as a sentence.
 
 ### Documentation
 
@@ -228,6 +284,19 @@
   two, the second through `M.core.V_`, which does not exist. It now
   describes the two it renders. Two examples spelled "synth" with a
   Cyrillic ѕ.
+- **`low_pass` and `high_pass` said the cutoff is where they are 3 dB
+  down,** which holds while it is small. The docstrings now say where
+  the 3 dB point drifts to -- 0.1035 for a low pass at 0.1, 0.094 for a
+  high pass -- that a low pass has none from a cutoff of 0.2805, where
+  even the Nyquist frequency is less than 3 dB down, and that a high
+  pass's never reaches 0.2363. `DISCREPANCIES.md` derives both, and the
+  tests pin them.
+- **Three statements of fact were wrong.** `hz_to_midi` takes a
+  frequency of zero as machine epsilon, 2.2e-16 Hz, a pitch near -660,
+  and said the smallest positive float, near -680; `fir` called its
+  kernel symmetric when given an impulse response, which it uses as it
+  is; and a test said the two-pole designs put their poles at
+  1 - bandwidth, where the article's radius is 1 - 3 bandwidth.
 
 ## [2.0.0] - 2026-11-01
 

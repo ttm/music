@@ -87,6 +87,18 @@ def test_raw_render_produces_audio_of_the_requested_duration():
     assert np.isfinite(samples).all()
 
 
+@pytest.mark.parametrize("duration", [0.35, 0.57, 0.7, 1.13])
+def test_the_synth_counts_a_duration_as_note_does(duration):
+    """It floored the binary product, and 0.35 * 44100 is
+    15434.999999999998: a sample short of the 15,435 note() renders, for
+    ten durations of whole milliseconds under two seconds."""
+    synth = CanonicalSynth()
+    expected = len(music.note(duration=duration))
+    assert len(synth.rawRender(duration=duration)) == expected
+    assert len(synth.tremoloEnvelope()) == expected
+    assert len(synth.render()) == expected
+
+
 def test_render_and_render2_produce_finite_audio():
     synth = CanonicalSynth()
     for method in (synth.render, synth.render2):

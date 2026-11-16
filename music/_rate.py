@@ -168,5 +168,17 @@ def sample_count(duration: Any, sample_rate: Any) -> int:
     A negative duration floors too, away from zero, which is how
     :func:`music.mix_with_offset` has always counted an offset back from
     the end of a sound.
+
+    NaN and infinity are no number of samples, and are refused here for
+    every routine that counts a duration: they reached ``math.floor``,
+    which said "cannot convert float NaN to integer", naming neither the
+    duration nor the rate, and raised ``OverflowError`` for infinity,
+    which a caller catching ``ValueError`` for a bad argument missed.
     """
-    return math.floor(round(duration * sample_rate, 6))
+    product = duration * sample_rate
+    if not math.isfinite(product):
+        raise ValueError(
+            f"a duration is a finite number of seconds, at a finite rate; "
+            f"got {duration!r} s at {sample_rate!r} Hz, which is no number "
+            f"of samples")
+    return math.floor(round(product, 6))

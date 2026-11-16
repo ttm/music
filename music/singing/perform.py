@@ -754,7 +754,6 @@ class Notes:
         # Every name has its accidental, the natural sign included: an
         # unmarked E or B took the key's flat, so K="F" sang B as B flat.
         notes = re.findall(r'[\^=]?[a-g]', '=c^c=d^d=e=f^f=g^g=a^a=b')
-        # notes=re.findall(r'[\^]{0,1}[a-g]{1}','a^abc^cd^def^fg^g')
         notes_ = [note.upper() for note in notes]
         notes__ = [note + "," for note in notes_]
         notes___ = [note + "," for note in notes__]

@@ -14,6 +14,7 @@ from rdflib import Graph, Literal, URIRef
 from rdflib.namespace import RDF, RDFS, XSD
 
 from .. import stimuli
+from ..._rate import whole
 from ._vocabulary import (
     MUSIC, SSTIM, SSTIM_EX, SSTIM_V, bind, check_base, decimal, difference,
     one, significant,
@@ -133,8 +134,12 @@ def checked(generator: Any, parameters: Mapping[str, Any], duration: Any,
         raise ValueError(
             f"not a stimulus a description can be written for: "
             f"{generator!r}; they are {', '.join(STIMULI)}")
-    if (isinstance(sample_rate, bool) or not isinstance(sample_rate, int)
-            or not 8000 <= sample_rate <= 192000):
+    # A whole number, NumPy's included, by the rule `set_sample_rate` and
+    # the band-limited routines follow: asked `isinstance(sample_rate,
+    # int)`, a rate read out of an array was refused as "must be an
+    # integer", which it was.
+    rate = whole(sample_rate)
+    if rate is None or not 8000 <= rate <= 192000:
         raise ValueError(
             f"sample_rate must be an integer from 8000 to 192000; got "
             f"{sample_rate!r}")
@@ -173,8 +178,8 @@ def checked(generator: Any, parameters: Mapping[str, Any], duration: Any,
             values[name] = value
         else:
             values[name] = _number(name, value)
-    _check(generator, values, sample_rate)
-    return SstimStimulus(generator, values, float(duration), sample_rate)
+    _check(generator, values, rate)
+    return SstimStimulus(generator, values, float(duration), rate)
 
 
 def _check(generator: str, values: dict[str, Any], sample_rate: int) -> None:

@@ -132,6 +132,43 @@ def test_the_cutoff_drifts_from_three_decibels_as_it_nears_nyquist(design):
     assert errors[-1] > 0.05
 
 
+@pytest.mark.parametrize("design, cutoff, point", [
+    (music.low_pass, 0.1, 0.1035), (music.low_pass, 0.2, 0.2339),
+    (music.high_pass, 0.1, 0.094), (music.high_pass, 0.2, 0.1617),
+])
+def test_the_three_decibel_point_is_where_the_docstring_puts_it(
+        design, cutoff, point):
+    """The docstrings said the cutoff is where the filter is 3 dB down,
+    with no qualification; they now say where the point drifts to, to
+    the digits they print, and the response crosses 3 dB between the
+    neighbours of the last of them."""
+    below, above = _response(*design(cutoff), [point - 5e-5, point + 5e-5])
+    assert (below - MINUS_THREE_DB) * (above - MINUS_THREE_DB) < 0
+
+
+def test_a_low_pass_from_0_2805_is_never_three_decibels_down():
+    """It is weakest at the Nyquist frequency, where it passes
+    (1 - x) / (1 + x) of full scale, which is 3 dB down at x = 3 - 2 sqrt 2:
+    a cutoff of ln(3 + 2 sqrt 2) / 2 pi. Above that it has no 3 dB point to
+    put anywhere."""
+    threshold = np.log(3 + 2 * np.sqrt(2)) / (2 * np.pi)
+    assert round(threshold, 4) == 0.2805
+    assert _response(*music.low_pass(threshold), 0.5) == pytest.approx(
+        MINUS_THREE_DB)
+    assert _response(*music.low_pass(0.28), 0.5) < MINUS_THREE_DB
+    for cutoff in (0.281, 0.3, 0.4, 0.4999):
+        assert _response(*music.low_pass(cutoff), 0.5) > MINUS_THREE_DB
+
+
+@pytest.mark.parametrize("cutoff", [0.3, 0.4, 0.49, 0.4999])
+def test_the_high_pass_is_3_db_down_below_0_2363_whatever_its_cutoff(
+        cutoff):
+    """Rising through its transition, it is already above 3 dB down at
+    0.2363, so its 3 dB point lies below: the limit it approaches as the
+    pole goes to exp(-pi) is 0.2362."""
+    assert _response(*music.high_pass(cutoff), 0.2363) > MINUS_THREE_DB
+
+
 def test_the_low_pass_passes_low_and_stops_high():
     a, b = music.low_pass(0.05)
     assert _response(a, b, 0.001) > 0.99

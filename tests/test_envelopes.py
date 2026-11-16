@@ -12,6 +12,7 @@ the depth, and compare `tremolos` against `tremolo` called directly.
 See MUTATION_AUDIT.md for the run these come from.
 """
 
+import re
 import warnings
 
 import numpy as np
@@ -137,6 +138,48 @@ def test_tremolos_holds_a_short_row_at_its_last_value():
                              sample_rate=8000)
     held = np.hstack((short, np.ones(160 - len(short)) * short[-1]))
     assert np.allclose(got, held * long_row)
+
+
+@pytest.mark.parametrize("given, name, segment, line", [
+    # A fourth segment, past the three of the defaults' first line.
+    (dict(durations=((.01,) * 4,)), "tremolo_freqs", 3, 0),
+    # A third line, past the defaults' two.
+    (dict(durations=((.01,), (.01,), (.01,))), "tremolo_freqs", 0, 2),
+    # The frequencies given in full and the depths left to the defaults.
+    (dict(durations=((.01,) * 4,), tremolo_freqs=((5,) * 4,)),
+     "max_db_devs", 3, 0),
+    (dict(durations=((.01,) * 4,), tremolo_freqs=((5,) * 4,),
+          max_db_devs=((6,) * 4,)), "alpha", 3, 0),
+    (dict(durations=((.01,) * 4,), tremolo_freqs=((5,) * 4,),
+          max_db_devs=((6,) * 4,), alpha=((1,) * 4,)),
+     "waveform_tables", 3, 0),
+    # A flat list where a line of segments belongs.
+    (dict(durations=((.01, .01),), tremolo_freqs=(5, 6)),
+     "tremolo_freqs", 0, 0),
+    (dict(number_of_samples=((80,) * 5,)), "tremolo_freqs", 3, 0),
+])
+def test_tremolos_names_the_argument_without_a_segment(given, name, segment,
+                                                       line):
+    """Every argument is laid out as the durations are, and every default
+    for two lines of three and four segments: a layout with more failed
+    on the first default it outgrew, an IndexError naming no argument,
+    and a flat list as "'int' object is not subscriptable"."""
+    with pytest.raises(ValueError, match="^" + re.escape(
+            f"tremolos takes {name} laid out as its durations are, a value "
+            f"for each segment of each line; it has none for segment "
+            f"{segment} of line {line}") + "$"):
+        music.tremolos(sample_rate=8000, **given)
+
+
+def test_tremolos_renders_a_layout_of_its_own_given_in_full():
+    four = music.tremolos(durations=((.01,) * 4,),
+                          tremolo_freqs=((5,) * 4,), max_db_devs=((6,) * 4,),
+                          alpha=((1,) * 4,),
+                          waveform_tables=((WAVEFORM_SINE,) * 4,),
+                          sample_rate=8000)
+    one = music.tremolo(duration=.01, tremolo_freq=5, max_db_dev=6,
+                        sample_rate=8000)
+    assert np.array_equal(four, np.hstack([one] * 4))
 
 
 # Test the distortion index, which the article gives no tremolo

@@ -7,6 +7,7 @@ their inverse transform, so a *flat* response low-passed the signal instead
 of leaving it alone.
 """
 
+import re
 import time
 
 import numpy as np
@@ -156,6 +157,24 @@ def test_iir_refuses_what_it_cannot_filter(signal, a, b, message):
     """
     with pytest.raises(ValueError, match=message):
         music.iir(signal, a, b)
+
+
+@pytest.mark.parametrize("a, b, message", [
+    ([], [1.], "a must hold at least one feedforward coefficient: with "
+               "none, nothing of the signal reaches the output"),
+    (.5, [1.], "a is a sequence of coefficients; got an array of shape ()"),
+    ([1.], 1., "b is a sequence of coefficients; got an array of shape ()"),
+    ([[1., .5]], [1.], "a is a sequence of coefficients; got an array of "
+                       "shape (1, 2)"),
+])
+def test_iir_refuses_coefficients_that_are_not_a_sequence(a, b, message):
+    """The path short filters take reads ``a[0]`` before anything else,
+    so an empty ``a`` was numpy's IndexError, where the loop that path
+    stands in for gave silence; a number for ``a`` was Python's "len() of
+    unsized object", a number for ``b`` numpy's "too many indices", and a
+    row of coefficients multiplied the signal by the whole row."""
+    with pytest.raises(ValueError, match=f"^{re.escape(message)}$"):
+        music.iir(np.ones(4), a, b)
 
 
 def test_iir_matches_the_recurrence_it_documents():

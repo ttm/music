@@ -180,7 +180,7 @@ Where things live
      - The ``CanonicalSynth``, ``IteratorSynth`` and ``Being``
        synthesizer classes
 
-The whole public API is re-exported flat from the top level, so
+Everything in the :doc:`api` is re-exported flat from the top level, so
 ``music.note(...)`` works regardless of which submodule defines it.
 
 .. toctree::

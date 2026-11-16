@@ -960,6 +960,50 @@ sync gave the record its nineteen controlled subjects and the release
 notes, all 54 of their bold headlines intact, 28 of them opening with
 code, verified through the record and its DataCite export.
 
+## Completed: a review after 2.0.0, 2026-11-16
+
+A third reading of the code and of the documentation looked for what the
+sweeps and the audits cannot see: a routine handed a sound in a layout it
+does not expect, checks made in another order than the docstring
+promises, state the package changes outside itself, and prose that names
+what is not there. Each is in CHANGELOG.md under Unreleased:
+
+- **Sounds in the wrong layout came back wrong, or failed in another
+  library's words.** `adsr_stereo` returned two bare envelopes for a
+  mono sound; `write_wav_mono` wrote a stereo sound as a file two frames
+  long, a channel for each sample, and failed on one longer than the
+  1,024 channels libsndfile allows as a "Format not recognised";
+  `write_wav_stereo` wrote a mono sound in one channel when it did not
+  normalize it, and three channels as a stereo file of three; and
+  `normalize_stereo` normalized two of three channels, and stopped at a
+  single row with numpy's `IndexError`. One helper now says, for every
+  routine that keeps two channels, what it takes: a mono sound, or a
+  single row, in both of them, and nothing with more.
+- **Checks made out of the order promised.** `sing` with eCantorix found
+  the engine before it read the score, so a wrong melody was reported as
+  a missing engine, and a duration written as a string went into the
+  score unread.
+- **Refusals in numpy's words, or wrong ones, or none:** `mix_with_offset`
+  for an offset reaching back past the first sound; `Sequencer.add_note`
+  for a duration below zero or not finite; `bandlimited_note` for an
+  unknown waveform when it renders no samples; and the band-limited
+  oscillators and `render_oversampled`, which refused NumPy's integers in
+  words that were true of them.
+- **The package configured its caller's logging.** Two debugging lines
+  spoke for the root logger, which gave it a handler, so a program that
+  mixed a sound before it configured its logging found its configuration
+  ignored.
+- **Prose naming what is not there:** keyword arguments the routines do
+  not take, which a test now looks for in every docstring's prose;
+  `spatial_motion`'s claim that the package has no HRTF; examples showing
+  another routine, or playing one table where they list four; and a
+  reference to the wrong book.
+
+The ten areas whose code this changed were measured again, and
+`MUTATION_AUDIT.md` has the runs, with a caution about them: twice a run
+of eight workers counted a mutant it accepts as equivalent as detected,
+and it survived every run of its own. Why was not found.
+
 ## Open after the September 2026 audits
 
 What the audits found and did not fix, and why. Each is recorded where

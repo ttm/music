@@ -457,12 +457,13 @@ either documented in the code or tracked in the issue list.
   `tests/test_degenerate.py` sweeps as it sweeps the zero duration.
 
 - **An offset below one sample is discarded rather than rounded.**
-  `mix_with_offset` takes seconds and delays by `int(seconds * rate)`, so
-  half a sample is no offset at all, and a caller sweeping an offset finely
-  gets a staircase rather than a sweep. Honest for a routine that only
-  indexes, but it puts comb filtering and fractional delays out of reach
-  this way. Pinned rather than fixed: rounding would be a different
-  routine and resampling a much larger one.
+  `mix_with_offset` takes seconds and delays by the whole samples they
+  last, counted down, so half a sample is no offset at all, and a caller
+  sweeping an offset finely gets a staircase rather than a sweep. Honest
+  for a routine that only indexes, but it puts comb filtering and
+  fractional delays out of reach this way. Pinned rather than fixed:
+  rounding would be a different routine and resampling a much larger
+  one.
 
 ### Scope and dependencies
 

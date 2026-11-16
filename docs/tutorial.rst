@@ -371,14 +371,16 @@ peal is the melody, and its symmetry is audible:
 
    peal = music.PlainChanges(4)
    rows = peal.act([220, 275, 330, 440])
-   notes = [music.note(freq, 0.2) for row in rows for freq in row]
+   notes = [music.adsr(sonic_vector=music.note(freq, 0.2))
+            for row in rows for freq in row]
    music.write_wav_mono(music.horizontal_stack(*notes), "campanology.wav")
 
-``rows`` holds all 24 permutations of the four frequencies, in ringing
-order — ``[220, 275, 330, 440]``, ``[275, 220, 330, 440]``,
-``[275, 330, 220, 440]``, and so on. ``act`` will permute any sequence you
-hand it, so the same structure can order durations, amplitudes, or stereo
-positions rather than pitches.
+Each note is shaped, as every melody on this page is, so that the
+changes ring rather than click. ``rows`` holds all 24 permutations of the
+four frequencies, in ringing order — ``[220, 275, 330, 440]``,
+``[275, 220, 330, 440]``, ``[275, 330, 220, 440]``, and so on. ``act``
+will permute any sequence you hand it, so the same structure can order
+durations, amplitudes, or stereo positions rather than pitches.
 
 :class:`music.InterestingPermutations` gives the other groups — rotations,
 reflections, alternating and dihedral subgroups — with the same interface.

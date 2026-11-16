@@ -297,7 +297,8 @@ Permutation groups and the peals of campanology, acted on any domain you like
 ```python
 peal = music.PlainChanges(4)                      # every permutation, once
 rows = peal.act([220, 275, 330, 440])
-notes = [music.note(freq, duration=0.2) for row in rows for freq in row]
+notes = [music.adsr(sonic_vector=music.note(freq, duration=0.2))
+         for row in rows for freq in row]          # shaped, as above
 music.write_wav_mono(music.horizontal_stack(*notes), "campanology.wav")
 ```
 
@@ -416,8 +417,8 @@ at the revision this package is pinned to, into your user cache directory
 Makefile, so it also needs `git`, `make`, `perl`, `espeak`, `abc2midi` (the
 `abcmidi` package) and `sox` on the system. It needs the Perl modules
 `MIDI`, `Math::FFT`, `URI::Escape` and `Digest::SHA` too
-(`cpan MIDI Math::FFT URI::Escape`). `setup_engine()` says which of these
-are missing.
+(`cpan MIDI Math::FFT URI::Escape Digest::SHA`). `setup_engine()` says
+which of these are missing.
 
 To compare the two:
 [singing_backends](https://github.com/ttm/music/tree/master/examples/singing_backends.py)
@@ -476,10 +477,10 @@ The modules are:
 ## Plans
 
 See [the findings and prioritized roadmap](ROADMAP.md) for the September
-2026 review, the correctness patches since 1.8.1, the review for 2.0.0,
-the [mutation audits](MUTATION_AUDIT.md) of all nineteen areas of the
-package, every module it has, and the band-limited synthesis and SSTIM
-work since 1.10.0.
+2026 review, the correctness patches since 1.8.1, the review for 2.0.0
+and the one after it, the [mutation audits](MUTATION_AUDIT.md) of all
+nineteen areas of the package, every module it has, and the band-limited
+synthesis and SSTIM work since 1.10.0.
 
 Concrete things the code itself is waiting for, rather than a wish list:
 

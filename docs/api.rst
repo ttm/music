@@ -383,9 +383,15 @@ Deprecated names
 
 Second names for routines that have better ones. Each still works, warns
 with a ``DeprecationWarning`` naming its replacement, and will be removed
-in a major release. Parameters renamed for their unit -- ``attack_ms`` and
-the rest of ``adsr``'s, ``cross_fade``'s ``duration_ms`` and the writers'
-``fades_ms`` -- still take their old names the same way.
+in a major release. Renamed parameters still take their old names the
+same way: those renamed for their unit -- ``attack_ms`` and the rest of
+``adsr``'s and ``adsr_stereo``'s, ``cross_fade``'s ``duration_ms`` and the
+writers' ``fades_ms`` -- and those renamed to the names their siblings
+give them -- ``adsr``'s ``duration``, ``note_with_two_vibratos``'
+``max_pitch_dev``, ``secondary_max_pitch_dev`` and
+``secondary_vibrato_waveform_table``, ``note_with_two_vibratos_glissando``'s
+two vibrato tables, and ``note_with_vibrato_seq_localization``'s
+``vibratos_max_pitch_devs``.
 
 .. autosummary::
    :toctree: generated

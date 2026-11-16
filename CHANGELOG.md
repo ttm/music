@@ -109,6 +109,15 @@
   was not; `tests/test_docstring_signature.py` checks both now, leaving
   out the examples and the mathematics, where `name=` belongs to another
   routine or a sum.
+- **The ten areas of the mutation audit whose code this changed were
+  measured again,** over that code. A first run found casts to `float64`
+  that the new channel helper made twice, which went, and that
+  `mix_with_offset`'s debug logging, whose mutants the `utils` audit had
+  accepted, configured the caller's logging: see Fixed. Of the 8,591
+  mutants the second run made, the 328 that survive are the kinds
+  `MUTATION_AUDIT.md` accepts. Twice a mutant it accepts as equivalent
+  was counted as detected in a run of eight workers and survived every
+  run of its own; the file says so, and counts both as surviving.
 - **Nothing in the package speaks for the root logger,** which a test
   checks of every module, and a program that mixes a sound and then
   configures its logging gets the configuration it asked for.
@@ -194,11 +203,22 @@
   all four to the right, where they now run from left to right; and `am`,
   `fade`, `trill`, `gaussian_noise` and `silence` had words missing, or
   wrong types.
+- **The change-ringing examples shape their notes,** in the README, the
+  tutorial and `PlainChanges`' docstring, as the Listen page's always
+  did: a bare note ends wherever its phase lands, and joining them
+  clicks, which the tutorial says a few sections before its peal.
 - **The structures cite the book they ring.** `plain_changes` cited
   Stedman's *Campanalogia* at the address of *Tintinnalogia*, and
   `Peals` carried a developer's notes ("Wikipedia seemed ok last time")
   where its references belong. Both cite *Tintinnalogia*, as the named
   peals do.
+- **`help(music)` says what the package is,** rather than "Top-level
+  package for basic audio synthesis utilities", and the structures
+  packages have docstrings of their own. The front page says the API
+  reference, rather than the whole API, is importable from `music`.
+- **The API reference lists every renamed parameter that still takes
+  its old name,** not only those renamed for their unit, and the README's
+  `cpan` command installs all four Perl modules it names.
 - **`isynth.py` played one table, not four.** It set `tab_sequence`,
   and `CanonicalSynth` reads `table`, so every note was the default
   triangle; it sets `table_sequence`, and the notes cycle through the

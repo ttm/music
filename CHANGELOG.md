@@ -175,6 +175,15 @@
 - **A NumPy integer is a whole number to every routine that takes one,**
   and `_rate.whole` is the one rule: a boolean, a float and a string are
   refused by it.
+- **The six areas of the mutation audit whose code the second reading
+  changed were measured again,** `foundations`, `utils`, `envelopes`,
+  `filters`, `legacy` and `sstim`, over that code. A first run found six
+  mutants that made `tremolos`' refusal name another argument, which no
+  test refused through, and one survivor the file had accepted that is
+  not equivalent: `mix_stereo` padding no second sound to one sample, so
+  that an empty sound mixed alone came back one sample long. Tests detect
+  them now. Of the 7,378 mutants of the latest runs, the 729 that survive
+  are the kinds `MUTATION_AUDIT.md` accepts.
 
 ### Maintenance
 

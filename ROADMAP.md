@@ -1004,6 +1004,40 @@ The ten areas whose code this changed were measured again, and
 of eight workers counted a mutant it accepts as equivalent as detected,
 and it survived every run of its own. Why was not found.
 
+A second reading the same day looked where the first had not: arguments
+given in a shape a routine does not expect, values no duration can be,
+and the numbers the documentation states.
+
+- **Shapes met in another library's words.** `louds` read a method
+  given as one string a letter at a time, and ran off the end of its own
+  three-entry defaults at a fourth transition, as `tremolos` did of its
+  two lines; `mix_stereo` met a third channel as a broadcast; `mix_many`
+  met an array of offsets as numpy's ambiguous truth value; and `iir`
+  met an empty feedforward array as an `IndexError`, on the path 2.0.0
+  added for short filters. Each now takes what it can and names what it
+  cannot.
+- **No number of samples.** NaN and infinity reached `math.floor` from
+  every routine that counts a duration; `sample_count` refuses them.
+- **Rules left behind.** `CanonicalSynth` still floored the binary
+  product 2.0.0 replaced everywhere else, and rendered 0.35 s a sample
+  short; and SSTIM still asked `isinstance(rate, int)`, the question the
+  first reading took out of the band-limited routines, so a rate read out
+  of an array was refused as not an integer.
+- **Numbers the documentation got wrong.** The one-pole filters' cutoff
+  is their 3 dB point only while it is small, and from 0.2805 a low pass
+  has none; `hz_to_midi`'s floor is machine epsilon, near -660, not the
+  smallest float, near -680.
+
+Two sweeps of the whole API found nothing further: every routine that
+takes a `sample_rate` renders the same given one as under
+`set_sample_rate`, and none changes an array its caller passed in. One
+suspicion did not hold: the two-pole designs' radius, 1 - 3 bandwidth,
+turns negative past a bandwidth of 1/3, but measured, a band centred at
+a quarter of the rate still peaks there at any width, and what goes
+wrong at other centres is what their docstrings already say. The six
+areas whose code this changed were measured again, and
+`MUTATION_AUDIT.md` has the runs.
+
 ## Open after the September 2026 audits
 
 What the audits found and did not fix, and why. Each is recorded where

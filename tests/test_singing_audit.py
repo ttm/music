@@ -20,6 +20,10 @@ import music.singing.perform as perform
 from _singing_stub import fake_run
 
 
+def _exactly(message):
+    return "^" + re.escape(message) + "$"
+
+
 @pytest.fixture
 def engine(tmp_path, monkeypatch):
     """A stand-in engine: a Makefile, a cache, and every program found."""
@@ -81,6 +85,44 @@ def test_a_note_of_no_length_is_refused():
     with pytest.raises(ValueError, match="^a note cannot last no time; "
                        "got a duration of 0$"):
         perform.translate_to_abc((0,), (0,), 60)
+
+
+@pytest.mark.parametrize("duration", ["x", "", "3/0", "/00", "1.5"])
+def test_a_length_abc_cannot_read_is_refused_rather_than_written(duration):
+    """A string went into the score as it was given; an empty one and one
+    over zero failed reading an int and dividing by zero."""
+    with pytest.raises(ValueError, match=_exactly(
+            f'{duration!r} is not a length ABC can read, such as "3/2" or '
+            f'"/2"')):
+        perform.translate_to_abc((0,), (duration,), 60)
+
+
+@pytest.mark.parametrize("duration", ["0", "0/2", "00"])
+def test_a_written_length_of_nothing_is_refused_as_zero(duration):
+    with pytest.raises(ValueError, match=_exactly(
+            f"a note cannot last no time; got a duration of {duration!r}")):
+        perform.translate_to_abc((0,), (duration,), 60)
+
+
+@pytest.mark.parametrize("backend", ["ecantorix", "psola"])
+@pytest.mark.parametrize("notes, durs, message", [
+    ((0, 2), (1,), "got 2 notes and 1 durations; there must be exactly "
+                   "one duration per note"),
+    ((50,), (1,), "MIDI notes [110] are outside the 12 to 96 that ABC "
+                  "names here; move them, or change reference=60"),
+    ((0,), ("x",), "'x' is not a length ABC can read, such as \"3/2\" or "
+                   "\"/2\""),
+])
+def test_a_wrong_melody_is_refused_before_the_singer_is_looked_for(
+        tmp_path, monkeypatch, backend, notes, durs, message):
+    """With no engine installed, eCantorix said the engine was missing:
+    it wrote the score only once it had found one."""
+    monkeypatch.setenv(paths.ENV_VAR, str(tmp_path / "nowhere"))
+    monkeypatch.setattr(perform.shutil, "which", lambda name: None)
+    with pytest.raises(ValueError, match=_exactly(message)):
+        perform.sing(text=" ".join(["la"] * len(notes)), notes=notes,
+                     durs=durs, backend=backend)
+    assert not (tmp_path / "nowhere").exists()
 
 
 def test_the_test_song_is_a_score_abc_can_read(engine, monkeypatch):

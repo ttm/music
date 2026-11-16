@@ -191,7 +191,7 @@ def harmonic_series(partials: int = 20) -> tuple[float, ...]:
     Returns
     -------
     tuple of floats
-        Semitones, with the fractions that make the series inequal to any
+        Semitones, with the fractions that set the series apart from any
         tempered scale.
 
     Raises

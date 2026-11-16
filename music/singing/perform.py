@@ -3,7 +3,6 @@
 configuration it writes for the eCantorix backend."""
 
 import re
-import logging
 import math
 import os
 import shutil
@@ -22,7 +21,6 @@ from .paths import (ENGINE_MARKER, cache_dir, engine_dir, is_engine,
                     require_system_dependencies)
 
 
-# def sing(text="ba-na-nin-ha pra vo-cê",
 #: What an espeak voice name is made of: a language such as ``en`` or
 #: ``pt-br``, and a variant after ``+``. ``lang`` is written into the
 #: configuration the engine runs as Perl, so nothing else may reach it.
@@ -196,11 +194,13 @@ def sing(text="Mar-ry had a litt-le lamb",
     # The tempo is read here for both backends: eCantorix handed a Q of
     # 0 to abc2midi, which called it malformed and stopped the build.
     unit_seconds(L, Q)
+    # The notes the score is written with, so that the two backends refuse
+    # the same melodies, and before either needs anything installed. The
+    # eCantorix branch wrote the score only after it had found the engine,
+    # so a wrong melody without one was reported as the engine missing.
+    translate_to_abc(notes, durs, reference)
     if backend == 'psola':
         from . import psola
-        # The notes the score could be written with, as eCantorix's are,
-        # so that the two backends refuse the same melodies.
-        translate_to_abc(notes, durs, reference)
         return _at_the_default_rate(psola.sing(
             text, notes, durs, M=M, L=L, Q=Q, reference=reference,
             lang=lang, transpose=transpose,
@@ -436,12 +436,13 @@ def translate_to_abc(notes, durs, reference):
     Raises
     ------
     ValueError
-        If there is not exactly one duration per note, or a numeric one
-        is zero. Zipping them silently discarded the tail of whichever
-        was longer, so five notes with three durations produced a
-        three-note score -- and
-        ``write_abc`` appends the lyric line separately, which then
-        pointed at notes that were no longer there.
+        If there is not exactly one duration per note, a duration is zero
+        or a string ABC cannot read as a length, or a note falls outside
+        MIDI 12 to 96. Zipping them silently discarded the tail of
+        whichever was longer, so five notes with three durations produced
+        a three-note score -- and ``write_abc`` appends the lyric line
+        separately, which then pointed at notes that were no longer
+        there. A string was written into the score as it was given.
 
     Examples
     --------
@@ -560,7 +561,11 @@ def _note_length(duration):
         return 1 / -length if length < 0 else length
     text = str(duration).replace('-', '/')
     written = _ABC_LENGTH.fullmatch(text)
-    if not written:
+    # The pattern also matches nothing at all, and a denominator of zero
+    # is no length either: they failed reading an int, and dividing by
+    # zero.
+    if (not text or not written
+            or (written.group(3) and not int(written.group(3)))):
         raise ValueError(
             f'{duration!r} is not a length ABC can read, such as "3/2" or '
             f'"/2"')
@@ -717,6 +722,9 @@ def _abc_length(duration):
     already, with ``-`` read as ``/``.
     """
     if not isinstance(duration, Real):
+        # Read, so that what ABC cannot read, and zero, are refused here
+        # rather than written into the score.
+        _note_length(duration)
         text = str(duration).replace('-', '/')
         return '' if text == '1' else text
     length = _note_length(duration)
@@ -790,5 +798,4 @@ class Notes:
 converter = Notes()
 
 if __name__ == '__main__':  # pragma: no cover - a manual smoke run
-    narray = sing()
-    logging.info("finished")
+    print(f"sang {sing().shape[-1]} samples")

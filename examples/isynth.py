@@ -7,7 +7,10 @@ freqs = sum(pe3.act([220, 440, 330]), [])
 
 isynth = music.legacy.IteratorSynth()
 isynth.fundamental_frequency_sequence = freqs
-isynth.tab_sequence = [tables.sine, tables.triangle, tables.square, tables.saw]
+# `table`, the attribute CanonicalSynth reads: this set `tab`, which
+# nothing reads, so every note was the default triangle.
+isynth.table_sequence = [tables.sine, tables.triangle, tables.square,
+                         tables.saw]
 
 pcm_samples = music.utils.horizontal_stack(*[isynth.renderIterate()
                                              for i in range(len(freqs))])

@@ -783,15 +783,16 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
     azimuth moves at a constant rate, so the trajectory is triangular in
     angle and the source neither pauses nor lurches at the turns.
 
-    **There is no head-related transfer function here**, as there is
-    none anywhere in this package. Interaural time and intensity
-    differences place a source on the left-right axis and nothing else:
-    elevation, and whether the source is in front of or behind the
-    listener, are cues an HRTF carries and this does not. An orbit
-    rendered here is heard as a lateral sweep rather than as a circle
-    around the head, and an orbit between 90 and -90 degrees -- ahead
-    and behind -- renders no movement whatsoever, because those two
+    **There is no head-related transfer function here.** Interaural time
+    and intensity differences place a source on the left-right axis and
+    nothing else: elevation, and whether the source is in front of or
+    behind the listener, are cues an HRTF carries and this does not. An
+    orbit rendered here is heard as a lateral sweep rather than as a
+    circle around the head, and an orbit between 90 and -90 degrees --
+    ahead and behind -- renders no movement whatsoever, because those two
     positions differ only in the cue that is missing.
+    :func:`music.localize_hrtf` applies a measured one, for a source that
+    holds still in one direction, which :func:`music.hrir` reads.
 
     References
     ----------

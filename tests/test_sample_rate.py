@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 
 import music
-from music._rate import sample_count
+from music._rate import sample_count, whole
 from music.core.synths.mipmap import MipmapOscillator
 from music.core.synths.polyblep import PolyBLEPOscillator
 from music.singing import perform
@@ -86,6 +86,19 @@ def test_a_numpy_integer_is_a_whole_number():
     with music.set_sample_rate(np.int64(RATE)) as rate:
         assert type(rate) is int
         assert music.get_sample_rate() == RATE
+
+
+@pytest.mark.parametrize("value, number", [
+    (48000, 48000), (0, 0), (-3, -3), (np.int64(48000), 48000),
+    (np.uint8(7), 7), (True, None), (False, None), (np.True_, None),
+    (48000.0, None), (np.float64(2), None), ("2", None), (None, None),
+])
+def test_a_whole_number_is_an_int_and_nothing_else_is(value, number):
+    """One of NumPy's integers is a whole number without being an `int`,
+    which is all `isinstance(value, int)` asked; a boolean is an `int`
+    and counts nothing."""
+    assert whole(value) == number
+    assert type(whole(value)) is type(number)
 
 
 def test_a_new_thread_starts_at_the_default():

@@ -390,7 +390,7 @@ def test_plain_changes_act_all_records_every_peal():
 # --------------------------------------------------------------------------
 
 def test_noise_rejects_an_unknown_colour():
-    with pytest.raises(ValueError, match="Set ntype"):
+    with pytest.raises(ValueError, match="noise_type is a number"):
         music.noise("chartreuse")
 
 

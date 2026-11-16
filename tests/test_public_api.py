@@ -293,7 +293,7 @@ def test_note_with_doppler_renders_both_channel_modes(stereo):
 
 
 def test_noise_accepts_a_numeric_gain_per_octave():
-    """The docstring documents ntype=3.5 as 3.5 dB per octave."""
+    """The docstring documents noise_type=3.5 as 3.5 dB per octave."""
     np.random.seed(0)
     out = music.noise(3.5, duration=0.5)
     assert out.size > 0

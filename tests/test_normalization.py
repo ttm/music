@@ -4,6 +4,8 @@
 were untested, and they behave quite differently from one another.
 """
 
+import re
+
 import numpy as np
 import pytest
 
@@ -209,3 +211,28 @@ def test_the_stereo_writer_accepts_a_mono_vector(tmp_path):
     restored = music.read_audio(str(path))
     assert restored.shape[0] == 2
     assert np.allclose(restored[0], restored[1])
+
+
+def test_a_single_row_given_to_the_stereo_normalizer_is_mono_too():
+    """It stopped in an IndexError reading the second channel."""
+    signal = np.array([0.5, -0.3, 0.9, -0.7, 0.2])
+    np.testing.assert_array_equal(normalize_stereo(signal[np.newaxis]),
+                                  normalize_stereo(signal))
+
+
+@pytest.mark.parametrize("shape", [(3, 5), (2, 2, 5)])
+def test_the_stereo_normalizer_refuses_what_is_not_stereo(shape):
+    """Three channels came back three, the first two normalized and the
+    third left as it was."""
+    signal = np.random.default_rng(1).uniform(-0.5, 0.5, shape)
+    with pytest.raises(ValueError, match=re.escape(
+            f"normalize_stereo takes a mono or a stereo sound; got an array "
+            f"of shape {shape}")):
+        normalize_stereo(signal)
+
+
+def test_the_stereo_normalizer_leaves_its_argument_alone():
+    signal = np.array([[0.2, 0.4, 0.6], [0.1, -0.1, 0.3]])
+    before = signal.copy()
+    normalize_stereo(signal)
+    np.testing.assert_array_equal(signal, before)

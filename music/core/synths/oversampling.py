@@ -16,7 +16,7 @@ from typing import Any
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from ..._rate import resolve_rate, sample_count
+from ..._rate import resolve_rate, sample_count, whole
 
 
 def render_oversampled(
@@ -87,25 +87,24 @@ def render_oversampled(
     >>> signal.shape
     (960,)
     """
-    sample_rate = resolve_rate(sample_rate)
-    if (not isinstance(sample_rate, int) or isinstance(sample_rate, bool)
-            or sample_rate <= 0):
+    # Whole numbers, NumPy's included: `isinstance(..., int)` refused a
+    # rate, a count or a factor that came out of an array, each in words
+    # that were true of it.
+    rate = whole(resolve_rate(sample_rate))
+    if rate is None or rate <= 0:
         raise ValueError("sample_rate must be a positive integer")
-    if (not isinstance(factor, int) or isinstance(factor, bool)
-            or not 2 <= factor <= 16):
+    times = whole(factor)
+    if times is None or not 2 <= times <= 16:
         raise ValueError("factor must be an integer between 2 and 16")
-    if number_of_samples is not None and (
-            not isinstance(number_of_samples, int)
-            or isinstance(number_of_samples, bool)
-            or number_of_samples < 0):
+    given = whole(number_of_samples)
+    if number_of_samples is not None and (given is None or given < 0):
         raise ValueError("number_of_samples must be nonnegative integer")
     if not np.isfinite(duration) or duration < 0:
         raise ValueError("duration must be finite and nonnegative")
-    count = (number_of_samples if number_of_samples is not None
-             else sample_count(duration, sample_rate))
+    count = sample_count(duration, rate) if given is None else given
     if count == 0:
         return np.empty(0, dtype=np.float64)
-    if count * factor > 50_000_000:
+    if count * times > 50_000_000:
         raise ValueError("oversampled render exceeds 50 million frames")
 
     try:
@@ -116,17 +115,17 @@ def render_oversampled(
             "pip install 'music[antialias]'") from exc
 
     raw = np.asarray(
-        renderer(number_of_samples=count * factor,
-                 sample_rate=sample_rate * factor, **parameters),
+        renderer(number_of_samples=count * times,
+                 sample_rate=rate * times, **parameters),
         dtype=np.float64)
-    if raw.ndim not in (1, 2) or raw.shape[-1] != count * factor:
+    if raw.ndim not in (1, 2) or raw.shape[-1] != count * times:
         raise ValueError(
             "renderer must return (N,) or (channels, N), with "
             "exactly number_of_samples on the last axis")
     if not np.isfinite(raw).all():
         raise ValueError("renderer returned non-finite audio samples")
-    result = resample_poly(raw, up=1, down=factor, axis=-1,
-                           window=_decimation_filter(factor))
+    result = resample_poly(raw, up=1, down=times, axis=-1,
+                           window=_decimation_filter(times))
     return np.asarray(result[..., :count], dtype=np.float64)
 
 

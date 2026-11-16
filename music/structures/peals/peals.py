@@ -78,12 +78,16 @@ class Peals(InterestingPermutations, GenericPeal):
 
     Notes
     -----
-    Core reference:
-    - http://www.gutenberg.org/files/18567/18567-h/18567-h.htm
+    The peals are rung as Tintinnalogia describes them [1]_, and each
+    method's notes say how the tests check them against its tables. A peal
+    here is the rule that rings it rather than a check of its truth: a
+    peal is true when no row repeats, which the tests check of each.
 
-    Also check peal rules, such as conditions for trueness.
-    - Wikipedia seemed ok last time.
-
+    References
+    ----------
+    .. [1] Duckworth, Richard, and Fabian Stedman. *Tintinnalogia, or,
+           The Art of Ringing*, 1668.
+           https://www.gutenberg.org/files/18567/18567-h/18567-h.htm
 
     Examples
     --------
@@ -109,8 +113,6 @@ class Peals(InterestingPermutations, GenericPeal):
         # A mapping of name -> list of permutations, which is what
         # GenericPeal.act and act_all index into.
         self.peals = {}
-        # Base peals can be created here when implementations become available
-        # self.transpositions_peal(self.peals["rotation_peal"][1])
 
     def transpositions_peal(self, permutation, peal_name="transposition_peal"):
         """Generates a peal from transpositions of a permutation.

@@ -218,7 +218,6 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
         # See the note in music/core/synths/noises.py for why empty
         # rather than a refusal.
         return np.zeros((2, 0)) if stereo else np.array([])
-    #  samples = np.arange(number_of_samples)
     length = len(waveform_table)
     speed = 331.3 + .606 * air_temp
 
@@ -256,11 +255,13 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
             tr = np.hstack((np.zeros(-int(lambda_itd)), sr))
         result = np.vstack((tl, tr))
     else:
-        duration = np.sqrt(x ** 2 + y ** 2)
-        iid = 1 / duration
+        # The distance from the centre of the head at each sample, which
+        # was held in `duration`.
+        distance = np.sqrt(x ** 2 + y ** 2)
+        iid = 1 / distance
 
         # velocities at each point
-        vs = sample_rate * (duration[1:] - duration[:-1])
+        vs = sample_rate * (distance[1:] - distance[:-1])
         f_ = freq * speed / (speed + vs)
 
         gamma = _integrate_phase(f_ * length / sample_rate,
@@ -278,7 +279,7 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
     r"""
     Synthesize a musical note with FM synthesis.
 
-    Set fm=0 or max_fm_deviation=0 (or use synth_note()) for a note without FM.
+    Set fm=0 or max_fm_deviation=0 (or use note()) for a note without FM.
     A FM is a linear oscillatory pattern of frequency [1].
 
     Parameters
@@ -391,7 +392,7 @@ def note_with_phase(freq: float = 220, duration: float = 2,
     Synthesize a basic musical note with a phase.
 
     It's useful in more complex synthesis routines. For synthesizing a musical
-    note directly, you probably want to use note() and disconsider the phase.
+    note directly, you probably want to use note() and ignore the phase.
 
     Parameters
     ----------
@@ -802,7 +803,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         The y positions at each end of the transitions.
     method : list of strings
         An entry for each transition of location: 'exp' or 'exponential'
-        for exponential and 'lin' (default) or 'linear' for linear. An
+        for exponential and 'lin' or 'linear' for linear. An
         exponential transition moves each coordinate by a constant ratio,
         so a coordinate that changes may not start or end at zero or
         change sign; one that stays the same, zero included, is held.
@@ -945,9 +946,6 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
 
     # Doppler/location localization contributions
     speed = 331.3 + .606 * air_temp
-    # dl_ = []
-    # dr_ = []
-    # d_ = []
     f_parts: list = []
     iid_parts: list = []
     if stereo:
@@ -1682,7 +1680,7 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
     Parameters
     ----------
     freqs : iterable of scalars
-        Frequencies to the iterated.
+        The frequencies to cycle through, in Hertz.
     notes_per_second : scalar
         The number of notes per second. It may be one or fewer, for notes
         of a second or longer.

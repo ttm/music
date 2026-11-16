@@ -1,3 +1,10 @@
+"""Permutations, the groups they form, and the peals of change ringing.
+
+Built from sympy's permutation groups, which ``pip install
+'music[structures]'`` installs. The names import without it; building a
+structure says what to install.
+"""
+
 from .symmetry import (
     dist,
     GenericPeal,

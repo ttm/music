@@ -116,13 +116,29 @@ def set_sample_rate(rate: int) -> _RateSetting:
     >>> len(note(duration=1))
     44100
     """
-    if (isinstance(rate, bool) or not isinstance(rate, Integral)
-            or rate <= 0):
+    samples = whole(rate)
+    if samples is None or samples <= 0:
         raise ValueError(
             f"the sample rate must be a positive whole number of samples "
             f"per second; got {rate!r}")
-    rate = int(rate)
-    return _RateSetting(rate, _rate.set(rate))
+    return _RateSetting(samples, _rate.set(samples))
+
+
+def whole(value: Any) -> int | None:
+    """`value` as an ``int`` if it is a whole number, and None if not.
+
+    A rate of samples, or a count of them, is a whole number, and one of
+    NumPy's integers is that without being an ``int``. The band-limited
+    oscillators and `render_oversampled` asked ``isinstance(value, int)``,
+    so a rate read out of an array, or a count that came out of one, was
+    refused in words that were true of it: 48,000 "must be 8000 to 192000
+    Hz". A boolean is an ``int`` to Python and counts nothing, so it is
+    not whole here. Nor is a float, 48000.0 included: nothing that writes
+    a file could be handed one.
+    """
+    if isinstance(value, bool) or not isinstance(value, Integral):
+        return None
+    return int(value)
 
 
 def resolve_rate(sample_rate: Any) -> Any:

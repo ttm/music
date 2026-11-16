@@ -14,6 +14,7 @@ part a reader relies on and the part that silently rots.
 """
 
 import inspect
+import re
 
 import pytest
 
@@ -111,6 +112,44 @@ def test_documented_parameters_are_the_real_parameters(name):
         f'{name} takes {actual} and documents no parameters at all')
     assert documented == actual, (
         f'{name}: documented {documented}, signature has {actual}')
+
+
+#: A keyword written as an argument, ``name=``, in prose: not ``==``, and
+#: not the end of a longer name, an attribute or a string.
+_KEYWORD = re.compile(r"(?<![\w.'\"])([A-Za-z_]\w*)=(?!=)")
+
+
+def _prose(doc):
+    """`doc` but for its examples and its mathematics, where ``name=`` is
+    an argument of another routine or the index of a sum."""
+    doc = re.split(r"^Examples\n-+$", doc, flags=re.M)[0]
+    doc = re.sub(r":math:`[^`]*`", "", doc)
+    kept, block = [], None
+    for line in doc.splitlines():
+        indent = len(line) - len(line.lstrip())
+        if line.strip().startswith(".. math::"):
+            block = indent
+        elif block is None or (line.strip() and indent <= block):
+            block = None
+            kept.append(line)
+    return "\n".join(kept)
+
+
+@pytest.mark.parametrize('name', FUNCTIONS)
+def test_a_keyword_the_prose_names_is_a_parameter(name):
+    """``tremolo`` said to set ``fa=0`` for a constant envelope, ``noise``
+    took ``ntype=3.5`` and ``fade`` ignored ``alpha`` if
+    ``transitions="linear"``: names they had before, or never had, which a
+    reader who wrote them was refused for. The Parameters section was
+    checked against the signature, and the prose around it was not."""
+    obj = getattr(music, name)
+    actual = _signature_params(obj)
+    if actual is None:  # pragma: no cover - builtins
+        pytest.skip(f'{name} has no inspectable signature')
+    named = set(_KEYWORD.findall(_prose(inspect.getdoc(obj) or '')))
+    assert named <= set(actual), (
+        f'{name} writes {sorted(named - set(actual))} as its keywords, and '
+        f'takes no such argument')
 
 
 @pytest.mark.parametrize('name', CLASSES)

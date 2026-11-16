@@ -1,4 +1,16 @@
-"""Top-level package for basic audio synthesis utilities."""
+"""Extreme-fidelity synthesis of musical elements, sample by sample.
+
+The routines of the MASS framework, from the article "Musical elements in
+the discrete-time representation of sound", and what has been built on
+them: notes, envelopes, filters, noise, spatial audio, music theory,
+change ringing, sensory stimulation and singing. Every routine returns a
+numpy array of PCM samples. Those of the API reference are importable
+from here, as ``music.note``, ``music.adsr`` or ``music.write_wav_mono``;
+the oscillators for a pitch that moves are in ``music.core.synths``, and
+SSTIM descriptions in ``music.stimulation.sstim``.
+
+The tutorial and the reference are at https://ttm.github.io/music/.
+"""
 
 from importlib.metadata import (PackageNotFoundError as _NotFound,
                                 version as _version)

@@ -40,7 +40,8 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     -------
     t : ndarray
         A numpy array where each value is a PCM sample of the envelope. If
-        sonic_vectoris input, T is the sonic vector with the AM applied to it.
+        sonic_vector is given, t is the sonic vector with the AM applied to
+        it.
 
     See Also
     --------
@@ -118,8 +119,8 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     r"""
     Synthesize a tremolo envelope or apply it to a sound.
 
-    Set fa=0 or dB=0 for a constant envelope with value 1. A tremolo is an
-    oscillatory pattern of loudness [1].
+    Set tremolo_freq=0 or max_db_dev=0 for a constant envelope with value
+    1. A tremolo is an oscillatory pattern of loudness [1].
 
     Parameters
     ----------
@@ -253,7 +254,9 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
     Parameters
     ----------
     durations : iterable of iterable of scalars
-        the durations of each tremolo.
+        The durations of each tremolo, in seconds, in lines: the
+        tremolos of a line follow one another, and the lines are
+        multiplied together.
     tremolo_freqs : iterable of iterable of scalars
         The frequencies of each tremolo.
     max_db_devs : iterable of iterable of scalars
@@ -267,10 +270,9 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
         The number of samples of each tremolo. If given, durations is
         ignored.
     sonic_vector : array_like
-        The sound to which apply the tremolos. If supplied, the tremolo lines
-        are applied to the sound and missing samples are completed by zeros
-        (if sonic_vector is smaller then the lengthiest tremolo) or ones
-        (is sonic_vector is larger).
+        The sound to apply the tremolos to. A line shorter than the
+        longest, or than the sound, holds its last value to the end, and
+        a sound shorter than the longest line is padded with silence.
         Mono, or of shape ``(nchannels, nsamples)``, every channel
         shaped alike.
     sample_rate : integer or None
@@ -303,8 +305,10 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
 
     Examples
     --------
-    >>> write_wav_mono(note_with_vibrato(duration=8) * louds())
-
+    >>> envelope = tremolos()     # lines of 12 and 16 seconds, multiplied
+    >>> len(envelope) / 44100
+    16.0
+    >>> write_wav_mono(tremolos(sonic_vector=note_with_vibrato(duration=16)))
 
     """
     sample_rate = resolve_rate(sample_rate)

@@ -1,3 +1,4 @@
+import re
 import warnings
 
 import numpy as np
@@ -544,3 +545,20 @@ def test_a_negative_tremolo_index_is_refused_by_its_name():
     with pytest.raises(ValueError, match="^alpha is a distortion index"):
         music.tremolo(alpha=-1)
 
+
+
+@pytest.mark.parametrize("shape", [(22050,), (1, 22050)])
+def test_adsr_stereo_shapes_a_mono_sound_in_both_channels(shape):
+    """A mono sound came back as two bare envelopes of the default two
+    seconds, the sound itself nowhere in them."""
+    sound = np.reshape(music.note(220, 0.5), shape)
+    shaped = music.adsr_stereo(sonic_vector=sound, release_ms=80)
+    expected = adsr(sonic_vector=music.note(220, 0.5), release_ms=80)
+    np.testing.assert_array_equal(shaped, [expected, expected])
+
+
+def test_adsr_stereo_refuses_a_third_channel_rather_than_drop_it():
+    with pytest.raises(ValueError, match=re.escape(
+            "adsr_stereo takes a mono or a stereo sound; got an array of "
+            "shape (3, 100)")):
+        music.adsr_stereo(sonic_vector=np.ones((3, 100)))

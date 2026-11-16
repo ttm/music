@@ -2,6 +2,8 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
+from ..utils import _two_channels
+
 
 def _scaled(values, factor):
     """Divide by `factor`, or return silence when there is nothing to scale.
@@ -87,8 +89,8 @@ def normalize_stereo(sonic_vector: ArrayLike, remove_bias: bool = True,
     Parameters
     ----------
     sonic_vector : array_like
-        A (2, nsamples) shaped array. A one-dimensional array is taken as
-        mono and given two identical channels.
+        A (2, nsamples) shaped array. A one-dimensional array, or a single
+        row, is taken as mono and given two identical channels.
     remove_bias : boolean
         If True (default), subtract each channel's mean before scaling.
         If False, map the sample range affinely onto [-1, 1], using each
@@ -109,8 +111,9 @@ def normalize_stereo(sonic_vector: ArrayLike, remove_bias: bool = True,
     ------
     ValueError
         If the sonic vector is empty; see :func:`normalize_mono` for what
-        an empty render means.
-
+        an empty render means. Or if it has more than two channels: this
+        normalized the first two and returned the rest as they were.
+        :func:`music.convert_to_stereo` folds them into two.
 
     Examples
     --------
@@ -122,17 +125,15 @@ def normalize_stereo(sonic_vector: ArrayLike, remove_bias: bool = True,
     >>> [round(float(abs(channel).max()), 6) for channel in apart]
     [1.0, 1.0]
     """
-    sv_copy = np.array(sonic_vector, dtype=np.float64)
-    if sv_copy.size == 0:
+    if np.size(sonic_vector) == 0:
         raise ValueError(
             "there is nothing here to normalize: the sonic vector is "
             "empty. See normalize_mono for what an empty render means.")
-    if sv_copy.ndim == 1:
-        # A mono vector: give it two identical channels. Indexing it as
-        # though it were a channel pair read its first two *samples* as the
-        # channels, and since the mean of a scalar is itself, silently
-        # zeroed them.
-        sv_copy = np.vstack((sv_copy, sv_copy))
+    # A copy, in float64, with a mono vector given two identical channels.
+    # Indexing one as though it were a channel pair read its first two
+    # *samples* as the channels, and since the mean of a scalar is itself,
+    # silently zeroed them.
+    sv_copy = _two_channels(sonic_vector, "normalize_stereo")
     if sv_copy.max() == sv_copy.min():
         # Constant, including all-zero: silence once the offset is gone.
         return np.zeros_like(sv_copy)

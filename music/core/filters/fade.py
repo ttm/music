@@ -27,11 +27,11 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
         (linear loudness); "lin" or "linear" for a linear transition of
         amplitude.
     db : scalar
-        The decibels from which to reach before using the linear transition to
-        reach zero. Not used if method="linear".
+        The level, in decibels, the exponential transition reaches before
+        a linear one takes it to zero. Not used if method="linear".
     alpha : scalar
         An index to make the exponential fade slower or faster [1]. Ignored if
-        transitions="linear".
+        method="linear".
     perc : scalar
         The percentage of the fade that is linear to ensure it reaches zero.
         It has no effect if method="linear".

@@ -1,6 +1,5 @@
 """Utility functions shared across the package."""
 
-import logging
 import os
 import sys
 from pathlib import Path
@@ -360,22 +359,28 @@ def midi_to_hz(midi_value: float) -> float:
 
 
 def midi_to_hz_interval(midi_interval: float) -> float:
-    """Converts a MIDI interval to the corresponding frequency interval in
-       Hertz.
+    """Converts an interval in semitones to the ratio of its frequencies.
 
-    This function takes a MIDI interval (measured in semitones) as input and
-    returns the corresponding frequency interval in Hertz.
+    An interval is a ratio between two frequencies, whatever they are:
+    an octave, 12 semitones, is a ratio of 2, from 110 Hz to 220 Hz as
+    from 440 Hz to 880 Hz. Multiply a frequency by the ratio to move it
+    by the interval.
 
     Parameters
     ----------
     midi_interval : float
-        The MIDI interval (measured in semitones) to be converted.
+        The interval in semitones, as a difference of MIDI note numbers.
 
     Returns
     -------
     float
-        The frequency interval in Hertz corresponding to the input MIDI
-        interval.
+        The ratio of the upper frequency to the lower, ``2 ** (n / 12)``:
+        a number, not a frequency in Hertz. A negative interval gives a
+        ratio below one.
+
+    See Also
+    --------
+    midi_to_hz : the frequency of a MIDI note, rather than a ratio.
 
     Examples
     --------
@@ -402,9 +407,9 @@ def pitch_to_freq(
     ----------
     start_freq : float, optional
         The starting frequency in Hertz, by default 220.
-    semitones : list, optional
-        The list of semitone offsets relative to the starting frequency,
-        by default [0, 7, 7, 4, 7, 0].
+    semitones : sequence, optional
+        The semitone offsets relative to the starting frequency, by
+        default (0, 7, 7, 4, 7, 0).
 
     Returns
     -------
@@ -601,9 +606,9 @@ def resolve_stereo(afunction, argdict, stereo_vars=('sonic_vector',)):
         The function to apply the resolved arguments to.
     argdict : dict
         The dictionary of arguments to resolve.
-    stereo_vars : list, optional
-        List of variable names that represent stereo data, by default
-        ['sonic_vector']
+    stereo_vars : sequence, optional
+        The names of the arguments that hold stereo data, by default
+        ('sonic_vector',).
 
     Returns
     -------
@@ -699,6 +704,30 @@ def convert_to_stereo(sound_vector: ArrayLike) -> NDArray[np.float64]:
         stereo_sound = sound_array
 
     return stereo_sound
+
+
+def _two_channels(sound, routine):
+    """`sound` as the two channels `routine` keeps.
+
+    A mono sound, or one written as a single row, is put in both, as
+    :func:`convert_to_stereo` puts it. More channels are refused, not
+    folded into two: shaping, normalizing or writing a sound is not the
+    place to change how many channels it has, and folding them is what
+    calling :func:`convert_to_stereo` asks for. `adsr_stereo` used to shape
+    the first two and drop the rest, `normalize_stereo` to normalize three
+    channels as though they were two, and the stereo writer to write them
+    all; a mono sound came back from `adsr_stereo` as two bare envelopes
+    of the default length, and a single row stopped the other two with an
+    ``IndexError``.
+    """
+    # Read here for its shape alone: convert_to_stereo makes the copy, in
+    # float64, that the caller is free to change.
+    pair = np.asarray(sound)
+    if pair.ndim == 1 or (pair.ndim == 2 and pair.shape[0] in (1, 2)):
+        return convert_to_stereo(pair)
+    raise ValueError(
+        f"{routine} takes a mono or a stereo sound; got an array of shape "
+        f"{pair.shape}. convert_to_stereo folds more channels into two")
 
 
 def _transition_is_linear(method: str, name: str = 'method') -> bool:
@@ -882,6 +911,14 @@ def mix_with_offset(
     ndarray
         The two sounds summed at that offset, long enough to hold both.
 
+    Raises
+    ------
+    ValueError
+        If a negative offset reaches back past the start of the first
+        sound: the second cannot begin before the first one does. Such an
+        offset was read from the end of the mix, as a negative index is,
+        and failed in numpy with a message about broadcasting.
+
     See Also
     --------
     mix_many_with_offsets : the same, for any number of sounds, each
@@ -890,13 +927,9 @@ def mix_with_offset(
 
     Notes
     -----
-    A negative ``duration`` must satisfy
-    ``-duration * sample_rate < first_sonic_vector.shape[-1]``: the second
-    sound cannot begin before the first one does.
-
-    The description of ``duration`` above was truncated mid-sentence, and
-    its last line sat at column zero, so numpydoc read "s1 ends." as a
-    parameter of this function and rendered it as one.
+    A negative offset counts back from the end of the first sound, so it
+    can reach that sound's first sample, ``first_sonic_vector.shape[-1]``
+    samples back, and no further.
 
     Examples
     --------
@@ -918,6 +951,12 @@ def mix_with_offset(
         ns = sample_count(dur, sample_rate)
     else:
         ns = number_of_samples
+    if -ns > len(first_sonic_vector):
+        raise ValueError(
+            f"an offset of {ns} samples starts the second sound before the "
+            f"first one, which is {len(first_sonic_vector)} samples long: "
+            f"counting back from its end, an offset reaches its start and "
+            f"no further")
 
     if ns >= 0:
         nst = ns + len(second_sonic_vector)
@@ -929,17 +968,9 @@ def mix_with_offset(
 
     s = np.zeros(int(nst))
     s[:len(first_sonic_vector)] += first_sonic_vector
-    logging.debug(
-        's.shape %s s1.shape %s s2.shape %s ns %s nst %s',
-        s.shape,
-        first_sonic_vector.shape,
-        second_sonic_vector.shape,
-        ns,
-        nst)
     ns_int = int(ns)
     if ns >= 0:
         s[ns_int: ns_int + len(second_sonic_vector)] += second_sonic_vector
-        # s[-len(s2):] += s2
     else:
         start = int(len(first_sonic_vector) + ns)
         end = int(len(first_sonic_vector) + ns + len(second_sonic_vector))
@@ -1081,23 +1112,8 @@ def pan_transitions(p=((1, 1), (1, 0), (0, 1), (1, 1)), d=(2, 2, 2),
     loudness at a steady rate and keeps neither. Until 2.0.0 ``method``
     was not read, and every transition was 'lin'.
 
-    For now, each channel's signal are kept from mixing.
-    One immediate possibility is to maintain the expected
-    tessitura of the sample amplitudes.
-    Say p = [.5,1,0,.5] ~ [(1,1),(1,0),(0,1),(1,1)].
-    Then pi,pj = .5,1 might be performed as::
-
-        s1 = s1*.5 -> 0
-        s2 = s1*.5 -> (s1+s2)*.5
-
-    Or through sinusoids and exponentials
-
-    Make fast and slow fades and parameter transitions
-    using weber-fechner and steven's laws.
-    E.g.::
-
-        pitch_trans = [pitch0*X**(i/Y) for i in range(12)]
-        pitch_trans = [pitch0 + X*i**Y for i in range(12)]
+    Each channel is scaled on its own: a transition moves the level of
+    the left and the right, and never mixes one into the other.
 
     Examples
     --------
@@ -1368,7 +1384,7 @@ def profile(adict, sample_rate=None):
 
     Returns
     -------
-        dict
+    dict
         ``d['type']`` sorts the names: ``'scalar'`` for numbers and
         strings, ``'collections'`` for dicts, lists, sets and arrays, and
         ``'other'`` for everything else. ``d['analyses']['ndarray']`` maps
@@ -1494,9 +1510,9 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
 
         durs = [duration/i for i in freqs]
 
-    The examples above yield (two by two) the same sequences of durations
-    by using duration=0.25 when in temporal notation or
-    duration=4 when in frequency notation.
+    The examples below yield, two by two, the same sequences of
+    durations, by using duration=0.25 in temporal notation and
+    duration=4 in frequential notation.
 
     To facilitate the description of rhythms (e.g. for tuplets),
     some set of durations might be an iterable inside durations
@@ -1532,12 +1548,18 @@ def rhythm_to_durations(durations=(4, 2, 2, 4, 1, 1, 1, 1, 2, 2, 4),
     --------
     >>> dt = [4, 2, 2, 4, 1,1,1,1, 2, 2, 4]
     >>> durs0 = rhythm_to_durations(dt, duration=.25)
+    >>> durs0[:5]
+    [1.0, 0.5, 0.5, 1.0, 0.25]
     >>> df = [4, 8, 8, 4, 16, 16, 16, 16, 8, 8, 4]
     >>> durs0_ = rhythm_to_durations(freqs=df, duration=4)
+    >>> durs0_ == durs0
+    True
     >>> dtut = [4,2,2, [8, 1,1,1], 4, [4, 1,1,.5,.5], 3,1, 3,1, 4]
     >>> durs1 = rhythm_to_durations(dtut)
     >>> dtuf2 = [4,8,8, [2, 3,3,3], 4, [4, 3,3,6,6], 16/3, 16, 16/3, 16, 4]
     >>> durs1_ = rhythm_to_durations(freqs=dtuf2, duration=4)
+    >>> np.allclose(durs1_, durs1)   # the tuplets, in either notation
+    True
 
     """
     durations = tuple(durations)

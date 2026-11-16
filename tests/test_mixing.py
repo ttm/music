@@ -5,6 +5,8 @@
 out to have a defect.
 """
 
+import re
+
 import numpy as np
 import pytest
 
@@ -192,3 +194,26 @@ def test_mix_many_offsets_a_stereo_sound_along_its_samples():
     np.testing.assert_array_equal(
         music.mix_many([stereo, stereo], offset=[0, 1], sample_rate=1),
         [[1, 2, 1], [2, 4, 2]])
+
+
+# --------------------------------------------------------------------------
+# mix_with_offset: how far back an offset reaches
+# --------------------------------------------------------------------------
+
+def test_an_offset_back_to_the_first_sounds_start_starts_them_together():
+    first, second = np.ones(10), np.arange(4.0)
+    mixed = music.mix_with_offset(first, second, number_of_samples=-10)
+    np.testing.assert_array_equal(mixed, first + np.r_[second, np.zeros(6)])
+
+
+@pytest.mark.parametrize("given", [{"number_of_samples": -11},
+                                   {"duration": -11 / 44100}])
+@pytest.mark.parametrize("first", [np.ones(10), np.ones((2, 10))])
+def test_an_offset_past_the_first_sounds_start_is_refused(given, first):
+    """It was read from the end of the mix, as a negative index is, and
+    failed in numpy with a message about broadcasting."""
+    with pytest.raises(ValueError, match=re.escape(
+            "an offset of -11 samples starts the second sound before the "
+            "first one, which is 10 samples long: counting back from its "
+            "end, an offset reaches its start and no further")):
+        music.mix_with_offset(first, np.arange(4.0), **given)

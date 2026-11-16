@@ -1,17 +1,20 @@
-import music
+"""Plain changes on three bells, rung on frequencies, two ways.
 
+A peal, or any sequence of permutations, can be tied to a characteristic
+of the sound -- its frequency, its duration, the depth or rate of its
+vibrato, its attack -- in either of two ways:
+
+1) Act the peal on the values with ``peal.act(values)``, which gives the
+   rows, and hand them to a synth such as ``Being``, or render each note
+   directly with ``music.note`` or ``music.note_with_vibrato``.
+2) Give a ``Being`` the permutations, the values they permute as its
+   ``domain``, and the name of the sequence they make as its ``curseq``,
+   and let it permute the values as it plays.
+
+This writes the first as campanology_1.wav and the second as
+campanology_2.wav; they ring the same changes.
 """
-Notice that you might relate a peal or any set of permutations to a sonic
-characteristic (frequency, duration, vibrato depth, vibrato frequency, attack
-duration, etc.) through at least 3 methods:
-1) initiate a Being(), set its permutations to the permutation sequence, its
-   domain to the values to be permuted, and its curseq to the name of theBeing
-   sequence to be yielded by the permutation of the domain.
-2) Achieve the sequence of values through peal.act() or just using permutation
-   (domain) for all the permutations at hand. Then render the note directly
-   (e.g. using M.core.V_) or passing the sequence of values to a synth, such
-   as Being().
-"""
+import music
 
 pe3 = music.structures.peals.PlainChanges(3)
 music.structures.symmetry.print_peal(pe3.act(), [0])

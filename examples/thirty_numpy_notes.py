@@ -2,10 +2,10 @@ from music.legacy import Being
 from music.utils import horizontal_stack
 from music.core.io import write_wav_stereo
 
-# 1) start a ѕynth
+# 1) start a synth
 being = Being()
 
-# 3) Use numpy arrays directly and use them to concatenate and/or mix sounds:
+# 2) Use numpy arrays directly and use them to concatenate and/or mix sounds:
 s1 = being.render(30)
 being.f_ += [440]
 being.fv_ = [1, 2, 3, 4, 5]

@@ -373,8 +373,8 @@ def test_every_extra_hunt_the_warning_allows_rings_the_same_peal(size):
     expected = music.PlainChanges(size).peal_direct
     for nhunts in range(saturating + 1, size):
         with pytest.warns(UserWarning, match=_exactly(
-                f"peals are the same if there are {nhunts - saturating} "
-                "hunts less")):
+                f"{nhunts} hunts ring the same peal as {saturating}, the "
+                f"most that change anything on {size} bells")):
             crowded = music.PlainChanges(size, nhunts=nhunts)
         assert crowded.peal_direct == expected
 

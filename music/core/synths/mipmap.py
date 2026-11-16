@@ -23,9 +23,11 @@ import math
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from ..._rate import resolve_rate
+from ..._rate import resolve_rate, whole
 
 _MAX_BLOCK_SAMPLES = 5_000_000
+#: What a phase may be given as: Python's numbers, and NumPy's.
+_REAL = (int, float, np.integer, np.floating)
 #: How many partials each table holds: every count to 16, then four to an
 #: octave, to 1024.
 PARTIALS = tuple(range(1, 16)) + tuple(
@@ -148,16 +150,17 @@ class MipmapOscillator:
     def __init__(self, *, sample_rate: int | None = None,
                  waveform: str = "sawtooth",
                  phase_cycles: float = 0.0) -> None:
-        sample_rate = resolve_rate(sample_rate)
-        if (not isinstance(sample_rate, int) or isinstance(sample_rate, bool)
-                or not 8000 <= sample_rate <= 192000):
+        # A whole number of hertz and a real phase, NumPy's included: a
+        # rate of np.int64(48000) was refused as not "8000 to 192000 Hz".
+        rate = whole(resolve_rate(sample_rate))
+        if rate is None or not 8000 <= rate <= 192000:
             raise ValueError("sample_rate must be 8000 to 192000 Hz")
         self._tables = _all_tables(waveform)
-        if (not isinstance(phase_cycles, (int, float))
+        if (not isinstance(phase_cycles, _REAL)
                 or not math.isfinite(phase_cycles)
                 or not 0 <= phase_cycles < 1):
             raise ValueError("phase_cycles must be finite in [0, 1)")
-        self.sample_rate = sample_rate
+        self.sample_rate = rate
         self.waveform = waveform
         self._phase = float(phase_cycles)
         self._previous: float | None = None

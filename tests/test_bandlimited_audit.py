@@ -478,3 +478,48 @@ def test_single_precision_frequencies_are_integrated_in_double():
         polyblep_frequency_path(f.astype(np.float32), sample_rate=48000),
         polyblep_frequency_path(f.astype(np.float32).astype(np.float64),
                                 sample_rate=48000))
+
+
+# --------------------------------------------------------------------------
+# Whole numbers, and phases, that come out of NumPy
+# --------------------------------------------------------------------------
+
+def test_the_frequency_path_takes_numpys_integers():
+    """`isinstance(..., int)` refused a rate of np.int64(48000) as not "a
+    positive integer", and as many harmonics as np.int64(8)."""
+    hz = np.linspace(200., 2000., 64)
+    np.testing.assert_array_equal(
+        bandlimited_frequency_path(hz, sample_rate=np.int64(48000),
+                                   max_harmonics=np.int64(8)),
+        bandlimited_frequency_path(hz, sample_rate=48000, max_harmonics=8))
+
+
+def test_polyblep_takes_a_rate_and_a_phase_out_of_numpy():
+    hz = np.linspace(200., 2000., 64)
+    np.testing.assert_array_equal(
+        polyblep_frequency_path(hz, sample_rate=np.int64(48000),
+                                phase_cycles=np.float32(0.25)),
+        polyblep_frequency_path(hz, sample_rate=48000, phase_cycles=0.25))
+    assert type(PolyBLEPOscillator(sample_rate=np.int32(8000)).sample_rate) \
+        is int
+    np.testing.assert_array_equal(
+        PolyBLEPOscillator(phase_cycles=np.int64(0)).render(hz),
+        PolyBLEPOscillator(phase_cycles=0).render(hz))
+
+
+@pytest.mark.parametrize("length", [{"number_of_samples": np.int64(100)},
+                                    {"duration": 0.0125}])
+def test_the_oversampler_takes_numpys_integers_and_hands_on_pythons(length):
+    """A rate, a count or a factor out of an array was refused, each in
+    words that were true of it. The generator is given `int`s."""
+    seen = {}
+
+    def renderer(number_of_samples, sample_rate):
+        seen.update(count=number_of_samples, rate=sample_rate)
+        return np.zeros(number_of_samples)
+
+    out = music.render_oversampled(renderer, sample_rate=np.int32(8000),
+                                   factor=np.int16(3), **length)
+    assert out.shape == (100,)
+    assert seen == {"count": 300, "rate": 24000}
+    assert {type(value) for value in seen.values()} == {int}

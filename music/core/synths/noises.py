@@ -3,9 +3,8 @@ import math
 from numbers import Real
 import numpy as np
 from numpy.typing import NDArray
-import music
+from ..functions import normalize_mono
 from ..._rate import resolve_rate, sample_count
-
 
 
 def _random(seed):
@@ -30,16 +29,17 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
     Parameters
     ----------
     noise_type : string or scalar
-        Specifies the decibels gain or attenuation per octave. It can be
-        specified numerically (e.g. ntype=3.5 is 3.5 decibels gain per octave)
-        or by strings:
-        - "brown" is -6dB/octave
-        - "pink" is -3dB/octave
-        - "white" is 0dB/octave
-        - "blue" is 3dB/octave
-        - "violet" is 6dB/octave
-        - "black" is -12/dB/octave but, in theory, is any < -6dB/octave
-        See [1] for more information.
+        The gain or attenuation per octave, in decibels: a number, such as
+        ``noise_type=3.5`` for 3.5 dB more each octave up, or a colour
+        [1]:
+
+        - ``"brown"`` is -6 dB per octave
+        - ``"pink"`` is -3 dB per octave
+        - ``"white"`` is 0 dB per octave
+        - ``"blue"`` is 3 dB per octave
+        - ``"violet"`` is 6 dB per octave
+        - ``"black"`` is -12 dB per octave, though in theory any slope
+          steeper than brown's
     duration : scalar
         The duration of the noise in seconds.
     min_freq : scalar in [0, fs/2]
@@ -134,10 +134,12 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
         # and float() would reject it anyway.
         prog = float(noise_type)
     else:
+        # The message named `ntype`, what the parameter was called before
+        # it was `noise_type`.
         raise ValueError(
-            "Set ntype to a number or one of the following strings: "
-            "'white', 'pink', 'brown', 'blue', 'violet', 'black'. "
-            "Check docstring for more information.")
+            f"noise_type is a number of decibels per octave or one of the "
+            f"colours 'white', 'pink', 'brown', 'blue', 'violet' and "
+            f"'black'; got {noise_type!r}")
     # Checked before the length, so that a noise of no samples still
     # says what was wrong with the ones it was asked for.
     if not math.isfinite(prog):
@@ -206,7 +208,7 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
     coeffs[length - paired:] = np.conj(coeffs[1:paired + 1][::-1])
 
     noise_vector = np.fft.ifft(coeffs).real
-    return music.core.normalize_mono(noise_vector)
+    return normalize_mono(noise_vector)
 
 
 def _band(low, high, length, sample_rate):
@@ -226,11 +228,11 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
                    sample_rate: int | None = None,
                    number_of_samples: int | None = None,
                    seed: int | None = None) -> NDArray[np.float64]:
-    """Synth gaussian noise
+    """Noise in one band of frequencies, Gaussian in its samples.
 
     Parameters
     ----------
-    mean : int, optional
+    mean : float, optional
         The centre of the band the noise occupies, in units of 3000 Hz,
         by default 1 -- so 3000 Hz.
     std : float, optional
@@ -244,8 +246,8 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
         standard deviation are set by the normalization at the end and
         have nothing to do with these two. A band reaching below 0 Hz is
         read as the positive part of itself.
-    duration : int, optional
-        How long in seconds will the noise be, by default 2
+    duration : float, optional
+        How long the noise lasts, in seconds, by default 2.
     sample_rate : int or None, optional
         The sample rate to use.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
@@ -293,9 +295,6 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
     """
     sample_rate = resolve_rate(sample_rate)
 
-    # int(): the length indexes arrays and sets a sample count, so a
-    # fractional duration raised TypeError out of np.random.uniform
-    # rather than rendering the half second it was asked for.
     if sample_rate <= 0:
         raise ValueError(f"sample_rate must be positive; got {sample_rate}")
     if std <= 0:
@@ -305,6 +304,9 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
             f"std is the width of the band and must be positive; got {std}. "
             "A band of no width holds no frequency to draw a noise from")
     uniform = _random(seed).uniform
+    # Whole samples: the length indexes arrays and sets a sample count, so
+    # a fractional one raised TypeError out of np.random.uniform rather
+    # than rendering the half second it was asked for.
     length = (sample_count(duration, sample_rate) if number_of_samples is None
               else int(number_of_samples))
     if length < 1:
@@ -351,7 +353,7 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
     # It used to be scaled onto [-1, 1] here as well, which the
     # normalization undoes: it takes out the mean and divides by the peak.
     noise_vector = np.real(np.fft.ifft(coeffs))
-    return music.core.normalize_mono(noise_vector)
+    return normalize_mono(noise_vector)
 
 
 def silence(duration: float = 1.0, sample_rate: int | None = None,
@@ -360,8 +362,8 @@ def silence(duration: float = 1.0, sample_rate: int | None = None,
 
     Parameters
     ----------
-    duration : int, optional
-        How many seconds will silence last, by default 1
+    duration : float, optional
+        How long the silence lasts, in seconds, by default 1.
     sample_rate : int or None, optional
         The sample rate to use.
         None, the default, is the rate :func:`music.get_sample_rate` returns.

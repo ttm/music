@@ -274,6 +274,21 @@ def test_what_the_oscillator_refuses_for_a_phase(phase):
         MipmapOscillator(phase_cycles=phase)
 
 
+def test_a_rate_and_a_phase_out_of_numpy_are_taken_as_pythons_are():
+    """`isinstance(rate, int)` refused np.int64(48000) as not "8000 to
+    192000 Hz", and a phase of np.float32(0.25) as not in [0, 1)."""
+    hz = np.linspace(200., 2000., 64)
+    np.testing.assert_array_equal(
+        mipmap_frequency_path(hz, sample_rate=np.int64(48000),
+                              phase_cycles=np.float32(0.25)),
+        mipmap_frequency_path(hz, sample_rate=48000, phase_cycles=0.25))
+    assert type(MipmapOscillator(sample_rate=np.int32(8000)).sample_rate) \
+        is int
+    np.testing.assert_array_equal(
+        MipmapOscillator(phase_cycles=np.int64(0)).render(hz),
+        MipmapOscillator(phase_cycles=0).render(hz))
+
+
 def test_defaults_are_a_sawtooth_at_44100_from_phase_zero():
     oscillator = MipmapOscillator()
     assert oscillator.sample_rate == 44100

@@ -3,10 +3,10 @@ Present plain changes as swaps and act in domains to make peals.
 
 References
 ----------
-.. [1] Stedman's *Campanalogia*, and the change-ringing survey at
-       http://www.gutenberg.org/files/18567/18567-h/18567-h.htm
+.. [1] Duckworth, Richard, and Fabian Stedman. *Tintinnalogia, or, The
+       Art of Ringing*, 1668.
+       https://www.gutenberg.org/files/18567/18567-h/18567-h.htm
 """
-
 
 from ..._warn import warn
 from .._sympy import combinatorics
@@ -25,7 +25,8 @@ class PlainChanges:
     >>> rows = peal.act([220, 275, 330, 440])
     >>> len(rows), len(rows[0])
     (24, 4)
-    >>> notes = [note(freq, duration=0.15) for row in rows for freq in row]
+    >>> notes = [adsr(sonic_vector=note(freq, duration=0.15))
+    ...          for row in rows for freq in row]  # shaped: quiet joins
     >>> write_wav_mono(horizontal_stack(*notes), "peal.wav")
     """
 
@@ -142,8 +143,8 @@ class PlainChanges:
                 f"for {nelements}. The last hunt needs a bell to pass")
         elif nhunts > saturating:
             warn(
-                f"peals are the same if there are {nhunts - saturating} "
-                "hunts less")
+                f"{nhunts} hunts ring the same peal as {saturating}, the "
+                f"most that change anything on {nelements} bells")
         hunts_dict = {}
         for hunt in range(nhunts):
             if hunt == nhunts - 1:

@@ -9,7 +9,7 @@ sidebands caused by rapid modulation or abrupt changes in the pitch path.
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from ..._rate import resolve_rate
+from ..._rate import resolve_rate, whole
 
 
 def bandlimited_frequency_path(
@@ -64,17 +64,17 @@ def bandlimited_frequency_path(
     >>> bandlimited_frequency_path(hz, sample_rate=48000).shape
     (480,)
     """
-    sample_rate = resolve_rate(sample_rate)
-    fs = sample_rate
-    if not isinstance(fs, int) or isinstance(fs, bool) or fs <= 0:
+    # Whole numbers, NumPy's included: `isinstance(fs, int)` refused a
+    # rate of np.int64(48000) as not "a positive integer".
+    fs = whole(resolve_rate(sample_rate))
+    if fs is None or fs <= 0:
         raise ValueError("sample_rate must be a positive integer")
     if waveform not in ("sine", "sawtooth", "square", "triangle"):
         raise ValueError("unsupported waveform")
     if not np.isfinite(transition) or not 0 <= transition <= 1:
         raise ValueError("transition must be between 0 and 1")
-    if (not isinstance(max_harmonics, int)
-            or isinstance(max_harmonics, bool)
-            or not 1 <= max_harmonics <= 2048):
+    harmonics = whole(max_harmonics)
+    if harmonics is None or not 1 <= harmonics <= 2048:
         raise ValueError("max_harmonics must be in [1, 2048]")
     f = np.asarray(frequencies, dtype=np.float64)
     if f.ndim != 1:
@@ -83,7 +83,7 @@ def bandlimited_frequency_path(
         raise ValueError("all frequencies must be finite and inside Nyquist")
     if not len(f):
         return np.empty(0, dtype=np.float64)
-    highest = min(max_harmonics, int(np.floor((fs / 2) / f.min())))
+    highest = min(harmonics, int(np.floor((fs / 2) / f.min())))
     if len(f) * highest > 50_000_000:
         raise ValueError("pitch path exceeds 50 million harmonic-samples")
 

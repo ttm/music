@@ -1,5 +1,19 @@
 ## [Unreleased]
 
+### Note for anyone upgrading
+
+- **Some calls that wrote a wrong file, or returned a wrong sound, now
+  raise instead.** `write_wav_mono` refuses a stereo sound, and
+  `write_wav_stereo`, `write_audio`, `normalize_stereo` and `adsr_stereo`
+  refuse more than two channels; `convert_to_stereo` folds more into two
+  when that is what is wanted. `mix_with_offset` refuses an offset that
+  reaches back past the start of the first sound, `Sequencer.add_note` a
+  duration that is negative or not finite, and `sing` a duration written
+  as a string ABC cannot read. Each says what it was given. `adsr_stereo`
+  and `write_wav_stereo` give a mono sound to both channels, where one
+  returned two bare envelopes and the other wrote one channel when it did
+  not normalize.
+
 ### Changed
 
 - **Descriptions are checked against SSTIM 0.20.0,** the
@@ -17,11 +31,105 @@
   framework or the paper it comes from, so a session is still written as
   a program in the package's terms.
 
+### Fixed
+
+- **`adsr_stereo` returned two bare envelopes for a mono sound.** It read
+  the sound's first two samples as its channels, took each for "no sound
+  given", and built two envelopes of the default two seconds: the sound
+  was nowhere in what came back. A mono sound, or one written as a single
+  row, is now shaped in both channels, as `normalize_stereo` already took
+  one, and a third channel is refused rather than dropped.
+- **The writers wrote files their names say they do not.**
+  `write_wav_mono` wrote a stereo sound as a file two frames long, in as
+  many channels as the sound had samples, because soundfile reads an
+  array's second axis as its channels, and failed on one longer than the
+  1,024 channels libsndfile allows with "Format not recognised"; it
+  refuses one now, saying what it was given, and takes a single row as
+  the one channel it is. `write_wav_stereo` wrote a mono sound in two
+  channels when it normalized it and in one when it did not, and now
+  always writes two; a single row stopped it, and `normalize_stereo`,
+  with an `IndexError`, and is mono now. Three channels were written as
+  a stereo file of three, the first two normalized and the third as it
+  was, and are refused, by the writers and by `normalize_stereo`.
+  `write_audio` chooses its writer by the channel count, so a single row
+  is written as one channel.
+- **`sing` with eCantorix blamed a wrong melody on a missing engine.** It
+  wrote the score only once it had found the engine, so with none
+  installed, a duration too few or a note out of range was reported as
+  the engine missing, though the docstring says these are checked first.
+  Both backends now check the score before anything else. A duration
+  written as a string went into eCantorix's score unread, `"x"`, `"0"`
+  and `"3/0"` as they were, and the psola backend failed dividing by zero
+  on the last. Each is refused now, as a length ABC cannot read or one of
+  no time.
+- **`mix_with_offset` failed in numpy's words for an offset past the
+  start.** A negative offset reaching back further than the first sound
+  is long was read from the end of the mix, as a negative index is, and
+  stopped at a broadcast. It is refused, saying how far back an offset
+  can reach, and an offset back to the first sound's start starts the two
+  together, as it did.
+- **`Sequencer.add_note` accepted a negative or an infinite duration.** A
+  negative one rendered no note, without a word, and NaN and infinity
+  failed when the sequence was rendered, far from the call that gave
+  them. They are refused where they are given, as a start already was.
+- **`bandlimited_note` accepted any waveform for a render of no
+  samples,** since the name was read only where the table is built. It is
+  checked with the other arguments.
+- **Two messages named what is not there.** `noise` refused a colour it
+  does not know by telling the caller to "Set ntype", the parameter's
+  name before it was `noise_type`; it names `noise_type` now, and what it
+  was given. `PlainChanges` warned that "peals are the same if there are
+  1 hunts less", and now says how many hunts ring the same peal as how
+  many.
+- **The package configured the program's logging.** `mix_with_offset`
+  and `read_audio` said what they were doing through `logging.debug`,
+  which speaks for the root logger and gives it a handler when it has
+  none. So the first mix, or the first file read, configured logging for
+  the whole program, and a script that called `logging.basicConfig`
+  afterwards found it did nothing: the level and the format it asked for
+  were dropped, and its own INFO lines with them. Neither logs now, and
+  a test refuses a module that speaks for the root logger.
+- **The band-limited oscillators and `render_oversampled` refused NumPy's
+  integers.** They asked `isinstance(value, int)`, so a rate read out of
+  an array, or a count or a factor that came out of one, was refused in
+  words that were true of it: 48,000 "must be 8000 to 192000 Hz". A whole
+  number of NumPy's is taken as Python's is, as `set_sample_rate` already
+  took one, and the generator `render_oversampled` calls is handed
+  Python's; a boolean is refused still. Nor do the two oscillators that
+  take a phase refuse one in NumPy's single precision, or one of its
+  integers, any more.
+
+### Tests
+
+- **A docstring's prose may name as a keyword only an argument its
+  routine takes.** `tremolo` told a reader to set `fa=0` or `dB=0`,
+  `noise` documented `ntype=3.5` and `fade` ignored `alpha` if
+  `transitions="linear"`: names they had once, or never. The Parameters
+  sections were checked against the signatures, and the prose around them
+  was not; `tests/test_docstring_signature.py` checks both now, leaving
+  out the examples and the mathematics, where `name=` belongs to another
+  routine or a sum.
+- **Nothing in the package speaks for the root logger,** which a test
+  checks of every module, and a program that mixes a sound and then
+  configures its logging gets the configuration it asked for.
+- **A NumPy integer is a whole number to every routine that takes one,**
+  and `_rate.whole` is the one rule: a boolean, a float and a string are
+  refused by it.
+
 ### Maintenance
 
 - **`notes.md` is gone.** Its list was done -- the comparison with
   MASS, the split into subpackages, the examples -- but for an article
   describing the package, which the README lists under Plans.
+- **Leftovers are gone from the code:** commented-out lines in
+  `note_with_doppler`, `note_with_vibrato_seq_localization` and `Peals`,
+  a stray `def sing(...)` comment in `perform.py`, and the
+  brainstorm at the end of `pan_transitions`' notes. `noises` imports
+  `normalize_mono` from beside it rather than through `import music`, a
+  package half imported when the module is, and `note_with_doppler`'s
+  mono branch keeps its distances in `distance`, not in `duration`, the
+  name of a parameter. `perform.py`, run as a script, prints how many
+  samples it sang, where it logged "finished" at a level nothing showed.
 
 ### Documentation
 
@@ -70,6 +178,36 @@
   the KEMAR measurements, and named neither `setup_hrtf` nor `hrir`. It
   now points to those two, says any other pair measured at the rate in
   use will do, and shows a note placed above and behind.
+- **`spatial_motion` said the package had no head-related transfer
+  function anywhere.** `localize_hrtf` has applied a measured one since
+  1.6.0, and the review for 2.0.0 took the other notes that said so out.
+  It now points to it, and to `hrir`.
+- **Docstrings say what their routines do.** `midi_to_hz_interval` gives
+  the ratio of two frequencies, not "the frequency interval in Hertz" it
+  said; `tremolos`' example multiplied a note by `louds()`, and its notes
+  said the lines were padded with ones, where each holds its last value;
+  `note_with_fm` pointed to a `synth_note` and `write_wav_mono` to an
+  `__n`, neither of which exists; `profile`'s return value rendered as a
+  nameless `: dict`; `rhythm_to_durations` said its examples agree two by
+  two and showed nothing, and now shows it; `localize` and `localize2`
+  placed two of their example sources at angles written as metres, and
+  all four to the right, where they now run from left to right; and `am`,
+  `fade`, `trill`, `gaussian_noise` and `silence` had words missing, or
+  wrong types.
+- **The structures cite the book they ring.** `plain_changes` cited
+  Stedman's *Campanalogia* at the address of *Tintinnalogia*, and
+  `Peals` carried a developer's notes ("Wikipedia seemed ok last time")
+  where its references belong. Both cite *Tintinnalogia*, as the named
+  peals do.
+- **`isynth.py` played one table, not four.** It set `tab_sequence`,
+  and `CanonicalSynth` reads `table`, so every note was the default
+  triangle; it sets `table_sequence`, and the notes cycle through the
+  sine, triangle, square and sawtooth it lists.
+- **The other examples.** `campanology.py`'s description came after its
+  import, so it was no docstring; it promised three methods and listed
+  two, the second through `M.core.V_`, which does not exist. It now
+  describes the two it renders. Two examples spelled "synth" with a
+  Cyrillic ѕ.
 
 ## [2.0.0] - 2026-11-01
 

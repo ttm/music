@@ -1,6 +1,5 @@
 """Utilities for reading and writing WAV files."""
 
-import logging
 import pathlib
 from typing import Any, Callable, Literal, Sequence, overload
 
@@ -10,6 +9,7 @@ from numpy.typing import ArrayLike, NDArray
 from .._deprecation import alias, renamed_arguments
 from .._warn import warn
 from .._rate import get_sample_rate, resolve_rate
+from ..utils import _two_channels
 from .functions import normalize_mono, normalize_stereo
 from .filters.adsr import adsr, adsr_stereo
 
@@ -146,6 +146,29 @@ def _as_given(samples: ArrayLike) -> NDArray[np.float64]:
     return result
 
 
+def _one_channel(sonic_vector: ArrayLike) -> NDArray[Any]:
+    """The channel the mono writer writes: a mono sound, or the one row
+    of a sound written ``(1, nsamples)``.
+
+    soundfile reads an array's second axis as its channels, so a stereo
+    sound given to the mono writer was written as a file two frames
+    long, a channel for each sample, and nothing said so; one longer
+    than the 1,024 channels libsndfile allows failed as a "Format not
+    recognised". The samples are left in their own type: what
+    normalizes them, or writes them as they are, makes its own copy in
+    float64.
+    """
+    samples = np.asarray(sonic_vector)
+    if samples.ndim == 2 and samples.shape[0] == 1:
+        return samples[0]
+    if samples.ndim != 1:
+        raise ValueError(
+            f"write_wav_mono writes one channel; got an array of shape "
+            f"{samples.shape}. write_wav_stereo writes two, and "
+            f"write_audio chooses by the array")
+    return samples
+
+
 @overload
 def read_audio(filename: str,
                return_sample_rate: Literal[False] = False
@@ -202,7 +225,6 @@ def read_audio(filename, return_sample_rate=False):
     """
     with sf.SoundFile(str(filename)) as handle:
         subtype = handle.subtype
-        logging.debug("read_audio subtype %s", subtype)
         if subtype not in READABLE_SUBTYPES:
             # Whatever the container: this said WAV of a FLAC or an Ogg.
             raise ValueError(
@@ -243,21 +265,19 @@ def write_wav_mono(
     normalize: bool = True,
     **renamed: Any,
 ) -> None:
-    """Writes a mono WAV file for a numpy array.
+    """Write a mono sound to a WAV or FLAC file.
 
-    One can also use, for example:
-        import sounddevice as S
-        S.play(__n(array))
+    To hear a sound without writing it, :func:`play_audio` plays it.
 
     Parameters
     ----------
     sonic_vector : array_like, optional
-        The PCM samples to be written as a WAV sound file. Unless
-        ``normalize`` is False they are normalized by
-        normalize_mono(sonic_vector) to have samples between -1 and 1.
-        Defaults to about two seconds of uniform noise.
+        The PCM samples to be written: ``(nsamples,)``, or a single row,
+        ``(1, nsamples)``. Unless ``normalize`` is False they are
+        normalized by normalize_mono(sonic_vector) to have samples between
+        -1 and 1. Defaults to about two seconds of uniform noise.
     filename : string
-        The filename to use for the file to be written.
+        The path to write. ``.wav`` and ``.flac`` are understood.
     sample_rate : scalar or None
         The sample frequency. None, the default, is the rate
         :func:`music.get_sample_rate` returns.
@@ -284,9 +304,9 @@ def write_wav_mono(
     ------
     ValueError
         If the extension or bit depth is not one this package writes, the
-        sound is empty, or, with ``normalize=False``, it reaches past
-        [-1, 1]; or if ``fades_ms`` is neither one value nor two, or is
-        negative.
+        sound is empty or has more than one channel, or, with
+        ``normalize=False``, it reaches past [-1, 1]; or if ``fades_ms``
+        is neither one value nor two, or is negative.
 
     See Also
     --------
@@ -294,6 +314,7 @@ def write_wav_mono(
     write_wav_stereo : Write a stereo file.
     write_audio : Write mono or stereo, WAV or FLAC, as the array and the
                   extension say.
+    play_audio : Play a sound rather than write it.
 
 
     Examples
@@ -313,6 +334,7 @@ def write_wav_mono(
     subtype = _subtype(bit_depth, audio_format)
     if sonic_vector is None:
         sonic_vector = np.random.uniform(-1, 1, size=100000)
+    sonic_vector = _one_channel(sonic_vector)
     result = (normalize_mono(sonic_vector, remove_bias) if normalize
               else _as_given(sonic_vector))
     if np.any(fades_ms):
@@ -334,19 +356,19 @@ def write_wav_stereo(
     normalize: bool = True,
     **renamed: Any,
 ) -> None:
-    """Write a stereo WAV files for a numpy array.
+    """Write a stereo sound to a WAV or FLAC file.
 
     Parameters
     ----------
     sonic_vector : array_like, optional
-        The PCM samples to be written as a WAV sound file. Unless
+        The PCM samples to be written, of shape ``(2, nsamples)``. A mono
+        sound, or a single row, is written in both channels. Unless
         ``normalize`` is False they are normalized by
         normalize_stereo(sonic_vector) to have samples between -1 and 1
-        and remove the offset.
-        Use array of shape (nchannels, nsamples).
-        Defaults to about two seconds of uniform noise.
+        and remove the offset. Defaults to about two seconds of uniform
+        noise.
     filename : string
-        The filename to use for the file to be written.
+        The path to write. ``.wav`` and ``.flac`` are understood.
     sample_rate : scalar or None
         The sample frequency. None, the default, is the rate
         :func:`music.get_sample_rate` returns.
@@ -377,14 +399,17 @@ def write_wav_stereo(
     ------
     ValueError
         If the extension or bit depth is not one this package writes, the
-        sound is empty, or, with ``normalize=False``, it reaches past
-        [-1, 1]; or if ``fades_ms`` is neither one value nor two, or is
-        negative.
+        sound is empty or has more than two channels, or, with
+        ``normalize=False``, it reaches past [-1, 1]; or if ``fades_ms``
+        is neither one value nor two, or is negative. A mono sound was
+        written in two channels when it was normalized and in one when it
+        was not, and more channels were all written.
 
     See Also
     --------
     normalize_stereo : Normalizes a stereo array to [-1,1]
     write_wav_mono : Write a mono file.
+    convert_to_stereo : Fold more channels into two.
 
 
     Examples
@@ -402,6 +427,7 @@ def write_wav_stereo(
     subtype = _subtype(bit_depth, audio_format)
     if sonic_vector is None:
         sonic_vector = np.random.uniform(-1, 1, size=(2, 100000))
+    sonic_vector = _two_channels(sonic_vector, "write_wav_stereo")
     result = (normalize_stereo(sonic_vector, remove_bias,
                                normalize_separately) if normalize
               else _as_given(sonic_vector))
@@ -437,9 +463,10 @@ def write_audio(
     Parameters
     ----------
     sonic_vector : array_like, optional
-        The PCM samples to write: ``(nsamples,)`` for mono or
-        ``(2, nsamples)`` for stereo. Defaults to about two seconds of
-        uniform noise, as the two writers below do.
+        The PCM samples to write: ``(nsamples,)``, or a single row
+        ``(1, nsamples)``, for mono, and ``(2, nsamples)`` for stereo.
+        Defaults to about two seconds of uniform noise, as the two
+        writers below do.
     filename : string
         The path to write. ``.wav`` and ``.flac`` are understood.
     sample_rate : scalar or None
@@ -470,9 +497,10 @@ def write_audio(
     ------
     ValueError
         If the extension is not one this package writes, the bit depth
-        is not one the chosen container can hold, the sound is empty,
-        or, with ``normalize=False``, it reaches past [-1, 1]; or if
-        ``fades_ms`` is neither one value nor two, or is negative.
+        is not one the chosen container can hold, the sound is empty or
+        has more than two channels, or, with ``normalize=False``, it
+        reaches past [-1, 1]; or if ``fades_ms`` is neither one value nor
+        two, or is negative.
 
     See Also
     --------
@@ -502,13 +530,12 @@ def write_audio(
     fades_ms = renamed_arguments('write_audio', renamed,
                                  fades='fades_ms').get('fades_ms', fades_ms)
     # Called by keyword alone, so the two writers' differing positions
-    # past remove_bias do not matter here.
+    # past remove_bias do not matter here. A single row is one channel,
+    # and goes to the mono writer, which takes it.
     write: Callable[..., None]
-    if sonic_vector is None:
-        write = write_wav_mono
-    else:
-        write = (write_wav_stereo if np.ndim(sonic_vector) == 2
-                 else write_wav_mono)
+    shape = () if sonic_vector is None else np.shape(sonic_vector)
+    write = (write_wav_stereo if len(shape) == 2 and shape[0] != 1
+             else write_wav_mono)
     write(sonic_vector=sonic_vector, filename=filename,
           sample_rate=sample_rate, fades_ms=fades_ms, bit_depth=bit_depth,
           remove_bias=remove_bias, normalize=normalize)

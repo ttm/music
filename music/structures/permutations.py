@@ -6,8 +6,8 @@ includes utility functions for permutation operations.
 
 Classes in this module:
 
-* ``InterestingPermutations`` -- Provides tools for generating and manipulating
-* permutations with specific properties.
+* ``InterestingPermutations`` -- Provides tools for generating and
+  manipulating permutations with specific properties.
 
 Functions in this module:
 
@@ -18,8 +18,6 @@ Examples
 --------
 To work with interesting permutations:
 
->>> from sympy.combinatorics import Permutation
->>> from sympy.combinatorics.named_groups import AlternatingGroup
 >>> interesting_perms = InterestingPermutations(nelements=4,
 ...                                             method="dimino")
 >>> len(interesting_perms.alternations)

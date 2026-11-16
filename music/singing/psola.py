@@ -605,7 +605,6 @@ def _fit(samples, count):
     return fitted
 
 
-
 def _trembling(samples):
     """`samples` with eCantorix's tremolo, from their own start, as sox
     gave each syllable its own."""

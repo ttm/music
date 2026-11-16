@@ -1,7 +1,7 @@
 import numpy as np
 import music
 
-# 1) start a ѕynth
+# 1) start a synth
 being = music.legacy.Being()
 
 # 2) set its parameters using sequences to be iterated through

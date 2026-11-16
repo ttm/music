@@ -5,7 +5,7 @@ from .fade import fade
 from .loud import loud
 from ..._deprecation import renamed_arguments
 from ..._rate import resolve_rate, sample_count
-from ...utils import _transition_is_linear, as_sonic_vector
+from ...utils import _transition_is_linear, _two_channels, as_sonic_vector
 
 #: The parameters :func:`adsr` and :func:`adsr_stereo` renamed so their
 #: names say they are milliseconds, among parameters that are seconds.
@@ -358,8 +358,8 @@ def adsr_stereo(duration=2, attack_ms=20, decay_ms=20,
         is ignored, and zero is an envelope of no samples.
     sonic_vector : array_like
         A ``(2, nsamples)`` stereo sound for the envelope to be applied
-        to. If supplied, ``duration`` and ``number_of_samples`` are
-        ignored.
+        to; a mono sound, or a single row, is put in both channels first.
+        If supplied, ``duration`` and ``number_of_samples`` are ignored.
     sample_rate : integer or None
         The sample rate. None, the default, is the rate
         :func:`music.get_sample_rate` returns.
@@ -380,12 +380,16 @@ def adsr_stereo(duration=2, attack_ms=20, decay_ms=20,
         As :func:`adsr` raises it: a `transition` it does not know, a
         per-stage value with the wrong number of stages, a negative
         `alpha` for an exponential transition, or a negative duration.
+        Or if `sonic_vector` has more than two channels. A mono sound
+        came back as two bare envelopes of `duration`, rather than as the
+        sound shaped, and a third channel was dropped.
     TypeError
         If a keyword is neither a parameter nor one of the old names.
 
     See Also
     --------
     adsr : the mono envelope, and the meaning of every argument here.
+           Given a stereo sound, it shapes both channels alike too.
 
     Examples
     --------
@@ -402,8 +406,8 @@ def adsr_stereo(duration=2, attack_ms=20, decay_ms=20,
     to_zero_ms = given.get('to_zero_ms', to_zero_ms)
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
-        sonic_vector1 = sonic_vector[0]
-        sonic_vector2 = sonic_vector[1]
+        sonic_vector1, sonic_vector2 = _two_channels(sonic_vector,
+                                                     "adsr_stereo")
     else:
         sonic_vector1 = 0
         sonic_vector2 = 0

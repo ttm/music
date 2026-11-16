@@ -101,7 +101,7 @@ def test_a_band_starting_at_the_nyquist_frequency_is_that_component():
 def test_what_was_wrong_is_said_even_for_no_samples():
     """The colour was read after the length, so a noise of no samples
     accepted any name."""
-    with pytest.raises(ValueError, match="^Set ntype"):
+    with pytest.raises(ValueError, match="^noise_type is a number"):
         music.noise("mauve", duration=0)
 
 
@@ -263,10 +263,11 @@ def test_a_bare_gaussian_noise_lasts_two_seconds():
 
 
 def test_an_unknown_colour_is_refused_with_the_names_there_are():
+    """By the parameter's name: it said ``ntype``, its name before."""
     with pytest.raises(ValueError, match=_exactly(
-            "Set ntype to a number or one of the following strings: "
-            "'white', 'pink', 'brown', 'blue', 'violet', 'black'. "
-            "Check docstring for more information.")):
+            "noise_type is a number of decibels per octave or one of the "
+            "colours 'white', 'pink', 'brown', 'blue', 'violet' and "
+            "'black'; got 'mauve'")):
         music.noise("mauve")
 
 

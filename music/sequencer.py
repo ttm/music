@@ -129,12 +129,14 @@ class Sequencer:
         Raises
         ------
         ValueError
-            If ``start`` is negative or not finite, or ``adsr_params`` or
-            ``spatial`` names ``sonic_vector`` or ``sample_rate``, which
-            the sequencer supplies itself. A negative start was placed at
-            a negative sample offset and failed with a broadcasting
-            error, NaN and infinity failed in ``round()`` when rendering,
-            and a second ``sample_rate`` as a ``TypeError`` there.
+            If ``start`` or ``duration`` is negative or not finite, or
+            ``adsr_params`` or ``spatial`` names ``sonic_vector`` or
+            ``sample_rate``, which the sequencer supplies itself. A
+            negative start was placed at a negative sample offset and
+            failed with a broadcasting error, NaN and infinity failed in
+            ``round()`` when rendering, and a second ``sample_rate`` as a
+            ``TypeError`` there. A negative duration rendered no note,
+            silently, and one that was not finite failed when rendering.
         """
         if not math.isfinite(start):
             raise ValueError(
@@ -144,6 +146,10 @@ class Sequencer:
             raise ValueError(
                 f"a note cannot start before the sequence does; got "
                 f"start={start}")
+        if not (math.isfinite(duration) and duration >= 0):
+            raise ValueError(
+                f"a note lasts a finite number of seconds, none of them "
+                f"negative; got duration={duration}")
         for name, params in (("adsr_params", adsr_params),
                              ("spatial", spatial)):
             supplied = sorted({"sonic_vector", "sample_rate"}
@@ -194,7 +200,16 @@ class Sequencer:
         return note
 
     def render(self) -> np.ndarray:
-        """Render all scheduled events and return the audio array."""
+        """Render all scheduled events and return the audio array.
+
+        Returns
+        -------
+        ndarray
+            The notes summed, each from its start, as long as the last
+            one to end: mono, or ``(2, nsamples)`` once any note is placed
+            with ``spatial``, the mono ones then in both channels. No
+            notes render no samples.
+        """
         # From no samples, which the first stereo note makes stereo.
         result = np.zeros(0)
         for event in sorted(self.events, key=lambda e: e.start):

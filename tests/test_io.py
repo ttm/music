@@ -1,3 +1,4 @@
+import re
 import sys
 import warnings
 
@@ -165,3 +166,63 @@ def test_a_fade_at_one_end_only_leaves_the_other_alone(tmp_path):
     np.testing.assert_allclose(written[:100], music.normalize_mono(tone)[:100],
                                atol=2 ** -15)
     assert abs(written[-10:]).max() < 1e-3
+
+
+# --------------------------------------------------------------------------
+# How many channels each writer writes
+# --------------------------------------------------------------------------
+
+def test_the_mono_writer_refuses_a_stereo_sound(tmp_path):
+    """soundfile read its second axis as the channels: the file was two
+    frames long, in 441 channels, and nothing said so."""
+    stereo = np.vstack([music.note(440, 0.01)] * 2)
+    path = tmp_path / "two.wav"
+    with pytest.raises(ValueError, match=re.escape(
+            "write_wav_mono writes one channel; got an array of shape "
+            "(2, 441). write_wav_stereo writes two, and write_audio "
+            "chooses by the array")):
+        music.write_wav_mono(stereo, str(path))
+    assert not path.exists()
+
+
+@pytest.mark.parametrize("normalize", [True, False])
+def test_the_mono_writer_takes_a_single_row(tmp_path, normalize):
+    tone = 0.5 * music.note(440, 0.01)
+    row, plain = str(tmp_path / "row.wav"), str(tmp_path / "plain.wav")
+    music.write_wav_mono(tone[np.newaxis], row, normalize=normalize)
+    music.write_wav_mono(tone, plain, normalize=normalize)
+    assert sf.info(row).channels == 1
+    np.testing.assert_array_equal(music.read_audio(row),
+                                  music.read_audio(plain))
+
+
+@pytest.mark.parametrize("normalize", [True, False])
+@pytest.mark.parametrize("shape", [(441,), (1, 441)])
+def test_the_stereo_writer_writes_a_mono_sound_in_both_channels(
+        tmp_path, normalize, shape):
+    """Normalized, a mono sound was written in two channels, and as it
+    was, in one."""
+    tone = 0.5 * np.reshape(music.note(440, 0.01), shape)
+    path = str(tmp_path / "mono.wav")
+    music.write_wav_stereo(tone, path, normalize=normalize)
+    written = music.read_audio(path)
+    assert written.shape == (2, 441)
+    np.testing.assert_array_equal(written[0], written[1])
+
+
+@pytest.mark.parametrize("write", [music.write_wav_stereo, music.write_audio])
+def test_three_channels_are_refused_rather_than_written(tmp_path, write):
+    """They were all written, as a stereo file of three channels, the
+    first two normalized and the third as it was."""
+    path = tmp_path / "three.wav"
+    with pytest.raises(ValueError, match=re.escape(
+            "write_wav_stereo takes a mono or a stereo sound; got an array "
+            "of shape (3, 441)")):
+        write(np.vstack([music.note(440, 0.01)] * 3), str(path))
+    assert not path.exists()
+
+
+def test_write_audio_writes_a_single_row_as_the_one_channel_it_is(tmp_path):
+    path = str(tmp_path / "row.flac")
+    music.write_audio(music.note(440, 0.01)[np.newaxis], path)
+    assert sf.info(path).channels == 1

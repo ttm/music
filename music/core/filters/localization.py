@@ -110,10 +110,10 @@ def localize(sonic_vector=None, theta=None, distance=0, x=.1, y=.01,
     Examples
     --------
     >>> write_wav_stereo(localize())
+    >>> # from the left to the right, 10 cm in front
     >>> write_wav_stereo(horizontal_stack(*[
-    ...     localize(note_with_vibrato(duration=1), x=i, y=j)
-    ...     for i, j in zip([.1, .7, np.pi - .1, np.pi - .7],
-    ...                     [.1, .1, .1, .1])]))
+    ...     localize(note_with_vibrato(duration=1), x=i, y=.1)
+    ...     for i in (-.7, -.1, .1, .7)]))
 
     """
     _require_ears(zeta)
@@ -493,9 +493,8 @@ def localize2(sonic_vector=None, theta=-70, x=.1, y=.01, zeta=0.215,
     >>> write_wav_stereo(localize2())
     >>> # theta=None, or the default angle overrides every position
     >>> write_wav_stereo(horizontal_stack(*[
-    ...     localize2(note_with_vibrato(duration=1), theta=None, x=i, y=j)
-    ...     for i, j in zip([.1, .7, np.pi - .1, np.pi - .7],
-    ...                     [.1, .1, .1, .1])]))
+    ...     localize2(note_with_vibrato(duration=1), theta=None, x=i, y=.1)
+    ...     for i in (-.7, -.1, .1, .7)]))
 
     """
     _require_ears(zeta)

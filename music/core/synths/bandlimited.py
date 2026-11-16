@@ -16,7 +16,7 @@ from functools import lru_cache
 import numpy as np
 from numpy.typing import NDArray
 
-from ...utils import waveform_table
+from ...utils import WAVEFORMS, waveform_table
 from ..._rate import resolve_rate, sample_count
 
 
@@ -98,6 +98,12 @@ def bandlimited_note(
     sample_rate = resolve_rate(sample_rate)
     if sample_rate <= 0:
         raise ValueError("sample_rate must be positive")
+    # Checked with the rest, rather than only where the table is built,
+    # which a render of no samples never reaches: it accepted any name.
+    if waveform not in WAVEFORMS:
+        raise ValueError(
+            f"unknown waveform {waveform!r}; expected one of "
+            f"{list(WAVEFORMS)}")
     if not (0 < freq < sample_rate / 2):
         raise ValueError("freq must be positive and below Nyquist")
     if number_of_samples is not None and number_of_samples < 0:

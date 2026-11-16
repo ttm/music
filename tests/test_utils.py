@@ -1,3 +1,4 @@
+import re
 import warnings
 
 import numpy as np
@@ -490,3 +491,33 @@ def test_convert_to_stereo_refuses_what_is_not_a_sound(shape):
     channels."""
     with pytest.raises(ValueError, match="convert_to_stereo takes a mono"):
         utils.convert_to_stereo(np.zeros(shape))
+
+
+# --------------------------------------------------------------------------
+# _two_channels: what keeps two channels takes a sound as
+# --------------------------------------------------------------------------
+
+@pytest.mark.parametrize("sound", [[0.5, -0.25, 1.0], [[0.5, -0.25, 1.0]]])
+def test_a_mono_sound_or_one_row_is_put_in_both_channels(sound):
+    pair = utils._two_channels(sound, "a routine")
+    np.testing.assert_array_equal(pair, [[0.5, -0.25, 1.0]] * 2)
+    assert pair.dtype == np.float64
+
+
+def test_a_stereo_sound_is_kept_as_it_is_and_not_aliased():
+    stereo = np.array([[0.5, -0.25], [0.1, 0.2]])
+    pair = utils._two_channels(stereo, "a routine")
+    np.testing.assert_array_equal(pair, stereo)
+    pair[0, 0] = 9
+    assert stereo[0, 0] == 0.5
+
+
+@pytest.mark.parametrize("shape", [(3, 4), (0, 4), (2, 2, 3), ()])
+def test_what_has_not_one_or_two_channels_is_refused(shape):
+    """Not folded into two, as convert_to_stereo folds them, and not cut
+    to the first two, as adsr_stereo cut them."""
+    with pytest.raises(ValueError, match=re.escape(
+            f"a routine takes a mono or a stereo sound; got an array of "
+            f"shape {shape}. convert_to_stereo folds more channels into "
+            f"two")):
+        utils._two_channels(np.zeros(shape), "a routine")

@@ -101,7 +101,7 @@ def test_saturating_hunts_is_the_least_that_completes_the_group(nelements):
 def test_more_hunts_than_saturating_warns_but_still_completes():
     """Above the saturating count nothing is gained, which the code says out
     loud. The peal must still be a valid traversal."""
-    with pytest.warns(UserWarning, match="hunts less"):
+    with pytest.warns(UserWarning, match="ring the same peal as"):
         peal = PlainChanges(5, nhunts=4).peal_direct
     rows = _rows(peal)
     assert len(set(rows)) == len(rows)

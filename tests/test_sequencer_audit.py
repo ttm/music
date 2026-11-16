@@ -26,6 +26,25 @@ def test_a_note_starts_a_finite_time_into_the_sequence(start):
     assert sequencer.events == []
 
 
+@pytest.mark.parametrize("duration", [-0.1, math.nan, math.inf])
+def test_a_note_lasts_a_finite_time_none_of_it_negative(duration):
+    """A negative duration rendered no note, without a word, and NaN and
+    infinity failed when the sequence was rendered."""
+    sequencer = Sequencer()
+    with pytest.raises(ValueError, match=_exactly(
+            "a note lasts a finite number of seconds, none of them "
+            f"negative; got duration={duration}")):
+        sequencer.add_note(440, 0.0, duration)
+    assert sequencer.events == []
+
+
+def test_a_note_of_no_duration_is_a_note_of_no_samples():
+    sequencer = Sequencer()
+    sequencer.add_note(440, 0.25, 0.0)
+    assert sequencer.render().shape == (11025,)
+    assert not sequencer.render().any()
+
+
 def test_a_note_before_the_sequence_is_refused_by_its_start():
     with pytest.raises(ValueError, match=_exactly(
             "a note cannot start before the sequence does; got "

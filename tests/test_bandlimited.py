@@ -1,5 +1,7 @@
 """Independent spectral checks for the opt-in band-limited oscillator."""
 
+import re
+
 import numpy as np
 import pytest
 
@@ -84,6 +86,15 @@ def test_count_override_and_empty_render():
 def test_invalid_arguments_refused(args, message):
     with pytest.raises(ValueError, match=message):
         music.bandlimited_note(**args)
+
+
+def test_an_unknown_waveform_is_refused_even_for_no_samples():
+    """The name was read only where the table is built, which a render of
+    no samples never reaches."""
+    with pytest.raises(ValueError, match=re.escape(
+            "unknown waveform 'sawtoothish'; expected one of ['sine', "
+            "'sawtooth', 'square', 'triangle']")):
+        music.bandlimited_note(waveform="sawtoothish", number_of_samples=0)
 
 
 def test_a_whole_table_size_may_be_written_as_a_float():

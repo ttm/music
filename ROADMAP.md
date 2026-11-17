@@ -1066,6 +1066,40 @@ names an argument that is not there; both were checked across the
 package. The three areas whose code this changed were measured again,
 and `MUTATION_AUDIT.md` has the runs.
 
+A fourth reading looked at what every routine shares rather than at any
+one of them: how each reads a count of samples, a frequency and a table,
+what the documentation links to, and a sound laid out as another library
+lays one out.
+
+- **A count read five ways.** `note` rounded `number_of_samples=5.5` up,
+  `silence` down, `adsr`, `noise` and the sequence routines refused even
+  5.0 in numpy's words, and the sequence routines read a negative count
+  as a slice's end, all but the last five samples of a fourteen-second
+  render for -5. Every routine reads a count by one rule now: a whole
+  number of any type, no fraction, and a negative one is no samples, as
+  a negative duration is -- `adsr` failed on that too -- except to the
+  band-limited routines, which refuse both.
+- **A phase that is no number.** Every oscillator read its table at NaN
+  cast to an integer, one entry at every sample, so a NaN frequency gave
+  a flat line; each refuses one now, as the glissandos did. A table of
+  float32 or of integers gave a note of its type; each returns float64,
+  as annotated. The spatial routines are left as they are: a NaN angle
+  gives a sound of NaN there, which nothing mistakes for a sound, or, in
+  `localize`, Python's "cannot convert float NaN to integer".
+- **References that led nowhere.** Fourteen references in the API
+  reference rendered as plain text, to helpers it does not list or by
+  paths it does not use, and the exported tables had no pages at all.
+  The docs build is nitpicky now, so the next such reference fails it.
+- **A sound with its frames in rows.** soundfile reads a file a frame to
+  a row, and such a sound was refused with the advice to fold its 44,100
+  "channels" into two; the refusal names the transpose.
+
+The second reading's two sweeps still hold -- no routine changes an
+array it is given, nor returns one sharing its memory, and every routine
+renders the same at a rate given as at the same rate set -- and the
+suite raises no warning but the package's own. The areas whose code
+this changed were measured again, and `MUTATION_AUDIT.md` has the runs.
+
 ## Open after the September 2026 audits
 
 What the audits found and did not fix, and why. Each is recorded where

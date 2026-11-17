@@ -278,6 +278,17 @@
   that find the routines with a `number_of_samples` themselves, so a new
   one is held to it too; and every oscillator is held to refusing a
   phase that is no number.
+- **The nine areas of the mutation audit whose code the fourth reading
+  changed were measured again,** `foundations`, `oscillators`,
+  `envelopes`, `filters`, `noises`, `stimuli`, `bandlimited`, `utils` and
+  `sequencer`. A first run found two gaps, both in the new code: reading
+  a vibrato's or a modulation's table as float64 changed no sample a test
+  made, nor any of a two-second vibrato, and is left to the table a note
+  is made of; and the edge of the hint for a sound with its frames in
+  rows, which a test now asks about. The new tests detect eight mutants
+  earlier runs accepted, and each was detected again alone. Of the 6,336
+  mutants of the latest runs, the 221 that survive are the kinds
+  `MUTATION_AUDIT.md` accepts.
 
 ### Maintenance
 

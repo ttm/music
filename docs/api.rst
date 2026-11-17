@@ -31,6 +31,14 @@ Each returns a numpy array of PCM samples. ``note`` is the plain wavetable
 lookup, as MASS specifies it; the rest layer vibrato, pitch transitions,
 frequency modulation and movement onto it.
 
+Every routine here, and every envelope and generator below, takes its
+length as a ``duration`` in seconds or as a ``number_of_samples``, which
+wins when given. A count is a whole number, ``100`` or ``100.0``, and a
+fraction of one is refused rather than rounded; a negative duration or
+count is no samples, except to the band-limited routines, which refuse
+both. A frequency, a depth or a position that is NaN or infinite is
+refused too, since there is no point of the table to read at it.
+
 .. autosummary::
    :toctree: generated
    :nosignatures:
@@ -162,6 +170,8 @@ direction out of them.
    hrir
    available_azimuths
    hrtf_dir
+   ELEVATIONS
+   KEMAR_URL
 
 Filter design
 ~~~~~~~~~~~~~
@@ -243,11 +253,23 @@ becomes frequencies and then sound in two steps.
    interval_between
    consonance
 
-The tables these read from are exported too: ``SCALES``, ``MODES``,
-``MINOR_SCALES`` and ``DIATONIC_STEPS`` for the scales, ``CHORDS``,
-``TRIADS`` and ``SEVENTHS`` for the chords, and
-``HARMONIC_SERIES_AS_PRINTED`` for the article's own table of partials, and
-``SIMPLE_INTERVALS`` and ``CONSONANCE`` for the intervals.
+The tables these read from are exported too: the scales, the chords,
+the article's own table of partials, and the intervals.
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   SCALES
+   MODES
+   MINOR_SCALES
+   DIATONIC_STEPS
+   CHORDS
+   TRIADS
+   SEVENTHS
+   HARMONIC_SERIES_AS_PRINTED
+   SIMPLE_INTERVALS
+   CONSONANCE
 
 Bonds
 -----
@@ -309,13 +331,15 @@ Wavetables
 
    PrimaryTables
    waveform_table
+   WAVEFORMS
+   WAVEFORM_SINE
+   WAVEFORM_TRIANGULAR
+   WAVEFORM_SQUARE
+   WAVEFORM_SAWTOOTH
 
-``WAVEFORM_SINE``, ``WAVEFORM_TRIANGULAR``, ``WAVEFORM_SQUARE`` and
-``WAVEFORM_SAWTOOTH`` are the lookup tables used by default throughout the
-package, and are the names that appear in the synthesis signatures above.
-They are re-exported from the top level like everything else, so
-``music.note(waveform_table=music.WAVEFORM_SINE)`` works;
-``music.WAVEFORMS`` names the shapes :func:`waveform_table` can build.
+The four tables are the ones used by default throughout the package, and
+the names that appear in the synthesis signatures above, so
+``music.note(waveform_table=music.WAVEFORM_SINE)`` works.
 
 Singing
 -------

@@ -45,8 +45,9 @@ routine takes ``number_of_samples`` instead, and it wins over ``duration``:
 
    one_period = music.note(441, number_of_samples=100)   # 44100 / 441
 
-A duration is counted the same way, as the whole samples it lasts: 0.35 s
-is 15,435 samples at 44.1 kHz, and 1/441 s would be the 100 above.
+A count is a whole number, 100 or 100.0, and a fraction of one is refused
+rather than rounded. A duration is counted as the whole samples it lasts:
+0.35 s is 15,435 samples at 44.1 kHz, and 1/441 s would be the 100 above.
 
 It is all numpy
 ---------------

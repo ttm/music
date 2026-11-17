@@ -6,8 +6,9 @@ from numpy.typing import ArrayLike, NDArray
 from ..core.filters.localization import _localize_positions
 from ..core.synths.noises import noise
 from ..core.synths.notes import note
-from ..utils import WAVEFORM_SINE, _integrate_phase, _require_ears
-from .._rate import resolve_rate, sample_count
+from ..utils import (WAVEFORM_SINE, _entries, _integrate_phase,
+                     _require_ears)
+from .._rate import render_length, resolve_rate, sample_count
 
 __all__ = [
     'amplitude_modulation',
@@ -25,11 +26,11 @@ def _sample_count(duration, number_of_samples, sample_rate):
 
     ``number_of_samples`` wins over ``duration`` when given, which is the
     convention every synthesis routine in this package follows. Given is
-    anything but None: zero is a count of zero.
+    anything but None: zero is a count of zero. A count is a whole
+    number, as :func:`music._rate.whole_count` reads one: a fraction was
+    cut down to the whole below it here, where `note` rounded it up.
     """
-    if number_of_samples is not None:
-        return int(number_of_samples)
-    return sample_count(duration, sample_rate)
+    return render_length(duration, sample_rate, number_of_samples)
 
 
 def _nothing(channels):
@@ -60,10 +61,10 @@ def _oscillator(waveform_table, freq, count, sample_rate):
     the package can build, as :func:`music.note_with_fm` already allows
     for its own modulator.
     """
-    table = np.asarray(waveform_table)
+    table = np.asarray(waveform_table, dtype=np.float64)
     samples = np.arange(count)
     length = len(table)
-    index = (samples * freq * length / sample_rate).astype(np.int64)
+    index = _entries(samples * freq * length / sample_rate)
     return table[index % length]
 
 
@@ -549,10 +550,10 @@ def frequency_modulation(
         instantaneous += frequency_deviation * _oscillator(
             modulation_waveform_table, modulation_freq, count, sample_rate)
 
-    table = np.asarray(waveform_table)
+    table = np.asarray(waveform_table, dtype=np.float64)
     length = len(table)
-    index = _integrate_phase(instantaneous * length / sample_rate,
-                             length).astype(np.int64)
+    index = _entries(_integrate_phase(instantaneous * length / sample_rate,
+                                      length))
     return table[index % length]
 
 

@@ -9,7 +9,7 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 from ._deprecation import alias
-from ._rate import resolve_rate, sample_count
+from ._rate import render_length, resolve_rate, sample_count
 from ._warn import warn
 
 LAMBDA_TILDE = 1024 * 16
@@ -85,9 +85,15 @@ def waveform_table(kind: str,
     )
 
 
+#: A period of a sine, 16,384 samples long and starting at zero: the
+#: table vibratos, tremolos and modulations read when given none.
 WAVEFORM_SINE = waveform_table("sine")
+#: A period of a sawtooth, rising from -1 to just below 1.
 WAVEFORM_SAWTOOTH = waveform_table("sawtooth")
+#: A period of a square wave, at -1 for its first half and 1 for its second.
 WAVEFORM_SQUARE = waveform_table("square")
+#: A period of a triangle wave, rising from -1 to 1 and falling back: the
+#: table :func:`note` and most of the oscillators read when given none.
 WAVEFORM_TRIANGULAR = waveform_table("triangle")
 
 
@@ -698,7 +704,10 @@ def convert_to_stereo(sound_vector: ArrayLike) -> NDArray[np.float64]:
         # two (left and right) and sum the rest to both left and right channels
         warn(
             'Keeping first two channels in left and right. '
-            'The rest will be added to both left and right.')
+            'The rest will be added to both left and right.'
+            + (f' Its shape, {sound_array.shape}, is {transposed}.'
+               if (transposed := _frames_in_rows(sound_array.shape))
+               else ''))
         stereo_sound = np.array((sound_array[0], sound_array[1]))
         for channel in sound_array[2:]:
             stereo_sound += channel
@@ -708,6 +717,25 @@ def convert_to_stereo(sound_vector: ArrayLike) -> NDArray[np.float64]:
         stereo_sound = sound_array
 
     return stereo_sound
+
+
+def _frames_in_rows(shape):
+    """Why `shape` may be a sound written the other way round, or ''.
+
+    soundfile reads a file, and sounddevice plays one, as a frame to a
+    row, ``(samples, channels)``; this package keeps a channel to a row.
+    So a second of stereo read with soundfile, ``(44100, 2)``, is 44,100
+    channels of two samples here, and the advice given for more than two
+    channels, to fold them with :func:`convert_to_stereo`, folded it into
+    two samples. An array of more rows than two, each of one or two
+    samples, is told its transpose may be the sound it is.
+    """
+    if len(shape) == 2 and shape[0] > 2 and shape[1] in (1, 2):
+        samples = "one sample" if shape[1] == 1 else "two samples"
+        return (f"{shape[0]} channels of {samples} here; if its rows are "
+                f"frames, as soundfile reads a file, its transpose, .T, is "
+                f"the sound")
+    return ''
 
 
 def _two_channels(sound, routine):
@@ -729,9 +757,11 @@ def _two_channels(sound, routine):
     pair = np.asarray(sound)
     if pair.ndim == 1 or (pair.ndim == 2 and pair.shape[0] in (1, 2)):
         return convert_to_stereo(pair)
+    transposed = _frames_in_rows(pair.shape)
     raise ValueError(
         f"{routine} takes a mono or a stereo sound; got an array of shape "
-        f"{pair.shape}. convert_to_stereo folds more channels into two")
+        f"{pair.shape}" + (f", {transposed}" if transposed else
+                           ". convert_to_stereo folds more channels into two"))
 
 
 def _transition_is_linear(method: str, name: str = 'method') -> bool:
@@ -882,6 +912,27 @@ def _integrate_phase(increments, length, block=16384):
     return phase
 
 
+def _entries(phase):
+    """The table entries `phase` falls on, refused if it is not a number.
+
+    Every oscillator here reads its waveform table at the whole part of
+    a phase, cast to an integer. NaN and infinity cast to the most
+    negative integer, the same entry at every sample, so a note at a
+    frequency of NaN, or a vibrato of infinite depth, came back as a
+    constant read from the table: finite, plausible and meaningless,
+    with numpy's "invalid value encountered in cast" for the only
+    notice. The glissandos refused their frequencies for this already,
+    and every reading of a table does now.
+    """
+    phase = np.asarray(phase)
+    if not np.isfinite(phase).all():
+        raise ValueError(
+            "the waveform table is read at a phase that is not a finite "
+            "number: a frequency, a depth or a position given is NaN or "
+            "infinite")
+    return phase.astype(np.int64)
+
+
 def mix_with_offset(
     first_sonic_vector: ArrayLike,
     second_sonic_vector: ArrayLike,
@@ -949,12 +1000,9 @@ def mix_with_offset(
         # names were not, so the stereo path raised KeyError.
         return resolve_stereo(mix_with_offset, locals(),
                               ['first_sonic_vector', 'second_sonic_vector'])
-    dur = duration
-
-    if number_of_samples is None:  # sample in s1 where s2[0] is added
-        ns = sample_count(dur, sample_rate)
-    else:
-        ns = number_of_samples
+    # The sample of the first sound where the second's first is added, a
+    # whole one: a fraction was cut down to the whole below it.
+    ns = render_length(duration, sample_rate, number_of_samples)
     if -ns > len(first_sonic_vector):
         raise ValueError(
             f"an offset of {ns} samples starts the second sound before the "
@@ -970,15 +1018,13 @@ def mix_with_offset(
     if nst < len(first_sonic_vector):
         nst = len(first_sonic_vector)
 
-    s = np.zeros(int(nst))
+    s = np.zeros(nst)
     s[:len(first_sonic_vector)] += first_sonic_vector
-    ns_int = int(ns)
     if ns >= 0:
-        s[ns_int: ns_int + len(second_sonic_vector)] += second_sonic_vector
+        s[ns:ns + len(second_sonic_vector)] += second_sonic_vector
     else:
-        start = int(len(first_sonic_vector) + ns)
-        end = int(len(first_sonic_vector) + ns + len(second_sonic_vector))
-        s[start:end] += second_sonic_vector
+        start = len(first_sonic_vector) + ns
+        s[start:start + len(second_sonic_vector)] += second_sonic_vector
     return s
 
 

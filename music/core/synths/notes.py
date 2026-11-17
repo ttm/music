@@ -4,11 +4,12 @@ from typing import Any
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from ...utils import (WAVEFORM_SINE, WAVEFORM_TRIANGULAR,
-                      _bent, _integrate_phase, _require_ears,
+                      _bent, _entries, _integrate_phase, _require_ears,
                       _signed_power, _transition_is_linear)
 from ..filters.adsr import adsr
 from ..._deprecation import renamed_arguments
-from ..._rate import resolve_rate, sample_count
+from ..._rate import (render_length, resolve_rate, sample_count,
+                      whole_count)
 
 
 def _require_a_ratio(start_freq, end_freq, linear_option=False):
@@ -105,14 +106,18 @@ def note(freq: float = 220, duration: float = 2,
 
     """
     sample_rate = resolve_rate(sample_rate)
-    waveform_table = np.array(waveform_table)
-    if number_of_samples is None:
-        number_of_samples = sample_count(duration, sample_rate)
+    # Read as float64, which every oscillator here returns: one handed a
+    # table of float32, or of integers, returned a note of that type. The
+    # tables of a vibrato or a modulation are left as they come: they set
+    # the note's frequency, not what it is made of, and a float32 one moved
+    # no sample of a two-second vibrato.
+    waveform_table = np.asarray(waveform_table, dtype=np.float64)
+    number_of_samples = render_length(duration, sample_rate,
+                                      number_of_samples)
     samples = np.arange(number_of_samples)
     waveform_table_length = len(waveform_table)
 
-    gamma = (samples * freq * waveform_table_length /
-             sample_rate).astype(np.int64)
+    gamma = _entries(samples * freq * waveform_table_length / sample_rate)
     result = waveform_table[gamma % waveform_table_length]
     return result
 
@@ -209,8 +214,8 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     _require_ears(zeta)
     sample_rate = resolve_rate(sample_rate)
     waveform_table = np.array(waveform_table)
-    if number_of_samples is None:
-        number_of_samples = sample_count(duration, sample_rate)
+    number_of_samples = render_length(duration, sample_rate,
+                                      number_of_samples)
     if number_of_samples < 1:
         # Zero samples is zero samples, with this routine's own shape
         # kept: adsr_stereo and spatial_motion already answer a zero
@@ -236,12 +241,10 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
         fl = freq * speed / (speed + vsl)
         fr = freq * speed / (speed + vsr)
 
-        gamma = _integrate_phase(fl * length / sample_rate,
-                                 length).astype(np.int64)
+        gamma = _entries(_integrate_phase(fl * length / sample_rate, length))
         sl = waveform_table[gamma % length] * iid_al[:-1]
 
-        gamma = _integrate_phase(fr * length / sample_rate,
-                                 length).astype(np.int64)
+        gamma = _entries(_integrate_phase(fr * length / sample_rate, length))
         sr = waveform_table[gamma % length] * iid_ar[:-1]
 
         itd0 = (dl[0] - dr[0]) / speed
@@ -264,8 +267,7 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
         vs = sample_rate * (distance[1:] - distance[:-1])
         f_ = freq * speed / (speed + vs)
 
-        gamma = _integrate_phase(f_ * length / sample_rate,
-                                 length).astype(np.int64)
+        gamma = _entries(_integrate_phase(f_ * length / sample_rate, length))
         result = waveform_table[gamma % length] * iid[:-1]
     return result
 
@@ -356,17 +358,14 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
 
     """
     sample_rate = resolve_rate(sample_rate)
-    waveform_table = np.array(waveform_table)
+    waveform_table = np.asarray(waveform_table, dtype=np.float64)
     fm_waveform_table = np.array(fm_waveform_table)
-    if number_of_samples is not None:
-        lambda_fm = number_of_samples
-    else:
-        lambda_fm = sample_count(duration, sample_rate)
+    lambda_fm = render_length(duration, sample_rate, number_of_samples)
     samples = np.arange(lambda_fm)
 
     fm_waveform_table_length = len(fm_waveform_table)
-    gamma_m = (samples * fm * fm_waveform_table_length /
-               sample_rate).astype(np.int64)  # LUT indexes
+    gamma_m = _entries(samples * fm * fm_waveform_table_length /
+                       sample_rate)  # LUT indexes
     # values of the oscillatory pattern at each sample
     t_m = fm_waveform_table[gamma_m % fm_waveform_table_length]
 
@@ -376,8 +375,7 @@ def note_with_fm(freq: float = 220, duration: float = 2, fm: float = 100,
     # shift in table between each sample
     d_gamma = f * (waveform_table_length / sample_rate)
     # total shift at each sample
-    gamma = _integrate_phase(d_gamma,
-                             waveform_table_length).astype(np.int64)
+    gamma = _entries(_integrate_phase(d_gamma, waveform_table_length))
     # final sample lookup
     result = waveform_table[gamma % waveform_table_length]
     return result
@@ -451,14 +449,13 @@ def note_with_phase(freq: float = 220, duration: float = 2,
 
     """
     sample_rate = resolve_rate(sample_rate)
-    waveform_table = np.array(waveform_table)
-    if number_of_samples is None:
-        number_of_samples = sample_count(duration, sample_rate)
+    waveform_table = np.asarray(waveform_table, dtype=np.float64)
+    number_of_samples = render_length(duration, sample_rate,
+                                      number_of_samples)
     samples = np.arange(number_of_samples)
     waveform_table_length = len(waveform_table)
     i0 = phase * waveform_table_length / (2 * np.pi)
-    gamma = (i0 + samples * freq * waveform_table_length /
-             sample_rate).astype(np.int64)
+    gamma = _entries(i0 + samples * freq * waveform_table_length / sample_rate)
     result = waveform_table[gamma % waveform_table_length]
     return result
 
@@ -568,11 +565,8 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
 
     """
     sample_rate = resolve_rate(sample_rate)
-    waveform_table = np.array(waveform_table)
-    if number_of_samples is not None:
-        lambda_p = number_of_samples
-    else:
-        lambda_p = sample_count(duration, sample_rate)
+    waveform_table = np.asarray(waveform_table, dtype=np.float64)
+    lambda_p = render_length(duration, sample_rate, number_of_samples)
     samples = np.arange(lambda_p)
     # A single sample sits at the start; it has no interval to divide by.
     intervals = max(lambda_p - 1, 1)
@@ -587,8 +581,8 @@ def note_with_glissando(start_freq: float = 220, end_freq: float = 440,
     else:
         f = start_freq + (end_freq - start_freq) * samples / intervals
     waveform_table_length = len(waveform_table)
-    gamma = _integrate_phase(f * waveform_table_length / sample_rate,
-                             waveform_table_length).astype(np.int64)
+    gamma = _entries(_integrate_phase(f * waveform_table_length / sample_rate,
+                                      waveform_table_length))
     s = waveform_table[gamma % waveform_table_length]
     return s
 
@@ -668,17 +662,14 @@ def note_with_glissando_vibrato(
     """
     sample_rate = resolve_rate(sample_rate)
     _require_a_ratio(start_freq, end_freq)
-    waveform_table = np.array(waveform_table)
+    waveform_table = np.asarray(waveform_table, dtype=np.float64)
     vibrato_waveform_table = np.array(vibrato_waveform_table)
-    if number_of_samples is not None:
-        lambda_pv = number_of_samples
-    else:
-        lambda_pv = sample_count(duration, sample_rate)
+    lambda_pv = render_length(duration, sample_rate, number_of_samples)
     samples = np.arange(lambda_pv)
 
     lv = len(vibrato_waveform_table)
     # LUT indexes
-    gammav = (samples * vibrato_freq * lv / sample_rate).astype(np.int64)
+    gammav = _entries(samples * vibrato_freq * lv / sample_rate)
     # values of the oscillatory pattern at each sample
     tv = vibrato_waveform_table[gammav % lv]
 
@@ -696,7 +687,7 @@ def note_with_glissando_vibrato(
         f = start_freq * (end_freq / start_freq) ** \
             (samples / intervals) * 2. ** (tv * max_pitch_dev / 12)
     length = len(waveform_table)
-    gamma = _integrate_phase(f * length / sample_rate, length).astype(np.int64)
+    gamma = _entries(_integrate_phase(f * length / sample_rate, length))
     s = waveform_table[gamma % length]
     return s
 
@@ -741,15 +732,31 @@ def _fit_to_samples(sonic_vector, number_of_samples):
 
     A stereo result is fitted per channel, the fit running along the last
     axis in either case. None leaves the render as it is; zero is a render
-    of no samples, in its own shape.
+    of no samples, in its own shape, and so is a negative count, as it is
+    in every routine here. It was a slice's end, which counts back from
+    the end: five fewer than five samples came back as all but the last
+    five of a fourteen-second render.
     """
     if number_of_samples is None:
         return sonic_vector
+    count = max(0, number_of_samples)
     length = sonic_vector.shape[-1]
-    if number_of_samples <= length:
-        return sonic_vector[..., :number_of_samples]
-    pad_shape = sonic_vector.shape[:-1] + (number_of_samples - length,)
+    if count <= length:
+        return sonic_vector[..., :count]
+    pad_shape = sonic_vector.shape[:-1] + (count - length,)
     return np.concatenate((sonic_vector, np.zeros(pad_shape)), axis=-1)
+
+
+def _whole_or_none(number_of_samples):
+    """A sequence routine's count, read before it renders anything.
+
+    The routine fits its render to the count at the end, and a count
+    that is no count was refused there, by the slice that fits it, after
+    the whole render had been made.
+    """
+    if number_of_samples is None:
+        return None
+    return whole_count(number_of_samples)
 
 
 def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
@@ -892,6 +899,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     """
     _require_ears(zeta)
     sample_rate = resolve_rate(sample_rate)
+    number_of_samples = _whole_or_none(number_of_samples)
     vibratos_max_pitch_devs = renamed_arguments(
         'note_with_vibrato_seq_localization', renamed,
         max_pitch_devs='vibratos_max_pitch_devs').get(
@@ -928,8 +936,8 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         for j, dur in enumerate(vib):
             samples = np.arange(sample_count(dur, sample_rate))
             lv = len(waveform_tables[i + 1][j])
-            gammav = (samples * vibratos_freqs[i][j] * lv /
-                      sample_rate).astype(np.int64)  # LUT indexes
+            gammav = _entries(samples * vibratos_freqs[i][j] * lv /
+                              sample_rate)  # LUT indexes
             # values of the oscillatory pattern at each sample
             tv = waveform_tables[i + 1][j][gammav % lv]
             if alpha[i + 1][j] != 0:
@@ -1028,8 +1036,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         # stereo branch below; extend() spread f_ into its 600k scalars and
         # left v_ inhomogeneous for np.prod.
         f = np.prod(v_ + [f_], axis=0)
-        gamma = _integrate_phase(f * length / sample_rate,
-                                 length).astype(np.int64)
+        gamma = _entries(_integrate_phase(f * length / sample_rate, length))
         s_ = []
         pointer = 0
         for i, t in enumerate(waveform_tables[0]):
@@ -1046,8 +1053,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         # left channel
         Vl = v_ + [f_[0]]
         f = np.prod(Vl, axis=0)
-        gamma = _integrate_phase(f * length / sample_rate,
-                                 length).astype(np.int64)
+        gamma = _entries(_integrate_phase(f * length / sample_rate, length))
         s_ = []
         pointer = 0
         for i, t in enumerate(waveform_tables[0]):
@@ -1064,8 +1070,7 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
         # right channel
         vr = v_ + [f_[1]]
         f = np.prod(vr, axis=0)
-        gamma = _integrate_phase(f * length / sample_rate,
-                                 length).astype(np.int64)
+        gamma = _entries(_integrate_phase(f * length / sample_rate, length))
         s_ = []
         pointer = 0
         for i, t in enumerate(waveform_tables[0]):
@@ -1201,23 +1206,19 @@ def note_with_two_vibratos_glissando(
     secondary_vibrato_waveform_table = np.array(given.get(
         'secondary_vibrato_waveform_table', secondary_vibrato_waveform_table))
     _require_a_ratio(start_freq, end_freq)
-    waveform_table = np.array(waveform_table)
-    if number_of_samples is not None:
-        lambda_pvv = number_of_samples
-    else:
-        lambda_pvv = sample_count(duration, sample_rate)
+    waveform_table = np.asarray(waveform_table, dtype=np.float64)
+    lambda_pvv = render_length(duration, sample_rate, number_of_samples)
     samples = np.arange(lambda_pvv)
 
     lv1 = len(vibrato_waveform_table)
     # LUT indexes
-    gammav1 = (samples * vibrato_freq * lv1 / sample_rate).astype(np.int64)
+    gammav1 = _entries(samples * vibrato_freq * lv1 / sample_rate)
     # values of the oscillatory pattern at each sample
     tv1 = vibrato_waveform_table[gammav1 % lv1]
 
     lv2 = len(secondary_vibrato_waveform_table)
     # LUT indexes
-    gammav2 = (samples * secondary_vibrato_freq * lv2 /
-               sample_rate).astype(np.int64)
+    gammav2 = _entries(samples * secondary_vibrato_freq * lv2 / sample_rate)
     # values of the oscillatory pattern at each sample. This read the
     # first table, as the MASS reference still does, so the second
     # vibrato's waveform was the first one's: the second table was
@@ -1240,7 +1241,7 @@ def note_with_two_vibratos_glissando(
             ((tv1 * max_pitch_dev / 12)) * 2. ** \
             (tv2 * secondary_max_pitch_dev / 12)
     length = len(waveform_table)
-    gamma = _integrate_phase(f * length / sample_rate, length).astype(np.int64)
+    gamma = _entries(_integrate_phase(f * length / sample_rate, length))
     s = waveform_table[gamma % length]
     return s
 
@@ -1334,7 +1335,9 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
 
     """
     sample_rate = resolve_rate(sample_rate)
-    waveform_tables = tuple(tuple(np.asarray(table) for table in row)
+    number_of_samples = _whole_or_none(number_of_samples)
+    waveform_tables = tuple(tuple(np.asarray(table, dtype=np.float64)
+                                  for table in row)
                             for row in waveform_tables)
     # pitch transition contributions
     f_ = []
@@ -1359,8 +1362,8 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
         for j, dur in enumerate(vib):
             samples = np.arange(sample_count(dur, sample_rate))
             lv = len(waveform_tables[i + 1][j])
-            gammav = (samples * vibratos_freqs[i][j] * lv /
-                      sample_rate).astype(np.int64)  # LUT indexes
+            gammav = _entries(samples * vibratos_freqs[i][j] * lv /
+                              sample_rate)  # LUT indexes
             # values of the oscillatory pattern at each sample
             tv = waveform_tables[i + 1][j][gammav % lv]
             if alpha[i + 1][j] != 0:
@@ -1382,7 +1385,7 @@ def note_with_vibratos_glissandos(freqs=(220, 440, 330),
 
     f = np.prod(v_, axis=0)
     length = len(waveform_tables[0][0])
-    gamma = _integrate_phase(f * length / sample_rate, length).astype(np.int64)
+    gamma = _entries(_integrate_phase(f * length / sample_rate, length))
     s_ = []
     pointer = 0
     for i, t in enumerate(waveform_tables[0]):
@@ -1495,18 +1498,14 @@ def note_with_vibrato(
 
     """
     sample_rate = resolve_rate(sample_rate)
-    waveform_table = np.array(waveform_table)
+    waveform_table = np.asarray(waveform_table, dtype=np.float64)
     vibrato_waveform_table = np.array(vibrato_waveform_table)
-    if number_of_samples is not None:
-        lambda_v = number_of_samples
-    else:
-        lambda_v = sample_count(duration, sample_rate)
+    lambda_v = render_length(duration, sample_rate, number_of_samples)
     samples = np.arange(lambda_v)
 
     vibrato_waveform_table_length = len(vibrato_waveform_table)
-    gamma_v = (samples * vibrato_freq * vibrato_waveform_table_length /
-               sample_rate).astype(
-        np.int64)  # LUT indexes
+    gamma_v = _entries(samples * vibrato_freq * vibrato_waveform_table_length /
+                       sample_rate)  # LUT indexes
     # values of the oscillatory pattern at each sample
     t_v = vibrato_waveform_table[gamma_v % vibrato_waveform_table_length]
 
@@ -1520,8 +1519,7 @@ def note_with_vibrato(
     # shift in table between each sample
     d_gamma = f * (waveform_table_length / sample_rate)
     # total shift at each sample
-    gamma = _integrate_phase(d_gamma,
-                             waveform_table_length).astype(np.int64)
+    gamma = _entries(_integrate_phase(d_gamma, waveform_table_length))
     # final sample lookup
     result = waveform_table[gamma % waveform_table_length]
     return result
@@ -1628,25 +1626,22 @@ def note_with_two_vibratos(
                                         secondary_max_pitch_dev)
     secondary_vibrato_waveform_table = given.get(
         'secondary_vibrato_waveform_table', secondary_vibrato_waveform_table)
-    waveform_table = np.array(waveform_table)
+    waveform_table = np.asarray(waveform_table, dtype=np.float64)
     vibrato_waveform_table = np.array(vibrato_waveform_table)
     secondary_vibrato_waveform_table = np.array(
         secondary_vibrato_waveform_table)
-    if number_of_samples is not None:
-        lambda_vv = number_of_samples
-    else:
-        lambda_vv = sample_count(duration, sample_rate)
+    lambda_vv = render_length(duration, sample_rate, number_of_samples)
     samples = np.arange(lambda_vv)
 
     lv1 = len(vibrato_waveform_table)
     # LUT indexes
-    gammav1 = (samples * vibrato_freq * lv1 / sample_rate).astype(np.int64)
+    gammav1 = _entries(samples * vibrato_freq * lv1 / sample_rate)
     # values of the oscillatory pattern at each sample
     tv1 = vibrato_waveform_table[gammav1 % lv1]
 
     lv2 = len(secondary_vibrato_waveform_table)
-    gammav2 = (samples * secondary_vibrato_freq * lv2 /
-               sample_rate).astype(np.int64)  # LUT indexes
+    gammav2 = _entries(samples * secondary_vibrato_freq * lv2 /
+                       sample_rate)  # LUT indexes
     # values of the oscillatory pattern at each sample. The same defect
     # the glissando form carried: this read `vibrato_waveform_table`, so
     # the secondary table was used only for its length.
@@ -1661,7 +1656,7 @@ def note_with_two_vibratos(
         f = freq * 2. ** (tv1 * max_pitch_dev / 12) \
             * 2. ** (tv2 * secondary_max_pitch_dev / 12)
     length = len(waveform_table)
-    gamma = _integrate_phase(f * length / sample_rate, length).astype(np.int64)
+    gamma = _entries(_integrate_phase(f * length / sample_rate, length))
     s = waveform_table[gamma % length]
     return s
 
@@ -1749,9 +1744,7 @@ def trill(freqs=(440, 440 * 2 ** (2 / 12)), notes_per_second=17, duration=5,
             f"each note of the trill must span at least one sample; "
             f"{notes_per_second} notes a second at {sample_rate} Hz do not")
     note_length = sample_rate / notes_per_second
-    limit = (sample_count(duration, sample_rate)
-             if number_of_samples is None
-             else number_of_samples)
+    limit = render_length(duration, sample_rate, number_of_samples)
     pointer = 0
     i = 0
     s = []

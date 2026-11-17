@@ -164,13 +164,12 @@ def setup_hrtf(directory: str | Path | None = None,
         If the download or the extraction fails. Nothing is left behind:
         the archive is unpacked beside the target and moved into place only
         once it is whole, so an interrupted fetch does not leave a
-        directory that :func:`is_dataset` would accept.
+        directory that would pass for the measurements.
 
     See Also
     --------
     hrir : reads one direction out of them.
-    music.singing.setup_engine : the same arrangement, for the singing
-                                 engine.
+    music.setup_engine : the same arrangement, for the singing engine.
 
     Notes
     -----

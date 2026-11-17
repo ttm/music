@@ -113,6 +113,10 @@ class Sequencer:
             ``round()`` when rendering, and a second ``sample_rate`` as a
             ``TypeError`` there. A negative duration rendered no note,
             silently, and one that was not finite failed when rendering.
+
+            If ``freq``, ``vibrato_freq`` or ``max_pitch_dev`` is NaN or
+            infinite, which the note's oscillator refuses only when the
+            sequence renders, without saying which note it was.
         """
         if not math.isfinite(start):
             raise ValueError(
@@ -126,6 +130,15 @@ class Sequencer:
             raise ValueError(
                 f"a note lasts a finite number of seconds, none of them "
                 f"negative; got duration={duration}")
+        # Refused where the note is written. The oscillator refuses them
+        # too, but only when the sequence renders, and cannot say which
+        # note it was rendering.
+        for name, value in (("freq", freq), ("vibrato_freq", vibrato_freq),
+                            ("max_pitch_dev", max_pitch_dev)):
+            if not math.isfinite(value):
+                raise ValueError(
+                    f"a note's {name} is a finite number; got "
+                    f"{name}={value}")
         for name, params in (("adsr_params", adsr_params),
                              ("spatial", spatial)):
             supplied = sorted({"sonic_vector", "sample_rate"}

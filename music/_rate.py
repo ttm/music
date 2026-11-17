@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import math
 from contextvars import ContextVar, Token
-from numbers import Integral
+from numbers import Integral, Real
 from typing import Any
 
 #: The rate every routine used before the default could be changed, and
@@ -182,3 +182,46 @@ def sample_count(duration: Any, sample_rate: Any) -> int:
             f"got {duration!r} s at {sample_rate!r} Hz, which is no number "
             f"of samples")
     return math.floor(round(product, 6))
+
+
+def whole_count(value: Any, name: str = "number_of_samples") -> int:
+    """`value` as an ``int`` count of samples, refused by `name` if not.
+
+    A count is a whole number: an ``int``, one of NumPy's integers, or a
+    float that is whole, which arithmetic on seconds gives as often as
+    not. That last is where a count parts from :func:`whole`, which
+    refuses 48000.0 as a rate, since a file's header holds no float. A
+    fraction, NaN, infinity and a boolean are no count, and are refused.
+
+    A negative count is returned as it is, as :func:`sample_count`
+    returns a negative duration's: what a routine makes of either is the
+    routine's to say.
+    """
+    if not isinstance(value, bool) and isinstance(value, Real):
+        # An integer first, which no float need hold: 10**400 is a count.
+        if isinstance(value, Integral):
+            return int(value)
+        if float(value).is_integer():
+            return int(float(value))
+    raise ValueError(
+        f"{name} is a count of samples, a whole number; got {value!r}")
+
+
+def render_length(duration: Any, sample_rate: Any,
+                  number_of_samples: Any = None) -> int:
+    """How many samples a routine renders: given, or as long as `duration`.
+
+    `number_of_samples` when it is given, by :func:`whole_count`, and the
+    samples `duration` lasts at `sample_rate` when it is None, by
+    :func:`sample_count`. Every routine that takes both reads them here.
+
+    Each used to read a count its own way, so one that was not whole was
+    five things: `note` and the envelopes rounded 5.5 up to six samples,
+    `silence` and the stimulation routines down to five, `adsr`, `noise`
+    and the sequence routines refused even 5.0 in numpy's words, and
+    `render_oversampled` refused it in its own. A note and its envelope,
+    asked for one count, could differ by a sample.
+    """
+    if number_of_samples is None:
+        return sample_count(duration, sample_rate)
+    return whole_count(number_of_samples)

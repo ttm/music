@@ -55,9 +55,9 @@ def setup_engine(method="http"):
 
     The engine is a Perl program driving espeak through a Makefile, so it is
     cloned rather than installed from PyPI, and it needs git, make, perl,
-    espeak, abc2midi and sox on the system, and the Perl modules in
-    :data:`~music.singing.paths.PERL_MODULES`. Set ``$MUSIC_ECANTORIX_DIR``
-    to choose a different location.
+    espeak, abc2midi and sox on the system, and the Perl modules
+    ``MIDI``, ``Math::FFT``, ``URI::Escape`` and ``Digest::SHA``. Set
+    ``$MUSIC_ECANTORIX_DIR`` to choose a different location.
 
     Parameters
     ----------
@@ -68,10 +68,10 @@ def setup_engine(method="http"):
     -------
     str
         The engine directory, whether it was just cloned or already present.
-        A new clone is of :data:`ENGINE_REVISION`; one already present is
-        used as it is, so an engine cloned before the revision was pinned
-        stays what it was until its directory is removed and this is run
-        again.
+        A new clone is of the revision the package pins; one already
+        present is used as it is, so an engine cloned before the revision
+        was pinned stays what it was until its directory is removed and
+        this is run again.
 
     Raises
     ------

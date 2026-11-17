@@ -25,6 +25,7 @@ extensions = [
     "sphinx_sitemap",
     "sphinxext.opengraph",
     "sounds",
+    "reexports",
 ]
 
 # The docstrings in this package are numpydoc-style, with Parameters,
@@ -34,8 +35,16 @@ numpydoc_class_members_toctree = False
 numpydoc_xref_param_type = True
 
 autosummary_generate = True
+# The table and the function have one name in two cases, and a file system
+# that ignores case -- macOS's, Windows' -- holds one file for both: the
+# table's page overwrote the function's, or was never written.
+autosummary_filename_map = {"music.CONSONANCE": "music.CONSONANCE-table"}
 autodoc_default_options = {
     "members": True,
+    # Peals and IteratorSynth list what they inherit in their pages' tables
+    # of methods and attributes; without this, those entries linked to
+    # nothing, since only a class's own members were documented on its page.
+    "inherited-members": True,
     "undoc-members": False,
     "show-inheritance": True,
 }
@@ -94,6 +103,44 @@ ogp_custom_meta_tags = [
     '<meta name="twitter:card" content="summary_large_image" />',
 ]
 
-# Some docstring Examples reference names that are illustrative rather than
-# importable; do not let those become nitpick failures.
-nitpicky = False
+# Every reference must resolve, so that a name that moved, or was never
+# documented, fails the build rather than rendering as plain text where a
+# link was meant: fourteen did, among them sing's two links to a function
+# the reference has never listed, and every member Peals inherits. What
+# is let through below is not the package's to resolve -- the plain words
+# of numpydoc's parameter types, the annotations numpy's typing spells by
+# private paths, and libraries with no inventory here -- or is a module or
+# class the reference deliberately leaves to its routines.
+nitpicky = True
+numpydoc_xref_aliases = {
+    "integer": "int",
+    "Path": "pathlib.Path",
+    "NDArray": "numpy.typing.NDArray",
+    "StimulationSession": "music.StimulationSession",
+}
+numpydoc_xref_ignore = {
+    "a", "are", "array_likes", "by", "context", "durations", "each",
+    "fewer", "floats", "followed", "function", "in", "integers", "lists",
+    "manager", "mapping", "No", "no", "notes", "numeric", "of", "optional",
+    "optionally", "or", "pair", "path", "Rendered", "scalars", "sonic",
+    "sonic_arrays", "strings", "tuples", "vectors",
+}
+nitpick_ignore = [
+    ("py:class", "numpy._typing._array_like.ArrayLike"),
+    ("py:class", "numpy._typing._array_like.NDArray"),
+    ("py:class", "numpy.float64"),
+    ("py:class", "music._rate._RateSetting"),
+    ("py:class", "music.sequencer.NoteEvent"),
+    ("py:obj", "NoteEvent"),
+    ("py:class", "rdflib.graph.Graph"),
+    ("py:obj", "rdflib.Graph"),
+    ("py:class", "rdflib.Namespace"),
+    ("py:obj", "sstim.Report"),
+    ("py:obj", "Permutation"),
+    ("py:obj", "sympy.combinatorics.Permutation"),
+    ("py:mod", "sounddevice"),
+    ("py:mod", "music.stimulation"),
+    ("py:mod", "music.theory"),
+    ("py:mod", "music.structures"),
+    ("py:mod", "music.singing.psola"),
+]

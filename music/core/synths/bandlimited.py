@@ -17,7 +17,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from ...utils import WAVEFORMS, waveform_table
-from ..._rate import resolve_rate, sample_count
+from ..._rate import render_length, resolve_rate, whole_count
 
 
 @lru_cache(maxsize=128)
@@ -106,7 +106,7 @@ def bandlimited_note(
             f"{list(WAVEFORMS)}")
     if not (0 < freq < sample_rate / 2):
         raise ValueError("freq must be positive and below Nyquist")
-    if number_of_samples is not None and number_of_samples < 0:
+    if number_of_samples is not None and whole_count(number_of_samples) < 0:
         raise ValueError("number_of_samples cannot be negative")
     if number_of_samples is None and (not np.isfinite(duration)
                                       or duration < 0):
@@ -119,8 +119,7 @@ def bandlimited_note(
             f"table_size must be a whole number of at least 4; got "
             f"{table_size}")
     table_size = int(table_size)
-    count = (int(number_of_samples) if number_of_samples is not None
-             else sample_count(duration, sample_rate))
+    count = render_length(duration, sample_rate, number_of_samples)
     if not count:
         return np.empty(0, dtype=np.float64)
 

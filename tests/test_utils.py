@@ -528,3 +528,47 @@ def test_what_has_not_one_or_two_channels_is_refused(shape):
             f"shape {shape}. convert_to_stereo folds more channels into "
             f"two")):
         utils._two_channels(np.zeros(shape), "a routine")
+
+
+@pytest.mark.parametrize("shape,samples", [
+    ((3, 2), "two samples"), ((44100, 2), "two samples"),
+    ((3, 1), "one sample"), ((10, 1), "one sample"),
+])
+def test_a_sound_with_its_frames_in_rows_is_told_to_transpose(shape, samples):
+    """soundfile reads a file as a frame to a row, and a second of stereo
+    read with it is 44,100 channels of two samples here. The refusal
+    advised folding them with convert_to_stereo, into two samples."""
+    with pytest.raises(ValueError) as refusal:
+        utils._two_channels(np.zeros(shape), "a routine")
+    assert str(refusal.value) == (
+        f"a routine takes a mono or a stereo sound; got an array of shape "
+        f"{shape}, {shape[0]} channels of {samples} here; if its rows are "
+        f"frames, as soundfile reads a file, its transpose, .T, is the "
+        f"sound")
+
+
+@pytest.mark.parametrize("shape", [(2, 1), (2, 2), (0, 2), (3, 3)])
+def test_two_rows_or_longer_ones_are_not_taken_for_frames(shape):
+    """Two rows are a stereo sound's channels, whatever their length, and
+    rows of more than two samples are channels however many there are."""
+    assert utils._frames_in_rows(shape) == ''
+
+
+def test_convert_to_stereo_says_so_as_it_folds_frames_in_rows():
+    with pytest.warns(UserWarning) as caught:
+        utils.convert_to_stereo(np.zeros((4000, 2)))
+    assert str(caught[0].message) == (
+        "Keeping first two channels in left and right. The rest will be "
+        "added to both left and right. Its shape, (4000, 2), is 4000 "
+        "channels of two samples here; if its rows are frames, as soundfile "
+        "reads a file, its transpose, .T, is the sound.")
+
+
+@pytest.mark.parametrize("shape", [(3, 3), (3, 5)])
+def test_convert_to_stereo_folds_channels_of_more_samples_without_a_hint(
+        shape):
+    with pytest.warns(UserWarning) as caught:
+        utils.convert_to_stereo(np.zeros(shape))
+    assert str(caught[0].message) == (
+        "Keeping first two channels in left and right. The rest will be "
+        "added to both left and right.")

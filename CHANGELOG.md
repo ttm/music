@@ -27,6 +27,13 @@
   or an empty directory, or one it filled before. On a Python whose
   `tarfile` cannot filter what it unpacks, before 3.10.12 and 3.11.4, it
   says so before downloading, where it failed with a `TypeError` after.
+- **A count of samples that is not a whole number is refused,** where
+  each routine read one its own way. A whole count is taken in any type,
+  `5.0` and NumPy's integers included; `number_of_samples=5.5`, NaN,
+  infinity or a boolean is refused by name, as is an offset of 1.5
+  samples to `mix_with_offset`. An oscillator refuses a frequency, a
+  depth or a position that is NaN or infinite, where it returned a
+  constant read from its table, or a sound of NaN.
 
 ### Changed
 
@@ -174,6 +181,52 @@
   tenth of a second, at their offsets across a minute, held some 12 GB and
   took 25 seconds. The mix is made once and each sound added where it
   lies: the same mix, bit for bit, in a hundredth of a second.
+- **A count of samples was five different things.** `note` and the
+  envelopes handed `number_of_samples` to `np.arange`, which rounds a
+  fraction up, so 5.5 rendered six samples; `silence`, `gaussian_noise`,
+  `bandlimited_note` and the stimulation routines cut it down to five;
+  `adsr`, `noise` and the sequence routines refused even 5.0, in numpy's
+  words; and `render_oversampled` refused 5.0 in its own. A note and the
+  envelope made for it, asked for one count, could differ by a sample.
+  Every routine reads a count by one rule now: a whole number of any
+  type, and no fraction.
+- **The sequence routines read a negative count as a slice's end.**
+  `note_with_vibrato_seq_localization` and `note_with_vibratos_glissandos`
+  fit their render to `number_of_samples` by slicing it, and a negative
+  end counts back: -5 gave all but the last five samples of the render,
+  635,035 of them for the defaults, where every other routine gives none.
+  They give none, and read the count before they render, where a count
+  that was no count was refused by the slice, after the render.
+- **`adsr` failed on a negative duration in numpy's words,** "negative
+  dimensions are not allowed", where every other envelope answers one
+  with no samples. It does too.
+- **An oscillator at a frequency of NaN returned a constant.** Each reads
+  its table at the whole part of a phase, and NaN and infinity cast to
+  the most negative integer, one entry at every sample: `note(nan)` was a
+  flat line read from the table, finite and plausible, with numpy's
+  "invalid value encountered in cast" for the only notice. The
+  glissandos refused such frequencies already; every reading of a table
+  does now, for a frequency, a depth or a position that leaves its phase
+  no number.
+- **`Sequencer.add_note` took a frequency of NaN,** and the sequence
+  failed only when it rendered, by the oscillator's refusal, which cannot
+  say which note it was rendering. It refuses a `freq`, a `vibrato_freq`
+  or a `max_pitch_dev` that is NaN or infinite where the note is added,
+  as it refuses such a duration.
+- **An oscillator returned its table's type.** A table of float32 gave a
+  note of float32, and a table of integers a note of integers, where each
+  is annotated to return float64; one of them read its tables as float64
+  already. Each reads the table its note is made of as float64 now.
+- **`louds` and `tremolos` refused one number where a sequence belongs in
+  Python's words,** that an int "has no len()" or "is not iterable".
+  They name the argument and the layout they take.
+- **A sound with its frames in rows was told to fold its channels.**
+  soundfile reads a file a frame to a row, so a second of stereo read
+  with it, `(44100, 2)`, is 44,100 channels of two samples here, and the
+  routines that keep two channels refused it with the advice to fold
+  them with `convert_to_stereo`, which made it two samples. They say its
+  transpose may be the sound, and `convert_to_stereo` says so as it
+  folds one.
 
 ### Tests
 
@@ -221,6 +274,10 @@
   sound comes first, as one did in every test. A test with a mono sound
   first detects it. Of the 1,498 mutants of the latest runs, the 78 that
   survive are the kinds `MUTATION_AUDIT.md` accepts.
+- **Every routine that takes a count is held to one rule,** by tests
+  that find the routines with a `number_of_samples` themselves, so a new
+  one is held to it too; and every oscillator is held to refusing a
+  phase that is no number.
 
 ### Maintenance
 
@@ -346,6 +403,26 @@
 - **The README and `CONTRIBUTING.md` said CI runs on every push.** It
   runs on every push to master and on every pull request; a branch
   pushed on its own runs nothing until a pull request is opened from it.
+- **Fourteen references in the API reference led nowhere,** rendered as
+  plain text where a link was meant. `sing` linked to `unit_seconds` and
+  `accents`, which the reference has never listed, and to `setup_engine`
+  by a path it is not documented at, as `setup_hrtf` did; `setup_hrtf`,
+  `setup_engine`, `localize_linear`, `StimulationSession` and
+  `PrimaryTables` linked to helpers, constants and an attribute the
+  reference does not document; and `Bonds` to the names it binds. Each
+  says what it meant, or links where the reference documents it. The
+  members `Peals` and `IteratorSynth` inherit were listed on their pages
+  with nothing to link to, and are documented there. The docs build is
+  nitpicky now: a reference that leads nowhere fails it.
+- **The tables the package exports had no pages,** so `scale`'s "one of
+  SCALES" led nowhere and nothing listed the scales, the chords, the
+  elevations measured or the four default wavetables. Each has its page
+  in the API reference, with the comment that documents it where it is
+  defined. autodoc did not find that comment for a name re-exported from
+  `music`, and gave its type's docstring instead: `ELEVATIONS` was
+  "Built-in immutable sequence".
+- **The tutorial and the API reference say what a count of samples is,**
+  a whole number, and what a negative one is.
 
 ## [2.0.0] - 2026-11-01
 

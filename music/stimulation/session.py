@@ -172,8 +172,11 @@ class StimulationSession:
         taken from within the session rather than added to it, because
         there is no neighbouring phase for it to overlap.
     ramp_shape : string
-        ``'equal_power'``, the default, or ``'linear'``. See
-        :func:`_ramp_shape` for which to want when.
+        ``'equal_power'``, the default, or ``'linear'``. Two stimuli are
+        different sounds, whose amplitudes add in quadrature, so a linear
+        crossfade between them dips about 3 dB in the middle and an
+        equal-power one does not; ``'linear'`` is for a sound crossfaded
+        with itself, where it is the pair that holds the level.
     phases : list of StimulusPhase
         The phases, in order. Normally built with :meth:`add`.
 

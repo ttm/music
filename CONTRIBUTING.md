@@ -141,7 +141,10 @@ package's warnings, and fails if any other module calls `warnings.warn`.
 - Docstrings are [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html),
   and `sphinx-build -W` fails on ones it cannot parse. Their sections come
   in numpydoc's order -- Parameters, Returns, Raises, See Also, Notes,
-  References, Examples -- which a test checks.
+  References, Examples -- which a test checks. The build fails, too, on a
+  reference that leads nowhere: a role such as `` :func:`name` `` must name
+  something the API reference documents, so a helper the reference does
+  not list is described in words rather than linked to.
 - Code follows [PEP 8](https://peps.python.org/pep-0008/), 79 columns.
 - Comments explain *why*, not *what*. A comment that restates the line above it
   is noise; a comment recording why an obvious approach was rejected is the

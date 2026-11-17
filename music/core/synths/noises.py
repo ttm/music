@@ -4,7 +4,7 @@ from numbers import Real
 import numpy as np
 from numpy.typing import NDArray
 from ..functions import normalize_mono
-from ..._rate import resolve_rate, sample_count
+from ..._rate import render_length, resolve_rate
 
 
 def _random(seed):
@@ -157,10 +157,7 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
             f"min_freq ({min_freq} Hz) is above the Nyquist frequency "
             f"({sample_rate / 2} Hz), so the band holds nothing")
     uniform = _random(seed).uniform
-    if number_of_samples is not None:
-        length = number_of_samples
-    else:
-        length = sample_count(duration, sample_rate)
+    length = render_length(duration, sample_rate, number_of_samples)
     if length < 1:
         # Zero samples is zero samples, which is what every routine
         # here answers a zero duration with. The sequence operations
@@ -306,9 +303,9 @@ def gaussian_noise(mean: float = 1, std: float = 0.5, duration: float = 2,
     uniform = _random(seed).uniform
     # Whole samples: the length indexes arrays and sets a sample count, so
     # a fractional one raised TypeError out of np.random.uniform rather
-    # than rendering the half second it was asked for.
-    length = (sample_count(duration, sample_rate) if number_of_samples is None
-              else int(number_of_samples))
+    # than rendering the half second it was asked for. A count given as a
+    # fraction is refused, where it was cut down to the whole below it.
+    length = render_length(duration, sample_rate, number_of_samples)
     if length < 1:
         # As in `noise` above: a zero duration renders nothing, and
         # normalize_mono is where an empty sound is refused.
@@ -386,6 +383,5 @@ def silence(duration: float = 1.0, sample_rate: int | None = None,
     >>> phrase = horizontal_stack(note(220, 0.2), silence(0.1), note(330, 0.2))
     """
     sample_rate = resolve_rate(sample_rate)
-    count = (sample_count(duration, sample_rate) if number_of_samples is None
-             else int(number_of_samples))
-    return np.zeros(max(0, count))
+    return np.zeros(max(0, render_length(duration, sample_rate,
+                                         number_of_samples)))

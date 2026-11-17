@@ -16,7 +16,7 @@ from typing import Any
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from ..._rate import resolve_rate, sample_count, whole
+from ..._rate import render_length, resolve_rate, whole, whole_count
 
 
 def render_oversampled(
@@ -96,12 +96,13 @@ def render_oversampled(
     times = whole(factor)
     if times is None or not 2 <= times <= 16:
         raise ValueError("factor must be an integer between 2 and 16")
-    given = whole(number_of_samples)
-    if number_of_samples is not None and (given is None or given < 0):
+    # A count that is whole is whole as a float too, as it is to every
+    # routine this renders; whole() refused 5.0, which note() takes.
+    if number_of_samples is not None and whole_count(number_of_samples) < 0:
         raise ValueError("number_of_samples must be nonnegative integer")
     if not np.isfinite(duration) or duration < 0:
         raise ValueError("duration must be finite and nonnegative")
-    count = sample_count(duration, rate) if given is None else given
+    count = render_length(duration, rate, number_of_samples)
     if count == 0:
         return np.empty(0, dtype=np.float64)
     if count * times > 50_000_000:

@@ -335,9 +335,9 @@ def localize_linear(sonic_vector=None, theta1=90, theta2=0, dist=.1,
     length.
 
     The delay varies by a fraction of a sample from one sample to the next,
-    so it is applied by reading the input at interpolated positions -- see
-    :func:`_delayed`. Rounding to whole samples instead would quantize a
-    smoothly moving source into audible steps.
+    so it is applied by reading the input at positions interpolated
+    between its samples. Rounding to whole samples instead would quantize
+    a smoothly moving source into audible steps.
 
     This filters an existing sound and so does not model the Doppler shift
     that a physically moving source would produce; use

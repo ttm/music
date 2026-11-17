@@ -2,7 +2,8 @@
 
 import numpy as np
 
-from ..._rate import resolve_rate, sample_count
+from ..._rate import (render_length, resolve_rate, sample_count,
+                      whole_count)
 from ...utils import _bent, _transition_is_linear, as_sonic_vector
 
 
@@ -114,10 +115,8 @@ def loud(duration=2, trans_dev=10, alpha=1, to=True, method="exp",
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
         n = sonic_vector.shape[-1]
-    elif number_of_samples is not None:
-        n = number_of_samples
     else:
-        n = sample_count(duration, sample_rate)
+        n = render_length(duration, sample_rate, number_of_samples)
     linear = _transition_is_linear(method)
     samples = np.arange(n)
     # A single-sample transition has no span to interpolate across; keeping
@@ -224,6 +223,9 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
         ``IndexError``, and a method given as one string was read a
         letter for each transition, so "linear" was refused as ``'l'``.
 
+        If `durations`, or `number_of_samples`, is one number rather
+        than a sequence of them, which Python refused in its own words.
+
     See Also
     --------
     loud : An envelope for a loudness transition.
@@ -251,7 +253,16 @@ def louds(durations=(2, 4, 2), trans_devs=(5, -10, 20), alpha=(1, .5, 20),
     # each alpha became the deviation and each deviation a duration that
     # the count then overrode, so `trans_devs` was never read there.
     sample_rate = resolve_rate(sample_rate)
-    counts = (number_of_samples if number_of_samples is not None else
+    name, given = (("durations", durations) if number_of_samples is None
+                   else ("number_of_samples", number_of_samples))
+    if np.ndim(given) != 1:
+        # One number was read as a sequence, and refused in Python's words:
+        # an int "has no len()", or "is not iterable".
+        raise ValueError(
+            f"louds takes {name} as a sequence, one for each transition; "
+            f"got {given!r}")
+    counts = ([whole_count(count) for count in number_of_samples]
+              if number_of_samples is not None else
               [sample_count(dur, sample_rate) for dur in durations])
     if not len(counts):
         raise ValueError("an envelope of transitions needs at least one")

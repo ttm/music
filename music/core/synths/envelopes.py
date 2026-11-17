@@ -2,8 +2,8 @@
 
 import numpy as np
 from music.utils import (WAVEFORM_SINE, WAVEFORM_TRIANGULAR,
-                         as_sonic_vector, _signed_power)
-from ..._rate import resolve_rate, sample_count
+                         as_sonic_vector, _entries, _signed_power)
+from ..._rate import render_length, resolve_rate
 
 
 def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
@@ -91,20 +91,18 @@ def am(duration=2, fm=50, max_amplitude=.4, waveform_table=WAVEFORM_SINE,
     """
     sample_rate = resolve_rate(sample_rate)
 
-    waveform_table = np.array(waveform_table)
+    waveform_table = np.asarray(waveform_table, dtype=np.float64)
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
         # A channel's length: len() counted a stereo sound's channels.
         lambda_am = sonic_vector.shape[-1]
-    elif number_of_samples is not None:
-        lambda_am = number_of_samples
     else:
-        lambda_am = sample_count(duration, sample_rate)
+        lambda_am = render_length(duration, sample_rate, number_of_samples)
     samples = np.arange(lambda_am)
 
     length = len(waveform_table)
     # indexes for LUT
-    gamma_am = (samples * fm * length / sample_rate).astype(np.int64)
+    gamma_am = _entries(samples * fm * length / sample_rate)
     # amplitude variation at each sample
     t_am = waveform_table[gamma_am % length]
     t = 1 + t_am * max_amplitude
@@ -210,20 +208,18 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     """
     sample_rate = resolve_rate(sample_rate)
 
-    waveform_table = np.array(waveform_table)
+    waveform_table = np.asarray(waveform_table, dtype=np.float64)
     sonic_vector = as_sonic_vector(sonic_vector)
     if sonic_vector is not None:
         lambda_tremolo = sonic_vector.shape[-1]
-    elif number_of_samples is not None:
-        lambda_tremolo = number_of_samples
     else:
-        lambda_tremolo = sample_count(duration, sample_rate)
+        lambda_tremolo = render_length(duration, sample_rate,
+                                       number_of_samples)
     samples = np.arange(lambda_tremolo)
 
     length = len(waveform_table)
     # indexes for LUT
-    gamma_tremolo = (samples * tremolo_freq * length /
-                     sample_rate).astype(np.int64)
+    gamma_tremolo = _entries(samples * tremolo_freq * length / sample_rate)
     # amplitude variation at each sample
     table_amp = waveform_table[gamma_tremolo % length]
     # The distortion index bends the oscillation without changing its
@@ -238,6 +234,21 @@ def tremolo(duration=2, tremolo_freq=2, max_db_dev=10, alpha=1,
     if sonic_vector is not None:
         return t * sonic_vector
     return t
+
+
+def _lines(name, given):
+    """`given` as tremolos' lines of segments, refused by `name` if not.
+
+    One number, or one line of them, was read as lines and failed in
+    Python's words, that an int "is not iterable", naming nothing.
+    """
+    try:
+        return [list(line) for line in given]
+    except TypeError:
+        raise ValueError(
+            f"tremolos takes {name} as lines of segments, a sequence of "
+            f"sequences such as ((3, 4, 5), (2, 3, 7, 4)); got {given!r}"
+        ) from None
 
 
 def _segment(values, name, line, segment):
@@ -315,6 +326,10 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
         given: the first default it outgrew failed as an ``IndexError``
         that named no argument.
 
+        If `durations`, or `number_of_samples`, is not laid out in lines
+        of segments: one number, or one line of them, failed as a
+        ``TypeError`` that named nothing.
+
     See Also
     --------
     loud : An envelope for a loudness transition.
@@ -342,7 +357,8 @@ def tremolos(durations=((3, 4, 5), (2, 3, 7, 4)),
     """
     sample_rate = resolve_rate(sample_rate)
     t_: list = []
-    lines = durations if number_of_samples is None else number_of_samples
+    lines = _lines(*(("durations", durations) if number_of_samples is None
+                     else ("number_of_samples", number_of_samples)))
     for i, line in enumerate(lines):
         t_.append([])
         for j, length in enumerate(line):

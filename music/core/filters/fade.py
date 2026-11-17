@@ -3,7 +3,7 @@
 import numpy as np
 from .loud import loud
 from ..._deprecation import renamed_arguments
-from ..._rate import resolve_rate, sample_count
+from ..._rate import render_length, resolve_rate, sample_count
 from ...utils import (resolve_stereo, mix_with_offset,
                       as_sonic_vector, _transition_is_linear)
 
@@ -113,10 +113,8 @@ def fade(duration=2, fade_out=True, method="exp", db=-80, alpha=1, perc=1,
         if len(sonic_vector.shape) == 2:
             return resolve_stereo(fade, locals())
         n = len(sonic_vector)
-    elif number_of_samples is not None:
-        n = number_of_samples
     else:
-        n = sample_count(duration, sample_rate)
+        n = render_length(duration, sample_rate, number_of_samples)
     # Checked after the stereo branch, which hands this call's locals to
     # each channel's: a name bound before it would arrive as an argument.
     linear = _transition_is_linear(method)

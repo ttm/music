@@ -69,7 +69,7 @@ class PrimaryTables:
         ----------
         size : int
             The number of samples for each waveform table. It becomes
-            :attr:`size`, which used to keep the size the object was made
+            ``size``, which used to keep the size the object was made
             with, so the axes :meth:`draw_tables` drew fitted neither.
         """
         self.size = size

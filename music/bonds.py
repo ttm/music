@@ -159,7 +159,9 @@ def stepped(thresholds: Sequence[tuple[float, float]],
 class Bonds:
     """A set of relations tying a note's characteristics to its frequency.
 
-    Each keyword is one of :data:`BINDABLE`, and its value is either a
+    Each keyword is one of ``vibrato_freq``, ``max_pitch_dev``,
+    ``tremolo_freq`` and ``max_db_dev``, the names in
+    ``music.bonds.BINDABLE``, and its value is either a
     callable of the frequency -- the ``func_a``, ``func_b`` and ``func_c``
     of ``eq:vinculos`` -- or a constant, for a characteristic that does not
     vary. Anything left unbound keeps the synthesis routine's own default.
@@ -172,7 +174,7 @@ class Bonds:
     Raises
     ------
     ValueError
-        If a keyword is not one of :data:`BINDABLE`.
+        If a keyword is not one of those four.
 
     See Also
     --------

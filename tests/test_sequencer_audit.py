@@ -38,6 +38,21 @@ def test_a_note_lasts_a_finite_time_none_of_it_negative(duration):
     assert sequencer.events == []
 
 
+@pytest.mark.parametrize("name", ["freq", "vibrato_freq", "max_pitch_dev"])
+@pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
+def test_a_note_is_refused_a_pitch_that_is_no_number_when_it_is_added(
+        name, value):
+    """The oscillator refused it, but only when the sequence rendered,
+    and could not say which note it was."""
+    sequencer = Sequencer()
+    given = {"freq": 440.0, "vibrato_freq": 5.0, "max_pitch_dev": 1.0,
+             name: value}
+    with pytest.raises(ValueError, match=_exactly(
+            f"a note's {name} is a finite number; got {name}={value}")):
+        sequencer.add_note(start=0, duration=0.1, **given)
+    assert sequencer.events == []
+
+
 def test_a_note_of_no_duration_is_a_note_of_no_samples():
     sequencer = Sequencer()
     sequencer.add_note(440, 0.25, 0.0)

@@ -51,7 +51,7 @@ def sing(text="Mar-ry had a litt-le lamb",
     ``backend="ecantorix"``, the melody is written as ABC notation, the
     eCantorix engine renders it through espeak, and the result is read
     back as samples; that needs the engine, which
-    :func:`~music.singing.setup_engine` clones, and Perl, abc2midi and sox.
+    :func:`~music.setup_engine` clones, and Perl, abc2midi and sox.
     Both sing MIDI ``reference + note + transpose`` for the same lengths,
     so the two can be compared.
 
@@ -71,14 +71,14 @@ def sing(text="Mar-ry had a litt-le lamb",
         ``-n`` for ``1/n``, which this has always accepted.
     M, L, Q, K : str or int
         The ABC meter, unit note length, tempo and key. A number for ``Q``
-        is units of ``L`` a minute, as ABC reads a bare ``Q:``; see
-        :func:`unit_seconds`. Every note is written with its accidental,
-        so the key changes none of them; E and B were written bare, and
-        a key with flats sang them a semitone low. abc2midi accents the
-        beats, and eCantorix sings the accented notes louder, by up to
-        2.3 dB; the psola backend accents the same notes as much, by
-        :func:`accents`, and reads ``M`` for nothing else. It has no use
-        for the key.
+        is units of ``L`` a minute, as ABC reads a bare ``Q:``, and
+        ``"1/4=120"`` is 120 quarters a minute whatever ``L`` is. Every
+        note is written with its accidental, so the key changes none of
+        them; E and B were written bare, and a key with flats sang them a
+        semitone low. abc2midi accents the beats, and eCantorix sings the
+        accented notes louder, by up to 2.3 dB; the psola backend accents
+        the same notes as much, by abc2midi's rule, and reads ``M`` for
+        nothing else. It has no use for the key.
     reference : int
         The MIDI note that pitch zero refers to, which is the note the
         score is written at.
@@ -129,17 +129,16 @@ def sing(text="Mar-ry had a litt-le lamb",
     RuntimeError
         If espeak-ng or praat-parselmouth is missing, or flite for its
         effect; or, with ``backend="ecantorix"``, if the engine is not
-        installed (run :func:`music.singing.setup_engine`), cannot be
+        installed (run :func:`music.setup_engine`), cannot be
         built in the cache, or renders at a rate other than 44,100 Hz, or
         the flite effect is asked for without ``bc``.
     ValueError
         If ``backend`` or ``effect`` is not one of those above, ``lang`` is
         not a voice name, or not one of flite's voices for its effect,
-        ``transpose`` is not a finite number, ``L`` or ``Q`` is not
-        a length or tempo ABC can read (see :func:`unit_seconds`), there is
-        not exactly
-        one duration per note, a duration is zero, or a note falls outside
-        MIDI 12 to 96. These are checked first, so a wrong one is reported
+        ``transpose`` is not a finite number, ``L`` or ``Q`` is not a
+        length or tempo ABC can read, there is not exactly one duration
+        per note, a duration is zero, or a note falls outside MIDI 12 to
+        96. These are checked first, so a wrong one is reported
         whether or not the engine is installed. The voice and the
         transposition are written into a configuration the engine runs as
         Perl, so anything else there would be run as code.

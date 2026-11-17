@@ -376,12 +376,11 @@ def test_every_export_appears_in_the_published_api_reference():
     if listed is None:            # pragma: no cover - a source checkout only
         pytest.skip("docs/api.rst is missing")
 
-    # `__version__` is a string, and the tables the theory module exports
-    # are named in prose rather than given pages of their own.
-    tables = {name for name in music.__all__ if name.isupper()}
+    # `__version__` is a string. The tables were named in prose rather than
+    # given pages of their own, so a reader who followed `scale`'s "one of
+    # SCALES" found no list of the scales; they are listed like the rest.
     undocumented = [name for name in music.__all__
-                    if name != "__version__" and name not in tables
-                    and name not in listed]
+                    if name != "__version__" and name not in listed]
 
     assert not undocumented, (
         f"{undocumented} are exported but absent from docs/api.rst, so they "

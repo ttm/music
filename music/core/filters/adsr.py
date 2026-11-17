@@ -4,7 +4,7 @@ import numpy as np
 from .fade import fade
 from .loud import loud
 from ..._deprecation import renamed_arguments
-from ..._rate import resolve_rate, sample_count
+from ..._rate import render_length, resolve_rate, sample_count
 from ...utils import _transition_is_linear, _two_channels, as_sonic_vector
 
 #: The parameters :func:`adsr` and :func:`adsr_stereo` renamed so their
@@ -77,7 +77,8 @@ def adsr(duration=2, attack_ms=20,
         its stage, it is the whole stage. Ignored if transition="linear".
     number_of_samples : integer or None
         The number of samples of the envelope. If given, duration is
-        ignored, and zero is an envelope of no samples.
+        ignored, and zero is an envelope of no samples, as a negative
+        count or duration is.
     sonic_vector : array_like
         Samples for the ADSR envelope to be applied to: mono, or of shape
         ``(nchannels, nsamples)``, every channel shaped alike. If
@@ -211,10 +212,12 @@ def adsr(duration=2, attack_ms=20,
         # channels as its length, built a two-sample envelope and left
         # numpy to say it could not broadcast it.
         lambda_adsr = sonic_vector.shape[-1]
-    elif number_of_samples is not None:
-        lambda_adsr = number_of_samples
     else:
-        lambda_adsr = sample_count(duration, sample_rate)
+        # A negative duration or count is no samples, as it is to every
+        # other envelope; here it reached numpy, as the sustain's length,
+        # and numpy said "negative dimensions are not allowed".
+        lambda_adsr = max(0, render_length(duration, sample_rate,
+                                           number_of_samples))
     lambda_a = sample_count(attack_ms / 1000, sample_rate)
     lambda_d = sample_count(decay_ms / 1000, sample_rate)
     lambda_r = sample_count(release_ms / 1000, sample_rate)

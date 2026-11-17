@@ -10,7 +10,6 @@ import numpy as np
 from .core import synths
 from .core.filters.adsr import adsr
 from .core.filters.localization import localize
-from .utils import convert_to_stereo
 from .core.io import write_audio
 from ._rate import get_sample_rate
 
@@ -72,29 +71,6 @@ class Sequencer:
         if self.sample_rate <= 0:
             raise ValueError(
                 f"sample_rate must be positive; got {self.sample_rate}")
-
-    def _mix_with_offset(self, base: np.ndarray, new: np.ndarray,
-                         start: float) -> np.ndarray:
-        """Mix two sonic vectors with an offset in seconds."""
-        offset = int(round(start * self.sample_rate))
-        if base.ndim != new.ndim:
-            if base.ndim == 1:
-                base = convert_to_stereo(base)
-            else:
-                new = convert_to_stereo(new)
-
-        out: np.ndarray  # 1-D or (2, n) depending on the branch below
-        if base.ndim == 1:
-            final_len = max(len(base), offset + len(new))
-            out = np.zeros(final_len)
-            out[: len(base)] = base
-            out[offset : offset + len(new)] += new
-        else:
-            final_len = max(base.shape[1], offset + new.shape[1])
-            out = np.zeros((2, final_len))
-            out[:, : base.shape[1]] = base
-            out[:, offset : offset + new.shape[1]] += new
-        return out
 
     def add_note(
         self,
@@ -209,12 +185,29 @@ class Sequencer:
             one to end: mono, or ``(2, nsamples)`` once any note is placed
             with ``spatial``, the mono ones then in both channels. No
             notes render no samples.
+
+        Notes
+        -----
+        Each note starts at the sample nearest its start. The mix is
+        made once, as long as the note that ends last, and each note is
+        added where it starts, so a render costs the length of the piece
+        and of its notes. It used to grow the mix by a copy for every
+        note, which cost each one the length of everything before it:
+        2,000 notes in a row, 200 s of audio, took half a minute to
+        render, a tenth of a second of it synthesis.
         """
-        # From no samples, which the first stereo note makes stereo.
-        result = np.zeros(0)
-        for event in sorted(self.events, key=lambda e: e.start):
-            result = self._mix_with_offset(result, self._render_event(event),
-                                           event.start)
+        events = sorted(self.events, key=lambda e: e.start)
+        notes = [self._render_event(event) for event in events]
+        offsets = [int(round(event.start * self.sample_rate))
+                   for event in events]
+        length = max((offset + note.shape[-1]
+                      for offset, note in zip(offsets, notes)), default=0)
+        # Stereo once any note is, a mono note then in both channels; the
+        # notes are added in the order of their starts, as they were.
+        stereo = any(note.ndim == 2 for note in notes)
+        result = np.zeros((2, length) if stereo else length)
+        for offset, note in zip(offsets, notes):
+            result[..., offset:offset + note.shape[-1]] += note
         return result
 
     def write(self, filename: str, bit_depth: int = 16,

@@ -1242,6 +1242,12 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=None):
 
     Notes
     -----
+    The mix is made once, and each sound added where it lies, so it costs
+    the length of the mix and of the sounds. Each sound used to be padded
+    to the length of the whole mix and the copies summed: 600 notes of a
+    tenth of a second, at their offsets across a minute, held 600 minutes
+    of samples, some 12 GB, and took 25 seconds.
+
     Cite the following article whenever you use this function.
 
     References
@@ -1266,11 +1272,6 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=None):
     if any(s.ndim == 2 for s in sonic_vectors):
         sonic_vectors = [convert_to_stereo(s) for s in sonic_vectors]
 
-    def padded(sound, samples, before):
-        pad = np.zeros(sound.shape[:-1] + (samples,))
-        return np.concatenate((pad, sound) if before else (sound, pad),
-                              axis=-1)
-
     # Read by its shape rather than its truth: an array of offsets has no
     # single truth value, and numpy refused to give it one.
     if np.ndim(offset) == 0:
@@ -1285,18 +1286,24 @@ def mix_many(sonic_vectors, end=False, offset=0, sample_rate=None):
         raise ValueError(
             f"{len(offsets)} offsets for {len(sonic_vectors)} sounds; give "
             f"one for each sound, or fewer, and the rest start at zero")
+    starts = [0] * len(sonic_vectors)
     for i, off in enumerate(offsets):
         if off < 0:
             raise ValueError(
                 f"an offset delays a sound, so it cannot be negative; "
                 f"offset {i} is {off}")
         if off:
-            sonic_vectors[i] = padded(sonic_vectors[i],
-                                      sample_count(off, sample_rate), True)
+            starts[i] = sample_count(off, sample_rate)
 
-    max_len = max(s.shape[-1] for s in sonic_vectors)
-    return np.sum([padded(s, max_len - s.shape[-1], end)
-                   for s in sonic_vectors], axis=0)
+    max_len = max(start + s.shape[-1]
+                  for start, s in zip(starts, sonic_vectors))
+    mix = np.zeros(sonic_vectors[0].shape[:-1] + (max_len,))
+    for start, sound in zip(starts, sonic_vectors):
+        # Aligned by its end, a sound's offset is silence before it, which
+        # moves nothing but the start of the mix when it is the longest.
+        first = max_len - sound.shape[-1] if end else start
+        mix[..., first:first + sound.shape[-1]] += sound
+    return mix
 
 
 #: The name this had while it was the second mixer rather than the general

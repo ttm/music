@@ -129,11 +129,14 @@ def setup_hrtf(directory: str | Path | None = None,
     Parameters
     ----------
     directory : path, optional
-        Where to put them. Defaults to :func:`hrtf_dir`.
+        Where to put them: a directory that does not exist yet, an empty
+        one, or one that holds them already, or the part of them a fetch
+        that did not finish left. Defaults to :func:`hrtf_dir`.
     url : string
         Where to get them.
     force : boolean
-        Fetch them again even if they are already there.
+        Fetch them again even if they are already there, replacing the
+        directory they are in.
 
     Returns
     -------
@@ -146,6 +149,17 @@ def setup_hrtf(directory: str | Path | None = None,
         If ``gzip`` is not installed. The archive is in the old ``compress``
         format, which Python's standard library does not read and ``gzip``
         does; there is no pure-Python fallback here.
+
+        If `directory` exists and holds anything but the measurements. They
+        were moved into place over whatever stood there, so a directory of
+        one's own given as `directory`, or as ``$MUSIC_HRTF_DIR``, was
+        deleted, its files with it.
+
+        If Python's ``tarfile`` cannot filter what it unpacks, which it can
+        from Python 3.10.12, 3.11.4 and 3.12. The archive comes from the
+        network, and is unpacked with the ``'data'`` filter, which refuses
+        a member that would land outside; without it, the call failed as a
+        ``TypeError`` once the download was done.
     OSError
         If the download or the extraction fails. Nothing is left behind:
         the archive is unpacked beside the target and moved into place only
@@ -170,6 +184,7 @@ def setup_hrtf(directory: str | Path | None = None,
     """
     # Only fetching needs any of these, and `import music` should not pay
     # for a feature most callers never reach.
+    import platform
     import shutil
     import subprocess
     import tarfile
@@ -179,6 +194,24 @@ def setup_hrtf(directory: str | Path | None = None,
     target = Path(directory) if directory is not None else hrtf_dir()
     if is_dataset(target) and not force:
         return target
+    # Asked before anything is fetched: the target is replaced at the end,
+    # so one holding anything but the measurements, or the part of them a
+    # fetch that did not finish left, is the caller's, and refused, as
+    # setup_engine refuses a directory that holds no engine.
+    if target.exists() and not is_dataset(target) and (
+            not target.is_dir()
+            or any(entry.name != 'full' for entry in target.iterdir())):
+        raise RuntimeError(
+            f'{target} is neither empty nor a directory of KEMAR '
+            f'measurements, and setup_hrtf replaces what is there; move it '
+            f'aside, or give setup_hrtf a directory of their own, or set '
+            f'${ENV_VAR} to one')
+    if not hasattr(tarfile, 'data_filter'):
+        raise RuntimeError(
+            f"Python {platform.python_version()}'s tarfile cannot filter "
+            f"what it unpacks, which it can from 3.10.12, 3.11.4 and 3.12: "
+            f'upgrade, or unpack the archive yourself and point '
+            f'${ENV_VAR} at the directory holding "full/"')
     if shutil.which('gzip') is None:
         raise RuntimeError(
             'gzip is needed to unpack the KEMAR archive, which is in the '

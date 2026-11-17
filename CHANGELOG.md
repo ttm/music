@@ -22,6 +22,11 @@
   cannot take, where they failed on a broadcast, a subscript or an
   index. `louds` also takes one `trans_devs`, `alpha` or `method` for
   every transition, and `mix_many` an array of offsets.
+- **`setup_hrtf` refuses a directory that holds anything but the
+  measurements,** where it deleted it to put them there: give it a new
+  or an empty directory, or one it filled before. On a Python whose
+  `tarfile` cannot filter what it unpacks, before 3.10.12 and 3.11.4, it
+  says so before downloading, where it failed with a `TypeError` after.
 
 ### Changed
 
@@ -149,6 +154,26 @@
   replaced everywhere else with `sample_count`: 15,434 samples where
   `note()` renders 15,435, for ten durations of whole milliseconds under
   two seconds. Its notes and its tremolo count as every routine does.
+- **`setup_hrtf` deleted the directory it was given.** The measurements
+  were unpacked beside it and moved into place over whatever stood there,
+  so a folder of one's own given as `directory`, or as `$MUSIC_HRTF_DIR`,
+  was deleted with everything in it, `force` or not. It refuses one that
+  holds anything but the measurements, or the part of them a fetch that
+  did not finish left, before anything is downloaded, as `setup_engine`
+  refuses a directory that holds no engine. A Python whose `tarfile`
+  cannot filter what it unpacks is told so before the download, where
+  the call failed with a `TypeError` after it.
+- **`Sequencer.render` cost the square of the piece's length.** It grew
+  the mix by a copy for every note, each the length of everything before
+  it: 2,000 notes in a row, 200 s of audio, took half a minute, a tenth
+  of a second of it synthesis. The mix is made once, at its final length,
+  and each note added where it starts: the same piece, bit for bit, in a
+  seventh of a second.
+- **`mix_many` held a copy of the whole mix for every sound.** Each sound
+  was padded to the mix's length and the copies summed, so 600 notes of a
+  tenth of a second, at their offsets across a minute, held some 12 GB and
+  took 25 seconds. The mix is made once and each sound added where it
+  lies: the same mix, bit for bit, in a hundredth of a second.
 
 ### Tests
 
@@ -184,6 +209,11 @@
   that an empty sound mixed alone came back one sample long. Tests detect
   them now. Of the 7,378 mutants of the latest runs, the 729 that survive
   are the kinds `MUTATION_AUDIT.md` accepts.
+- **A test's comment misread the offsets it pins.** It explained
+  `mix_many_with_offsets`' 22,055 samples by the second vector's delay,
+  rounded "twice over"; the offset delays the vector before it, as the
+  docstring says, five samples from 22,050, and the test now says where
+  each vector lands.
 
 ### Maintenance
 
@@ -306,6 +336,9 @@
   kernel symmetric when given an impulse response, which it uses as it
   is; and a test said the two-pole designs put their poles at
   1 - bandwidth, where the article's radius is 1 - 3 bandwidth.
+- **The README and `CONTRIBUTING.md` said CI runs on every push.** It
+  runs on every push to master and on every pull request; a branch
+  pushed on its own runs nothing until a pull request is opened from it.
 
 ## [2.0.0] - 2026-11-01
 

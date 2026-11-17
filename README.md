@@ -536,7 +536,9 @@ python -m build --wheel
 python tools/check_wheel.py --wheel dist/*.whl # installed artifact, outside the checkout
 ```
 
-These checks run on every push and every pull request. Lint, types and
+These checks run on every push to master and on every pull request; a
+branch pushed on its own runs none of them until a pull request is
+opened from it. Lint, types and
 tests run on **Python 3.10 through 3.14 on Linux**; a further Linux job
 installs the exact lower bounds `pyproject.toml` declares and runs the
 tests against those, so the floors cannot drift into fiction. The docs
@@ -551,10 +553,10 @@ is there because the numbers in
 `ASSESSMENT.md` and this file went stale four times in two days when
 keeping them current was a habit rather than a check. Its measured
 figures are one table in `ASSESSMENT.md`, written and checked at release;
-on every push `--fast` checks what prose quotes, the version stamps and
-the reconciliation register's counts.
+in CI `--fast` checks what prose quotes, the version stamps and the
+reconciliation register's counts.
 
-Four more run at release time rather than on every push, being slower or
+Four more run at release time rather than in CI, being slower or
 needing something the runner does not have:
 
 ```console

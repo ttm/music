@@ -6,6 +6,7 @@ out to have a defect.
 """
 
 import re
+import time
 
 import numpy as np
 import pytest
@@ -121,16 +122,22 @@ def test_mix_many_with_offsets_sums_vectors_given_without_offsets():
 
 
 def test_mix_many_with_offsets_reads_a_scalar_between_vectors_as_a_delay():
-    """The arguments alternate vector, offset-in-seconds, vector..."""
+    """The arguments alternate vector, offset-in-seconds, vector..., and
+    an offset delays the vector before it, as the docstring says.
+
+    This comment once read the 0.5 as the second vector's delay and
+    explained the length by a rounding "twice over": the second vector
+    starting at sample 22,050 would end at 22,053. It is the first that
+    is delayed, five samples from 22,050 to 22,054, which is 22,055 with
+    no rounding at all, and the second has no offset after it and starts
+    at the beginning.
+    """
     out = mix_many_with_offsets(np.ones(5), 0.5, np.ones(3) * 2)
 
-    # Exactly: the second vector starts at sample 22,050 and is three
-    # long, so the result is 22,053 -- except that it is 22,055, because
-    # the offset is rounded up to a whole sample twice over. The
-    # assertion used to allow two samples either way, which is enough to
-    # hide the difference between those two numbers without saying which
-    # one it found.
     assert out.shape[0] == 22055
+    np.testing.assert_array_equal(out[22050:], np.ones(5))
+    np.testing.assert_array_equal(out[:3], [2, 2, 2])
+    assert not out[3:22050].any()
 
 
 def test_mix_many_with_offsets_accepts_any_sequence():
@@ -218,11 +225,60 @@ def test_mix_many_mixes_stereo_sounds_of_any_length(end):
                                   stereo + np.array([padded, padded]))
 
 
+@pytest.mark.parametrize("order", [1, -1])
+def test_mix_many_puts_mono_in_both_channels_whichever_comes_first(order):
+    """The mix is made in the shape of the sounds once they are all
+    stereo. Made in the first sound's shape without that, it would hold
+    a stereo sound only when one came first: the audit's mutant that
+    skipped the conversion survived every test that put stereo first."""
+    mono, stereo = np.ones(3), np.array([[1., 2.], [3., 4.]])
+    np.testing.assert_array_equal(music.mix_many([mono, stereo][::order]),
+                                  [[2, 3, 1], [4, 5, 1]])
+
+
 def test_mix_many_offsets_a_stereo_sound_along_its_samples():
     stereo = np.array([[1., 1.], [2., 2.]])
     np.testing.assert_array_equal(
         music.mix_many([stereo, stereo], offset=[0, 1], sample_rate=1),
         [[1, 2, 1], [2, 4, 2]])
+
+
+def test_mix_many_costs_the_length_of_the_mix_not_a_copy_per_sound():
+    """Regression: each sound was padded to the length of the whole mix
+    and the copies summed, so 600 notes of a tenth of a second at their
+    offsets across a minute held some 12 GB and took 25 seconds.
+
+    Four times the sounds, over four times the span, cost about 11x, and
+    costs 4x now. The threshold is loose because this is wall-clock on
+    shared CI.
+    """
+    note = np.ones(80)
+
+    def best_of_three(count):
+        sounds, offsets = [note] * count, [i * .01 for i in range(count)]
+        times = []
+        for _ in range(3):
+            start = time.perf_counter()
+            music.mix_many(sounds, offset=offsets, sample_rate=8000)
+            times.append(time.perf_counter() - start)
+        return min(times)
+
+    best_of_three(10)  # warm up
+    small, large = best_of_three(200), best_of_three(800)
+    assert large / small < 8, (
+        f"four times the sounds cost {large / small:.1f}x, which looks "
+        f"quadratic rather than linear")
+
+
+@pytest.mark.parametrize("end", [False, True])
+def test_mix_many_places_each_sound_where_its_offset_and_end_put_it(end):
+    """Aligned by its end, a sound's offset is silence before it that
+    moves only the start of the mix, when it makes it the longest."""
+    mixed = music.mix_many([np.ones(2), np.full(3, 2.0), np.full(1, 4.0)],
+                           end=end, offset=[0, 2], sample_rate=1)
+    expected = ([0, 0, 2, 2 + 1, 2 + 1 + 4] if end
+                else [1 + 4, 1, 2, 2, 2])
+    np.testing.assert_array_equal(mixed, expected)
 
 
 def test_mix_many_takes_an_array_of_offsets_as_it_takes_a_list():

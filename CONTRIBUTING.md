@@ -9,8 +9,10 @@ first. What follows is the part that is harder to guess.
 
 ## What a change has to survive
 
-Six checks run in CI for every push and every pull request. Four look at
-the package, one looks at the documentation, and one looks at a caller:
+Six checks run in CI for every push to master and every pull request
+-- a branch pushed on its own runs none of them until a pull request is
+opened from it. Four look at the package, one looks at the
+documentation, and one looks at a caller:
 
 ```console
 pytest                    # tests, doctests, and 100% line and branch coverage
@@ -95,8 +97,8 @@ file too. Do not restate those numbers in prose; refer to the table.
 What prose does still quote -- the version each of the three living
 documents stamps itself with, and the reconciliation register's counts in
 the README, `RECONCILIATION.md`, `ASSESSMENT.md` and the Zenodo metadata --
-changes only when something meaningful does, and `--fast` checks it on
-every push. If you reword a sentence holding one of those,
+changes only when something meaningful does, and `--fast` checks it in
+CI. If you reword a sentence holding one of those,
 `tests/test_assessment_figures.py` is what tells you the script can no
 longer find it. If your change moves one, run:
 

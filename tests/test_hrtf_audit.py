@@ -1,6 +1,7 @@
 """What the `hrtf` mutation audit found untested or wrong."""
 
 import math
+import re
 
 import pytest
 
@@ -177,6 +178,77 @@ def test_an_archive_that_writes_outside_its_directory_is_refused(tmp_path):
                         url=(tmp_path / "evil.tar.gz").as_uri())
     assert not (tmp_path / "escaped.txt").exists()
     assert not (tmp_path / "deep" / "escaped.txt").exists()
+
+
+@pytest.mark.parametrize("force", [False, True])
+def test_setup_refuses_a_directory_of_someone_elses(tmp_path, dataset,
+                                                    force):
+    """The measurements were moved into place over whatever stood there,
+    so a folder of one's own given as the directory was deleted, and
+    everything in it, with or without `force`."""
+    mine = tmp_path / "my folder"
+    mine.mkdir()
+    (mine / "thesis.txt").write_text("three years of work")
+    with pytest.raises(RuntimeError, match="^" + re.escape(
+            f"{mine} is neither empty nor a directory of KEMAR "
+            f"measurements, and setup_hrtf replaces what is there; move it "
+            f"aside, or give setup_hrtf a directory of their own, or set "
+            f"$MUSIC_HRTF_DIR to one") + "$"):
+        hrtf.setup_hrtf(directory=mine, force=force,
+                        url=_archive(tmp_path, dataset).as_uri())
+    assert (mine / "thesis.txt").read_text() == "three years of work"
+
+
+def test_setup_refuses_a_folder_holding_part_of_a_fetch_and_more(
+        tmp_path, dataset):
+    """What an unfinished fetch leaves, `full/` alone, is replaced; with
+    anything of one's own beside it, the folder is the caller's."""
+    mine = _write_dataset(tmp_path / "mine", elevations=(0, 10))
+    (mine / "notes.txt").write_text("mine")
+    with pytest.raises(RuntimeError, match="neither empty nor a directory"):
+        hrtf.setup_hrtf(directory=mine,
+                        url=_archive(tmp_path, dataset).as_uri())
+    assert (mine / "notes.txt").read_text() == "mine"
+
+
+def test_setup_refuses_a_file_where_the_directory_belongs(tmp_path,
+                                                          dataset):
+    taken = tmp_path / "taken"
+    taken.write_text("not a directory")
+    with pytest.raises(RuntimeError, match="neither empty nor a directory"):
+        hrtf.setup_hrtf(directory=taken,
+                        url=_archive(tmp_path, dataset).as_uri())
+    assert taken.read_text() == "not a directory"
+
+
+def test_setup_fills_an_empty_directory(tmp_path, dataset):
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    assert hrtf.setup_hrtf(directory=empty,
+                           url=_archive(tmp_path, dataset).as_uri()) == empty
+    assert hrtf.is_dataset(empty)
+
+
+def test_a_tarfile_that_cannot_filter_is_refused_before_the_download(
+        tmp_path, monkeypatch):
+    """It unpacked with ``filter='data'``, which Python's tarfile takes
+    from 3.10.12, 3.11.4 and 3.12, so an older one failed with a
+    TypeError once the archive was downloaded."""
+    import platform
+    import tarfile
+    import urllib.request
+
+    fetched = []
+    monkeypatch.delattr(tarfile, "data_filter")
+    monkeypatch.setattr(urllib.request, "urlopen",
+                        lambda *args, **kwargs: fetched.append(args))
+    with pytest.raises(RuntimeError, match="^" + re.escape(
+            f"Python {platform.python_version()}'s tarfile cannot filter "
+            f"what it unpacks, which it can from 3.10.12, 3.11.4 and 3.12: "
+            f"upgrade, or unpack the archive yourself and point "
+            f'$MUSIC_HRTF_DIR at the directory holding "full/"') + "$"):
+        hrtf.setup_hrtf(directory=tmp_path / "kemar")
+    assert not fetched
 
 
 def test_without_gzip_the_message_says_what_to_do(tmp_path, monkeypatch):

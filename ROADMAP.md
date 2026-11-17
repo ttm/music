@@ -1038,6 +1038,34 @@ wrong at other centres is what their docstrings already say. The six
 areas whose code this changed were measured again, and
 `MUTATION_AUDIT.md` has the runs.
 
+A third reading looked at what neither had: what a routine does to the
+files and directories it is given, what a render costs as a piece grows,
+and what the documentation says about the project itself.
+
+- **A directory deleted.** `setup_hrtf` moved the measurements into
+  place over whatever stood at the directory it was given, so a folder
+  of one's own was deleted with its files. It refuses one now, before
+  downloading, and says so of a Python too old to filter what it
+  unpacks.
+- **Costs that grew with the square of a piece.** `Sequencer.render`
+  copied the mix for every note, and `mix_many` padded every sound to
+  the mix's length before summing: 2,000 notes took half a minute, and
+  600 short sounds across a minute held 12 GB. Both make the mix once
+  now, bit for bit as before. A minute of audio through every heavier
+  routine found nothing else past a few seconds: `localize2`'s loop over
+  its bins takes three and a half, and `mix_many_with_offsets` still
+  mixes each sound into a copy of the mix so far, a third of a second
+  for 300 notes. Both are left as they are.
+- **What the documentation says of the project.** The README and
+  `CONTRIBUTING.md` said CI runs on every push; it runs on pushes to
+  master and on pull requests. A test explained the number it pins by a
+  rounding that does not happen.
+
+Every public routine that raises says what it raises, and no message
+names an argument that is not there; both were checked across the
+package. The three areas whose code this changed were measured again,
+and `MUTATION_AUDIT.md` has the runs.
+
 ## Open after the September 2026 audits
 
 What the audits found and did not fix, and why. Each is recorded where

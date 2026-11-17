@@ -214,6 +214,13 @@
   rounded "twice over"; the offset delays the vector before it, as the
   docstring says, five samples from 22,050, and the test now says where
   each vector lands.
+- **The three areas of the mutation audit whose code the third reading
+  changed were measured again,** `sequencer`, `utils` and `hrtf`. A first
+  run found one mutant every test let through: `mix_many` skipping its
+  conversion to stereo, which its new mix survives whenever a stereo
+  sound comes first, as one did in every test. A test with a mono sound
+  first detects it. Of the 1,498 mutants of the latest runs, the 78 that
+  survive are the kinds `MUTATION_AUDIT.md` accepts.
 
 ### Maintenance
 

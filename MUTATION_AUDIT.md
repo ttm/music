@@ -15,8 +15,8 @@ work; `tools/mutation_audit.py --list-areas` lists what has been done.
 code that release ships; the ten whose code a second review changed
 were measured again on 2026-10-31, the ten a review after the release
 changed on 2026-11-16, the areas two more readings of it changed the same
-day, and the nine a fourth changed on 2026-11-17. The table holds the
-latest run of each.
+day, the nine a fourth changed on 2026-11-17, and the three a fifth
+changed on 2026-11-18. The table holds the latest run of each.
 [2.0.0 — every area again](#200--every-area-again-2026-10-29) says what
 they found and gives each area's surviving mutants now. The sections
 after it are each area's earlier audits, kept as the record of what
@@ -25,12 +25,12 @@ edit to a function renumbers its mutants.
 
 | Area | Sources | Measured | Mutations | Detected | Surviving | Reviewed |
 |---|---|---|---:|---:|---:|---|
-| `export` | `core/functions.py`, `core/io.py`, `stimulation/session.py` | 2026-11-16 | 873 | 799 | 74 | all |
+| `export` | `core/functions.py`, `core/io.py`, `stimulation/session.py` | 2026-11-18 | 891 | 824 | 67 | all |
 | `envelopes` | `synths/envelopes.py`, `filters/adsr.py`, `filters/fade.py` | 2026-11-17 | 830 | 804 | 26 | all |
 | `oscillators` | `synths/notes.py` | 2026-11-17 | 1681 | 1663 | 18 | all |
-| `stimuli` | `stimulation/stimuli.py` | 2026-11-17 | 441 | 437 | 4 | all |
+| `stimuli` | `stimulation/stimuli.py` | 2026-11-18 | 489 | 485 | 4 | all |
 | `localization` | `filters/localization.py` | 2026-10-29 | 671 | 649 | 22 | all |
-| `utils` | `utils.py` | 2026-11-17 | 1151 | 1086 | 65 | all |
+| `utils` | `utils.py` | 2026-11-18 | 1151 | 1088 | 63 | all |
 | `filters` | `filters/design.py`, `impulse_response.py`, `loud.py`, `reverb.py`, `stretches.py` | 2026-11-17 | 697 | 670 | 27 | all |
 | `theory` | `theory/chords.py`, `intervals.py`, `scales.py` | 2026-10-29 | 214 | 213 | 1 | all |
 | `structures` | `structures/permutations.py`, `peals/base.py`, `peals.py`, `plain_changes.py` | 2026-11-16 | 706 | 692 | 14 | all |
@@ -57,8 +57,8 @@ that hang, which a suite that finishes never accepts -- 21 in
 A mutant that runs out of time because the machine slept through its run
 counts as detected too, which could hide a survivor, and on 2026-10-29
 the machine slept through several. The areas they hit were run again,
-and every run since, on 2026-10-31, 2026-11-16 and 2026-11-17, was
-awake, none for more than four and a half minutes.
+and every run since, from 2026-10-31 to 2026-11-18, was awake, none
+for more than four and a half minutes.
 
 ## 2.0.0 — every area again, 2026-10-29
 
@@ -222,15 +222,30 @@ samples meets -- and each was run again alone and detected there too.
 Every other survivor is a kind this file accepts, renumbered where its
 function changed.
 
+**Three areas again, after a fifth reading, 2026-11-18.** A fifth
+reading changed code in `stimuli`, `export` and `utils`: the stimulation
+routines refuse a carrier the sample rate cannot hold and a beat whose
+tone leaves the band, a session refuses a time or a gain that is no
+number, the writers refuse an infinite sample as they refuse NaN, and
+the four default waveform tables are read-only. The three were measured
+over that code from a fresh scratch clone, with the tests of the tables'
+types added to `utils`' selection. The first run found no gap: every
+survivor is a kind this file accepts, renumbered where its function
+changed. The new tests detect nine mutants earlier runs accepted --
+`_quantize`'s seven of the words of its refusal of NaN, which a test of
+the writers now pins, and `_integrate_phase`'s two that left its
+increments in the type they came in, which a float32 vibrato table now
+gives it -- and each was run again alone and detected there too.
+
 | Area | Survivors now | What they are |
 |---|---:|---|
 | `foundations` | 1 | `combinatorics` 4, `exc.name or ""` → `or "XXXX"`: only an error naming no module reaches it, and it is raised again either way. Equivalent. `whole`, which `set_sample_rate` and the band-limited routines now read whole numbers by, has every mutant detected, and so has `sample_count`'s refusal of NaN and infinity, and so have `whole_count` and `render_length`, by which every routine now reads a count of samples. |
-| `export` | 74 | The kinds its section accepts, renumbered: `normalize_mono` 10, 12–24, `normalize_stereo` 7, 9–11, `_audio_format` 5, 7, `_subtype` 1, 2, 4, 6, 7, `_wav_subtype` 4, `_scaled` 4, 6, `_quantize` 4, 6, 9–15, 41, `read_audio` 8, 11, 25, `play_audio` 5, `write_wav_mono` 39, 42–44, 71, 76, `write_wav_stereo` 40, 43, 44, 46, 80, 85, `_ramp_shape` 1, `StimulationSession._layout` 83, `.render` 55, 61, 62, `.__repr__` 7, 17; and, as 2.0.0's run gave them, `_as_given` 3, 5, 9, 10, 12–17 and `StimulusPhase.__post_init__` 11, 13, 14. `_as_given` 10 the run counted as detected; see above. `read_audio`'s six that changed its debug logging went with the call. |
+| `export` | 74 | The kinds its section accepts, renumbered: `normalize_mono` 10, 12–24, `normalize_stereo` 7, 9–11, `_audio_format` 5, 7, `_subtype` 1, 2, 4, 6, 7, `_wav_subtype` 4, `_scaled` 4, 6, `_quantize` 4, 6, 41, `read_audio` 8, 11, 25, `play_audio` 5, `write_wav_mono` 39, 42–44, 71, 76, `write_wav_stereo` 40, 43, 44, 46, 80, 85, `_ramp_shape` 1, `StimulationSession._layout` 83, `.render` 55, 61, 62, `.__repr__` 7, 17; and, as 2.0.0's run gave them, `_as_given` 3, 5, 9, 10, 12–17 and `StimulusPhase.__post_init__` 11, 13, 14, renumbered 25, 27, 28 by a fifth reading's refusal of a time or a gain that is no number, whose mutants are all detected. `_as_given` 10 the run counted as detected; see above. `read_audio`'s six that changed its debug logging went with the call. `_quantize`'s 9–15, the words of its refusal of NaN, are detected by a test that pins them, and were detected again alone. |
 | `envelopes` | 26 | As 2026-10-31's run gave them, but for `adsr_stereo` 55–58, the falsy sentinels for no sound, renumbered 58–61 by the call that now takes its two channels; `adsr`'s boundary that cannot bind and its falsy sentinel, 150 and 163 now, after it reads a negative length as no samples; and `tremolos`' 49 and 63, its padding of a shorter line, which are detected now, by a test that asks it for lines of no samples, and were detected again alone. The fourth reading's counts, phases and float64 tables have every mutant detected; `adsr` 152, which multiplies the stages where it divides them, is the area's hang. |
 | `oscillators` | 18 | As 2026-10-31's run gave them, renumbered where a fourth reading changed their functions: `note_with_vibrato_seq_localization` 43, 537, `note_with_doppler` 132, `_exponential_positions` 14, 17, 20–26, `_require_a_ratio` 8, 13, 14, `trill` 8, 41, and `_fit_to_samples` 11, its `<=` at a render exactly as long as the count, which pads by nothing. The reading's counts, its refusal of a phase that is no number and the float64 it reads each note's table as have every mutant detected. |
-| `stimuli` | 4 | As its section has them: `isochronic_tones` 48, 67, 70, and `spatial_motion` 44, its 43 renumbered. A fourth reading's count, phases and float64 tables have every mutant detected. |
+| `stimuli` | 4 | As its section has them: `isochronic_tones` 52, 71, 74, and `spatial_motion` 48, its 43, renumbered by a fifth reading's refusal of a carrier the rate cannot hold, whose mutants are all detected. A fourth reading's count, phases and float64 tables have every mutant detected. |
 | `localization` | 22 | The kinds its section accepts, renumbered: `localize2` 16, 17, 170, 171 (wording); `localize2` 156, 232, 242 and `localize` 64 (`>=` at zero); `localize2` 209, 211, 212 (the unreachable Nyquist branch) and 100 (`<=` at the cutoff); `localize` 14, 16 and `localize_hrtf` 3, 5, 16, 18, 37, 39 (casts). New: `localize2` 24, 26, the cast this release added before its mono check, as `localize`'s. |
-| `utils` | 65 | As 2026-10-31's run gave them, but for `mix_with_offset`. Its 35 and 40 are 37 and 41, after the refusal of an offset past the first sound's start and the reading of its offset by `render_length`; the fourteen that changed its debug logging went with the call; and 66 and 69, which end the second sound's slice where the mix ends, are detected, by a test whose second sound ends inside the first: they were equivalent while every negative offset tested ended it at the end of the mix. And for `mix_stereo`: its casts to `float64`, 4, 6, 18 and 20, went with the code that cast, its 25 is 21, and its 15, which padded no second sound to one sample, is detected by a test of an empty sound. A third reading's `mix_many`, which makes its mix once, has its new mutants detected, the one that skipped the conversion to stereo by a test that puts a mono sound first; its 7 and 9 are the casts it always had. A fourth reading's `_entries` and `_frames_in_rows` have every mutant detected, the second's edge at two rows by a test that asks it; and `convert_to_stereo`'s 23–28, the words of its warning, are detected by a test that pins them, and were detected again alone. |
+| `utils` | 65 | As 2026-10-31's run gave them, but for `mix_with_offset`. Its 35 and 40 are 37 and 41, after the refusal of an offset past the first sound's start and the reading of its offset by `render_length`; the fourteen that changed its debug logging went with the call; and 66 and 69, which end the second sound's slice where the mix ends, are detected, by a test whose second sound ends inside the first: they were equivalent while every negative offset tested ended it at the end of the mix. And for `mix_stereo`: its casts to `float64`, 4, 6, 18 and 20, went with the code that cast, its 25 is 21, and its 15, which padded no second sound to one sample, is detected by a test of an empty sound. A third reading's `mix_many`, which makes its mix once, has its new mutants detected, the one that skipped the conversion to stereo by a test that puts a mono sound first; its 7 and 9 are the casts it always had. A fourth reading's `_entries` and `_frames_in_rows` have every mutant detected, the second's edge at two rows by a test that asks it; and `convert_to_stereo`'s 23–28, the words of its warning, are detected by a test that pins them, and were detected again alone. `_integrate_phase`'s 4 and 6, which left its increments in the type they came in, are detected by a float32 vibrato table, and were detected again alone; the default tables' being read-only has every mutant detected. |
 | `filters` | 27 | The kinds its section accepts, renumbered: `fir` 5, 7, 10, 12, `iir` 3, 5, 8, 10, 13, 15, 36, 42–44, 75, 92, `loud` 7, `louds` 1, 67, 75, `reverb` 5, 37, 38, `stretches` 33. New: `reverb` 94, the tail's seed drawn from 126 values rather than 2**63, which seeds it all the same; and, from the second pass, `_convolved` 11 and 12, the spectra padded to twice the power of two they need, or to the next one when the convolution is one short of it: the result is the same, to rounding, at up to twice the cost. `reverb`'s 102 and 104 went with the direct convolution they changed. The refusals readings after 2.0.0 added to `iir` and `louds` renumbered those after them, and have every mutant detected: the fourth's, of one number where `louds` takes a sequence, and its reading of each count, among them. |
 | `theory` | 1 | As its section has it: `interval_names` 31. |
 | `structures` | 14 | As 2.0.0's run gave them: `InterestingPermutations.even_odd` 25, 28, 29, `Peals.an_eight_and_forty` 35, 58, 63, 74, `PlainChanges.initialize_hunts` 11, 12, and `PlainChanges.perform_change` 51, 82, 84, 85, 106. |

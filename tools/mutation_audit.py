@@ -235,6 +235,7 @@ AREAS = {
             'tests/test_warnings.py',
             'tests/test_sample_counts.py',
             'tests/test_finite_phases.py',
+            'tests/test_table_types.py',
         ),
         'dataclass_adapter': None,
     },

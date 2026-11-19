@@ -325,6 +325,14 @@
   build, which runs so by default. It expects what the interpreter does,
   a test runs both ways on 3.14, and another holds what keeps two threads
   apart either way: a setting never reaches a thread already running.
+- **The three areas of the mutation audit whose code the fifth reading
+  changed were measured again,** `stimuli`, `export` and `utils`. The
+  first run found no gap. The new tests detect nine mutants earlier runs
+  accepted -- the message of the writers' refusal of NaN, which a test
+  now pins, and the cast of a phase's increments to float64, which a
+  float32 vibrato table now needs -- and each was detected again alone.
+  Of the 2,531 mutants of the latest runs, the 134 that survive are the
+  kinds `MUTATION_AUDIT.md` accepts.
 
 ### Maintenance
 

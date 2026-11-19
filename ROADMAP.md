@@ -1100,6 +1100,39 @@ renders the same at a rate given as at the same rate set -- and the
 suite raises no warning but the package's own. The areas whose code
 this changed were measured again, and `MUTATION_AUDIT.md` has the runs.
 
+A fifth reading looked at what the package shares between calls, at
+what its documentation says of defaults, shapes and threads, and at the
+bounds its SSTIM layer kept that the routines under it did not.
+
+- **A shared table changed in place.** Every routine given no table
+  reads one of four, and they were writable: one scaled in place changed
+  every default after it. They are read-only.
+- **Bounds kept in one place and not another.** SSTIM's descriptions
+  refused a carrier the rate cannot hold, and a beat whose tone leaves
+  the band; the routines that render them rendered both, folded back.
+  They refuse them now. A session took NaN for a time or a gain and
+  failed only when it rendered, in Python's words.
+- **What the documentation said of threads.** A new thread does not
+  start at 44,100 Hz on every Python: on 3.14's free-threaded build it
+  starts at the rate of the thread that started it.
+
+Sweeps that found nothing to change: no function is dead, the code on
+every documentation page runs, every public routine has an example,
+each stated default matches its signature but one, each optional extra
+names itself when it is missing, every example writes what it says it
+writes, and the singers' commands go to no shell and take no syllable
+as an option.
+
+Left as they are. `convert_to_stereo` calls its sound `sound_vector` and
+`stretches` calls it `x`, which elsewhere is a position, where every
+other routine says `sonic_vector`; renaming a required parameter needs a
+default, which the sweep of routines run on their defaults would then
+call, and it waits for a reason to change their signatures. The KEMAR
+responses are at 44.1 kHz and place a source elsewhere at another rate,
+which `hrir` and `localize_hrtf` say and nothing checks. And the
+normalizers return NaN for a sound holding one, which the writers then
+refuse.
+
 ## Open after the September 2026 audits
 
 What the audits found and did not fix, and why. Each is recorded where

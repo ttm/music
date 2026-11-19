@@ -161,7 +161,9 @@ def note_with_doppler(freq=220, duration=2, waveform_table=WAVEFORM_TRIANGULAR,
     Returns
     -------
     s : ndarray
-        The PCM samples of the resulting sound.
+        The PCM samples of the resulting sound: two channels, of shape
+        ``(2, n)``, when `stereo` is true, its first the left ear's, and
+        one, of shape ``(n,)``, when it is false.
 
     Raises
     ------
@@ -841,7 +843,9 @@ def note_with_vibrato_seq_localization(freqs=(220, 440, 330),
     Returns
     -------
     s : ndarray
-        A numpy array where each value is a PCM sample of the sound.
+        The PCM samples of the sound: two channels, of shape ``(2, n)``,
+        when `stereo` is true, and one, of shape ``(n,)``, when it is
+        false.
 
     Raises
     ------

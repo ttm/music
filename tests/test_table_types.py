@@ -80,3 +80,19 @@ def test_an_oscillator_returns_float64_for_a_table_of_any_type(name, dtype):
     rendered = _render(name, given)
     assert rendered.dtype == np.float64
     np.testing.assert_array_equal(rendered, _render(name, widened))
+
+
+@pytest.mark.parametrize("name, kind", [
+    ("WAVEFORM_SINE", "sine"), ("WAVEFORM_SAWTOOTH", "sawtooth"),
+    ("WAVEFORM_SQUARE", "square"), ("WAVEFORM_TRIANGULAR", "triangle"),
+])
+def test_a_default_table_cannot_be_changed_in_place(name, kind):
+    """Every routine given no table reads one of these four. Scaling one
+    in place, `quiet = WAVEFORM_SINE; quiet *= 0.5`, halved every default
+    vibrato and tremolo after it."""
+    table = getattr(music, name)
+    with pytest.raises(ValueError, match="read-only"):
+        table *= 0.5
+    np.testing.assert_array_equal(table, music.waveform_table(kind))
+    np.testing.assert_array_equal(table * 0.5,
+                                  music.waveform_table(kind) * 0.5)

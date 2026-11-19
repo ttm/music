@@ -479,3 +479,65 @@ def test_ahead_and_behind_are_the_same_sound_because_there_is_no_hrtf():
                                   theta1=-90, theta2=-90)
     assert np.array_equal(ahead, behind)
     assert np.array_equal(ahead[0], ahead[1])
+
+
+@pytest.mark.parametrize("name", ["isochronic_tones", "amplitude_modulation",
+                                  "frequency_modulation", "spatial_motion"])
+@pytest.mark.parametrize("carrier", [4000, 5000.5])
+def test_a_carrier_the_rate_cannot_hold_is_refused(name, carrier):
+    """A carrier at or above the Nyquist frequency folds back below it:
+    5,000 Hz at 8,000 Hz sounded at 3,000, and nothing said so. SSTIM's
+    descriptions were held to this already, the routines that render them
+    not."""
+    with pytest.raises(ValueError) as refusal:
+        getattr(music, name)(carrier_freq=carrier, duration=0.1,
+                             sample_rate=8000)
+    assert str(refusal.value) == (
+        f"carrier_freq is {carrier:g} Hz, at or above the Nyquist "
+        f"frequency, 4000 Hz at 8000 Hz: no tone is held there, and it "
+        f"would sound folded back, at another frequency")
+
+
+@pytest.mark.parametrize("name", ["isochronic_tones", "amplitude_modulation",
+                                  "frequency_modulation", "spatial_motion"])
+def test_a_carrier_just_below_the_nyquist_frequency_is_rendered(name):
+    rendered = getattr(music, name)(carrier_freq=3999.5, duration=0.1,
+                                    sample_rate=8000)
+    assert rendered.shape[-1] == 800
+
+
+def test_a_sound_given_to_spatial_motion_is_placed_whatever_its_carrier():
+    """The carrier is read only when spatial_motion renders the tone."""
+    tone = music.note(440, 0.1, sample_rate=8000)
+    placed = music.spatial_motion(carrier_freq=10000, sonic_vector=tone,
+                                  sample_rate=8000)
+    assert placed.shape == (2, 800)
+
+
+@pytest.mark.parametrize("name", ["binaural_beats", "monaural_beats"])
+@pytest.mark.parametrize("carrier, beat, lower, upper", [
+    (3, 10, -2, 8),            # the lower tone folds to 2 Hz: a beat of 6
+    (5, 10, 0, 10),            # a tone of no frequency beats with nothing
+    (3995, 10, 3990, 4000),    # the upper tone at the Nyquist frequency
+    (3000, 4000, 1000, 5000),  # the upper tone past it
+])
+def test_a_beat_whose_tones_leave_the_band_is_refused(name, carrier, beat,
+                                                       lower, upper):
+    with pytest.raises(ValueError) as refusal:
+        getattr(music, name)(carrier_freq=carrier, beat_freq=beat,
+                             duration=0.1, sample_rate=8000)
+    assert str(refusal.value) == (
+        f"the beat's tones, carrier_freq - beat_freq / 2 and carrier_freq "
+        f"+ beat_freq / 2, are {lower:g} and {upper:g} Hz; both must lie "
+        f"between 0 and the Nyquist frequency, 4000 Hz at 8000 Hz, or one "
+        f"folds back and the two beat at another rate")
+
+
+@pytest.mark.parametrize("name", ["binaural_beats", "monaural_beats"])
+@pytest.mark.parametrize("carrier, beat", [(5.5, 10), (3994.5, 10),
+                                           (200, -10)])
+def test_a_beat_whose_tones_both_lie_in_the_band_is_rendered(name, carrier,
+                                                             beat):
+    rendered = getattr(music, name)(carrier_freq=carrier, beat_freq=beat,
+                                    duration=0.1, sample_rate=8000)
+    assert rendered.shape[-1] == 800

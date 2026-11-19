@@ -33,6 +33,44 @@ def _sample_count(duration, number_of_samples, sample_rate):
     return render_length(duration, sample_rate, number_of_samples)
 
 
+def _below_nyquist(sample_rate, **tones):
+    """Refuse a tone the rate cannot hold, by the name that set it.
+
+    A table is read at a tone's frequency however high it is, and a tone
+    at or above the Nyquist frequency folds back below it: a carrier of
+    5,000 Hz at 8,000 Hz sounded at 3,000, and nothing said so. SSTIM's
+    descriptions were held to this already, and the routines that render
+    them were not. NaN is left to the refusal that names it.
+    """
+    nyquist = sample_rate / 2
+    for name, freq in tones.items():
+        if freq >= nyquist:
+            raise ValueError(
+                f"{name} is {freq:g} Hz, at or above the Nyquist frequency, "
+                f"{nyquist:g} Hz at {sample_rate} Hz: no tone is held there, "
+                f"and it would sound folded back, at another frequency")
+
+
+def _beat_tones(carrier_freq, beat_freq, sample_rate):
+    """The two tones of a beat, refused unless both lie in the band.
+
+    One above the Nyquist frequency folds back, as any tone does, and
+    one below zero folds to its positive twin, so the two beat at
+    another rate: a carrier of 3 Hz and a beat of 10 gave tones of -2
+    and 8 Hz, which beat at 6.
+    """
+    lower = carrier_freq - beat_freq / 2
+    upper = carrier_freq + beat_freq / 2
+    if min(lower, upper) <= 0 or max(lower, upper) >= sample_rate / 2:
+        raise ValueError(
+            f"the beat's tones, carrier_freq - beat_freq / 2 and "
+            f"carrier_freq + beat_freq / 2, are {lower:g} and {upper:g} "
+            f"Hz; both must lie between 0 and the Nyquist frequency, "
+            f"{sample_rate / 2:g} Hz at {sample_rate} Hz, or one folds back "
+            f"and the two beat at another rate")
+    return lower, upper
+
+
 def _nothing(channels):
     """Zero samples, in the shape the routine would otherwise return.
 
@@ -106,6 +144,15 @@ def binaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
         A ``(2, n)`` stereo array: the lower carrier in the left
         channel, the higher in the right.
 
+    Raises
+    ------
+    ValueError
+        If either tone, ``carrier_freq - beat_freq / 2`` or
+        ``carrier_freq + beat_freq / 2``, is not between 0 and the
+        Nyquist frequency. One above it folds back below, and one below
+        zero folds to its positive twin, and the two beat at another
+        rate; SSTIM's descriptions were held to this, the routine not.
+
     See Also
     --------
     monaural_beats : the same two tones in one channel, where the beat
@@ -143,14 +190,13 @@ def binaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
 
     """
     sample_rate = resolve_rate(sample_rate)
+    lower, upper = _beat_tones(carrier_freq, beat_freq, sample_rate)
     count = _sample_count(duration, number_of_samples, sample_rate)
     if count < 1:
         return _nothing(2)
-    left = note(freq=carrier_freq - beat_freq / 2,
-                waveform_table=waveform_table,
+    left = note(freq=lower, waveform_table=waveform_table,
                 number_of_samples=count, sample_rate=sample_rate)
-    right = note(freq=carrier_freq + beat_freq / 2,
-                 waveform_table=waveform_table,
+    right = note(freq=upper, waveform_table=waveform_table,
                  number_of_samples=count, sample_rate=sample_rate)
     return np.vstack((left, right))
 
@@ -190,6 +236,15 @@ def monaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
     ndarray
         A mono sequence of PCM samples, the mean of the two tones.
 
+    Raises
+    ------
+    ValueError
+        If either tone, ``carrier_freq - beat_freq / 2`` or
+        ``carrier_freq + beat_freq / 2``, is not between 0 and the
+        Nyquist frequency. One above it folds back below, and one below
+        zero folds to its positive twin, and the two beat at another
+        rate; SSTIM's descriptions were held to this, the routine not.
+
     See Also
     --------
     binaural_beats : the same two tones one per ear, where the beat is
@@ -221,14 +276,13 @@ def monaural_beats(carrier_freq: float = 200.0, beat_freq: float = 10.0,
 
     """
     sample_rate = resolve_rate(sample_rate)
+    low, high = _beat_tones(carrier_freq, beat_freq, sample_rate)
     count = _sample_count(duration, number_of_samples, sample_rate)
     if count < 1:
         return _nothing(1)
-    lower = note(freq=carrier_freq - beat_freq / 2,
-                 waveform_table=waveform_table,
+    lower = note(freq=low, waveform_table=waveform_table,
                  number_of_samples=count, sample_rate=sample_rate)
-    upper = note(freq=carrier_freq + beat_freq / 2,
-                 waveform_table=waveform_table,
+    upper = note(freq=high, waveform_table=waveform_table,
                  number_of_samples=count, sample_rate=sample_rate)
     return (lower + upper) / 2
 
@@ -291,6 +345,10 @@ def isochronic_tones(carrier_freq: float = 200.0, pulse_rate: float = 10.0,
     ValueError
         If ``ramp_duration`` is negative, which would otherwise scale
         every pulse by a clipped negative and return silence.
+    ValueError
+        If ``carrier_freq`` is at or above the Nyquist frequency, where
+        it would fold back and sound at another frequency; SSTIM's
+        descriptions were held to this, the routine not.
 
     Notes
     -----
@@ -330,6 +388,7 @@ def isochronic_tones(carrier_freq: float = 200.0, pulse_rate: float = 10.0,
     if ramp_duration < 0:
         raise ValueError(
             f"ramp_duration cannot be negative, got {ramp_duration}")
+    _below_nyquist(sample_rate, carrier_freq=carrier_freq)
     count = _sample_count(duration, number_of_samples, sample_rate)
     if count < 1:
         return _nothing(1)
@@ -405,6 +464,10 @@ def amplitude_modulation(
     ValueError
         If ``modulation_freq`` is negative, for the reason
         :func:`modulated_noise` gives.
+    ValueError
+        If ``carrier_freq`` is at or above the Nyquist frequency, where
+        it would fold back and sound at another frequency; SSTIM's
+        descriptions were held to this, the routine not.
 
     See Also
     --------
@@ -440,6 +503,7 @@ def amplitude_modulation(
     if modulation_freq < 0:
         raise ValueError(
             f"modulation_freq cannot be negative, got {modulation_freq}")
+    _below_nyquist(sample_rate, carrier_freq=carrier_freq)
     count = _sample_count(duration, number_of_samples, sample_rate)
     if count < 1:
         return _nothing(1)
@@ -504,6 +568,10 @@ def frequency_modulation(
     ValueError
         If ``modulation_freq`` is negative, for the reason
         :func:`modulated_noise` gives.
+    ValueError
+        If ``carrier_freq`` is at or above the Nyquist frequency, where
+        it would fold back and sound at another frequency; SSTIM's
+        descriptions were held to this, the routine not.
 
     See Also
     --------
@@ -542,6 +610,7 @@ def frequency_modulation(
     if modulation_freq < 0:
         raise ValueError(
             f"modulation_freq cannot be negative, got {modulation_freq}")
+    _below_nyquist(sample_rate, carrier_freq=carrier_freq)
     count = _sample_count(duration, number_of_samples, sample_rate)
     instantaneous = np.full(max(count, 0), float(carrier_freq))
     if modulation_freq:
@@ -607,8 +676,9 @@ def modulated_noise(noise_type: str | float = 'pink',
         The sampling frequency in Hertz.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
     seed : integer or None
-        Optional deterministic local random seed. With None, the
-        historical NumPy-global random behavior is preserved.
+        A seed for the noise, as :func:`music.noise` takes it: the same
+        seed draws the same noise again, and leaves NumPy's global random
+        state alone. None, the default, draws from that state.
 
     Returns
     -------
@@ -759,6 +829,10 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
         If ``motion_rate`` is negative, which would reverse the
         trajectory rather than slow it.
     ValueError
+        If ``carrier_freq`` is at or above the Nyquist frequency, when
+        no ``sonic_vector`` is given and the carrier is rendered: it
+        would fold back and sound at another frequency.
+    ValueError
         If ``sonic_vector`` is not one-dimensional. A stereo sound has
         its position already, and moving one failed inside the
         localization with a message about broadcasting.
@@ -816,6 +890,7 @@ def spatial_motion(carrier_freq: float = 200.0, motion_rate: float = 0.2,
         raise ValueError(
             f"motion_rate cannot be negative, got {motion_rate}")
     if sonic_vector is None:
+        _below_nyquist(sample_rate, carrier_freq=carrier_freq)
         count = _sample_count(duration, number_of_samples, sample_rate)
         if count < 1:
             return _nothing(2)

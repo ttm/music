@@ -54,8 +54,9 @@ def noise(noise_type: str | float = "brown", duration: float = 2,
         The sample rate to use.
         None, the default, is the rate :func:`music.get_sample_rate` returns.
     seed : integer or None
-        Optional deterministic seed for local random phases. Default None
-        preserves legacy use of NumPy's global random state.
+        A seed for the random phases: the same seed draws the same noise
+        again, and leaves NumPy's global random state alone. None, the
+        default, draws from that state, as this always did.
 
     Returns
     -------

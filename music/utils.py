@@ -48,7 +48,8 @@ def waveform_table(kind: str,
     kind : {'sine', 'sawtooth', 'square', 'triangle'}
         Which waveform to build.
     size : int, optional
-        The number of samples in the period. Defaults to LAMBDA_TILDE.
+        The number of samples in the period: 16,384 by default, the
+        size of the tables every routine reads when given none.
 
     Returns
     -------
@@ -86,7 +87,8 @@ def waveform_table(kind: str,
 
 
 #: A period of a sine, 16,384 samples long and starting at zero: the
-#: table vibratos, tremolos and modulations read when given none.
+#: table vibratos, tremolos and modulations read when given none. It is
+#: read-only, as the other three are; a table to change is a copy.
 WAVEFORM_SINE = waveform_table("sine")
 #: A period of a sawtooth, rising from -1 to just below 1.
 WAVEFORM_SAWTOOTH = waveform_table("sawtooth")
@@ -95,6 +97,16 @@ WAVEFORM_SQUARE = waveform_table("square")
 #: A period of a triangle wave, rising from -1 to 1 and falling back: the
 #: table :func:`note` and most of the oscillators read when given none.
 WAVEFORM_TRIANGULAR = waveform_table("triangle")
+
+# Read-only, because every routine given no table reads one of these four:
+# a caller who scaled one in place, `quiet = WAVEFORM_SINE; quiet *= 0.5`,
+# halved every default vibrato and tremolo after it, with no word of it.
+# A table to change is a copy, `WAVEFORM_SINE * 0.5`, or a new one from
+# waveform_table.
+for _table in (WAVEFORM_SINE, WAVEFORM_SAWTOOTH, WAVEFORM_SQUARE,
+               WAVEFORM_TRIANGULAR):
+    _table.flags.writeable = False
+del _table
 
 
 def as_sonic_vector(sonic_vector: Any) -> NDArray[np.float64] | None:

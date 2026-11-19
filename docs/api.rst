@@ -339,7 +339,10 @@ Wavetables
 
 The four tables are the ones used by default throughout the package, and
 the names that appear in the synthesis signatures above, so
-``music.note(waveform_table=music.WAVEFORM_SINE)`` works.
+``music.note(waveform_table=music.WAVEFORM_SINE)`` works. They are
+read-only, since every routine given no table reads one of them: a table
+to change is a copy, ``music.WAVEFORM_SINE * 0.5``, or a new one from
+``waveform_table``.
 
 Singing
 -------

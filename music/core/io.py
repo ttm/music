@@ -138,7 +138,10 @@ def _as_given(samples: ArrayLike) -> NDArray[np.float64]:
             "so an empty array reaching a file means a duration computed "
             "as zero somewhere upstream.")
     peak = float(np.max(np.abs(result)))
-    if peak > 1:
+    # An infinite peak is no level to scale down; it is refused with NaN,
+    # as no sample at all, when the samples are quantized. It was told to
+    # scale itself into [-1, 1].
+    if 1 < peak < np.inf:
         raise ValueError(
             f"the sound reaches {peak:g}, past the full scale of 1 a file "
             f"can hold, and normalize=False writes it as it is: scale it "

@@ -11,6 +11,9 @@ discontinuity, and a crossfade that dips is a hole; both are audible,
 and neither is in the protocol either.
 """
 
+import math
+import re
+
 import numpy as np
 import pytest
 import soundfile as sf
@@ -520,6 +523,22 @@ def test_negative_times_are_refused(kwargs, match):
         music.StimulusPhase(constant, **kwargs)
 
 
+@pytest.mark.parametrize('name', ['duration', 'ramp', 'gain'])
+@pytest.mark.parametrize('value', [math.nan, math.inf, -math.inf])
+def test_a_time_or_gain_that_is_no_number_is_refused_where_it_is_given(
+        name, value):
+    """NaN compares false to everything, so it passed the check for a
+    negative value, and the session failed only when rendered, in
+    Python's words, "cannot convert float NaN to integer"; a gain of NaN
+    rendered a session of NaN."""
+    given = {'duration': 1, name: value}
+    for make in (lambda: music.StimulationSession().add(constant, **given),
+                 lambda: music.StimulusPhase(constant, **given)):
+        with pytest.raises(ValueError, match=re.escape(
+                f"{name} is a finite number; got {value}")):
+            make()
+
+
 def test_a_phase_made_by_hand_is_refused_as_add_refuses_it():
     """Only `add` checked, so a phase made directly took a negative
     duration, a negative ramp or a callable with no duration."""
@@ -531,13 +550,16 @@ def test_a_phase_made_by_hand_is_refused_as_add_refuses_it():
     ({'sample_rate': 0}, "sample_rate must be positive; got 0"),
     ({'sample_rate': -SR}, "sample_rate must be positive"),
     ({'end_ramp': -1}, "end_ramp cannot be negative, got -1"),
+    ({'end_ramp': math.nan}, "end_ramp is a finite number; got nan"),
+    ({'end_ramp': math.inf}, "end_ramp is a finite number; got inf"),
     ({'ramp_shape': 'cosine'},
      "ramp_shape is 'equal_power' or 'linear'; got 'cosine'"),
 ])
 def test_a_session_refuses_what_it_could_not_render(kwargs, match):
     """A zero rate rendered nothing and a negative one divided by zero; a
-    negative end ramp was taken as none, and any other shape name as
-    'equal_power'."""
+    negative end ramp was taken as none, one that was no number failed
+    only when the session rendered, and any other shape name was taken
+    as 'equal_power'."""
     with pytest.raises(ValueError, match=match):
         music.StimulationSession(**kwargs)
 

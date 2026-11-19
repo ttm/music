@@ -17,6 +17,8 @@ import inspect
 import math
 import pathlib
 import re
+import subprocess
+import sys
 import threading
 
 import numpy as np
@@ -104,15 +106,57 @@ def test_a_whole_number_is_an_int_and_nothing_else_is(value, number):
 
 def test_a_new_thread_starts_at_the_default():
     """A setting belongs to the thread that made it, so two threads
-    rendering at two rates cannot change each other's sound."""
+    rendering at two rates cannot change each other's sound. A new
+    thread starts at the default, unless the interpreter starts threads
+    with a copy of their starter's context, as Python 3.14's free-threaded
+    build does; then at its starter's rate."""
+    inherits = bool(getattr(sys.flags, "thread_inherit_context", False))
     seen = []
     music.set_sample_rate(RATE)
     worker = threading.Thread(target=lambda: seen.append(
         music.get_sample_rate()))
     worker.start()
     worker.join()
+    assert seen == [RATE if inherits else 44100]
+    assert music.get_sample_rate() == RATE
+
+
+def test_a_setting_never_reaches_a_thread_already_running():
+    """What keeps two threads at two rates apart, whichever way the
+    interpreter starts them."""
+    started, changed, seen = (threading.Event(), threading.Event(), [])
+
+    def worker():
+        started.set()
+        changed.wait()
+        seen.append(music.get_sample_rate())
+
+    thread = threading.Thread(target=worker)
+    thread.start()
+    started.wait()
+    music.set_sample_rate(RATE)
+    changed.set()
+    thread.join()
     assert seen == [44100]
     assert music.get_sample_rate() == RATE
+
+
+@pytest.mark.skipif(sys.version_info < (3, 14),
+                    reason="threads can inherit a context from Python 3.14")
+@pytest.mark.parametrize("inherit, expected", [("0", "44100"), ("1", "8000")])
+def test_a_thread_starts_at_its_starters_rate_where_threads_inherit(
+        inherit, expected):
+    """As the module's docstring says: a thread that starts with a copy
+    of its starter's context starts at its starter's rate."""
+    code = ("import threading, music; music.set_sample_rate(8000); "
+            "seen = []; t = threading.Thread(target=lambda: "
+            "seen.append(music.get_sample_rate())); t.start(); t.join(); "
+            "print(seen[0])")
+    root = pathlib.Path(__file__).resolve().parent.parent
+    run = subprocess.run(
+        [sys.executable, "-X", f"thread_inherit_context={inherit}", "-c",
+         code], capture_output=True, text=True, cwd=root, check=True)
+    assert run.stdout.strip() == expected
 
 
 @pytest.mark.parametrize("duration, rate, count", [

@@ -34,6 +34,16 @@
   samples to `mix_with_offset`. An oscillator refuses a frequency, a
   depth or a position that is NaN or infinite, where it returned a
   constant read from its table, or a sound of NaN.
+- **The four default waveform tables are read-only,** `WAVEFORM_SINE`,
+  `WAVEFORM_SAWTOOTH`, `WAVEFORM_SQUARE` and `WAVEFORM_TRIANGULAR`:
+  scaling one in place raises, where it changed every routine's default.
+  A table to change is a copy, `WAVEFORM_SINE * 0.5`, or a new one from
+  `waveform_table`.
+- **The stimulation routines refuse a carrier the sample rate cannot
+  hold,** at or above the Nyquist frequency, and the beats a tone below
+  zero, as SSTIM's descriptions were refused them already. A
+  `StimulusPhase` refuses a duration, a ramp or a gain that is NaN or
+  infinite, and a `StimulationSession` such an end ramp.
 
 ### Changed
 
@@ -227,6 +237,26 @@
   them with `convert_to_stereo`, which made it two samples. They say its
   transpose may be the sound, and `convert_to_stereo` says so as it
   folds one.
+- **Scaling a default table in place changed every routine.**
+  `quiet = music.WAVEFORM_SINE; quiet *= 0.5` halved the default depth of
+  every vibrato and tremolo after it, since every routine given no table
+  reads one of the four, and nothing said so. They are read-only now.
+- **The stimulation routines rendered a carrier above the Nyquist
+  frequency folded back.** A carrier of 5,000 Hz at 8,000 Hz sounded at
+  3,000, and a beat whose lower tone fell below zero beat at another
+  rate: a carrier of 3 Hz and a beat of 10 gave tones of -2 and 8 Hz,
+  which beat at 6. SSTIM's descriptions were held to these bounds, and
+  the routines that render them are now.
+- **A session took NaN and failed only when it rendered.** A duration,
+  a ramp or an end ramp that was NaN or infinite passed the check for a
+  negative value, as NaN compares false to everything, and the session
+  failed in Python's words, "cannot convert float NaN to integer", when
+  it rendered; a gain of NaN rendered a session of NaN. Each is refused
+  where it is given.
+- **An infinite sample written as it was given was told to scale
+  itself.** With `normalize=False` it was refused as a level past full
+  scale, "scale it into [-1, 1] first"; it is refused as NaN is, as no
+  sample at all.
 
 ### Tests
 
@@ -289,6 +319,12 @@
   earlier runs accepted, and each was detected again alone. Of the 6,336
   mutants of the latest runs, the 221 that survive are the kinds
   `MUTATION_AUDIT.md` accepts.
+- **The test of a new thread's rate holds on every interpreter.** It
+  said a new thread starts at 44,100 Hz, which a Python 3.14 run with
+  `-X thread_inherit_context=1` does not do, nor the free-threaded
+  build, which runs so by default. It expects what the interpreter does,
+  a test runs both ways on 3.14, and another holds what keeps two threads
+  apart either way: a setting never reaches a thread already running.
 
 ### Maintenance
 
@@ -434,6 +470,17 @@
   "Built-in immutable sequence".
 - **The tutorial and the API reference say what a count of samples is,**
   a whole number, and what a negative one is.
+- **The rate module said a new thread starts at 44,100 Hz.** On Python
+  3.14's free-threaded build, or any 3.14 run with
+  `-X thread_inherit_context=1`, a new thread starts with a copy of its
+  starter's context, and at its rate. It says so, and what holds either
+  way.
+- **Smaller statements.** `waveform_table` said its size "Defaults to
+  LAMBDA_TILDE", a constant the reference does not show, which is
+  16,384; `note_with_doppler` and `note_with_vibrato_seq_localization`
+  gave what they return without its shape, which their `stereo` sets;
+  and `noise` and `modulated_noise` said what a seed is for in the words
+  of the code's history rather than what it does.
 
 ## [2.0.0] - 2026-11-01
 

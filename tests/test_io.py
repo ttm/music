@@ -130,6 +130,25 @@ def test_normalize_false_refuses_a_sound_past_full_scale(tmp_path, write):
         write(loud, str(tmp_path / "loud.wav"), normalize=False)
 
 
+@pytest.mark.parametrize("write", [music.write_wav_mono,
+                                   music.write_wav_stereo])
+@pytest.mark.parametrize("normalize", [True, False])
+@pytest.mark.parametrize("value", [np.inf, -np.inf, np.nan])
+def test_a_sample_that_is_no_number_is_refused_as_one(tmp_path, write,
+                                                      normalize, value):
+    """Infinity with normalize=False was refused as a level past full
+    scale, and told to scale itself into [-1, 1]."""
+    sound = np.array([0.0, value, 0.5])
+    if write is music.write_wav_stereo:
+        sound = np.vstack((sound, sound))
+    path = tmp_path / "x.wav"
+    with pytest.raises(ValueError, match=re.escape(
+            "sonic_vector contains NaN or infinity, which cannot be written "
+            "as PCM samples")):
+        write(sound, str(path), normalize=normalize)
+    assert not path.exists()
+
+
 def test_normalize_false_refuses_nothing_as_normalizing_does(tmp_path):
     with pytest.raises(ValueError, match="nothing here to write"):
         music.write_wav_mono(np.array([]), str(tmp_path / "e.wav"),

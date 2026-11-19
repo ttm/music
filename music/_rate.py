@@ -15,9 +15,13 @@ None, which means the rate `get_sample_rate` returns, and
 ``with`` statement, for one block.
 
 The setting is a `contextvars.ContextVar`, so it belongs to the thread or
-the asyncio task that made it. A new thread starts at 44,100 Hz rather
-than inheriting another's, which is what keeps two threads rendering at
-two rates from changing each other's sound.
+the asyncio task that made it, and a setting made in one never reaches
+another already running: two threads rendering at two rates cannot
+change each other's sound. A new thread starts at 44,100 Hz, unless the
+interpreter starts threads with a copy of the context of the thread that
+starts them -- Python 3.14's free-threaded build does, and any 3.14 run
+with ``-X thread_inherit_context=1`` -- and then at that thread's rate. A
+new asyncio task always starts at the rate of the task that made it.
 """
 
 from __future__ import annotations

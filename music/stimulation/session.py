@@ -26,6 +26,7 @@ References
        https://w3id.org/sstim/session
 """
 
+import math
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Union
 
@@ -79,6 +80,12 @@ class StimulusPhase:
         it. Only :meth:`StimulationSession.add` checked, so a phase made
         by hand was refused nowhere.
 
+        If ``duration``, ``ramp`` or ``gain`` is NaN or infinite. They
+        passed the check for a negative value, as NaN compares false to
+        everything, and the session failed only when rendered, in
+        Python's words, "cannot convert float NaN to integer", or, for a
+        gain, rendered a sound of NaN.
+
     Examples
     --------
     >>> phase = StimulusPhase(stimulus=binaural_beats, duration=0.2,
@@ -102,6 +109,10 @@ class StimulusPhase:
     parameters: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        for name in ("duration", "ramp", "gain"):
+            value = getattr(self, name)
+            if not math.isfinite(value):
+                raise ValueError(f"{name} is a finite number; got {value}")
         if self.duration < 0:
             raise ValueError(
                 f"duration cannot be negative, got {self.duration}")
@@ -183,10 +194,12 @@ class StimulationSession:
     Raises
     ------
     ValueError
-        If ``sample_rate`` is not positive, ``end_ramp`` is negative, or
-        ``ramp_shape`` is neither name. A zero rate rendered nothing and a
-        negative one divided by zero; a negative end ramp was taken as
-        none, and any other shape as ``'equal_power'``.
+        If ``sample_rate`` is not positive, ``end_ramp`` is negative, NaN
+        or infinite, or ``ramp_shape`` is neither name. A zero rate
+        rendered nothing and a negative one divided by zero; a negative
+        end ramp was taken as none, one that is no number failed only
+        when the session rendered, and any other shape was taken as
+        ``'equal_power'``.
 
     See Also
     --------
@@ -215,6 +228,9 @@ class StimulationSession:
         if self.sample_rate <= 0:
             raise ValueError(
                 f"sample_rate must be positive; got {self.sample_rate}")
+        if not math.isfinite(self.end_ramp):
+            raise ValueError(
+                f"end_ramp is a finite number; got {self.end_ramp}")
         if self.end_ramp < 0:
             raise ValueError(
                 f"end_ramp cannot be negative, got {self.end_ramp}")

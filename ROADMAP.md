@@ -1133,6 +1133,19 @@ which `hrir` and `localize_hrtf` say and nothing checks. And the
 normalizers return NaN for a sound holding one, which the writers then
 refuse.
 
+## Released: 2.1.0, 2026-11-20
+
+The five readings after 2.0.0 went out as 2.1.0, a minor release: some
+calls that wrote a wrong file or returned a wrong sound now raise, as
+the changelog's note for anyone upgrading lists, and nothing is
+removed. The release gate passed whole on the commit the artifacts were
+built from, and CI on every job; PyPI has the wheel and the source
+distribution. Zenodo archived it as 10.5281/zenodo.24405019 within six
+seconds of the release event, and the sync gave the record its nineteen
+controlled subjects and the release notes, all 75 of their bold
+headlines intact, 23 of them opening with code, verified through the
+record and its DataCite export.
+
 ## Open after the September 2026 audits
 
 What the audits found and did not fix, and why. Each is recorded where

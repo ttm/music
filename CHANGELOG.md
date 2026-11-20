@@ -1,4 +1,4 @@
-## [Unreleased]
+## [2.1.0] - 2026-11-20
 
 ### Note for anyone upgrading
 

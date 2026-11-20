@@ -44,20 +44,20 @@ does is not a figure. Everything collected that runs, passes.
 ## Figures
 
 <!-- BEGIN FIGURES: written by `python tools/assessment_figures.py --write`; change the script, not the table. -->
-Measured **2026-11-01**, at `music` 2.0.0.
+Measured **2026-11-20**, at `music` 2.1.0.
 
 | Figure | Value |
 |---|---|
-| Package | 63 modules, 18,575 lines |
+| Package | 63 modules, 19,100 lines |
 | Public API | 131 names |
-| Tests | 8,113 collected by `pytest`, in 29,253 lines |
+| Tests | 8,985 collected by `pytest`, in 31,130 lines |
 | Docstring examples | 137 docstrings, each run as a doctest |
-| Examples | 18 scripts, every one run by `tools/run_examples.py` |
-| Line and branch coverage | 100 % of 4,883 statements and 1,690 branches: 0 statements missed, 0 branches taken only one way |
-| Annotation coverage | 212 / 364 functions (58 %); 68 / 102 exported (67 %) |
-| Docstring coverage | 239 / 249 public definitions (96 %) |
-| Extended lint, `ruff check --select ALL music` | 3,237 findings, the largest kinds 792 quote-style, 399 missing argument annotations and 80 missing return annotations |
-| `legacy/` | 1,251 lines |
+| Examples | 19 scripts, every one run by `tools/run_examples.py` |
+| Line and branch coverage | 100 % of 4,956 statements and 1,710 branches: 0 statements missed, 0 branches taken only one way |
+| Annotation coverage | 215 / 375 functions (57 %); 68 / 102 exported (67 %) |
+| Docstring coverage | 242 / 251 public definitions (96 %) |
+| Extended lint, `ruff check --select ALL music` | 3,335 findings, the largest kinds 804 quote-style, 414 missing argument annotations and 80 missing return annotations |
+| `legacy/` | 1,255 lines |
 <!-- END FIGURES -->
 
 ## How this was measured
